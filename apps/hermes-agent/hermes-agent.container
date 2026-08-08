@@ -1,0 +1,52 @@
+[Unit]
+Description=Hermes Agent (personal AI agent, OpenAI-compatible gateway)
+
+[Container]
+NoNewPrivileges=true
+PidsLimit=2048
+ShmSize=1g
+Memory=4G
+
+Image=docker.io/nousresearch/hermes-agent:v2026.8.3
+ContainerName=hermes-agent
+Exec=gateway run
+PublishPort=8642:8642
+PublishPort=9119:9119
+
+Environment=API_SERVER_ENABLED=true
+Environment=API_SERVER_HOST=0.0.0.0
+Environment=API_SERVER_PORT=8642
+Environment=HERMES_DASHBOARD=1
+Environment=HERMES_DASHBOARD_HOST=0.0.0.0
+Environment=HERMES_DASHBOARD_PORT=9119
+
+Volume=%h/.config/containers/volumes/hermes-agent/data:/opt/data:Z
+EnvironmentFile=%h/.config/containers/env/hermes-agent.env
+Secret=hermes-agent-api-key,type=env,target=API_SERVER_KEY
+Secret=hermes-agent-dashboard-password,type=env,target=HERMES_DASHBOARD_BASIC_AUTH_PASSWORD
+Secret=hermes-agent-dashboard-secret,type=env,target=HERMES_DASHBOARD_BASIC_AUTH_SECRET
+
+HealthCmd=CMD-SHELL curl -fsS -o /dev/null http://127.0.0.1:8642/health || exit 1
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=60s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=hermes
+Label=tsdproxy.port.web=443/https:9119/http
+Label=homepage.group=Self-Hosted
+Label=homepage.name="Hermes Agent"
+Label=homepage.icon=https://cdn.jsdelivr.net/gh/NousResearch/hermes-agent@main/website/static/img/logo.png
+Label=homepage.href=https://hermes.${TAILNET}.ts.net
+Label=homepage.description="Personal AI agent with skills and memory, exposing an OpenAI-compatible API"
+
+Label=wud.watch=true
+Label=wud.tag.include=^v[0-9]+.[0-9]+.[0-9]+$
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target
