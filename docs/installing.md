@@ -107,6 +107,23 @@ ownership on services with `User=` — a file coming from another machine
 carries a subuid that may not be this one's.
 
 
+**The image download is shown, not hidden.** `install.py` pulls each image
+itself, before the start, so podman's own progress output reaches your
+terminal:
+
+```
+  -> podman pull docker.io/dockurr/windows:6.04
+
+Trying to pull docker.io/dockurr/windows:6.04...
+Copying blob sha256:55afa1ecc21d...  [====================>-------]  312.4MiB / 487.1MiB
+```
+
+Letting the start pull it implicitly works too, but systemd sends that download
+to the journal — which for a multi-gigabyte image is several silent minutes
+that look exactly like a hung script. Images already on the host are skipped, so
+the step only appears when something really has to be downloaded. `--update`
+pulls as well: a changed tag is precisely the download worth watching.
+
 ### Asking instead of defaulting: `[choices]`
 
 Some `.env` values are a choice from a known list, and only matter on the very

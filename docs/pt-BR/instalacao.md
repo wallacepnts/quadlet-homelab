@@ -107,6 +107,23 @@ extrair, reaplica o dono nos serviços com `User=` — arquivo vindo de
 outra máquina carrega um subuid que pode não ser o daqui.
 
 
+**O download da imagem aparece, não fica escondido.** O `install.py` puxa cada
+imagem ele mesmo, antes do start, pra saída de progresso do próprio podman
+chegar no seu terminal:
+
+```
+  -> podman pull docker.io/dockurr/windows:6.04
+
+Trying to pull docker.io/dockurr/windows:6.04...
+Copying blob sha256:55afa1ecc21d...  [====================>-------]  312.4MiB / 487.1MiB
+```
+
+Deixar o start puxar por baixo dos panos também funciona, mas o systemd manda
+esse download pro journal — o que numa imagem de vários gigabytes são vários
+minutos calados, idênticos a um script travado. Imagem que já está no host é
+pulada, então o passo só aparece quando há mesmo o que baixar. O `--update`
+também puxa: tag trocada é justamente o download que vale acompanhar.
+
 ### Perguntar em vez de assumir: `[choices]`
 
 Alguns valores de `.env` são escolha de uma lista conhecida, e só valem no

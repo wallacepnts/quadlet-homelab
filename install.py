@@ -249,6 +249,18 @@ class Service:
                 return v.split(":")[0]
         return None
 
+    def images(self):
+        """The `Image=` values, deduplicated, in declaration order.
+
+        A value ending in `.build` or `.image` names another Quadlet file
+        rather than a registry reference — there is nothing to pull for those.
+        """
+        out = []
+        for k, v in self.ds:
+            if k == "Image" and not v.endswith((".build", ".image")) and v not in out:
+                out.append(v)
+        return out
+
     def choices(self):
         """[(KEY, question, [(value, label)])] from install.ini's [choices].
 
@@ -394,6 +406,10 @@ def plan_install(s, tailnet, force=False, interactive=False, access="tailnet",
                           lambda root=root: run(["podman", "unshare", "chown", "-R",
                                                  f"{uid}:{uid}", root])))
 
+    # Before the start, not during it: systemd would pull the image too, but
+    # into the journal, leaving the terminal silent for gigabytes at a time.
+    steps.extend(pull_steps(s))
+
     steps.append(("systemctl --user daemon-reload",
                   lambda: run(["systemctl", "--user", "daemon-reload"])))
 
@@ -452,6 +468,9 @@ def plan_update(s):
         mark = "" if target.exists() and target.read_bytes() == u.read_bytes() else "  (changed)"
         steps.append((f"cp {u.relative_to(ROOT)} -> {target}{mark}",
                       lambda u=u, target=target: target.write_bytes(u.read_bytes())))
+    # The version-bump path: a changed tag means a new image, which is exactly
+    # the download worth watching.
+    steps.extend(pull_steps(s))
     steps.append(("systemctl --user daemon-reload",
                   lambda: run(["systemctl", "--user", "daemon-reload"])))
     main = s.main_unit()
@@ -814,6 +833,38 @@ def store_secret(s, name, value):
 SANDBOX = False     # with --prefix: touches files, not systemd nor podman
 
 
+def image_exists(image):
+    """True when the image is already on the host, so the pull step is skipped."""
+    return subprocess.run(["podman", "image", "exists", image],
+                          capture_output=True).returncode == 0
+
+
+def pull(image):
+    """Pulls with podman's own output going straight to the terminal.
+
+    `run()` captures output, which is right for systemctl and wrong here: the
+    progress bars ARE the point. Without them, a multi-gigabyte image looks
+    exactly like a hung script — and the reason to pull here at all, instead of
+    letting the start do it implicitly, is that systemd sends that download to
+    the journal where nobody is watching it.
+    """
+    if SANDBOX:
+        print(f"       (sandbox, not executed: podman pull {image})")
+        return
+    print()
+    subprocess.run(["podman", "pull", image], check=True)
+
+
+def pull_steps(s):
+    """A pull step per image the host does not have yet."""
+    out = []
+    for image in s.images():
+        if not SANDBOX and image_exists(image):
+            continue
+        out.append((f"podman pull {image}", lambda image=image: pull(image)))
+    return out
+
+
 def run(cmd):
     """A command that acts on the host (systemctl, podman).
 
@@ -991,6 +1042,15 @@ def selftest():
         assert got[1] == "LANGUAGE=French", got       # the commented line, uncommented
         assert got.count("LANGUAGE=French") == 1, got
         assert got[-1] == "CPU_CORES=4", got          # absent key is appended
+
+    # images(): dedup, order, and skipping a `.build`/`.image` reference
+    with tempfile.TemporaryDirectory() as d:
+        fake = types.SimpleNamespace()
+        fake.ds = [("Image", "docker.io/a/b:1"), ("Volume", "x:y"),
+                   ("Image", "docker.io/a/b:1"), ("Image", "quay.io/c/d:2"),
+                   ("Image", "local.build")]
+        assert Service.images(fake) == ["docker.io/a/b:1", "quay.io/c/d:2"], \
+            Service.images(fake)
 
     print("selftest: ok")
 
