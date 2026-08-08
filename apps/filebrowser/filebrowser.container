@@ -1,0 +1,46 @@
+[Unit]
+Description=FileBrowser Quantum (web file manager)
+
+[Container]
+NoNewPrivileges=true
+PidsLimit=256
+DropCapability=ALL
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+
+Image=ghcr.io/gtsteffaniak/filebrowser:1.5.1-stable
+ContainerName=filebrowser
+PublishPort=8014:8080
+
+UserNS=keep-id
+
+Volume=%h/.config/containers/volumes/filebrowser/data:/home/filebrowser/data:Z
+Volume=%h/.config/containers/volumes/filebrowser/files:/srv:Z
+EnvironmentFile=%h/.config/containers/env/filebrowser.env
+Secret=filebrowser-admin-password,type=env,target=FILEBROWSER_ADMIN_PASSWORD
+Secret=filebrowser-jwt-secret,type=env,target=FILEBROWSER_JWT_TOKEN_SECRET
+
+HealthCmd=CMD-SHELL curl -fsS -o /dev/null http://127.0.0.1:8080/health || exit 1
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+HealthStartPeriod=20s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=filebrowser
+Label=tsdproxy.port.web=443/https:8080/http
+Label=homepage.group=Self-Hosted
+Label=homepage.name=FileBrowser
+Label=homepage.icon=https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/filebrowser.svg
+Label=homepage.href=https://filebrowser.${TAILNET}.ts.net
+Label=homepage.description="A web file manager with search, previews and WebDAV"
+
+Label=wud.watch=true
+Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+-stable$
+
+[Service]
+Restart=always
+TimeoutStartSec=90
+
+[Install]
+WantedBy=default.target
