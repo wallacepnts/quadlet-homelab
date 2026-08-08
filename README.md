@@ -56,7 +56,7 @@ service added here.
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/tailscale.svg" width="48" height="48" alt=""> | [tsdproxy](./apps/tsdproxy) | `2` | Publishes containers on the tailnet automatically, from labels alone — no per-service proxy configuration |
 | <img src="https://cdn.jsdelivr.net/gh/containers/containertoolbx.org@main/apple-touch-icon.png" width="48" height="48" alt=""> | [Toolbx](./apps/toolbx) | — | Disposable Arch, Fedora, RHEL and Ubuntu shells, on the official Toolbx images — somewhere to install a one-off tool that is not the host |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/traccar.svg" width="48" height="48" alt=""> | [Traccar](./apps/traccar) | `6.14.5` | GPS tracking — live map, history, geofences and reports, with a phone app |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/qemu.svg" width="48" height="48" alt=""> | [VM](./apps/vm) | — | Windows, macOS, ZimaOS and 23 Linux distros as VMs in containers, viewed in the browser — needs KVM on the host |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/qemu.svg" width="48" height="48" alt=""> | [VM](./apps/vm) | — | Windows, macOS, ChromeOS Flex, ZimaOS and 23 Linux distros as VMs in containers, viewed in the browser — needs KVM on the host |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/uptime-kuma.svg" width="48" height="48" alt=""> | [Uptime Kuma](./apps/uptime-kuma) | `2.5.0` | An uptime monitor for the other services and the tailnet, with history and notifications |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/vaultwarden.svg" width="48" height="48" alt=""> | [Vaultwarden](./apps/vaultwarden) | `1.37.1-alpine` | A password vault compatible with Bitwarden's protocol, light enough to run anywhere |
 | <img src="https://raw.githubusercontent.com/wallacepnts/vaultzap/main/internal/web/static/img/favicon.svg" width="48" height="48" alt=""> | [VaultZap](./apps/vaultzap) | `latest` (auto-update) | A local, browsable archive of exported WhatsApp conversations — search, gallery and calendar, fully offline |
@@ -75,15 +75,16 @@ update it here alongside any manual bump, it is not generated automatically.
 
 ## On an ARM server
 
-**79 of the 81 images here publish an `arm64` variant.** Those services install
+**Nearly every image here publishes an `arm64` variant.** Those services install
 with no change at all — Podman picks the right manifest by itself, and
 `install.py <app> --apply` works exactly as on x86.
 
-Two images are `amd64` only, and take their service down with them:
+Three images are `amd64` only, and take their service down with them:
 
 | Image | Service | Why |
 | --- | --- | --- |
 | `dockurr/macos` | `vm-macos` | no ARM build; it emulates an Intel Mac, and macOS on ARM is a different machine |
+| `dockurr/chromeos` | `vm-chromeos` | no ARM build published |
 | `quay.io/toolbx/arch-toolbox` | `toolbx-arch` | Arch Linux has no official ARM port |
 
 **A matching image is not the whole story for the VM services.** KVM only

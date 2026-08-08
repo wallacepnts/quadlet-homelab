@@ -99,6 +99,23 @@ NOT_QUADLET = {
 }
 
 
+def published_port(value):
+    """The HOST port of a `PublishPort=`, or None when Podman picks it.
+
+    Forms: `port`, `host:cont`, `ip:host:cont`, each with an optional `/proto`.
+    A bare `port` is the container side with a random host side — nothing to
+    check. Mirrors check.py's parser, which cares about the same field.
+    """
+    value = value.partition("/")[0]
+    parts = value.split(":")
+    if len(parts) < 2:
+        return None
+    try:
+        return int(parts[-2])
+    except ValueError:
+        return None
+
+
 def preflight(s, tailnet, local=False):
     """Warns when the host lacks what the service assumes.
 
@@ -112,6 +129,22 @@ def preflight(s, tailnet, local=False):
     nothing set only needs to know that --local exists.
     """
     problems = []
+
+    # A privileged host port fails at start, not at install, and the message
+    # podman gives ("Couldn't listen on requested ports") does not say why.
+    floor = 1024
+    try:
+        floor = int(Path("/proc/sys/net/ipv4/ip_unprivileged_port_start").read_text())
+    except (OSError, ValueError):
+        pass
+    low = sorted({p for p in (published_port(v) for k, v in s.ds if k == "PublishPort")
+                  if p is not None and p < floor})
+    if low:
+        ports = ", ".join(str(p) for p in low)
+        problems.append(f"host port {ports} is below this kernel's unprivileged floor "
+                        f"({floor}) — rootless cannot bind it. Lower the floor once: "
+                        f"sudo sysctl -w net.ipv4.ip_unprivileged_port_start={low[0]}")
+
     uses_tailnet = any(c == "Label" and v.startswith("tsdproxy.enable") for c, v in s.ds) \
         or any("<your-tailnet>" in ex.read_text() for ex, _ in s.examples())
     if not uses_tailnet or local:
@@ -1120,7 +1153,7 @@ def selftest():
     assert keys == ["BOOT", "LANGUAGE", "VERSION"], keys
     # the same key asked twice, scoped to different units, is the whole point
     versions = {u for u, k, _, _ in ch if k == "VERSION"}
-    assert versions == {"vm-windows", "vm-macos"}, versions
+    assert versions == {"vm-windows", "vm-windows-arm", "vm-macos", "vm-chromeos"}, versions
     win = next(o for u, k, _, o in ch if k == "VERSION" and u == "vm-windows")
     mac = next(o for u, k, _, o in ch if k == "VERSION" and u == "vm-macos")
     assert win[0][0] == "11" and ("xp", "Windows XP Professional — 0.6 GB") in win, win[0]
@@ -1167,6 +1200,13 @@ def selftest():
         assert container_name(u) == "svc", "no ContainerName= means the unit basename"
         u.write_text("[Container]\nImage=x\n")
         assert waits_for_health(u) is False, "no Notify=healthy means no waiting to narrate"
+
+    # published_port: the host side, and the forms that have no host side
+    assert published_port("445:445") == 445
+    assert published_port("8006:8006") == 8006
+    assert published_port("69:69/udp") == 69
+    assert published_port("127.0.0.1:8082:80") == 8082
+    assert published_port("69") is None, "a bare port is picked by Podman"
 
     print("selftest: ok")
 

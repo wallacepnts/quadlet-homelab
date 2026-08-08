@@ -1,0 +1,51 @@
+[Unit]
+Description=ChromeOS Flex in a VM
+
+[Container]
+PidsLimit=512
+
+Image=docker.io/dockurr/chromeos:1.02
+ContainerName=vm-chromeos
+PublishPort=8013:8006
+PublishPort=5901:5900/tcp
+PublishPort=5901:5900/udp
+
+AddDevice=/dev/kvm
+AddDevice=/dev/net/tun
+AddCapability=NET_ADMIN
+
+# GPU: upstream requires both the bind mount and the cgroup rule for 226
+# (the DRM major). No :Z — relabelling the host's device nodes is not something
+# a container should do.
+Volume=/dev/dri:/dev/dri:rw
+PodmanArgs=--device-cgroup-rule=c 226:* rwm
+
+Volume=%h/.config/containers/volumes/vm/chromeos/storage:/storage:Z
+EnvironmentFile=%h/.config/containers/env/vm-chromeos.env
+Secret=vm-chromeos-password,type=env,target=PASSWORD
+
+HealthCmd=CMD-SHELL curl -fsS -o /dev/null http://127.0.0.1:8006/ || exit 1
+HealthInterval=60s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=180s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=chromeos
+Label=tsdproxy.port.web=443/https:8006/http
+Label=homepage.group=Infra
+Label=homepage.name=ChromeOS
+Label=homepage.icon=https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/chrome.svg
+Label=homepage.href=https://chromeos.${TAILNET}.ts.net
+Label=homepage.description="ChromeOS Flex in a VM, with GPU acceleration and a login on the viewer"
+
+Label=wud.watch=true
+Label=wud.tag.include=^[0-9]+.[0-9]+$
+
+[Service]
+Restart=always
+TimeoutStartSec=600
+TimeoutStopSec=120
+
+[Install]
+WantedBy=default.target

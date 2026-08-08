@@ -12,6 +12,7 @@ servida no navegador. Três convidados, um motor só.
 | `vm-macos` | macOS 11 a 26 | [dockur/macos](https://github.com/dockur/macos) | 8008 | VNC 5900 |
 | `vm-windows-arm` | Windows ARM64, num host ARM | [dockur/windows-arm](https://github.com/dockur/windows-arm) | 8006 | RDP 3389 |
 | `vm-zima` | ZimaOS, interface de NAS | [dockur/zima](https://github.com/dockur/zima) | 8012 | UI web 8011 |
+| `vm-chromeos` | ChromeOS Flex | [dockur/chromeos](https://github.com/dockur/chromeos) | 8013 | VNC 5901 |
 
 Os três são o mesmo motor: `dockur/windows` e `dockur/macos` são ambos
 construídos `FROM qemux/qemu`, com um instalador por cima. É por isso que todos
@@ -101,6 +102,7 @@ vm-windows.container    vm-windows.env.example
 vm-macos.container      vm-macos.env.example
 vm-windows-arm.container  vm-windows-arm.env.example
 vm-zima.container       vm-zima.env.example
+vm-chromeos.container   vm-chromeos.env.example
 install.ini             # perguntas por unit, o secret do Windows, overrides de upstream
 ```
 
@@ -281,14 +283,63 @@ rootless não binda porta abaixo de 1024 sem baixar o
 não publica. O [netbootxyz](../netbootxyz/README.pt-BR.md) documenta essa
 mudança de sysctl, se você decidir que quer.
 
+### `vm-chromeos` — `VERSION`, e as duas coisas que só ele tem
+
+O ChromeOS Flex acompanha um canal, não uma versão:
+
+| Valor | Canal | Cadência |
+| --- | --- | --- |
+| `stable` | Stable | ~4 semanas |
+| `ltc` | Long-Term Channel | ~6 meses |
+| `ltr` | Long-Term Release | ~18 meses |
+| `beta` | Beta | ~semanal |
+
+**É a única unit daqui com login no viewer.** O `PROTECT=Y` põe basic auth HTTP
+na frente da porta 8006, com a senha gerada pelo `install.py`:
+
+```bash
+podman secret inspect --showsecret vm-chromeos-password
+```
+
+O padrão do upstream é `Docker` / `admin`; o `.env` define o usuário e o secret
+define a senha. As outras units desta pasta não têm essa opção — os viewers
+delas ficam abertos pra quem alcançar.
+
+**Também é a única que usa a GPU.** A unit monta `/dev/dri` e acrescenta uma
+regra de cgroup pro major do DRM, que é o que o upstream exige pro backend
+VirGL do QEMU:
+
+```ini
+Volume=/dev/dri:/dev/dri:rw
+PodmanArgs=--device-cgroup-rule=c 226:* rwm
+```
+
+Sem `:Z` nesse mount, de propósito — reetiquetar os device nodes do host não é
+coisa que container deva fazer. Conferir se o seu usuário alcança o render node
+antes de esperar aceleração:
+
+```bash
+[ -r /dev/dri/renderD128 ] && [ -w /dev/dri/renderD128 ] && echo ok
+```
+
+Se não alcançar, entrar nos grupos `render` e `video`. Sem um node utilizável o
+container cai em renderização por software, que o upstream mede em 3–15 fps —
+funciona, mas é sofrido.
+
+**Só x86_64.** O `dockurr/chromeos` não publica imagem `arm64`, a segunda unit
+daqui nessa situação, depois do `vm-macos`.
+
 ## Segurança — ler antes de pôr qualquer uma na tailnet
 
-**Os viewers não têm login.** Quem abre a URL tem a tela, o teclado e o mouse
-daquela VM, já logado. As três saem com as labels do tsdproxy ligadas, seguindo
-o padrão deste repositório, o que significa que todo dispositivo da sua tailnet
-— e tudo que roda neles — alcança.
+**Quase nenhum viewer tem login.** Quem abre a URL tem a tela, o teclado e o
+mouse daquela VM, já logado. Todas saem com as labels do tsdproxy ligadas,
+seguindo o padrão deste repositório, o que significa que todo dispositivo da
+sua tailnet — e tudo que roda neles — alcança.
 
-Só o Windows tem uma segunda porta com senha: o RDP na 3389, onde o padrão do
+O `vm-chromeos` é a exceção: ele suporta `PROTECT=Y`, e a unit liga. As outras
+cinco não têm equivalente — a opção não existe nas imagens delas.
+
+O Windows tem uma segunda porta com senha: o RDP na 3389, onde o padrão do
 upstream é o usuário `Docker` com a senha literal `admin` e o `install.ini`
 troca por uma gerada:
 

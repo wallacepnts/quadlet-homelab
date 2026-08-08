@@ -56,7 +56,7 @@ novo adicionado aqui.
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/tailscale.svg" width="48" height="48" alt=""> | [tsdproxy](../../apps/tsdproxy/README.pt-BR.md) | `2` | Publica containers na tailnet automaticamente, só com labels — sem configurar proxy manualmente por serviço |
 | <img src="https://cdn.jsdelivr.net/gh/containers/containertoolbx.org@main/apple-touch-icon.png" width="48" height="48" alt=""> | [Toolbx](../../apps/toolbx/README.pt-BR.md) | — | Shells descartáveis de Arch, Fedora, RHEL e Ubuntu, nas imagens oficiais do Toolbx — um lugar pra instalar ferramenta avulsa que não é o host |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/traccar.svg" width="48" height="48" alt=""> | [Traccar](../../apps/traccar/README.pt-BR.md) | `6.14.5` | Rastreamento de GPS — mapa ao vivo, histórico, geocercas e relatórios, com app no celular |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/qemu.svg" width="48" height="48" alt=""> | [VM](../../apps/vm/README.pt-BR.md) | — | Windows, macOS, ZimaOS e 23 distros Linux como VMs em containers, vistas pelo navegador — exige KVM no host |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/qemu.svg" width="48" height="48" alt=""> | [VM](../../apps/vm/README.pt-BR.md) | — | Windows, macOS, ChromeOS Flex, ZimaOS e 23 distros Linux como VMs em containers, vistas pelo navegador — exige KVM no host |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/uptime-kuma.svg" width="48" height="48" alt=""> | [Uptime Kuma](../../apps/uptime-kuma/README.pt-BR.md) | `2.5.0` | Monitor de disponibilidade dos outros serviços e da tailnet, com histórico e notificação |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/vaultwarden.svg" width="48" height="48" alt=""> | [Vaultwarden](../../apps/vaultwarden/README.pt-BR.md) | `1.37.1-alpine` | Cofre de senhas compatível com o protocolo do Bitwarden, leve o bastante pra rodar em qualquer lugar |
 | <img src="https://raw.githubusercontent.com/wallacepnts/vaultzap/main/internal/web/static/img/favicon.svg" width="48" height="48" alt=""> | [VaultZap](../../apps/vaultzap/README.pt-BR.md) | `latest` (auto-update) | Arquivo local e navegável de conversas exportadas do WhatsApp — busca, galeria e calendário, 100% offline |
@@ -76,15 +76,16 @@ automaticamente.
 
 ## Num servidor ARM
 
-**79 das 81 imagens daqui publicam variante `arm64`.** Esses serviços instalam
+**Quase toda imagem daqui publica variante `arm64`.** Esses serviços instalam
 sem alteração nenhuma — o Podman escolhe o manifesto certo sozinho, e o
 `install.py <app> --apply` funciona igual ao x86.
 
-Duas imagens são só `amd64`, e levam o serviço delas junto:
+Três imagens são só `amd64`, e levam o serviço delas junto:
 
 | Imagem | Serviço | Por quê |
 | --- | --- | --- |
 | `dockurr/macos` | `vm-macos` | sem build ARM; ela emula um Mac Intel, e macOS em ARM é outra máquina |
+| `dockurr/chromeos` | `vm-chromeos` | sem build ARM publicado |
 | `quay.io/toolbx/arch-toolbox` | `toolbx-arch` | o Arch Linux não tem porte ARM oficial |
 
 **Ter imagem compatível não resolve tudo nos serviços de VM.** O KVM só acelera
