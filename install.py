@@ -134,8 +134,9 @@ def preflight(s, tailnet, local=False):
 
 
 class Service:
-    def __init__(self, name, prefix=None):
+    def __init__(self, name, prefix=None, only=None):
         self.name = name
+        self.only = only
         self.dir = APPS / name
         if not self.dir.is_dir():
             raise SystemExit(f"apps/{name} does not exist")
@@ -146,7 +147,20 @@ class Service:
         self.ini.read(self.dir / "install.ini")
 
         self.units = sorted(self.dir.glob("*.container")) + sorted(self.dir.glob("*.network"))
-        self.ds = [(k, v) for u in self.dir.glob("*.container")
+        # What the folder holds, before any filtering: `unit_dest` reads this,
+        # because installing one unit of a stack must still land in the stack's
+        # subfolder alongside the others.
+        self.folder_units = list(self.units)
+        if only:
+            chosen = self.dir / f"{only}.container"
+            if not chosen.is_file():
+                raise SystemExit(f"apps/{name}/{only}.container does not exist")
+            # The `.network` files stay: `Network=` names the file, and Quadlet
+            # cannot generate the unit without it. They are cheap and inert.
+            self.units = [chosen] + sorted(self.dir.glob("*.network"))
+        # Everything below — volumes, env files, secrets, examples — derives
+        # from these directives, so the filter above narrows all of them at once.
+        self.ds = [(k, v) for u in self.units if u.suffix == ".container"
                    for k, v in directives(u.read_text())]
 
     # -- destinations -----------------------------------------------------
@@ -158,8 +172,10 @@ class Service:
     @property
     def unit_dest(self):
         base = self.home / ".config/containers/systemd"
-        # 1 quadlet file goes loose; 2+ get their own subfolder (root README)
-        return base if len(self.units) == 1 else base / self.name
+        # 1 quadlet file goes loose; 2+ get their own subfolder (root README).
+        # Counted on the folder, not on the filtered set: one unit picked out of
+        # a stack still belongs in the stack's subfolder.
+        return base if len(self.folder_units) == 1 else base / self.name
 
     def volumes(self):
         """[(host_path, is_file)] for the Volume= entries that live in the home."""
@@ -203,8 +219,11 @@ class Service:
         the folder's. `apps/actual-budget/actual.container` becomes
         `actual.service`. A stack with no clear main unit (media-stack) returns
         None: which one comes up is the user's choice, and `Requires=` pulls
-        the chain from there.
+        the chain from there — unless the user already made that choice by
+        naming a single unit, which is what `only` is.
         """
+        if self.only:
+            return self.dir / f"{self.only}.container"
         conts = sorted(self.dir.glob("*.container"))
         exact = self.dir / f"{self.dir.name}.container"
         if exact in conts:
@@ -249,8 +268,11 @@ class Service:
                     or next((e for e in envs if Path(e).name == target), None)
             if found:
                 pairs.append((ex, found))
-            else:
+            elif not self.only:
                 pairs.append((ex, None))
+            # With `only`, an unmatched .example belongs to one of the units we
+            # filtered out (media-stack's gluetun env when installing jellyfin).
+            # Reporting it as "no obvious destination" would be a false alarm.
         return pairs
 
 
@@ -840,6 +862,25 @@ def selftest():
         assert f.read_text() == "abc:123", repr(f.read_text())
         assert f.stat().st_mode & 0o777 == 0o600, oct(f.stat().st_mode)
     SANDBOX = False
+
+    # find_app: a folder, a unit basename, and something that is neither
+    assert find_app("media-stack") == ("media-stack", None)
+    assert find_app("media-stack-jellyfin") == ("media-stack", "media-stack-jellyfin")
+    assert find_app("nope") == (None, None)
+    # the folder wins when a unit shares its name (apps/openwa/openwa.container)
+    assert find_app("openwa") == ("openwa", None)
+
+    # picking one unit narrows the volumes to that unit's, and drops the other
+    # units' .example files instead of calling them undeclared
+    with tempfile.TemporaryDirectory() as d:
+        full = Service("media-stack", prefix=d)
+        one = Service("media-stack", prefix=d, only="media-stack-jellyfin")
+        assert len(one.units) < len(full.units), (len(one.units), len(full.units))
+        assert one.main_unit().stem == "media-stack-jellyfin", one.main_unit()
+        assert one.unit_dest == full.unit_dest, "a picked unit stays in the stack's folder"
+        assert all("jellyfin" in p for p, _ in one.volumes()), one.volumes()
+        assert all(t is not None for _, t in one.examples()), one.examples()
+
     print("selftest: ok")
 
 
@@ -859,13 +900,28 @@ def show_addresses(s, tailnet):
                 print(f"  {url}" if many else url)
 
 
+def find_app(name):
+    """(folder, unit) for an APP argument — a folder name, or a unit basename.
+
+    The folder wins when both exist (they are the same service anyway:
+    `apps/openwa/openwa.container`). Otherwise the basename is looked up across
+    every folder, which is unambiguous by rule 1 — one basename, one unit, in
+    the whole repository — and `check.py` fails the build if that ever breaks.
+    """
+    if (APPS / name).is_dir():
+        return name, None
+    hits = sorted(APPS.glob(f"*/{name}.container"))
+    return (hits[0].parent.name, name) if hits else (None, None)
+
+
 def run_one(a, ap, app, access, href_local):
     """Runs the chosen action for ONE service. Returns the exit code."""
     if app in NOT_QUADLET and not (APPS / app).is_dir():
         print(NOT_QUADLET[app])
         return 0
 
-    s = Service(app, a.prefix)
+    folder, only = find_app(app)
+    s = Service(folder, a.prefix, only)
     tailnet = find_tailnet()
     for problem in preflight(s, tailnet, access == "local"):
         print(f"  !  {problem}")
@@ -942,7 +998,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("app", nargs="*", metavar="APP",
-                    help="one or more services")
+                    help="one or more services, or a single unit of one "
+                         "(`media-stack-jellyfin`, `toolbx-ubuntu`)")
     ap.add_argument("--apply", action="store_true", help="execute (without it, only show)")
     ap.add_argument("--prefix", help="use another home (to test without touching the real one)")
     ap.add_argument("--list", action="store_true", help="list the services")
@@ -992,11 +1049,21 @@ def main():
         ap.error("--purge only makes sense with --remove")
     # Check the names BEFORE starting: with several services, finding out
     # halfway through that the third does not exist leaves the job half done.
-    known = {x.name for x in APPS.iterdir() if x.is_dir()} | set(NOT_QUADLET)
-    unknown = [x for x in a.app if x not in known]
+    unknown = [x for x in a.app
+               if x not in NOT_QUADLET and find_app(x) == (None, None)]
     if unknown:
         ap.error("not found in apps/: " + ", ".join(unknown)
                  + "  (`--list` shows what is available)")
+
+    # A single unit out of a stack is an install/update concept only. The data
+    # actions work on the folder's volume roots — `volume_roots()` collapses
+    # `volumes/media-stack/jellyfin/...` to `volumes/media-stack` — so a
+    # `--remove --purge` on one unit would delete the whole stack's data.
+    picked = [x for x in a.app if find_app(x)[1]]
+    if picked and (a.backup or a.restore or a.remove):
+        ap.error(f"{', '.join(picked)}: naming a single unit works for install and "
+                 f"--update only. Backup, restore and remove act on the whole "
+                 f"service, whose data these units share — use the folder name.")
 
     if a.restore and len(a.app) > 1:
         ap.error("--restore acts on a single service: the .tar.gz belongs to one")
