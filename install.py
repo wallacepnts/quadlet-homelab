@@ -420,8 +420,10 @@ def plan_install(s, tailnet, force=False, interactive=False, access="tailnet",
         # no-op, and then a new unit, a new .env and a new secret do not take
         # effect — the container keeps the old ones. `restart` also brings up
         # what was stopped.
-        steps.append((f"systemctl --user restart {unit}",
-                      lambda unit=unit: run(["systemctl", "--user", "restart", unit])))
+        cname = container_name(main) if waits_for_health(main) else None
+        mark = "  (follows the log while it starts)" if cname else ""
+        steps.append((f"systemctl --user restart {unit}{mark}",
+                      lambda unit=unit, cname=cname: restart_unit(unit, cname)))
     else:
         names = " ".join(sorted(u.stem for u in s.units if u.suffix == ".container"))
         warnings.append(f"stack with no main unit — start the one you want: "
@@ -475,9 +477,13 @@ def plan_update(s):
                   lambda: run(["systemctl", "--user", "daemon-reload"])))
     main = s.main_unit()
     targets = [main.stem] if main else service_units(s)
+    paths = {u.stem: u for u in s.units if u.suffix == ".container"}
     for unit in targets:
-        steps.append((f"systemctl --user restart {unit}",
-                      lambda unit=unit: run(["systemctl", "--user", "restart", unit])))
+        path = paths.get(unit)
+        cname = container_name(path) if path and waits_for_health(path) else None
+        mark = "  (follows the log while it starts)" if cname else ""
+        steps.append((f"systemctl --user restart {unit}{mark}",
+                      lambda unit=unit, cname=cname: restart_unit(unit, cname)))
     return steps, warnings
 
 
@@ -833,6 +839,61 @@ def store_secret(s, name, value):
 SANDBOX = False     # with --prefix: touches files, not systemd nor podman
 
 
+def waits_for_health(unit_path):
+    """True when the unit makes systemd hold the start until it is healthy."""
+    return ("Notify", "healthy") in directives(unit_path.read_text())
+
+
+def container_name(unit_path):
+    """The `ContainerName=`, or the unit's basename, which is what Quadlet uses."""
+    for key, value in directives(unit_path.read_text()):
+        if key == "ContainerName":
+            return value
+    return unit_path.stem
+
+
+def restart_unit(unit, container=None):
+    """`systemctl restart`, streaming the container's log while it blocks.
+
+    A unit with `Notify=healthy` holds systemd until the healthcheck passes —
+    up to `TimeoutStartSec`. For a service that downloads something before it
+    can answer (a VM fetching a guest OS is minutes of it), that is a terminal
+    that looks hung while the interesting output goes to the journal. The
+    container's own log is where the progress is, so show it until systemd
+    returns, then stop following.
+    """
+    cmd = ["systemctl", "--user", "restart", unit]
+    if SANDBOX:
+        print(f"       (sandbox, not executed: {' '.join(cmd)})")
+        return
+    if container is None:
+        run(cmd)
+        return
+
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    follow = None
+    try:
+        # The container does not exist until systemd creates it, and following
+        # a container that is not there yet fails immediately.
+        while proc.poll() is None and follow is None:
+            if subprocess.run(["podman", "container", "exists", container],
+                              capture_output=True).returncode == 0:
+                print()
+                follow = subprocess.Popen(["podman", "logs", "-f", container])
+            else:
+                time.sleep(0.5)
+        out, err = proc.communicate()
+    finally:
+        if follow is not None:
+            follow.terminate()
+            try:
+                follow.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                follow.kill()
+    if proc.returncode:
+        raise subprocess.CalledProcessError(proc.returncode, cmd, out, err)
+
+
 def image_exists(image):
     """True when the image is already on the host, so the pull step is skipped."""
     return subprocess.run(["podman", "image", "exists", image],
@@ -1051,6 +1112,17 @@ def selftest():
                    ("Image", "local.build")]
         assert Service.images(fake) == ["docker.io/a/b:1", "quay.io/c/d:2"], \
             Service.images(fake)
+
+    # waits_for_health / container_name: which units get the log followed
+    with tempfile.TemporaryDirectory() as d:
+        u = Path(d) / "svc.container"
+        u.write_text("[Container]\nImage=x\nContainerName=my-app\nNotify=healthy\n")
+        assert waits_for_health(u) is True
+        assert container_name(u) == "my-app"
+        u.write_text("[Container]\nImage=x\nNotify=healthy\n")
+        assert container_name(u) == "svc", "no ContainerName= means the unit basename"
+        u.write_text("[Container]\nImage=x\n")
+        assert waits_for_health(u) is False, "no Notify=healthy means no waiting to narrate"
 
     print("selftest: ok")
 

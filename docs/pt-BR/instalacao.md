@@ -124,6 +124,21 @@ minutos calados, idênticos a um script travado. Imagem que já está no host é
 pulada, então o passo só aparece quando há mesmo o que baixar. O `--update`
 também puxa: tag trocada é justamente o download que vale acompanhar.
 
+**O start também se narra.** Unit com `Notify=healthy` segura o systemd até o
+healthcheck passar — até o `TimeoutStartSec`, o que numa VM que antes baixa um
+sistema convidado são minutos. Pra essas units o passo de restart segue o log
+do container enquanto espera, e para quando o systemd volta:
+
+```
+  -> systemctl --user restart qemu  (follows the log while it starts)
+
+❯ Booting image using QEMU v10.0.11...
+Welcome to Alpine Linux 3.24
+```
+
+Unit sem `Notify=healthy` volta na hora e não ganha follow — não há o que
+narrar. Hoje são dois serviços nesse grupo.
+
 ### Perguntar em vez de assumir: `[choices]`
 
 Alguns valores de `.env` são escolha de uma lista conhecida, e só valem no

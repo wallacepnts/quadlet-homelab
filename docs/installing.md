@@ -124,6 +124,21 @@ that look exactly like a hung script. Images already on the host are skipped, so
 the step only appears when something really has to be downloaded. `--update`
 pulls as well: a changed tag is precisely the download worth watching.
 
+**The start narrates itself too.** A unit with `Notify=healthy` holds systemd
+until the healthcheck passes — up to `TimeoutStartSec`, which for a VM that
+downloads a guest OS first is minutes. For those units the restart step follows
+the container's log while it waits, and stops when systemd returns:
+
+```
+  -> systemctl --user restart qemu  (follows the log while it starts)
+
+❯ Booting image using QEMU v10.0.11...
+Welcome to Alpine Linux 3.24
+```
+
+Units without `Notify=healthy` return immediately and get no follow — there is
+nothing to narrate. Two services are in that group today.
+
 ### Asking instead of defaulting: `[choices]`
 
 Some `.env` values are a choice from a known list, and only matter on the very
