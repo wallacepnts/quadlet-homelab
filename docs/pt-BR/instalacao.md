@@ -33,6 +33,27 @@ python3 install.py --all --update --apply     # depois de uma leva de bumps
 python3 install.py memos ntfy --backup --apply --out ~/backups
 ```
 
+**Uma unit só de uma stack** — nomear a unit em vez da pasta. Útil quando a
+pasta tem vários serviços e você quer só um deles:
+
+```bash
+python3 install.py media-stack-jellyfin --apply   # só o Jellyfin, não as outras 11
+python3 install.py toolbx-ubuntu --apply          # só a caixa do Ubuntu
+python3 install.py immich-postgres --update       # uma peça de uma stack
+```
+
+O basename é inequívoco pela [regra 1](./convencoes.md) — um basename, uma
+unit, no repositório inteiro — então não há o que desambiguar, e o `check.py`
+reprova o build se isso deixar de valer. O que o filtro mantém: os volumes, o
+env file e os secrets daquela unit, e **todo `.network` da pasta**, porque o
+`Network=` nomeia o arquivo e o Quadlet não gera a unit sem ele. O destino
+continua sendo a subpasta da stack.
+
+Isso vale só pra instalação, `--reinstall` e `--update`. O `--backup`, o
+`--restore` e o `--remove` agem sobre a raiz de volume do serviço, que as units
+de uma stack compartilham — um `--remove --purge` numa unit apagaria os dados da
+stack inteira — então esses recusam nome de unit e pedem o da pasta.
+
 Cada serviço sai separado por uma linha, e no fim vem o placar
 (`3/3 ok`, ou a lista do que falhou). Os nomes são conferidos **antes** de
 começar — descobrir no meio que o terceiro não existe deixaria o trabalho

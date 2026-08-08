@@ -34,6 +34,27 @@ python3 install.py --all --update --apply     # after a round of bumps
 python3 install.py memos ntfy --backup --apply --out ~/backups
 ```
 
+**One unit out of a stack** — name the unit instead of the folder. Useful when
+a folder holds many services and you only want one of them:
+
+```bash
+python3 install.py media-stack-jellyfin --apply   # just Jellyfin, not the other 11
+python3 install.py toolbx-ubuntu --apply          # just the Ubuntu box
+python3 install.py immich-postgres --update       # one piece of a stack
+```
+
+The basename is unambiguous by [rule 1](./conventions.md) — one basename, one
+unit, across the whole repository — so there is nothing to disambiguate, and
+`check.py` fails the build if that ever stops being true. What the filter keeps:
+that unit's volumes, env file and secrets, and **every `.network` in the folder**,
+because `Network=` names the file and Quadlet cannot generate the unit without
+it. The destination stays the stack's subfolder.
+
+This works for install, `--reinstall` and `--update` only. `--backup`,
+`--restore` and `--remove` act on the service's volume root, which the units of
+a stack share — `--remove --purge` on one unit would delete all of the stack's
+data — so those refuse a unit name and ask for the folder.
+
 Each service is separated by a rule, and the tally comes at the end (`3/3 ok`,
 or the list of what failed). The names are checked **before** it starts —
 finding out halfway through that the third one does not exist would leave the
