@@ -211,6 +211,12 @@ def check_manifest(folders):
         for extra in sorted(recipes - declared):
             warn("manifest", f"apps/{folder.name}: install.ini has a recipe for {extra}, "
                              f"which no unit uses")
+        # [login] names the secret the install prints as the password. A typo
+        # here is silent — the footer would just skip the login block.
+        pw = ini.get("login", "password", fallback=None) if ini.has_section("login") else None
+        if pw and pw not in declared:
+            error("manifest", f"apps/{folder.name}: install.ini [login] password = {pw}, "
+                              f"which no unit declares as a Secret=")
 
 
 # O rótulo que pode aparecer imediatamente antes de `.ts.net`. Vazio inclusive:

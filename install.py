@@ -245,6 +245,20 @@ class Service:
                     names.append(n)
         return names
 
+    def login(self):
+        """(username, secret name) for the credential you actually type, or None.
+
+        Only the service knows which of its secrets is the login password and
+        what the username next to it is — a JWT key and an API token are also
+        secrets, and neither is something you type into a form. `install.ini`
+        says so explicitly rather than the script guessing.
+        """
+        if not self.ini.has_section("login"):
+            return None
+        user = self.ini.get("login", "user", fallback=None)
+        secret = self.ini.get("login", "password", fallback=None)
+        return (user, secret) if user and secret else None
+
     def installed(self):
         """The unit files of this service already on the host, in either layout.
 
@@ -392,7 +406,7 @@ class Service:
 # --------------------------------------------------------------------------
 
 def plan_install(s, tailnet, force=False, interactive=False, access="tailnet",
-                 href_local=False):
+                 href_local=False, ask_secrets=False):
     steps = []      # (description, callable, or None when it is only a warning)
     warnings = []
 
@@ -472,6 +486,10 @@ def plan_install(s, tailnet, force=False, interactive=False, access="tailnet",
             warnings.append(f"secret {name} already exists — kept "
                             f"(recreating changes the value and invalidates sessions/keys)")
             continue
+        if ask_secrets and interactive:
+            steps.append((f"ask for the value of {name}, or generate one  ({r})",
+                          lambda name=name, r=r: ask_or_generate(s, name, r)))
+            continue
         steps.append((f"podman secret create {name}  ({r})",
                       lambda name=name, r=r: create_secret(s, name, r)))
 
@@ -513,6 +531,14 @@ def run_lenient(cmd):
         print(f"       (sandbox, not executed: {' '.join(cmd)})")
         return
     subprocess.run(cmd, capture_output=True)
+
+
+def read_secret(name):
+    """The stored value, or a fallback line when podman will not give it back."""
+    r = subprocess.run(["podman", "secret", "inspect", "--showsecret",
+                        "--format", "{{.SecretData}}", name],
+                       capture_output=True, text=True)
+    return r.stdout.strip("\n") if r.returncode == 0 else f"<run: podman secret inspect --showsecret {name}>"
 
 
 def secret_exists(name):
@@ -900,6 +926,20 @@ def ask_secret(s, name, instruction):
     store_secret(s, name, value)
 
 
+def ask_or_generate(s, name, recipe):
+    """Type the value, or press Enter and take the generated one.
+
+    Generated is the right default — it is long, random and nobody reuses it
+    from another site. But a password you have to type into a login form every
+    day is worth choosing, and the alternative was reading it back out of the
+    secret and pasting it in. Enter keeps the old behaviour exactly.
+    """
+    import getpass
+    print(f"\n  {name}  ({recipe})")
+    value = getpass.getpass("  value, or Enter to generate one (not echoed): ").strip()
+    store_secret(s, name, value or make_secret(recipe)[0])
+
+
 def create_secret(s, name, recipe):
     value, _ = make_secret(recipe)
     store_secret(s, name, value)
@@ -1185,6 +1225,22 @@ def selftest():
     assert Service("filebrowser").secrets() == ["filebrowser-admin-password",
                                                 "filebrowser-jwt-secret"]
     assert Service("toolbx").secrets() == []
+    # [login] picks the one secret worth printing; without the section, none
+    assert Service("filebrowser").login() == ("admin", "filebrowser-admin-password")
+    assert Service("homebox").login() is None       # prints nothing at all
+
+    # --ask-secrets swaps the generate step for a prompt, and only with a
+    # terminal to prompt on
+    with tempfile.TemporaryDirectory() as d:
+        fb = Service("filebrowser", d)
+        plain = [t for t, _ in plan_install(fb, None)[0] if "secret" in t]
+        asked = [t for t, _ in plan_install(fb, None, interactive=True,
+                                            ask_secrets=True)[0] if "secret" in t]
+        assert all(t.startswith("podman secret create") for t in plain), plain
+        assert len(asked) == len(plain) and all("ask for the value" in t for t in asked), asked
+        # without a terminal the flag is ignored rather than silently skipping
+        descs = lambda **kw: [t for t, _ in plan_install(fb, None, **kw)[0]]
+        assert descs(ask_secrets=True) == descs()
 
     # what the already-installed guard gates on, in both layouts
     with tempfile.TemporaryDirectory() as d:
@@ -1265,20 +1321,24 @@ def show_addresses(s, tailnet):
 
 
 def show_secrets(s):
-    """How to read back what was just generated — the command, never the value.
+    """The credentials you log in with, in the clear.
 
-    A generated password is useless if you cannot find it, and every service
-    README ends up repeating the same incantation. Printing the value here
-    instead would put it in the scrollback, in any screenshot of the install,
-    and in any output pasted somewhere else; the command costs one more line
-    and keeps the secret where it was put.
+    A password you cannot see is a password you cannot use, and the alternative
+    was pasting a `podman secret inspect` after every install. `[login]` in
+    install.ini names the one secret that is a typed password — the JWT keys and
+    API tokens next to it are secrets too, and printing those would be noise for
+    everyone who is never going to type them.
+
+    It lands in the scrollback: worth knowing before you screenshot an install
+    or paste its output somewhere.
     """
-    names = s.secrets()
-    if not names:
+    login = s.login()
+    # secret_exists() so a dry-run before the first install stays quiet rather
+    # than printing a placeholder for something that is not there yet.
+    if not login or not secret_exists(login[1]):
         return
-    print("\nGenerated secrets — read one with:")
-    for n in names:
-        print(f"  podman secret inspect --showsecret --format '{{{{.SecretData}}}}' {n}")
+    user, secret = login
+    print(f"\n  user:     {user}\n  password: {read_secret(secret)}")
 
 
 def find_app(name):
@@ -1318,6 +1378,9 @@ def run_one(a, ap, app, access, href_local):
             print("  --update     re-copies the units and restarts, keeping data, "
                   "env and secrets")
             print("  --reinstall  installs again, OVERWRITING env, config and secrets")
+            # Still the answer to "what was my password" — the refusal is about
+            # not reinstalling, not about withholding what is already there.
+            show_secrets(s)
             return 1
 
     tailnet = find_tailnet()
@@ -1335,9 +1398,12 @@ def run_one(a, ap, app, access, href_local):
     else:
         verb = "reinstall" if a.reinstall else "install"
         interactive = a.apply and not a.prefix and sys.stdin.isatty()
+        if a.ask_secrets and not interactive:
+            ap.error("--ask-secrets needs a terminal and --apply")
         steps, warnings = plan_install(s, tailnet, force=a.reinstall,
                                        interactive=interactive, access=access,
-                                       href_local=href_local)
+                                       href_local=href_local,
+                                       ask_secrets=a.ask_secrets)
 
     if not steps:
         # With no steps, "done" would be a lie: the reason is in the warnings
@@ -1356,6 +1422,7 @@ def run_one(a, ap, app, access, href_local):
     if not a.apply:
         if not (a.remove or a.backup or a.restore):
             show_addresses(s, tailnet)
+            show_secrets(s)
         return 0
 
     if a.purge or a.restore:
@@ -1422,6 +1489,9 @@ def main():
                         help="cold backup of the data (stop, pack, bring back)")
     action.add_argument("--restore", metavar="FILE",
                         help="restores a .tar.gz from --backup OVER the current data")
+    ap.add_argument("--ask-secrets", action="store_true",
+                    help="type each secret instead of generating it "
+                         "(Enter takes the generated one)")
     ap.add_argument("--purge", action="store_true",
                     help="with --remove: also delete volumes, secrets and env")
     ap.add_argument("--out", default=".",

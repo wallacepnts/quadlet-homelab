@@ -15,6 +15,7 @@ python3 install.py traccar                 # dry-run: só mostra o que faria
 python3 install.py traccar --apply
 python3 install.py traccar --update        # rebaixa as units e reinicia
 python3 install.py traccar --reinstall     # sobrescreve env, config e secrets
+python3 install.py traccar --reinstall --ask-secrets   # ...e digitar você mesmo
 python3 install.py traccar --remove        # para e tira as units, mantém dados
 python3 install.py traccar --remove --purge   # + apaga volumes, secrets e env
 python3 install.py traccar --backup --out ~/backups   # dados, a frio
@@ -316,18 +317,44 @@ https://traccar.your-tailnet.ts.net
 Stack multi-container lista uma por unit. Sem tailnet, só a primeira
 linha.
 
-Quando o serviço gerou secrets, o rodapé também imprime **como lê-los de
-volta** — o comando, nunca o valor:
+Quando o serviço tem login, o rodapé imprime **as credenciais**, em texto puro:
 
 ```
-Generated secrets — read one with:
-  podman secret inspect --showsecret --format '{{.SecretData}}' filebrowser-admin-password
+  user:     admin
+  password: 7x63tlKq...
 ```
 
-Senha gerada que você não acha de novo não serve pra nada, mas imprimir ela
-aqui deixaria o valor no scrollback, em qualquer screenshot da instalação e em
-qualquer saída colada em outro lugar. Uma linha a mais mantém a senha onde o
-`podman secret` a colocou.
+O `[login]` do `install.ini` nomeia o único secret que é senha digitada por
+alguém. Só ele é impresso — chave de JWT e token de API ao lado também são
+secrets, e ninguém vai digitar nenhum dos dois:
+
+```ini
+[login]
+user = admin
+password = filebrowser-admin-password
+```
+
+O `check.py` reprova o build se esse nome não for um `Secret=` declarado por
+alguma unit, porque um erro de digitação ali sumiria com as credenciais em
+silêncio em vez de dar erro. Serviço sem seção `[login]` não imprime nada aqui.
+
+**A senha fica no seu scrollback**, o que vale saber antes de tirar screenshot
+da instalação ou colar a saída em algum lugar.
+
+Isso aparece no dry-run também — então um `install.py <app>` simples num serviço
+já instalado também responde "qual era mesmo a minha senha", inclusive quando
+ele recusa reinstalar.
+
+**Pra escolher a senha em vez de aceitar a gerada**, `--ask-secrets`:
+
+```bash
+python3 install.py filebrowser --reinstall --ask-secrets --apply
+```
+
+Ele pergunta cada secret na vez, sem ecoar o que você digita, e **Enter aceita
+o valor gerado** — dá pra digitar a única senha que você realmente usa pra
+entrar e deixar a chave do JWT, o token de API e o resto aleatórios. Exige
+terminal e `--apply`; sem os dois é erro, não uma volta silenciosa pra geração.
 
 **Validado contra a instalação real**: rodar o `install.py --prefix` num
 diretório vazio e comparar com o que está no host reproduz arquivo por

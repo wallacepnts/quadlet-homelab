@@ -16,6 +16,7 @@ python3 install.py traccar                 # dry-run: only shows what it would d
 python3 install.py traccar --apply
 python3 install.py traccar --update        # re-copies the units and restarts
 python3 install.py traccar --reinstall     # overwrites env, config and secrets
+python3 install.py traccar --reinstall --ask-secrets   # ...and type them yourself
 python3 install.py traccar --remove        # stops and removes the units, keeps data
 python3 install.py traccar --remove --purge   # + deletes volumes, secrets and env
 python3 install.py traccar --backup --out ~/backups   # data, cold
@@ -315,18 +316,46 @@ https://traccar.your-tailnet.ts.net
 A multi-container stack lists one per unit. Without a tailnet, only the first
 line.
 
-When the service generated secrets, the footer also prints **how to read them
-back** — the command, never the value:
+When the service has a login, the footer prints **the credentials**, in the
+clear:
 
 ```
-Generated secrets — read one with:
-  podman secret inspect --showsecret --format '{{.SecretData}}' filebrowser-admin-password
+  user:     admin
+  password: 7x63tlKq...
 ```
 
-A generated password is useless if you cannot find it again, but printing it
-here would leave it in the scrollback, in any screenshot of the install, and in
-any output pasted elsewhere. One extra line keeps it where `podman secret put`
-it.
+`[login]` in `install.ini` names the one secret that is a password someone
+types. Only that one is printed — the JWT keys and API tokens next to it are
+secrets too, and nobody is ever going to type those:
+
+```ini
+[login]
+user = admin
+password = filebrowser-admin-password
+```
+
+`check.py` fails the build if that name is not a `Secret=` any unit declares,
+because a typo there would silently drop the credentials instead of erroring.
+A service with no `[login]` section prints nothing here.
+
+**The password lands in your scrollback**, which is worth knowing before you
+screenshot an install or paste its output somewhere.
+
+This shows in the dry-run too — so a plain `install.py <app>` on something
+already installed is also the answer to "what was my password", including when
+it refuses to reinstall.
+
+**To choose the password instead of taking a generated one**, `--ask-secrets`:
+
+```bash
+python3 install.py filebrowser --reinstall --ask-secrets --apply
+```
+
+It asks for each secret in turn, not echoing what you type, and **Enter takes
+the generated value** — so you can type the one password you actually log in
+with and let the JWT key, the API token and the rest stay random. It needs a
+terminal and `--apply`; without them it is an error rather than a silent
+fallback to generating.
 
 **Validated against the real installation**: running `install.py --prefix`
 into an empty directory and comparing with what is on the host reproduces it
