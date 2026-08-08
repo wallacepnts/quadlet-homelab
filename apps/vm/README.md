@@ -329,6 +329,67 @@ fps — it still works, it is just miserable.
 **x86_64 only.** `dockurr/chromeos` publishes no `arm64` image, the second unit
 here in that position after `vm-macos`.
 
+## Windows apps on the Linux desktop (WinApps)
+
+[WinApps](https://github.com/winapps-org/winapps) renders individual Windows
+programs as ordinary windows next to your Linux ones, using this VM as the
+backend and FreeRDP as the renderer. It splits in two, and only one half lives
+here.
+
+**The container half is `vm-windows`, already.** Same `dockur/windows` image,
+RDP published on 3389 over TCP and UDP, the Windows password already a podman
+secret. Comparing upstream's `compose.yaml` with this unit, two mounts were
+what it lacked, and both are in place now:
+
+| mount | what it does |
+| --- | --- |
+| `oem/` → `/oem` | dockur runs `/oem/install.bat` once, after Windows installs. It imports `RDPApps.reg` — the registry change that turns RDP into per-application windows instead of a full desktop. Without it there is no WinApps. |
+| `shared/` → `/shared` | shows up inside Windows as `\\host.lan\Data`, for moving files between the two |
+
+The `oem/` files are **not** kept in this repository — they are fetched from
+WinApps directly, once, before the first boot:
+
+```bash
+mkdir -p ~/.config/containers/volumes/vm/windows/oem
+for f in install.bat RDPApps.reg Container.reg NetProfileCleanup.ps1 TimeSync.ps1; do
+  wget -O ~/.config/containers/volumes/vm/windows/oem/$f https://raw.githubusercontent.com/winapps-org/winapps/main/oem/$f
+done
+```
+
+They are not vendored on purpose. WinApps' `LICENSE.md` says the parts
+inherited from the original project are "not free software […] All Rights
+Reserved by the original author", that most of the rest is AGPLv3, and to
+"refer to a specific file for its respective license" — and none of these five
+files carries a notice. Fetching them from their own repository leaves that
+question where it belongs.
+
+**It has to be there before the first boot.** dockur runs the `/oem` hook once,
+as part of the Windows install; putting the files in afterwards does nothing,
+and the fix is to delete the storage volume and install Windows again.
+
+### One deliberate difference from upstream
+
+Upstream mounts your **entire home directory** as `/shared`. This unit mounts a
+dedicated `shared/` folder instead, because on this host the home holds
+`~/.config/containers/secrets/` — every service's password, in the clear. A
+Windows VM runs arbitrary Windows software; handing it read-write access to
+that directory is not a trade this repository makes by default.
+
+If you want the wider mount anyway, it is one line in the unit:
+`Volume=%h:/shared:z`.
+
+### The host half is not a Quadlet
+
+WinApps itself is a shell script, a set of `.desktop` files and FreeRDP 3+,
+installed on the host by upstream's `installer.sh` with its configuration in
+`~/.config/winapps/winapps.conf`. It is the same category as Tailscale
+([rule 21](../../docs/conventions.md)): it has to be *on* the desktop session,
+not in a container.
+
+On openSUSE MicroOS that means FreeRDP comes in through
+`transactional-update`, which needs a reboot — so it is a decision to take
+deliberately, not a step to run mid-install.
+
 ## Security — read this before putting any of them on the tailnet
 
 **Most of the viewers have no login.** Whoever opens the URL has that VM's
@@ -420,3 +481,8 @@ Quadlet deploy based on [qemus/qemu](https://github.com/qemus/qemu),
 [dockur/windows](https://github.com/dockur/windows) and
 [dockur/macos](https://github.com/dockur/macos), all MIT. Not affiliated with,
 endorsed by, or sponsored by Microsoft or Apple.
+
+The WinApps integration follows
+[winapps-org/winapps](https://github.com/winapps-org/winapps); its `oem/` files
+are fetched from that repository rather than copied into this one, for the
+licensing reason explained above.

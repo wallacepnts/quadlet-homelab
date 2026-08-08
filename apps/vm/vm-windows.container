@@ -15,6 +15,8 @@ AddDevice=/dev/net/tun
 AddCapability=NET_ADMIN
 
 Volume=%h/.config/containers/volumes/vm/windows/storage:/storage:Z
+Volume=%h/.config/containers/volumes/vm/windows/oem:/oem:Z
+Volume=%h/.config/containers/volumes/vm/windows/shared:/shared:Z
 EnvironmentFile=%h/.config/containers/env/vm-windows.env
 Secret=vm-windows-password,type=env,target=PASSWORD
 
