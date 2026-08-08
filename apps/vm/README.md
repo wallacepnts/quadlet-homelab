@@ -24,6 +24,13 @@ python3 install.py vm --apply               # all three
 
 ## Requirements
 
+**x86_64 host.** `vm-macos` has no ARM image at all, and while `vm-windows` and
+`vm-qemu` do publish one, KVM only accelerates a guest of the same architecture
+— an x86 guest on an ARM host falls back to emulation and is unusably slow.
+Upstream ships [dockur/windows-arm](https://github.com/dockur/windows-arm/) and
+[qemus/qemu-arm](https://github.com/qemus/qemu-arm/) for that case; neither is
+in this repository, because there is no ARM host here to test them on.
+
 Shared by all three, beyond the usual rootless Podman:
 
 - **KVM on the host.** `/dev/kvm` must exist and be readable and writable by

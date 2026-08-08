@@ -72,6 +72,39 @@ off: see [Auto-update](./docs/auto-update.md).
 The Version column mirrors the tag in each service's `.container` `Image=` —
 update it here alongside any manual bump, it is not generated automatically.
 
+## On an ARM server
+
+**79 of the 81 images here publish an `arm64` variant.** Those services install
+with no change at all — Podman picks the right manifest by itself, and
+`install.py <app> --apply` works exactly as on x86.
+
+Two images are `amd64` only, and take their service down with them:
+
+| Image | Service | Why |
+| --- | --- | --- |
+| `dockurr/macos` | `vm-macos` | no ARM build; it emulates an Intel Mac, and macOS on ARM is a different machine |
+| `quay.io/toolbx/arch-toolbox` | `toolbx-arch` | Arch Linux has no official ARM port |
+
+**A matching image is not the whole story for the VM services.** `vm-windows`
+and `vm-qemu` do ship `arm64` images, but the *guest* changes with the host:
+KVM only accelerates a guest of the same architecture, so an x86 guest on an
+ARM host falls back to emulation and is unusably slow. Upstream ships separate
+projects for this — [dockur/windows-arm](https://github.com/dockur/windows-arm/)
+and [qemus/qemu-arm](https://github.com/qemus/qemu-arm/) — and the `VERSION`
+and `BOOT` lists differ from the x86 ones. Those units are not in this
+repository, because there is no ARM host here to test them on.
+
+To check any image yourself before committing to a host:
+
+```bash
+podman manifest inspect docker.io/library/postgres:16-alpine \
+  | python3 -c "import sys,json;print(sorted({m['platform']['architecture'] for m in json.load(sys.stdin)['manifests'] if m['platform']['architecture']!='unknown'}))"
+```
+
+Docker Hub rate-limits anonymous manifest lookups, so a batch of these will
+start failing partway through — space them out, or query the registry API
+directly.
+
 ## Documentation
 
 | | |

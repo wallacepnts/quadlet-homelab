@@ -27,6 +27,10 @@ already in them, which a distro base image does not give you.
 | <img src="https://cdn.simpleicons.org/redhat/EE0000" width="24" height="24" alt=""> | `toolbx-rhel` | `registry.access.redhat.com/ubi10/toolbox:10.2` | `dnf install` |
 | <img src="https://cdn.simpleicons.org/ubuntu/E95420" width="24" height="24" alt=""> | `toolbx-ubuntu` | `quay.io/toolbx/ubuntu-toolbox:26.04` | `apt install` |
 
+**`toolbx-arch` is x86_64 only** — Arch Linux has no official ARM port, and
+`quay.io/toolbx/arch-toolbox` ships a single `amd64` image. The other three
+publish `arm64` alongside it.
+
 **Not the `toolbox` CLI.** These borrow the project's images and its distro
 list, not its tooling: there is no `toolbox` command here and no `toolbox
 enter` — just Quadlet units and `podman exec`. The trade is that these are
