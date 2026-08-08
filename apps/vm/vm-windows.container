@@ -5,7 +5,7 @@ Description=Windows in a container (QEMU/KVM)
 PidsLimit=512
 
 Image=docker.io/dockurr/windows:6.04
-ContainerName=windows
+ContainerName=vm-windows
 PublishPort=8006:8006
 PublishPort=3389:3389/tcp
 PublishPort=3389:3389/udp
@@ -14,9 +14,9 @@ AddDevice=/dev/kvm
 AddDevice=/dev/net/tun
 AddCapability=NET_ADMIN
 
-Volume=%h/.config/containers/volumes/windows/storage:/storage:Z
-EnvironmentFile=%h/.config/containers/env/windows.env
-Secret=windows-password,type=env,target=PASSWORD
+Volume=%h/.config/containers/volumes/vm/windows/storage:/storage:Z
+EnvironmentFile=%h/.config/containers/env/vm-windows.env
+Secret=vm-windows-password,type=env,target=PASSWORD
 
 HealthCmd=CMD-SHELL curl -fsS -o /dev/null http://127.0.0.1:8006/ || exit 1
 HealthInterval=60s

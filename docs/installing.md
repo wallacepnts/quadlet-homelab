@@ -155,6 +155,22 @@ VERSION =
     xp: Windows XP Professional — 0.6 GB
 ```
 
+A folder holding several independent services needs one question per unit, and
+`[choices.<unit>]` gives it that — `apps/vm` asks a different `VERSION` for
+Windows than for macOS, writing each answer into that unit's own `.env`:
+
+```ini
+[choices.vm-windows]
+VERSION =
+    Which Windows to install (downloaded on first boot)
+    11: Windows 11 Pro — 7.9 GB
+
+[choices.vm-macos]
+VERSION =
+    Which macOS to install (downloaded on first boot)
+    15: macOS 15 Sequoia
+```
+
 The first line is the question, the rest are `value: label` (the label is
 optional when the value speaks for itself), and the first option is the
 default. At install time:

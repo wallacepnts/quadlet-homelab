@@ -5,15 +5,15 @@ Description=QEMU (any OS in a VM, viewed in the browser)
 PidsLimit=512
 
 Image=docker.io/qemux/qemu:7.44
-ContainerName=qemu
+ContainerName=vm-qemu
 PublishPort=8007:8006
 
 AddDevice=/dev/kvm
 AddDevice=/dev/net/tun
 AddCapability=NET_ADMIN
 
-Volume=%h/.config/containers/volumes/qemu/storage:/storage:Z
-EnvironmentFile=%h/.config/containers/env/qemu.env
+Volume=%h/.config/containers/volumes/vm/qemu/storage:/storage:Z
+EnvironmentFile=%h/.config/containers/env/vm-qemu.env
 
 HealthCmd=CMD-SHELL curl -fsS -o /dev/null http://127.0.0.1:8006/ || exit 1
 HealthInterval=60s

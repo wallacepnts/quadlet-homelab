@@ -5,7 +5,7 @@ Description=macOS in a container (QEMU/KVM)
 PidsLimit=512
 
 Image=docker.io/dockurr/macos:3.09
-ContainerName=macos
+ContainerName=vm-macos
 PublishPort=8008:8006
 PublishPort=5900:5900/tcp
 PublishPort=5900:5900/udp
@@ -14,8 +14,8 @@ AddDevice=/dev/kvm
 AddDevice=/dev/net/tun
 AddCapability=NET_ADMIN
 
-Volume=%h/.config/containers/volumes/macos/storage:/storage:Z
-EnvironmentFile=%h/.config/containers/env/macos.env
+Volume=%h/.config/containers/volumes/vm/macos/storage:/storage:Z
+EnvironmentFile=%h/.config/containers/env/vm-macos.env
 
 HealthCmd=CMD-SHELL curl -fsS -o /dev/null http://127.0.0.1:8006/ || exit 1
 HealthInterval=60s

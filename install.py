@@ -261,30 +261,52 @@ class Service:
                 out.append(v)
         return out
 
+    def env_file_for(self, unit_stem):
+        """That unit's own `EnvironmentFile=`, or None."""
+        path = self.dir / f"{unit_stem}.container"
+        if not path.is_file():
+            return None
+        for key, value in directives(path.read_text()):
+            if key == "EnvironmentFile":
+                return self._expand(value)
+        return None
+
     def choices(self):
-        """[(KEY, question, [(value, label)])] from install.ini's [choices].
+        """[(unit, KEY, question, [(value, label)])] from install.ini.
 
         For `.env` values that are a pick from a fixed list and that only
         matter on the FIRST install — the Windows edition is downloaded once
         and never revisited. Asking beats shipping a default the user then has
         to find and edit. The first option is the default.
 
+        `[choices]` targets the service's single `.env`; `[choices.<unit>]`
+        targets that unit's own, which is what a folder holding several
+        independent services needs — `apps/vm` asks a different VERSION for
+        Windows than for macOS, and one section could not hold both.
+
         configparser lowercases keys, so they come back upper-cased: these are
         environment variables.
         """
-        if not self.ini.has_section("choices"):
-            return []
         out = []
-        for key, block in self.ini.items("choices"):
-            lines = [l.strip() for l in block.strip().splitlines() if l.strip()]
-            if len(lines) < 2:
-                continue                      # a question with no options is not one
-            opts = []
-            for line in lines[1:]:
-                # `value: label`, or a bare value when it describes itself
-                value, _, label = line.partition(":")
-                opts.append((value.strip(), label.strip()))
-            out.append((key.upper(), lines[0], opts))
+        for section in self.ini.sections():
+            if section == "choices":
+                unit = None
+            elif section.startswith("choices."):
+                unit = section.split(".", 1)[1]
+                if self.only and unit != self.only:
+                    continue          # a unit this run is not installing
+            else:
+                continue
+            for key, block in self.ini.items(section):
+                lines = [l.strip() for l in block.strip().splitlines() if l.strip()]
+                if len(lines) < 2:
+                    continue                  # a question with no options is not one
+                opts = []
+                for line in lines[1:]:
+                    # `value: label`, or a bare value when it describes itself
+                    value, _, label = line.partition(":")
+                    opts.append((value.strip(), label.strip()))
+                out.append((unit, key.upper(), lines[0], opts))
         return out
 
     def examples(self):
@@ -362,15 +384,18 @@ def plan_install(s, tailnet, force=False, interactive=False, access="tailnet",
     # Only on a file this run actually writes: an existing .env is the user's,
     # and a question that silently rewrites it would be a trap. Must come after
     # the copy step above — the steps run in order.
-    choices = s.choices()
-    if choices:
-        env = next((t for t in written if t in s.env_files()), None)
-        keys = ", ".join(k for k, _, _ in choices)
-        if env is None:
-            pass                       # the .env was kept; leave the user's values alone
-        elif interactive:
+    by_env = {}
+    for unit, key, question, opts in s.choices():
+        env = s.env_file_for(unit) if unit else \
+            next((w for w in written if w in s.env_files()), None)
+        if env not in written:
+            continue      # that .env was kept, or belongs to a unit not installed now
+        by_env.setdefault(env, []).append((key, question, opts))
+    for env, items in by_env.items():
+        keys = ", ".join(k for k, _, _ in items)
+        if interactive:
             steps.append((f"choose {keys} in {Path(env).name}  (asks)",
-                          lambda env=env: ask_choices(env, choices)))
+                          lambda env=env, items=items: ask_choices(env, items)))
         else:
             warnings.append(f"{keys}: kept at the default — no terminal to ask on. "
                             f"Edit {env} before the first start.")
@@ -766,10 +791,17 @@ def set_env_value(path, key, value):
     p = Path(path)
     text = p.read_text()
     line = f"{key}={value}"
-    pattern = re.compile(rf"^#?\s*{re.escape(key)}=.*$", re.M)
-    text = pattern.sub(line, text, count=1) if pattern.search(text) else \
-        text.rstrip("\n") + f"\n{line}\n"
-    p.write_text(text)
+    # The real setting first, a commented-out one only as a fallback. The
+    # `.example` files illustrate options in comments (`#   BOOT=https://...`),
+    # and rewriting one of those would leave the actual line untouched below —
+    # two KEY= lines, with the wrong one winning.
+    active = re.compile(rf"^{re.escape(key)}=.*$", re.M)
+    commented = re.compile(rf"^#\s*{re.escape(key)}=.*$", re.M)
+    for pattern in (active, commented):
+        if pattern.search(text):
+            p.write_text(pattern.sub(line, text, count=1))
+            return
+    p.write_text(text.rstrip("\n") + f"\n{line}\n")
 
 
 def ask_choices(path, choices):
@@ -1083,13 +1115,19 @@ def selftest():
 
     # [choices]: the question, the options, and set_env_value replacing a
     # commented-out line rather than appending a second one
-    ch = Service("windows").choices()
-    keys = [k for k, _, _ in ch]
-    assert keys == ["VERSION", "LANGUAGE"], keys
-    version = next(o for k, _, o in ch if k == "VERSION")
-    assert version[0][0] == "11", version[0]          # first option is the default
-    assert ("xp", "Windows XP Professional — 0.6 GB") in version, version
-    lang = next(o for k, _, o in ch if k == "LANGUAGE")
+    ch = Service("vm").choices()
+    keys = sorted({k for _, k, _, _ in ch})
+    assert keys == ["BOOT", "LANGUAGE", "VERSION"], keys
+    # the same key asked twice, scoped to different units, is the whole point
+    versions = {u for u, k, _, _ in ch if k == "VERSION"}
+    assert versions == {"vm-windows", "vm-macos"}, versions
+    win = next(o for u, k, _, o in ch if k == "VERSION" and u == "vm-windows")
+    mac = next(o for u, k, _, o in ch if k == "VERSION" and u == "vm-macos")
+    assert win[0][0] == "11" and ("xp", "Windows XP Professional — 0.6 GB") in win, win[0]
+    assert mac[0][0] == "15" and win != mac, mac[0]
+    boot = next(o for u, k, _, o in ch if k == "BOOT")
+    assert boot[0][0] == "alpine", boot[0]            # first option is the default
+    lang = next(o for _, k, _, o in ch if k == "LANGUAGE")
     assert lang[0] == ("English", ""), lang[0]        # a bare value keeps an empty label
 
     with tempfile.TemporaryDirectory() as d:
@@ -1103,6 +1141,12 @@ def selftest():
         assert got[1] == "LANGUAGE=French", got       # the commented line, uncommented
         assert got.count("LANGUAGE=French") == 1, got
         assert got[-1] == "CPU_CORES=4", got          # absent key is appended
+
+        # a commented illustration must not win over the real setting below it
+        env.write_text("#   BOOT=https://example.com/x.iso\nBOOT=alpine\n")
+        set_env_value(env, "BOOT", "arch")
+        got = env.read_text().splitlines()
+        assert got == ["#   BOOT=https://example.com/x.iso", "BOOT=arch"], got
 
     # images(): dedup, order, and skipping a `.build`/`.image` reference
     with tempfile.TemporaryDirectory() as d:
@@ -1233,7 +1277,7 @@ def run_one(a, ap, app, access, href_local):
         print(f"\n{app}: done. Check with:  systemctl --user status {unit}")
         show_addresses(s, tailnet)
     if warnings and not (a.remove or a.backup or a.restore):
-        print("The items marked (!) above were not done — see apps/%s/README.md" % app)
+        print("The items marked (!) above were not done — see apps/%s/README.md" % s.name)
     return 0
 
 

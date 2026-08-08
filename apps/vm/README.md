@@ -1,0 +1,305 @@
+# VM — Podman Quadlet (rootless)
+
+**[🇧🇷 Leia em português](./README.pt-BR.md)**
+
+Full operating systems in VMs, each in its own container, with the screen
+served in a browser. Three guests, one engine.
+
+| Unit | Guest | Image | Viewer | Also |
+| --- | --- | --- | --- | --- |
+| `vm-qemu` | any Linux, or your own ISO | [qemus/qemu](https://github.com/qemus/qemu) | 8007 | — |
+| `vm-windows` | Windows 11 down to 2000 | [dockur/windows](https://github.com/dockur/windows) | 8006 | RDP 3389 |
+| `vm-macos` | macOS 11 to 26 | [dockur/macos](https://github.com/dockur/macos) | 8008 | VNC 5900 |
+
+The three are the same engine: `dockur/windows` and `dockur/macos` are both
+built `FROM qemux/qemu` with an installer bolted on. That is why they all want
+port 8006 inside, and why they are one folder here rather than three.
+
+Take the ones you want — nothing here requires anything else:
+
+```bash
+python3 install.py vm-qemu --apply          # just the Linux one
+python3 install.py vm --apply               # all three
+```
+
+## Requirements
+
+Shared by all three, beyond the usual rootless Podman:
+
+- **KVM on the host.** `/dev/kvm` must exist and be readable and writable by
+  the user running Podman. Without it a VM either refuses to start or falls
+  back to software emulation, which is unusably slow.
+
+  ```bash
+  ls -l /dev/kvm                          # must exist
+  [ -r /dev/kvm ] && [ -w /dev/kvm ] && echo ok
+  ```
+
+  `/dev/kvm` existing at all is the better test: the device is created by the
+  kernel module, so its presence proves virtualisation is really enabled rather
+  than merely present on the CPU. If it is `crw-rw----` and owned by
+  `root:kvm`, add yourself to the `kvm` group and log back in.
+
+- **`/dev/net/tun`**, for the VMs' networking.
+- **RAM.** `RAM_SIZE` is reserved for a VM's whole lifetime, not borrowed on
+  demand. Whatever you give it is RAM the host no longer has.
+- **Disk.** The images grow on demand but live in the volume, under your home
+  directory. Windows lands around 20 GB, macOS wants about 40.
+
+**macOS needs one more: AVX2 on the CPU.** It is a hard requirement, not a
+performance note — Intel Haswell (4th generation Core) or AMD Zen (Ryzen 1000)
+and newer:
+
+```bash
+grep -qo avx2 /proc/cpuinfo && echo ok || echo "no AVX2 — macOS will not run"
+```
+
+## Architecture
+
+Each unit runs QEMU with one volume at `/storage`, holding that guest's virtual
+disk and its downloaded installation media. The volumes do not overlap:
+`volumes/vm/{qemu,windows,macos}`.
+
+There is no `Requires=` between them — they are alternatives, not a stack.
+Running two at once is fine if the host has the RAM.
+
+The first start of any of them downloads several GB and runs an installer,
+which is why they carry `TimeoutStartSec=600` and long `HealthStartPeriod`s.
+`install.py` follows the container log while systemd waits, so that wait is
+visible rather than a hung-looking terminal.
+
+## Files
+
+```
+vm-qemu.container       vm-qemu.env.example
+vm-windows.container    vm-windows.env.example
+vm-macos.container      vm-macos.env.example
+install.ini             # per-unit questions, the Windows secret, upstream overrides
+```
+
+## Installation
+
+```bash
+python3 install.py vm            # dry-run: shows what it will do
+python3 install.py vm --apply    # all three
+```
+
+Installing the folder writes all three units and stops without starting
+anything — with no single main unit it will not guess which guest you want:
+
+```bash
+systemctl --user start vm-qemu        # or vm-windows, or vm-macos
+```
+
+Naming a unit instead installs and starts just that one. Either way the units
+land in `systemd/vm/`, so adding another later is the same command again.
+
+<details>
+<summary><b>Manual installation</b> (advanced) — the same steps, one at a time</summary>
+
+
+```bash
+# 1. Download the unit you want (no need to clone the repository)
+mkdir -p ~/.config/containers/systemd/vm
+wget -P ~/.config/containers/systemd/vm/ \
+  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/vm/vm-qemu.container
+
+# 2. Directories
+mkdir -p ~/.config/containers/volumes/vm/qemu/storage
+mkdir -p ~/.config/containers/env
+
+# 3. Environment
+wget -O ~/.config/containers/env/vm-qemu.env \
+  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/vm/vm-qemu.env.example
+
+# 4. Windows only — the RDP password for the `Docker` account
+podman secret create vm-windows-password - <<< "$(python3 -c 'import secrets,string;a=string.ascii_letters+string.digits;print("".join(secrets.choice(a) for _ in range(20)))')"
+
+# 5. Start it
+systemctl --user daemon-reload
+systemctl --user start vm-qemu
+```
+
+</details>
+
+## Choosing the guest
+
+`install.py` asks once per unit, on the first install. It only matters then —
+after that the OS is downloaded and installed, and the value is never read
+again. Changing your mind means wiping that guest's volume.
+
+### `vm-qemu` — `BOOT`
+
+23 Linux distributions, from Alpine at 60 MB to CentOS at 7 GB:
+
+`alpine` · `suse` · `arch` · `zima` · `tails` · `rocky` · `alma` · `mx` ·
+`fedora` · `nixos` · `cachy` · `mint` · `ubuntus` · `debian` · `gentoo` ·
+`slack` · `kali` · `zorin` · `xubuntu` · `manjaro` · `kubuntu` · `ubuntu` ·
+`centos`
+
+**`alpine` is the default here**, where upstream uses `mint`. At 60 MB it
+proves the whole path — KVM, tun, disk, viewer — in about a minute, instead of
+a 2.8 GB download before you learn whether anything works.
+
+`BOOT` also takes the URL of any ISO, which is why an answer that is not on the
+list is taken as given rather than rejected.
+
+### `vm-windows` — `VERSION` and `LANGUAGE`
+
+| Value | Edition | Download |
+| --- | --- | --- |
+| `11` | Windows 11 Pro | 7.9 GB |
+| `11l` | Windows 11 LTSC | 4.7 GB |
+| `11e` | Windows 11 Enterprise | 6.6 GB |
+| `10` | Windows 10 Pro | 5.7 GB |
+| `10l` | Windows 10 LTSC | 4.6 GB |
+| `10e` | Windows 10 Enterprise | 5.2 GB |
+| `2025` `2022` `2019` `2016` `2012` `2008` `2003` | Windows Server | 3.0–7.6 GB |
+| `tiny11` | Tiny11 | 5.3 GB |
+| `core11` | Tiny11 Core | 3.0 GB |
+| `tiny10` | Tiny10 | 3.6 GB |
+| `8e` | Windows 8.1 Enterprise | 3.7 GB |
+| `7u` | Windows 7 Ultimate | 3.1 GB |
+| `vu` | Windows Vista Ultimate | 3.0 GB |
+| `xp` | Windows XP Professional | 0.6 GB |
+| `2k` | Windows 2000 Professional | 0.4 GB |
+| `reactos` | ReactOS | 0.1 GB |
+
+`LANGUAGE` takes any of 33 names in English (`German`, `Portuguese`, …). For
+Brazilian Portuguese, pick `Portuguese` and set `REGION=pt-BR` and
+`KEYBOARD=pt-BR` in the `.env`.
+
+**`xp` and `2003` do not currently work.** Upstream hardcodes a virtio-blk
+controller for them:
+
+```bash
+# dockur/windows, src/install.sh
+"winxpx"* | "win2003"* )
+  writeState "type" "blk"
+```
+
+while `getDriverFolder()` in `src/define.sh` has no entry below Vista — so
+there is no virtio driver to install. Setup completes, then the installed
+system stops at **STOP 0x7B INACCESSIBLE_BOOT_DEVICE**, because it has no
+driver for the disk it was installed on. Setting `DISK_TYPE` does not help: the
+hardcoded write runs on every start and overwrites it. Vista and newer are
+fine.
+
+### `vm-macos` — `VERSION`
+
+| Value | Version | Name |
+| --- | --- | --- |
+| `15` | macOS 15 | Sequoia |
+| `14` | macOS 14 | Sonoma |
+| `13` | macOS 13 | Ventura |
+| `12` | macOS 12 | Monterey |
+| `11` | macOS 11 | Big Sur |
+| `26` | macOS 26 | Tahoe |
+
+`26` is accepted but upstream advises against it — it runs very slowly, for
+reasons they say they have not identified.
+
+**macOS is Apple hardware only.** Upstream states it plainly:
+
+> *by installing Apple's macOS, you must accept their end-user license
+> agreement, which does not permit installation on non-official hardware. So
+> only run this container on hardware sold by Apple, as any other use will be a
+> violation of their terms and conditions.*
+
+That is sharper than the Windows case: there you buy a licence and you are
+done, here Apple's EULA offers no path for non-Apple hardware at all. The
+software will run; whether you are permitted to run it is a separate question,
+and yours to answer.
+
+Unlike Windows, the macOS install is **not** unattended — you drive it. The two
+steps people miss: erase the largest `Apple Inc. VirtIO Block Media` disk in
+`Disk Utility` before the installer accepts it, and choose `Set Up Later` then
+`Skip` on the `Apple ID` screen.
+
+## Security — read this before putting any of them on the tailnet
+
+**The viewers have no login.** Whoever opens the URL has that VM's screen,
+keyboard and mouse, already signed in. All three ship with the tsdproxy labels
+on, following this repository's default, which means every device on your
+tailnet — and anything running on those devices — can reach them.
+
+Only Windows has a second door with a password: RDP on 3389, where upstream's
+default is the user `Docker` with the literal password `admin` and `install.ini`
+replaces it with a generated one:
+
+```bash
+podman secret inspect --showsecret vm-windows-password
+```
+
+That protects 3389. It does nothing for the viewer.
+
+If that trade is not what you want, install with `--access local` — the
+tsdproxy labels are commented out rather than deleted, so changing your mind
+later is an `--update` with another mode
+([Installing and operating](../../docs/installing.md)).
+
+Worth stating plainly: these containers get `/dev/kvm`, `/dev/net/tun` and
+`NET_ADMIN`, and run full operating systems you did not audit. That is a large
+trust surface by construction, not by oversight.
+
+## Hardening — what was not attempted
+
+Only `PidsLimit=512` beyond the defaults, on all three:
+
+| Setting | Status |
+| --- | --- |
+| `PidsLimit=512` | on — QEMU plus the entrypoint's helper processes |
+| `AddCapability=NET_ADMIN` | required by upstream, for the VMs' tun networking |
+| `ReadOnly=true` | **not attempted** — the entrypoint writes to `/run` and unpacks media |
+| `User=` | **not attempted** — QEMU is started as root by the entrypoint |
+| `DropCapability=ALL` | **not attempted** — untested, and a wrong list shows up as a VM that boots without networking rather than as a clear error |
+
+Testing any of these means a full OS install per attempt. `vm-qemu` with
+`alpine` makes that far cheaper than the other two — if you do measure one,
+record it here with the error.
+
+Memory is not capped. A ceiling has to exceed `RAM_SIZE` with room for QEMU
+itself.
+
+## Auto-update
+
+No `AutoUpdate=` — explicit tags, bumped by hand
+([rule 9](../../docs/conventions.md)). Each tag is the *container's* version,
+not the guest's: bumping it updates QEMU and the helper scripts and leaves the
+installed OS alone.
+
+`install.ini` carries `[upstream]` overrides for two of the three, because the
+image names do not match their repositories — `dockurr` has two r's, and the
+QEMU org is `qemus` with an s. Without those lines `updates.py` derives the
+wrong names and finds nothing.
+
+## Backup & recovery
+
+Per guest, and cold on purpose — copying a running VM's disk gives you an
+archive that only reveals itself as corrupt when you restore it:
+
+```bash
+systemctl --user stop vm-windows
+tar -czf vm-windows-backup-$(date +%Y%m%d-%H%M%S).tar.gz \
+  -C ~/.config/containers/volumes/vm windows
+systemctl --user start vm-windows
+```
+
+Mind the size: these are whole virtual disks, tens of gigabytes each — a
+different proposition from every other backup in this repository.
+
+## Useful commands
+
+```bash
+podman ps --filter "name=vm-"
+systemctl --user status vm-qemu
+podman logs -f vm-windows                 # install progress is here
+podman exec vm-macos df -h /storage       # how much the disk has actually grown
+```
+
+## Credits
+
+Quadlet deploy based on [qemus/qemu](https://github.com/qemus/qemu),
+[dockur/windows](https://github.com/dockur/windows) and
+[dockur/macos](https://github.com/dockur/macos), all MIT. Not affiliated with,
+endorsed by, or sponsored by Microsoft or Apple.
