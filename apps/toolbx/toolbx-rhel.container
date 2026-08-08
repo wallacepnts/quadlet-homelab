@@ -1,0 +1,22 @@
+[Unit]
+Description=Toolbx RHEL 10 (interactive shell)
+
+[Container]
+NoNewPrivileges=true
+PidsLimit=1024
+
+Image=registry.access.redhat.com/ubi10/toolbox:10.2
+ContainerName=toolbx-rhel
+Exec=sleep infinity
+UserNS=keep-id
+
+Environment=HOME=/work
+WorkingDir=/work
+Volume=%h/.config/containers/volumes/toolbx/rhel:/work:Z
+
+[Service]
+Restart=always
+TimeoutStartSec=90
+
+[Install]
+WantedBy=default.target

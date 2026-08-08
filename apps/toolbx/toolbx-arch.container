@@ -1,0 +1,22 @@
+[Unit]
+Description=Toolbx Arch Linux (interactive shell)
+
+[Container]
+NoNewPrivileges=true
+PidsLimit=1024
+
+Image=quay.io/toolbx/arch-toolbox@sha256:38d89c96265cfa7d6795c2e6f4b5b803df3e1f3d934fcfbabb346153aabdf985
+ContainerName=toolbx-arch
+Exec=sleep infinity
+UserNS=keep-id
+
+Environment=HOME=/work
+WorkingDir=/work
+Volume=%h/.config/containers/volumes/toolbx/arch:/work:Z
+
+[Service]
+Restart=always
+TimeoutStartSec=90
+
+[Install]
+WantedBy=default.target

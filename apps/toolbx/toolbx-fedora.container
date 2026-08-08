@@ -1,0 +1,22 @@
+[Unit]
+Description=Toolbx Fedora 45 (interactive shell)
+
+[Container]
+NoNewPrivileges=true
+PidsLimit=1024
+
+Image=registry.fedoraproject.org/fedora-toolbox:45
+ContainerName=toolbx-fedora
+Exec=sleep infinity
+UserNS=keep-id
+
+Environment=HOME=/work
+WorkingDir=/work
+Volume=%h/.config/containers/volumes/toolbx/fedora:/work:Z
+
+[Service]
+Restart=always
+TimeoutStartSec=90
+
+[Install]
+WantedBy=default.target

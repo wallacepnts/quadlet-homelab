@@ -1,0 +1,22 @@
+[Unit]
+Description=Toolbx Ubuntu 26.04 (interactive shell)
+
+[Container]
+NoNewPrivileges=true
+PidsLimit=1024
+
+Image=quay.io/toolbx/ubuntu-toolbox:26.04
+ContainerName=toolbx-ubuntu
+Exec=sleep infinity
+UserNS=keep-id
+
+Environment=HOME=/work
+WorkingDir=/work
+Volume=%h/.config/containers/volumes/toolbx/ubuntu:/work:Z
+
+[Service]
+Restart=always
+TimeoutStartSec=90
+
+[Install]
+WantedBy=default.target
