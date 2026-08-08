@@ -1,0 +1,42 @@
+[Unit]
+Description=QEMU (any OS in a VM, viewed in the browser)
+
+[Container]
+PidsLimit=512
+
+Image=docker.io/qemux/qemu:7.44
+ContainerName=qemu
+PublishPort=8007:8006
+
+AddDevice=/dev/kvm
+AddDevice=/dev/net/tun
+AddCapability=NET_ADMIN
+
+Volume=%h/.config/containers/volumes/qemu/storage:/storage:Z
+EnvironmentFile=%h/.config/containers/env/qemu.env
+
+HealthCmd=CMD-SHELL curl -fsS -o /dev/null http://127.0.0.1:8006/ || exit 1
+HealthInterval=60s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=180s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=qemu
+Label=tsdproxy.port.web=443/https:8006/http
+Label=homepage.group=Infra
+Label=homepage.name=QEMU
+Label=homepage.icon=https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/qemu.svg
+Label=homepage.href=https://qemu.${TAILNET}.ts.net
+Label=homepage.description="Any OS in a VM, reachable in the browser"
+
+Label=wud.watch=true
+Label=wud.tag.include=^[0-9]+.[0-9]+$
+
+[Service]
+Restart=always
+TimeoutStartSec=600
+TimeoutStopSec=120
+
+[Install]
+WantedBy=default.target
