@@ -85,14 +85,18 @@ Two images are `amd64` only, and take their service down with them:
 | `dockurr/macos` | `vm-macos` | no ARM build; it emulates an Intel Mac, and macOS on ARM is a different machine |
 | `quay.io/toolbx/arch-toolbox` | `toolbx-arch` | Arch Linux has no official ARM port |
 
-**A matching image is not the whole story for the VM services.** `vm-windows`
-and `vm-qemu` do ship `arm64` images, but the *guest* changes with the host:
-KVM only accelerates a guest of the same architecture, so an x86 guest on an
-ARM host falls back to emulation and is unusably slow. Upstream ships separate
-projects for this — [dockur/windows-arm](https://github.com/dockur/windows-arm/)
-and [qemus/qemu-arm](https://github.com/qemus/qemu-arm/) — and the `VERSION`
-and `BOOT` lists differ from the x86 ones. Those units are not in this
-repository, because there is no ARM host here to test them on.
+**A matching image is not the whole story for the VM services.** KVM only
+accelerates a guest of the same architecture, so what decides is the guest, not
+the image — and an x86 guest on an ARM host falls back to emulation and is
+unusably slow. `apps/vm` therefore carries a unit per pairing:
+
+| Host | Windows | Linux | macOS |
+| --- | --- | --- | --- |
+| x86_64 | `vm-windows` | `vm-qemu` | `vm-macos` |
+| ARM64 | `vm-windows-arm` | [qemus/qemu-arm](https://github.com/qemus/qemu-arm/), not packaged here | — |
+
+`vm-windows-arm` is written from upstream's documentation rather than measured:
+there is no ARM host here to test it on.
 
 To check any image yourself before committing to a host:
 

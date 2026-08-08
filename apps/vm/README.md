@@ -10,6 +10,7 @@ served in a browser. Three guests, one engine.
 | `vm-qemu` | any Linux, or your own ISO | [qemus/qemu](https://github.com/qemus/qemu) | 8007 | — |
 | `vm-windows` | Windows 11 down to 2000 | [dockur/windows](https://github.com/dockur/windows) | 8006 | RDP 3389 |
 | `vm-macos` | macOS 11 to 26 | [dockur/macos](https://github.com/dockur/macos) | 8008 | VNC 5900 |
+| `vm-windows-arm` | ARM64 Windows, on an ARM host | [dockur/windows-arm](https://github.com/dockur/windows-arm) | 8006 | RDP 3389 |
 
 The three are the same engine: `dockur/windows` and `dockur/macos` are both
 built `FROM qemux/qemu` with an installer bolted on. That is why they all want
@@ -24,12 +25,27 @@ python3 install.py vm --apply               # all three
 
 ## Requirements
 
-**x86_64 host.** `vm-macos` has no ARM image at all, and while `vm-windows` and
-`vm-qemu` do publish one, KVM only accelerates a guest of the same architecture
-— an x86 guest on an ARM host falls back to emulation and is unusably slow.
-Upstream ships [dockur/windows-arm](https://github.com/dockur/windows-arm/) and
-[qemus/qemu-arm](https://github.com/qemus/qemu-arm/) for that case; neither is
-in this repository, because there is no ARM host here to test them on.
+**Pick the unit that matches the host.** KVM only accelerates a guest of the
+same architecture as the host, so the guest — not the container image — is what
+decides. All four images are multi-arch, and that multi-arch is about which
+*host* they run on, not which Windows they install:
+
+| Host | Windows | Linux | macOS |
+| --- | --- | --- | --- |
+| x86_64 | `vm-windows` | `vm-qemu` | `vm-macos` |
+| ARM64 | `vm-windows-arm` | [qemus/qemu-arm](https://github.com/qemus/qemu-arm/), not packaged here | — |
+
+`vm-windows` and `vm-windows-arm` are genuinely different images — same tag,
+different digests — and they publish the same ports on purpose, because a host
+is one architecture or the other and the two never run together. That is what
+the `# check: ignore ports` line in the ARM unit is for.
+
+macOS has no ARM path at all: `dockurr/macos` is `amd64` only, and it emulates
+an Intel Mac, which is a different machine from Apple Silicon.
+
+**None of the ARM side is tested here** — this repository's host is x86_64, so
+`vm-windows-arm` is written from upstream's documentation rather than measured.
+Treat it as a starting point, and record what you find.
 
 Shared by all three, beyond the usual rootless Podman:
 
@@ -81,6 +97,7 @@ visible rather than a hung-looking terminal.
 vm-qemu.container       vm-qemu.env.example
 vm-windows.container    vm-windows.env.example
 vm-macos.container      vm-macos.env.example
+vm-windows-arm.container  vm-windows-arm.env.example
 install.ini             # per-unit questions, the Windows secret, upstream overrides
 ```
 
@@ -191,6 +208,24 @@ system stops at **STOP 0x7B INACCESSIBLE_BOOT_DEVICE**, because it has no
 driver for the disk it was installed on. Setting `DISK_TYPE` does not help: the
 hardcoded write runs on every start and overwrites it. Vista and newer are
 fine.
+
+### `vm-windows-arm` — `VERSION` and `LANGUAGE`
+
+A shorter list than x64's, because those are the only Windows editions that
+ever shipped an ARM64 build — no XP, Vista, 7, or Server:
+
+| Value | Edition | Download |
+| --- | --- | --- |
+| `11` | Windows 11 Pro | 7.5 GB |
+| `11l` | Windows 11 LTSC | 4.7 GB |
+| `11e` | Windows 11 Enterprise | 4.3 GB |
+| `10` | Windows 10 Pro | 3.5 GB |
+| `10l` | Windows 10 LTSC | 4.1 GB |
+| `10e` | Windows 10 Enterprise | 3.4 GB |
+| `tiny11` | Tiny11 | 5.1 GB |
+| `core11` | Tiny11 Core | 3.0 GB |
+
+`LANGUAGE` works the same as on the x64 unit.
 
 ### `vm-macos` — `VERSION`
 

@@ -86,15 +86,18 @@ Duas imagens são só `amd64`, e levam o serviço delas junto:
 | `dockurr/macos` | `vm-macos` | sem build ARM; ela emula um Mac Intel, e macOS em ARM é outra máquina |
 | `quay.io/toolbx/arch-toolbox` | `toolbx-arch` | o Arch Linux não tem porte ARM oficial |
 
-**Ter imagem compatível não resolve tudo nos serviços de VM.** O `vm-windows` e
-o `vm-qemu` até publicam imagem `arm64`, mas o *convidado* muda junto com o
-host: o KVM só acelera convidado da mesma arquitetura, então um convidado x86
-num host ARM cai em emulação e fica lento a ponto de ser inviável. O upstream
-tem projetos separados pra isso —
-[dockur/windows-arm](https://github.com/dockur/windows-arm/) e
-[qemus/qemu-arm](https://github.com/qemus/qemu-arm/) — e as listas de `VERSION`
-e `BOOT` são diferentes das de x86. Essas units não estão neste repositório,
-porque aqui não existe host ARM pra testá-las.
+**Ter imagem compatível não resolve tudo nos serviços de VM.** O KVM só acelera
+convidado da mesma arquitetura, então quem decide é o convidado, não a imagem —
+e convidado x86 num host ARM cai em emulação e fica lento a ponto de ser
+inviável. Por isso o `apps/vm` traz uma unit por combinação:
+
+| Host | Windows | Linux | macOS |
+| --- | --- | --- | --- |
+| x86_64 | `vm-windows` | `vm-qemu` | `vm-macos` |
+| ARM64 | `vm-windows-arm` | [qemus/qemu-arm](https://github.com/qemus/qemu-arm/), não empacotado aqui | — |
+
+O `vm-windows-arm` foi escrito a partir da documentação do upstream, não
+medido: aqui não existe host ARM pra testá-lo.
 
 Pra conferir qualquer imagem antes de escolher um host:
 
