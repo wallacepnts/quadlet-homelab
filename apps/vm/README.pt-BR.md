@@ -11,6 +11,7 @@ servida no navegador. Três convidados, um motor só.
 | `vm-windows` | Windows 11 até 2000 | [dockur/windows](https://github.com/dockur/windows) | 8006 | RDP 3389 |
 | `vm-macos` | macOS 11 a 26 | [dockur/macos](https://github.com/dockur/macos) | 8008 | VNC 5900 |
 | `vm-windows-arm` | Windows ARM64, num host ARM | [dockur/windows-arm](https://github.com/dockur/windows-arm) | 8006 | RDP 3389 |
+| `vm-zima` | ZimaOS, interface de NAS | [dockur/zima](https://github.com/dockur/zima) | 8012 | UI web 8011 |
 
 Os três são o mesmo motor: `dockur/windows` e `dockur/macos` são ambos
 construídos `FROM qemux/qemu`, com um instalador por cima. É por isso que todos
@@ -99,6 +100,7 @@ vm-qemu.container       vm-qemu.env.example
 vm-windows.container    vm-windows.env.example
 vm-macos.container      vm-macos.env.example
 vm-windows-arm.container  vm-windows-arm.env.example
+vm-zima.container       vm-zima.env.example
 install.ini             # perguntas por unit, o secret do Windows, overrides de upstream
 ```
 
@@ -257,6 +259,27 @@ Diferente do Windows, a instalação do macOS **não** é desassistida: você
 conduz. Os dois passos que as pessoas erram: apagar o maior disco `Apple Inc.
 VirtIO Block Media` no `Disk Utility` antes de o instalador aceitá-lo, e
 escolher `Set Up Later` e depois `Skip` na tela do `Apple ID`.
+
+### `vm-zima` — não há o que escolher
+
+O ZimaOS é o convidado, e não existe versão pra escolher: a imagem instala a
+release que ela traz. Diferente dos outros, o que você usa no dia a dia não é o
+viewer e sim **a interface web do próprio ZimaOS**, encaminhada do convidado:
+
+| Porta no host | O quê |
+| --- | --- |
+| `8011` | a interface do ZimaOS — a que você de fato usa |
+| `8012` | o viewer do QEMU, pro primeiro boot e pra quando o convidado não sobe |
+
+Esse encaminhamento é a razão de esta unit existir: o `vm-qemu` também instala
+ZimaOS (`BOOT=zima`), mas só te dá uma tela. Esta aqui publica os serviços que
+o convidado roda.
+
+A imagem também expõe a **445** pra SMB, que não é publicada aqui: o Podman
+rootless não binda porta abaixo de 1024 sem baixar o
+`net.ipv4.ip_unprivileged_port_start`, e o compose do próprio upstream também
+não publica. O [netbootxyz](../netbootxyz/README.pt-BR.md) documenta essa
+mudança de sysctl, se você decidir que quer.
 
 ## Segurança — ler antes de pôr qualquer uma na tailnet
 

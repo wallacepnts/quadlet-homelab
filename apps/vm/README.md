@@ -11,6 +11,7 @@ served in a browser. Three guests, one engine.
 | `vm-windows` | Windows 11 down to 2000 | [dockur/windows](https://github.com/dockur/windows) | 8006 | RDP 3389 |
 | `vm-macos` | macOS 11 to 26 | [dockur/macos](https://github.com/dockur/macos) | 8008 | VNC 5900 |
 | `vm-windows-arm` | ARM64 Windows, on an ARM host | [dockur/windows-arm](https://github.com/dockur/windows-arm) | 8006 | RDP 3389 |
+| `vm-zima` | ZimaOS, a NAS interface | [dockur/zima](https://github.com/dockur/zima) | 8012 | web UI 8011 |
 
 The three are the same engine: `dockur/windows` and `dockur/macos` are both
 built `FROM qemux/qemu` with an installer bolted on. That is why they all want
@@ -98,6 +99,7 @@ vm-qemu.container       vm-qemu.env.example
 vm-windows.container    vm-windows.env.example
 vm-macos.container      vm-macos.env.example
 vm-windows-arm.container  vm-windows-arm.env.example
+vm-zima.container       vm-zima.env.example
 install.ini             # per-unit questions, the Windows secret, upstream overrides
 ```
 
@@ -257,6 +259,27 @@ Unlike Windows, the macOS install is **not** unattended — you drive it. The tw
 steps people miss: erase the largest `Apple Inc. VirtIO Block Media` disk in
 `Disk Utility` before the installer accepts it, and choose `Set Up Later` then
 `Skip` on the `Apple ID` screen.
+
+### `vm-zima` — nothing to choose
+
+ZimaOS is the guest, and there is no version to pick: the image installs the
+release it ships with. Unlike the others, what you reach for day to day is not
+the viewer but **ZimaOS's own web interface**, forwarded from the guest:
+
+| Host port | What |
+| --- | --- |
+| `8011` | the ZimaOS interface — the one you actually use |
+| `8012` | the QEMU viewer, for the first boot and for when the guest will not come up |
+
+That forwarding is the reason this unit exists at all: `vm-qemu` can install
+ZimaOS too (`BOOT=zima`), but it only gives you a screen. This one publishes
+the services the guest runs.
+
+The image also exposes **445** for SMB, which is not published here: rootless
+Podman cannot bind a port below 1024 without lowering
+`net.ipv4.ip_unprivileged_port_start`, and upstream's own compose leaves it
+unpublished as well. [netbootxyz](../netbootxyz/) documents that sysctl change
+if you decide you want it.
 
 ## Security — read this before putting any of them on the tailnet
 

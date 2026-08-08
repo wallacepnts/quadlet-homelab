@@ -1,0 +1,43 @@
+[Unit]
+Description=ZimaOS in a VM (NAS and home-server OS)
+
+[Container]
+PidsLimit=512
+
+Image=docker.io/dockurr/zima:1.7.0
+ContainerName=vm-zima
+PublishPort=8011:80
+PublishPort=8012:8006
+
+AddDevice=/dev/kvm
+AddDevice=/dev/net/tun
+AddCapability=NET_ADMIN
+
+Volume=%h/.config/containers/volumes/vm/zima/storage:/storage:Z
+EnvironmentFile=%h/.config/containers/env/vm-zima.env
+
+HealthCmd=CMD-SHELL curl -fsS -o /dev/null http://127.0.0.1:8006/ || exit 1
+HealthInterval=60s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=180s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=zima
+Label=tsdproxy.port.web=443/https:80/http
+Label=homepage.group=Infra
+Label=homepage.name=ZimaOS
+Label=homepage.icon=https://cdn.jsdelivr.net/gh/dockur/zima@master/assets/20241126-153324.png
+Label=homepage.href=https://zima.${TAILNET}.ts.net
+Label=homepage.description="ZimaOS in a VM — the CasaOS-derived NAS interface, without the hardware"
+
+Label=wud.watch=true
+Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+$
+
+[Service]
+Restart=always
+TimeoutStartSec=600
+TimeoutStopSec=120
+
+[Install]
+WantedBy=default.target
