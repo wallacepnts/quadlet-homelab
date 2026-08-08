@@ -1246,8 +1246,15 @@ def selftest():
     # [login] picks the one secret worth printing; without the section, none
     assert Service("filebrowser").login() == ("admin", "filebrowser-admin-password")
     assert Service("homebox").login() is None       # prints nothing at all
-    # the combined shape: no username of its own, the secret carries both
-    assert Service("vaultzap").login() == (None, "vaultzap-basic-auth")
+    # the combined shape: no username of its own, the secret carries both.
+    # Synthetic because no shipped service uses it right now — vaultzap did,
+    # until upstream replaced its Basic Auth with a login screen, and the
+    # commented-out Basic Auth path in its unit is one uncomment from needing
+    # it again.
+    combined = Service("vaultzap")
+    combined.ini = configparser.ConfigParser(interpolation=None)
+    combined.ini.read_string("[login]\ncredentials = x-basic-auth\n")
+    assert combined.login() == (None, "x-basic-auth")
 
     # --ask-secrets swaps the generate step for a prompt, and only with a
     # terminal to prompt on

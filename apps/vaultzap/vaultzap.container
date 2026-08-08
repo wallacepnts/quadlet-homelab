@@ -11,7 +11,10 @@ EnvironmentFile=%h/.config/containers/env/vaultzap.env
 
 Volume=%h/.config/containers/volumes/vaultzap/data:/data:z
 Volume=%h/.config/containers/volumes/vaultzap/inbox:/inbox:rw,z
-Secret=vaultzap-basic-auth,type=env,target=VAULTZAP_BASIC_AUTH
+# Basic Auth instead of the login screen: uncomment and create the secret
+# first (see the README). type=env, not the _FILE form — a mounted secret
+# fails under ReadOnly=true. Leaving it out keeps upstream's default.
+#Secret=vaultzap-basic-auth,type=env,target=VAULTZAP_BASIC_AUTH
 
 UserNS=keep-id:uid=65532,gid=65532
 ReadOnly=true

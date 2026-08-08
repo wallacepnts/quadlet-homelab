@@ -41,6 +41,8 @@ também não leva `wud.watch`: o auto-update já cobre.
 
 ```
 vaultzap.container   # unit (cópia do upstream + convenções deste repo)
+.env.example         # o ambiente, do deploy/vaultzap.env.example do upstream
+install.ini          # o override de upstream pro updates.py
 ```
 
 ## Pré-requisitos
@@ -58,13 +60,14 @@ python3 install.py vaultzap --apply
 
 Só na rede local, `--access local`; na tailnet e na LAN, `--access
 both`. Acrescentar `--href-local` faz o link do dashboard apontar pra LAN. O script cria os diretórios, grava o
-`.env`, gera os secrets, ajusta o dono dos volumes, sobe o serviço e
-imprime o endereço no fim — ver
+`.env`, ajusta o dono dos volumes, sobe o serviço e imprime o endereço no fim — ver
 [Instalando e operando](../../docs/pt-BR/instalacao.md) no README
 raiz.
 
 Acessar `http://<ip-do-host>:8927` (ou via [tsdproxy](../tsdproxy/README.pt-BR.md) em
-`https://vaultzap.<your-tailnet>.ts.net`). Soltar os exports do WhatsApp
+`https://vaultzap.<your-tailnet>.ts.net`) e **definir usuário e senha na hora**
+— o primeiro acesso mostra uma tela de cadastro, e enquanto ninguém preencher,
+quem alcançar a porta primeiro pode. Depois é soltar os exports do WhatsApp
 em `~/.config/containers/volumes/vaultzap/inbox/` — o serviço importa
 sozinho.
 
@@ -105,13 +108,49 @@ sozinho.
 
 </details>
 
-## Proteger com senha (ligado)
+## Como o acesso é protegido
 
-**Está ligado neste deploy.** O acesso pede usuário e senha pelo diálogo
-nativo do navegador (`WWW-Authenticate: Basic realm="vaultzap"`), tanto
-em `http://<ip-do-host>:8927` quanto pela tailnet — o
-[tsdproxy](../tsdproxy/README.pt-BR.md) repassa o cabeçalho `Authorization` sem
-configuração extra.
+**Tela de login, e é o padrão do upstream.** Nada é configurado aqui: no
+primeiro acesso a um banco novo, o app mostra uma tela de cadastro onde você
+escolhe usuário e senha. Só o hash é guardado (PBKDF2-HMAC-SHA256, com salt
+próprio). Depois disso a tela de cadastro some, e a troca de senha passa a ser
+em **Seu perfil → Alterar senha**.
+
+> **Cadastre logo depois do primeiro start.** Enquanto ninguém cadastrou, quem
+> alcançar a porta primeiro pode fazê-lo. É uma janela real, mesmo estreitada
+> à tailnet. Se não precisa ser alcançável pela rede, publique só no localhost
+> — `PublishPort=127.0.0.1:8927:8927`.
+
+**Não existe limite de tentativas**, e o upstream diz o porquê: um limitador
+por IP atrás de proxy reverso ou bloqueia todo mundo junto (todos chegam com o
+IP do proxy) ou é contornável trocando um cabeçalho. O que protege é uma senha
+boa.
+
+### Perdeu a senha
+
+O binário resolve, sem abrir nada pela rede:
+
+```bash
+podman exec vaultzap /vaultzap reset-password
+```
+
+Ele imprime uma senha nova, mantém o usuário e encerra todas as sessões
+abertas.
+
+### Desligar a autenticação
+
+Só quando algo na frente já protege a porta. Descomentar no `vaultzap.env`:
+
+```
+VAULTZAP_AUTH=off
+```
+
+### Basic Auth no lugar
+
+A tela de login substituiu o Basic Auth como padrão, mas o Basic Auth continua
+funcionando e **tem precedência** quando a variável dele está definida. Este
+deploy foi assim até o upstream criar a tela de login; a unit mantém a linha
+comentada pra quem prefere o cabeçalho HTTP ao cookie de sessão.
 
 ```bash
 mkdir -p ~/.config/containers/secrets/vaultzap
@@ -120,26 +159,24 @@ chmod 600 ~/.config/containers/secrets/vaultzap/basic-auth.txt
 podman secret create vaultzap-basic-auth ~/.config/containers/secrets/vaultzap/basic-auth.txt
 ```
 
-### `printf`, não `echo`
+Depois descomentar a linha `Secret=` na unit e reiniciar.
 
-O upstream aceita duas formas, `VAULTZAP_BASIC_AUTH` (valor direto) e
-`VAULTZAP_BASIC_AUTH_FILE` (caminho), e **recusa as duas juntas** — sai
-com `defina VAULTZAP_BASIC_AUTH ou VAULTZAP_BASIC_AUTH_FILE, não as
-duas`, em vez de deixar uma vencer em silêncio.
+Três coisas desse caminho foram medidas e seguem valendo:
 
-A diferença que morde: **a forma `_FILE` apara espaço em branco, a direta
-não.** Esta unit usa a direta (`type=env`, ver abaixo), então um `echo`
-no lugar do `printf` coloca um `\n` no fim da senha — e aí o login falha
-para sempre com a senha certa digitada, sem nenhuma mensagem que ajude.
+**`printf`, não `echo`.** O upstream aceita `VAULTZAP_BASIC_AUTH` (o valor) e
+`VAULTZAP_BASIC_AUTH_FILE` (um caminho), e recusa as duas juntas em vez de
+deixar uma vencer em silêncio. A forma `_FILE` apara espaços, a direta não — e
+esta unit usa a direta, então um `echo` no lugar do `printf` deixa um `\n` no
+fim da senha. Aí o login falha pra sempre com a senha certa digitada, e nenhuma
+mensagem diz por quê.
 
-Formato é `usuario:senha`, cortado no primeiro `:`; qualquer lado vazio
-derruba o start com `VAULTZAP_BASIC_AUTH inválido`.
+Definir `VAULTZAP_BASIC_AUTH` **vazia** agora é erro no boot, em vez de
+desligar a autenticação em silêncio. Pra rodar sem senha, deixe a variável de
+fora e use `VAULTZAP_AUTH=off`.
 
-### Por que `type=env` e não `type=mount`
-
-O jeito "natural" seria montar o secret como arquivo e usar a forma
-`_FILE`. **Não funciona com `ReadOnly=true`**, e nem um `Tmpfs=/run`
-resolve — o Podman cria o ponto de montagem contra o rootfs antes do
+**`type=env`, não `type=mount`.** O caminho natural seria montar o secret como
+arquivo e usar a forma `_FILE`. Ele **não funciona com `ReadOnly=true`**, e nem
+um `Tmpfs=/run` resolve — o Podman cria o mountpoint contra o rootfs antes do
 tmpfs valer:
 
 ```
@@ -147,25 +184,16 @@ error mounting ... to rootfs at "/run/secrets/vaultzap_basic_auth":
 make mountpoint: read-only file system
 ```
 
-Testado nas duas formas. `type=env` entrega o valor sem tocar no
-filesystem, e o `podman inspect` mostra só o nome do secret, não o valor.
+Testado dos dois jeitos. O `type=env` entrega o valor sem tocar no sistema de
+arquivos, e o `podman inspect` mostra só o nome do secret, não o valor. O
+quadlet do próprio upstream sugere a forma `_FILE` no bloco comentado dele; é
+justamente a forma a evitar aqui.
 
-### O healthcheck continua funcionando
-
-`/healthz` fica **fora** do middleware de autenticação de propósito — no
-`main.go` do upstream ele é registrado no mux externo, e o handler
-autenticado é montado em `/`. O `HealthCmd=["/vaultzap", "healthcheck"]`
-bate exatamente nessa URL, sem credencial, então ligar o Basic Auth não
-quebra o `Notify=healthy`. Confirmado depois de ligar: `healthy`.
-
-### Trocando a senha
-
-```bash
-printf 'usuario:nova-senha' > ~/.config/containers/secrets/vaultzap/basic-auth.txt
-podman secret rm vaultzap-basic-auth
-podman secret create vaultzap-basic-auth ~/.config/containers/secrets/vaultzap/basic-auth.txt
-systemctl --user restart vaultzap
-```
+**O healthcheck continua funcionando em qualquer modo.** O `/healthz` fica
+**fora** do middleware de autenticação de propósito — no `main.go` do upstream
+ele é registrado no mux externo, e o handler autenticado é montado em `/`. O
+`HealthCmd=["/vaultzap", "healthcheck"]` bate exatamente nessa URL, sem
+credencial, então nenhum modo de autenticação quebra o `Notify=healthy`.
 
 ## Auto-update
 
