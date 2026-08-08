@@ -55,9 +55,11 @@ def scenario_install(home):
 def scenario_no_overwrite(home):
     env = path(home, "env", f"{APP}.env")
     env.write_text("EDITED_BY_THE_USER=1\n")
-    run(APP, "--apply", "--prefix", home)
+    again = run(APP, "--apply", "--prefix", home, expected=1)
+    check("already installed" in again.stdout and "--reinstall" in again.stdout,
+          "installing again refuses, naming the two ways out")
     check(env.read_text() == "EDITED_BY_THE_USER=1\n",
-          "installing again does NOT overwrite an edited .env")
+          "the refused install does NOT overwrite an edited .env")
     run(APP, "--reinstall", "--apply", "--prefix", home)
     check("EDITED_BY_THE_USER" not in env.read_text(),
           "--reinstall overwrites the .env")

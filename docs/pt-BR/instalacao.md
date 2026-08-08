@@ -66,10 +66,25 @@ cima descrito no ciclo de vida, virado script: bump de versão no
 repositório não muda o arquivo já instalado no host, e é isso que ele
 resolve. Não toca em volume, `.env` nem secret.
 
-**Instalar por cima não apaga o que você editou.** `.env`, arquivo de
-config e secret que já existem são mantidos, com aviso — eles guardam
-senha, token e o cadastro já fechado. Pra sobrescrever de propósito,
-`--reinstall`.
+**Instalar por cima para antes de fazer qualquer coisa.** Se as units já
+estão no host, a instalação simples recusa e mostra os dois caminhos — do
+contrário ela reescreveria as units e reiniciaria sem tocar em env, config
+e secrets, que é um `--update` com o nome errado:
+
+```
+filebrowser: already installed — 1 of 1 unit(s) in ~/.config/containers/systemd
+  --update     re-copies the units and restarts, keeping data, env and secrets
+  --reinstall  installs again, OVERWRITING env, config and secrets
+```
+
+Uma stack diz `1 of 6` quando só parte das units está lá, então serviço
+meio instalado aparece em vez de ser completado em silêncio.
+
+**O que sobrevive numa instalação que roda de verdade.** Depois de um
+`--remove` (que mantém os dados), instalar de novo encontra o `.env`, o
+arquivo de config e os secrets ainda no lugar e mantém eles, com aviso —
+guardam senha, token e o cadastro já fechado. Pra sobrescrever de
+propósito, `--reinstall`.
 
 **`--remove` mantém os dados** e diz quanto ficou guardado; `--purge`
 apaga volumes, secrets e `.env`, e exige que você **digite o nome do

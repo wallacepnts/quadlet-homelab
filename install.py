@@ -245,6 +245,24 @@ class Service:
                     names.append(n)
         return names
 
+    def installed(self):
+        """The unit files of this service already on the host, in either layout.
+
+        Both are checked because the destination depends on how many Quadlet
+        files the service has: one lands flat in `systemd/`, a stack goes in
+        `systemd/<app>/`. `unit_dest` alone will not do — in the flat case it
+        is the shared directory, which exists the moment anything at all is
+        installed. Basenames are unique across the repository (rule 1), so a
+        hit is always this service's own file.
+        """
+        found = []
+        for u in self.units:
+            for p in (self.unit_dest / u.name, self.unit_dest.parent / u.name):
+                if p.exists():
+                    found.append(p)
+                    break
+        return found
+
     def main_unit(self):
         """The .container that represents the app — the one you `start`.
 
@@ -519,8 +537,7 @@ def plan_update(s):
     """
     steps, warnings = [], []
     dest = s.unit_dest
-    if not dest.exists() and not any((s.unit_dest.parent / u.name).exists()
-                                     for u in s.units):
+    if not s.installed():
         warnings.append("does not look installed — use the normal install")
     steps.append((f"mkdir -p {dest}", lambda: dest.mkdir(parents=True, exist_ok=True)))
     for u in s.units:
@@ -1169,6 +1186,20 @@ def selftest():
                                                 "filebrowser-jwt-secret"]
     assert Service("toolbx").secrets() == []
 
+    # what the already-installed guard gates on, in both layouts
+    with tempfile.TemporaryDirectory() as d:
+        flat, stack = Service("filebrowser", d), Service("vm", d)
+        assert flat.installed() == [] and stack.installed() == []
+        flat.unit_dest.mkdir(parents=True, exist_ok=True)
+        (flat.unit_dest / "filebrowser.container").touch()
+        assert len(flat.installed()) == 1, flat.installed()
+        # the flat unit sits in the same directory the stack's parent is, and
+        # must not be mistaken for one of the stack's own
+        assert stack.installed() == [], stack.installed()
+        stack.unit_dest.mkdir(parents=True, exist_ok=True)
+        (stack.unit_dest / "vm-macos.container").touch()
+        assert len(stack.installed()) == 1 < len(stack.units)
+
     with tempfile.TemporaryDirectory() as d:
         env = Path(d) / "x.env"
         env.write_text("VERSION=11\n# LANGUAGE=Portuguese\nRAM_SIZE=4G\n")
@@ -1272,6 +1303,23 @@ def run_one(a, ap, app, access, href_local):
 
     folder, only = find_app(app)
     s = Service(folder, a.prefix, only)
+
+    # A plain install over an installed service is never what someone means:
+    # it rewrites the units and restarts, but leaves env, config and secrets
+    # untouched — an update wearing the wrong name. Stop and let the caller
+    # say which of the two they wanted.
+    if not (a.update or a.reinstall or a.remove or a.backup or a.restore):
+        here = s.installed()
+        if here:
+            # "1 of 6" is the case worth seeing: a stack where only some units
+            # are on the host refuses too, and --reinstall is what completes it.
+            print(f"{app}: already installed — {len(here)} of {len(s.units)} "
+                  f"unit(s) in {here[0].parent}")
+            print("  --update     re-copies the units and restarts, keeping data, "
+                  "env and secrets")
+            print("  --reinstall  installs again, OVERWRITING env, config and secrets")
+            return 1
+
     tailnet = find_tailnet()
     for problem in preflight(s, tailnet, access == "local"):
         print(f"  !  {problem}")

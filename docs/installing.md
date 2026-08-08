@@ -67,9 +67,24 @@ the top described in the lifecycle, turned into a script: a version bump in
 the repository does not change the file already installed on the host, and
 that is what it fixes. It touches no volume, no `.env` and no secret.
 
-**Installing over the top does not delete what you edited.** An existing
-`.env`, config file or secret is kept, with a warning — they hold passwords,
-tokens and the already-closed signup. To overwrite deliberately, `--reinstall`.
+**Installing over the top stops before doing anything.** If the units are
+already on the host, a plain install refuses and names the two ways forward —
+it would otherwise rewrite the units and restart while leaving env, config and
+secrets alone, which is an `--update` wearing the wrong name:
+
+```
+filebrowser: already installed — 1 of 1 unit(s) in ~/.config/containers/systemd
+  --update     re-copies the units and restarts, keeping data, env and secrets
+  --reinstall  installs again, OVERWRITING env, config and secrets
+```
+
+A stack says `1 of 6` when only some units are there, so a half-installed
+service is visible rather than silently completed.
+
+**What survives an install that does run.** After a `--remove` (which keeps the
+data), installing again finds the `.env`, config file and secrets still in
+place and keeps them, with a warning — they hold passwords, tokens and the
+already-closed signup. To overwrite them deliberately, `--reinstall`.
 
 **`--remove` keeps the data** and says how much was kept; `--purge` deletes
 volumes, secrets and the `.env`, and requires you to **type the service's
