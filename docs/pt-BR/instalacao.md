@@ -106,6 +106,46 @@ vez) e pede o nome digitado pra confirmar, como o `--purge`. Depois de
 extrair, reaplica o dono nos serviços com `User=` — arquivo vindo de
 outra máquina carrega um subuid que pode não ser o daqui.
 
+
+### Perguntar em vez de assumir: `[choices]`
+
+Alguns valores de `.env` são escolha de uma lista conhecida, e só valem no
+primeiro start — a edição do Windows é baixada uma vez e nunca mais revista.
+Entregar um padrão que o usuário depois precisa achar e editar é a pior das
+duas opções, então o `install.ini` pode declarar a pergunta:
+
+```ini
+[choices]
+VERSION =
+    Which Windows to install (downloaded on first boot)
+    11: Windows 11 Pro — 7.9 GB
+    10: Windows 10 Pro — 5.7 GB
+    xp: Windows XP Professional — 0.6 GB
+```
+
+A primeira linha é a pergunta, as demais são `valor: rótulo` (o rótulo é
+opcional quando o valor já se explica), e a primeira opção é o padrão. Na
+instalação:
+
+```
+  Which Windows to install (downloaded on first boot)
+    1) 11        Windows 11 Pro — 7.9 GB  (default)
+    2) 10        Windows 10 Pro — 5.7 GB
+    3) xp        Windows XP Professional — 0.6 GB
+  number or value [11]:
+```
+
+Um número, o próprio valor, ou Enter pro padrão. Resposta fora da lista é
+**aceita como veio** em vez de recusada — o `VERSION` também aceita a URL de
+uma ISO sua, e lista nem sempre é exaustiva.
+
+A resposta é escrita no `.env` que esta execução acabou de copiar,
+substituindo a linha correspondente **inclusive quando ela está comentada**,
+que é como os `.example` carregam configuração opcional. Ele nunca toca num
+`.env` que já existia: aquele arquivo é seu, e uma pergunta que o reescrevesse
+em silêncio seria uma armadilha. Sem terminal — `--prefix`, script, CI — nada é
+perguntado; os padrões ficam e um aviso diz qual arquivo editar.
+
 ### Local, tailnet ou os dois
 
 O acesso local **funciona nos três modos**, porque toda unit publica porta
@@ -164,9 +204,10 @@ declarado no próprio `.container`, só que em texto corrido:
 
 O que sobra é pouco, e mora em `apps/<app>/install.ini`: a **receita de
 cada segredo** (o valor aleatório certo pra cada um, ou a instrução
-quando ele não é gerável) e o **destino de arquivo de config que cai
+quando ele não é gerável), o **destino de arquivo de config que cai
 dentro de um volume de diretório** — dois casos hoje, donetick e
-copyparty.
+copyparty — e **valores de `.env` que são escolha de uma lista fixa**, que
+o script pergunta.
 
 ```ini
 [secrets]

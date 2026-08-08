@@ -106,6 +106,46 @@ for the typed name to confirm, like `--purge`. After extracting, it reapplies
 ownership on services with `User=` — a file coming from another machine
 carries a subuid that may not be this one's.
 
+
+### Asking instead of defaulting: `[choices]`
+
+Some `.env` values are a choice from a known list, and only matter on the very
+first start — the Windows edition is downloaded once and never revisited.
+Shipping a default the user then has to find and edit is the worse of the two
+options, so `install.ini` can declare the question:
+
+```ini
+[choices]
+VERSION =
+    Which Windows to install (downloaded on first boot)
+    11: Windows 11 Pro — 7.9 GB
+    10: Windows 10 Pro — 5.7 GB
+    xp: Windows XP Professional — 0.6 GB
+```
+
+The first line is the question, the rest are `value: label` (the label is
+optional when the value speaks for itself), and the first option is the
+default. At install time:
+
+```
+  Which Windows to install (downloaded on first boot)
+    1) 11        Windows 11 Pro — 7.9 GB  (default)
+    2) 10        Windows 10 Pro — 5.7 GB
+    3) xp        Windows XP Professional — 0.6 GB
+  number or value [11]:
+```
+
+A number, the value itself, or Enter for the default. An answer that is not on
+the list is **taken as given** rather than rejected — `VERSION` also accepts a
+URL to your own ISO, and a list is not always exhaustive.
+
+The answer is written into the `.env` this run just copied, replacing the
+matching line **including a commented-out one**, which is how the `.example`
+files carry an optional setting. It never touches an `.env` that already
+existed: that file is yours, and a question that silently rewrote it would be a
+trap. With no terminal — `--prefix`, a script, CI — nothing is asked; the
+defaults stay and a warning names the file to edit.
+
 ### Local, tailnet, or both
 
 Local access **works in all three modes**, because every unit publishes a port
@@ -164,8 +204,9 @@ do is already declared in the `.container` itself, just in running text:
 
 What is left over is small, and lives in `apps/<app>/install.ini`: **each
 secret's recipe** (the right random value for it, or the instruction when it
-cannot be generated) and the **destination of a config file that lands inside
-a directory volume** — two cases today, donetick and copyparty.
+cannot be generated), the **destination of a config file that lands inside a
+directory volume** — two cases today, donetick and copyparty — and **`.env`
+values that are a pick from a fixed list**, which the script asks about.
 
 ```ini
 [secrets]

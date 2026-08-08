@@ -249,6 +249,32 @@ class Service:
                 return v.split(":")[0]
         return None
 
+    def choices(self):
+        """[(KEY, question, [(value, label)])] from install.ini's [choices].
+
+        For `.env` values that are a pick from a fixed list and that only
+        matter on the FIRST install — the Windows edition is downloaded once
+        and never revisited. Asking beats shipping a default the user then has
+        to find and edit. The first option is the default.
+
+        configparser lowercases keys, so they come back upper-cased: these are
+        environment variables.
+        """
+        if not self.ini.has_section("choices"):
+            return []
+        out = []
+        for key, block in self.ini.items("choices"):
+            lines = [l.strip() for l in block.strip().splitlines() if l.strip()]
+            if len(lines) < 2:
+                continue                      # a question with no options is not one
+            opts = []
+            for line in lines[1:]:
+                # `value: label`, or a bare value when it describes itself
+                value, _, label = line.partition(":")
+                opts.append((value.strip(), label.strip()))
+            out.append((key.upper(), lines[0], opts))
+        return out
+
     def examples(self):
         """[(example_file, destination)] — matched by name, falling back to the ini."""
         pairs, ini_dests = [], dict(self.ini.items("config")) if self.ini.has_section("config") else {}
@@ -305,6 +331,7 @@ def plan_install(s, tailnet, force=False, interactive=False, access="tailnet",
         d = Path(path).parent if is_file else Path(path)
         steps.append((f"mkdir -p {d}", lambda d=d: d.mkdir(parents=True, exist_ok=True)))
 
+    written = []
     for ex, target in s.examples():
         if target is None:
             warnings.append(f"{ex.name} has no obvious destination — declare it in "
@@ -318,6 +345,23 @@ def plan_install(s, tailnet, force=False, interactive=False, access="tailnet",
         steps.append((f"cp {ex.relative_to(ROOT)} -> {target}"
                       + ("  (substituting ${TAILNET})" if tailnet else ""),
                       lambda ex=ex, target=target: write_example(ex, Path(target), tailnet)))
+        written.append(target)
+
+    # Only on a file this run actually writes: an existing .env is the user's,
+    # and a question that silently rewrites it would be a trap. Must come after
+    # the copy step above — the steps run in order.
+    choices = s.choices()
+    if choices:
+        env = next((t for t in written if t in s.env_files()), None)
+        keys = ", ".join(k for k, _, _ in choices)
+        if env is None:
+            pass                       # the .env was kept; leave the user's values alone
+        elif interactive:
+            steps.append((f"choose {keys} in {Path(env).name}  (asks)",
+                          lambda env=env: ask_choices(env, choices)))
+        else:
+            warnings.append(f"{keys}: kept at the default — no terminal to ask on. "
+                            f"Edit {env} before the first start.")
 
     recipes = dict(s.ini.items("secrets")) if s.ini.has_section("secrets") else {}
     for name in s.secrets():
@@ -687,6 +731,50 @@ def write_example(source, destination, tailnet):
         print(f"    ! {destination} still has a placeholder — edit it before using")
 
 
+def set_env_value(path, key, value):
+    """Set KEY=value in an already-written .env, in place.
+
+    Replaces the existing line — including a commented-out one, which is how
+    the `.example` files carry an optional setting — or appends when the key is
+    not mentioned at all.
+    """
+    p = Path(path)
+    text = p.read_text()
+    line = f"{key}={value}"
+    pattern = re.compile(rf"^#?\s*{re.escape(key)}=.*$", re.M)
+    text = pattern.sub(line, text, count=1) if pattern.search(text) else \
+        text.rstrip("\n") + f"\n{line}\n"
+    p.write_text(text)
+
+
+def ask_choices(path, choices):
+    """Asks for each [choices] key and writes the answers into the .env."""
+    for key, question, options in choices:
+        default = options[0][0]
+        print(f"\n  {question}")
+        for i, (value, label) in enumerate(options, 1):
+            mark = "  (default)" if i == 1 else ""
+            sep = "  " if label else ""
+            print(f"   {i:>2}) {value:<10}{sep}{label}{mark}")
+        try:
+            raw = input(f"  number or value [{default}]: ").strip()
+        except EOFError:
+            raw = ""
+        if not raw:
+            picked = default
+        elif raw.isdigit() and 1 <= int(raw) <= len(options):
+            picked = options[int(raw) - 1][0]
+        elif any(raw == v for v, _ in options):
+            picked = raw
+        else:
+            # Not on the list is not necessarily wrong — upstream accepts a URL
+            # for VERSION, for instance — so take it and say so.
+            picked = raw
+            print(f"  not one of the listed values — using `{raw}` as given")
+        set_env_value(path, key, picked)
+        print(f"  {key}={picked}")
+
+
 def ask_secret(s, name, instruction):
     """Reads the value from the terminal and creates the secret.
 
@@ -880,6 +968,29 @@ def selftest():
         assert one.unit_dest == full.unit_dest, "a picked unit stays in the stack's folder"
         assert all("jellyfin" in p for p, _ in one.volumes()), one.volumes()
         assert all(t is not None for _, t in one.examples()), one.examples()
+
+    # [choices]: the question, the options, and set_env_value replacing a
+    # commented-out line rather than appending a second one
+    ch = Service("windows").choices()
+    keys = [k for k, _, _ in ch]
+    assert keys == ["VERSION", "LANGUAGE"], keys
+    version = next(o for k, _, o in ch if k == "VERSION")
+    assert version[0][0] == "11", version[0]          # first option is the default
+    assert ("xp", "Windows XP Professional — 0.6 GB") in version, version
+    lang = next(o for k, _, o in ch if k == "LANGUAGE")
+    assert lang[0] == ("English", ""), lang[0]        # a bare value keeps an empty label
+
+    with tempfile.TemporaryDirectory() as d:
+        env = Path(d) / "x.env"
+        env.write_text("VERSION=11\n# LANGUAGE=Portuguese\nRAM_SIZE=4G\n")
+        set_env_value(env, "VERSION", "core11")
+        set_env_value(env, "LANGUAGE", "French")
+        set_env_value(env, "CPU_CORES", "4")
+        got = env.read_text().splitlines()
+        assert got[0] == "VERSION=core11", got
+        assert got[1] == "LANGUAGE=French", got       # the commented line, uncommented
+        assert got.count("LANGUAGE=French") == 1, got
+        assert got[-1] == "CPU_CORES=4", got          # absent key is appended
 
     print("selftest: ok")
 

@@ -1,0 +1,45 @@
+[Unit]
+Description=Windows in a container (QEMU/KVM)
+
+[Container]
+PidsLimit=512
+
+Image=docker.io/dockurr/windows:6.04
+ContainerName=windows
+PublishPort=8006:8006
+PublishPort=3389:3389/tcp
+PublishPort=3389:3389/udp
+
+AddDevice=/dev/kvm
+AddDevice=/dev/net/tun
+AddCapability=NET_ADMIN
+
+Volume=%h/.config/containers/volumes/windows/storage:/storage:Z
+EnvironmentFile=%h/.config/containers/env/windows.env
+Secret=windows-password,type=env,target=PASSWORD
+
+HealthCmd=CMD-SHELL curl -fsS -o /dev/null http://127.0.0.1:8006/ || exit 1
+HealthInterval=60s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=300s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=windows
+Label=tsdproxy.port.web=443/https:8006/http
+Label=homepage.group=Infra
+Label=homepage.name=Windows
+Label=homepage.icon=https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/windows-11.png
+Label=homepage.href=https://windows.${TAILNET}.ts.net
+Label=homepage.description="A Windows VM reachable in the browser, with RDP on 3389"
+
+Label=wud.watch=true
+Label=wud.tag.include=^[0-9]+.[0-9]+$
+
+[Service]
+Restart=always
+TimeoutStartSec=600
+TimeoutStopSec=120
+
+[Install]
+WantedBy=default.target
