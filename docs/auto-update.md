@@ -6,9 +6,9 @@ the automatic path on for one of them.
 Off by default across the whole repository (rule 9) — enabling it is opt-in,
 service by service, and only when rule 9's conditions hold (a real `HealthCmd`
 in the image + no critical third-party data at stake, or a deliberate
-willingness to accept the risk). [`actual-budget`](../apps/actual-budget/) and
-[`homepage`](../apps/homepage/) are the ones enabled today — use their READMEs
-as a reference.
+willingness to accept the risk). [`actual-budget`](../apps/actual-budget/),
+[`homepage`](../apps/homepage/) and [`vaultzap`](../apps/vaultzap/) are the ones
+enabled today — use their READMEs as a reference.
 
 ### 1. Enable the timer (once, for the whole host)
 

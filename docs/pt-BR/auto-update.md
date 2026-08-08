@@ -6,9 +6,9 @@ verdade pra ligar o automático em um deles.
 Desligado por padrão em todo o repositório (regra 9) — ativar é opt-in,
 serviço por serviço, só quando as condições da regra 9 se cumprem
 (`HealthCmd` real na imagem + sem dado crítico de terceiros em jogo, ou
-disposição consciente de aceitar o risco). [`actual-budget`](../../apps/actual-budget/README.pt-BR.md)
-e [`homepage`](../../apps/homepage/README.pt-BR.md) são os exemplos ativos hoje — usar os
-READMEs deles como referência.
+disposição consciente de aceitar o risco). [`actual-budget`](../../apps/actual-budget/README.pt-BR.md),
+[`homepage`](../../apps/homepage/README.pt-BR.md) e [`vaultzap`](../../apps/vaultzap/README.pt-BR.md)
+são os exemplos ativos hoje — usar os READMEs deles como referência.
 
 ### 1. Ligar o timer (uma vez só, vale pra todo o host)
 
