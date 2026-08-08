@@ -1,0 +1,44 @@
+[Unit]
+Description=Ghost (blog/newsletter, SQLite in development mode)
+
+[Container]
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+User=1000
+PidsLimit=256
+Image=docker.io/library/ghost:6.56.0-alpine
+ContainerName=ghost
+PublishPort=9094:2368
+Environment=NODE_ENV=development
+Environment=database__client=sqlite3
+Environment=database__connection__filename=/var/lib/ghost/content/data/ghost.db
+Environment=database__useNullAsDefault=true
+
+Volume=%h/.config/containers/volumes/ghost/content:/var/lib/ghost/content:Z
+EnvironmentFile=%h/.config/containers/env/ghost.env
+
+HealthCmd=CMD-SHELL wget -q --spider http://127.0.0.1:2368/ghost/api/admin/site/ || exit 1
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=30s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=ghost
+Label=tsdproxy.port.web=443/https:2368/http
+Label=homepage.group=Self-Hosted
+Label=homepage.name=Ghost
+Label=homepage.icon=si-ghost
+Label=homepage.href=https://ghost.${TAILNET}.ts.net
+Label=homepage.description="Self-hosted blog/newsletter (SQLite, development mode)"
+
+Label=wud.watch=true
+Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+-alpine$
+
+[Service]
+Restart=always
+TimeoutStartSec=60
+
+[Install]
+WantedBy=default.target

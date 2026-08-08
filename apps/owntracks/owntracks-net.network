@@ -1,0 +1,5 @@
+[Unit]
+Description=OwnTracks network
+
+[Network]
+NetworkName=owntracks-net

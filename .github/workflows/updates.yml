@@ -1,0 +1,26 @@
+name: updates
+
+# Weekly and on demand. It deliberately does not run on every push: the result
+# depends on what upstream published, not on what changed here.
+on:
+  schedule:
+    - cron: "0 9 * * 1"      # Monday, 09:00 UTC
+  workflow_dispatch:
+
+jobs:
+  updates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Follows the /releases/latest redirect on github.com, not the API —
+      # that is what avoids the rate limit (CLAUDE.md, "Checking for updates").
+      - name: compare against the official releases
+        run: |
+          python3 updates.py --all | tee /tmp/out.txt
+          {
+            echo '## Versions'
+            echo '```'
+            cat /tmp/out.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

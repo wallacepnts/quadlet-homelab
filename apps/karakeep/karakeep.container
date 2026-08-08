@@ -1,0 +1,47 @@
+[Unit]
+Description=Karakeep
+After=karakeep-chrome.service karakeep-meilisearch.service
+Requires=karakeep-chrome.service karakeep-meilisearch.service
+
+[Container]
+ReadOnly=true
+Tmpfs=/tmp:size=256M
+DropCapability=ALL
+NoNewPrivileges=true
+PidsLimit=256
+
+Image=ghcr.io/karakeep-app/karakeep:0.33.1
+ContainerName=karakeep
+Network=karakeep-net.network
+PublishPort=8092:3000
+
+Volume=%h/.config/containers/volumes/karakeep/data:/data:Z
+EnvironmentFile=%h/.config/containers/env/karakeep.env
+Environment=MEILI_ADDR=http://meilisearch:7700
+Environment=BROWSER_WEB_URL=http://chrome:9222
+Environment=DATA_DIR=/data
+Secret=karakeep-nextauth-secret,type=env,target=NEXTAUTH_SECRET
+Secret=karakeep-meili-key,type=env,target=MEILI_MASTER_KEY
+HealthCmd=CMD-SHELL wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/health || exit 1
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=15s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=karakeep
+Label=tsdproxy.port.web=443/https:3000/http
+Label=homepage.group=Self-Hosted
+Label=homepage.name=Karakeep
+Label=homepage.icon=karakeep.svg
+Label=homepage.href=https://karakeep.${TAILNET}.ts.net
+Label=homepage.description="Bookmark manager with full-text search and automatic page archiving"
+
+Label=wud.watch=true
+
+[Service]
+Restart=always
+TimeoutStartSec=60
+
+[Install]
+WantedBy=default.target

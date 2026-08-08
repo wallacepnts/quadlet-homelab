@@ -1,0 +1,27 @@
+[Unit]
+Description=Paperless-ngx Gotenberg (Office-to-PDF conversion)
+
+[Container]
+ReadOnly=true
+Tmpfs=/tmp:size=256M
+DropCapability=ALL
+PidsLimit=256
+Image=docker.io/gotenberg/gotenberg:8.34
+ContainerName=paperless-ngx-gotenberg
+Network=paperless-ngx-net.network
+NetworkAlias=gotenberg
+Exec=gotenberg --chromium-disable-javascript=true --chromium-allow-list=file:///tmp/.*
+
+HealthCmd=CMD-SHELL curl -fs http://127.0.0.1:3000/health || exit 1
+HealthInterval=10s
+HealthTimeout=5s
+HealthRetries=6
+HealthStartPeriod=15s
+Notify=healthy
+
+[Service]
+Restart=always
+TimeoutStartSec=60
+
+[Install]
+WantedBy=default.target

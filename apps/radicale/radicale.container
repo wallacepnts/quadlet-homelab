@@ -1,0 +1,45 @@
+[Unit]
+Description=Radicale (CalDAV/CardDAV)
+
+[Container]
+PidsLimit=256
+Image=docker.io/tomsquest/docker-radicale:3.7.6.0
+ContainerName=radicale
+PublishPort=5232:5232
+ReadOnly=true
+RunInit=true
+NoNewPrivileges=true
+DropCapability=all
+AddCapability=chown
+AddCapability=setuid
+AddCapability=setgid
+AddCapability=kill
+PodmanArgs=--pids-limit=50
+
+Volume=%h/.config/containers/volumes/radicale/data:/data:Z
+Volume=%h/.config/containers/volumes/radicale/config:/config:ro,Z
+EnvironmentFile=%h/.config/containers/env/radicale.env
+Environment=PYTHONPATH=/data/python-libs
+HealthCmd=CMD-SHELL curl -fs http://127.0.0.1:5232 || exit 1
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+HealthStartPeriod=15s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=radicale
+Label=tsdproxy.port.web=443/https:5232/http
+Label=homepage.group=Self-Hosted
+Label=homepage.name=Radicale
+Label=homepage.icon=radicale.svg
+Label=homepage.href=https://radicale.${TAILNET}.ts.net
+Label=homepage.description="A light, minimal CalDAV/CardDAV server"
+
+Label=wud.watch=true
+
+[Service]
+Restart=always
+TimeoutStartSec=30
+
+[Install]
+WantedBy=default.target

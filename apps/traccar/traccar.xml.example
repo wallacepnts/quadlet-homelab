@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE properties SYSTEM 'http://java.sun.com/dtd/properties.dtd'>
+<!--
+  Traccar config. Copy it to
+  ~/.config/containers/volumes/traccar/conf/traccar.xml before the first
+  start. It is mounted :ro — Traccar does not rewrite this file.
+-->
+<properties>
+  <entry key='config.default'>./conf/default.xml</entry>
+
+  <!-- An embedded H2 database, with no separate service (rule 22 of the
+       conventions). The path is relative to /opt/traccar, so it lands in
+       the data volume. -->
+  <entry key='database.driver'>org.h2.Driver</entry>
+  <entry key='database.url'>jdbc:h2:./data/database</entry>
+  <entry key='database.user'>sa</entry>
+  <entry key='database.password'></entry>
+
+  <!-- There is NO config key for signup: `web.registration` is an invention
+       that circulates online and Traccar ignores it (the only `registration`
+       in Keys.java is `openid.allowRegistration`). The flag lives in the
+       database, in the tc_servers row, and starts OFF.
+       That is safe by default, and the bootstrap is in the README: with zero
+       users, POST /api/users is open and the first one becomes admin; from
+       the second on, "Registration disabled". Tested. -->
+
+  <!-- The official Traccar Client app's protocol. The port HERE is the one
+       inside the container; on the host it goes out on 5056 (5055 belongs
+       to seerr). -->
+  <entry key='osmand.port'>5055</entry>
+</properties>

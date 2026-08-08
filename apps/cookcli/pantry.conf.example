@@ -1,0 +1,41 @@
+# What you already have at home. CookCLI SUBTRACTS this from the shopping
+# list — a recipe that calls for flour does not put flour on the list if it
+# is here.
+#
+# This is TOML, and that matters as soon as names carry accents: a section or
+# item name with an accent or a space MUST be quoted, otherwise the whole
+# file is rejected with "Failed to parse pantry file" and the list comes out
+# as if you had nothing. (The entries below are in Portuguese because the
+# recipes are — they have to match.)
+#
+# Three ways to write an item:
+#   item = "quantity"
+#   item = { quantity = "...", expire = "..." }
+#   item = { ..., low = "..." }        # warns when it is running out
+#
+# Dates in DD.MM.YYYY.
+#
+# The UNIT has to match the recipe's for the subtraction to happen. If the
+# recipe asks for `300%g` of flour and the pantry says `1%kg`, CookCLI warns
+# "Unit mismatch" and keeps the item on the list — which is why the flour and
+# the sugar here are in `g`, not in `kg`.
+
+[armario]
+arroz = "5%kg"
+"feijão" = "2%kg"
+macarrao = "1%kg"
+"farinha de trigo" = { quantity = "1000%g", low = "200%g" }
+"açúcar" = "2000%g"
+sal = "1%kg"
+"café" = { quantity = "500%g", low = "100%g" }
+azeite = "500%ml"
+
+[geladeira]
+leite = { quantity = "2%l", expire = "15.08.2026", low = "500%ml" }
+ovos = "12%un"
+manteiga = "200%g"
+queijo = { quantity = "300%g", expire = "20.08.2026" }
+
+[freezer]
+"carne moída" = { quantity = "1%kg" }
+frango = "2%kg"

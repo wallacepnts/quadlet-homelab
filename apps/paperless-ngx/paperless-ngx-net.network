@@ -1,0 +1,5 @@
+[Unit]
+Description=Paperless-ngx network
+
+[Network]
+NetworkName=paperless-ngx-net

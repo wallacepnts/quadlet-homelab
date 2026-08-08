@@ -1,0 +1,36 @@
+[Unit]
+Description=Immich PostgreSQL (com VectorChord/pgvecto.rs)
+
+[Container]
+DropCapability=ALL
+User=999
+PidsLimit=256
+Image=ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0@sha256:bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23
+ContainerName=immich-postgres
+Network=immich-net.network
+NetworkAlias=database
+
+UserNS=keep-id
+Volume=%h/.config/containers/volumes/immich/postgres:/var/lib/postgresql/data:Z
+ShmSize=128mb
+
+Environment=POSTGRES_USER=postgres
+Environment=POSTGRES_DB=immich
+Environment=POSTGRES_INITDB_ARGS=--data-checksums
+Secret=immich-db-password,type=env,target=POSTGRES_PASSWORD
+
+NoNewPrivileges=true
+PodmanArgs=--cap-drop=NET_RAW
+HealthCmd=CMD-SHELL healthcheck.sh || exit 1
+HealthInterval=10s
+HealthTimeout=5s
+HealthRetries=12
+HealthStartPeriod=30s
+Notify=healthy
+
+[Service]
+Restart=always
+TimeoutStartSec=90
+
+[Install]
+WantedBy=default.target

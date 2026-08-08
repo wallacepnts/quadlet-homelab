@@ -1,0 +1,37 @@
+[Unit]
+Description=Monica (personal CRM)
+
+[Container]
+PidsLimit=256
+Image=ghcr.io/monicahq/monica-next:main
+ContainerName=monica
+PublishPort=9092:80
+Volume=%h/.config/containers/volumes/monica/storage:/var/www/html/storage:Z
+Environment=DB_DATABASE=/var/www/html/storage/database.sqlite
+
+EnvironmentFile=%h/.config/containers/env/monica.env
+Secret=monica-app-key,type=env,target=APP_KEY
+
+HealthCmd=CMD-SHELL curl -fsS http://127.0.0.1:80/login || exit 1
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=5
+HealthStartPeriod=60s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=monica
+Label=tsdproxy.port.web=443/https:80/http
+Label=homepage.group=Self-Hosted
+Label=homepage.name=Monica
+Label=homepage.icon=monica.svg
+Label=homepage.href=https://monica.${TAILNET}.ts.net
+Label=homepage.description="Personal CRM — relationships, contacts, reminders"
+
+# check: ignore wud — floating tag (`main`), nothing to compare between runs.
+
+[Service]
+Restart=always
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target

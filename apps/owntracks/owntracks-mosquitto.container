@@ -1,0 +1,28 @@
+[Unit]
+Description=Mosquitto (OwnTracks' MQTT broker)
+
+[Container]
+PidsLimit=256
+Image=docker.io/library/eclipse-mosquitto:2.1.2-alpine
+ContainerName=mosquitto
+Network=owntracks-net.network
+NetworkAlias=mosquitto
+PublishPort=1883:1883
+PublishPort=9001:9001
+Volume=%h/.config/containers/volumes/owntracks/mosquitto/config:/mosquitto/config:Z
+Volume=%h/.config/containers/volumes/owntracks/mosquitto/data:/mosquitto/data:Z
+Secret=owntracks-mosquitto-passwd,target=/mosquitto/secrets/passwd,uid=1883,gid=1883,mode=0400
+
+HealthCmd=CMD-SHELL nc -z 127.0.0.1 1883 || exit 1
+HealthInterval=15s
+HealthTimeout=5s
+HealthRetries=5
+HealthStartPeriod=10s
+Notify=healthy
+
+[Service]
+Restart=always
+TimeoutStartSec=60
+
+[Install]
+WantedBy=default.target

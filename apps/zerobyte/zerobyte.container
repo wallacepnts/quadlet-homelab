@@ -1,0 +1,44 @@
+[Unit]
+Description=Zerobyte (backup automation, Restic)
+
+[Container]
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+PidsLimit=256
+Image=ghcr.io/nicotsx/zerobyte:v0.41.0
+ContainerName=zerobyte
+PublishPort=4096:4096
+SecurityLabelDisable=true
+Volume=%h/.config/containers/volumes/zerobyte:/var/lib/zerobyte:Z
+Volume=/etc/localtime:/etc/localtime:ro
+Volume=%h/.config/rclone:/root/.config/rclone:ro
+Volume=%h/.config/containers/volumes:/sources/volumes:ro
+Volume=%h/.config/containers/secrets:/sources/secrets:ro
+Volume=%h/backups/zerobyte-local:/repositories/local:Z
+
+EnvironmentFile=%h/.config/containers/env/zerobyte.env
+Secret=zerobyte-app-secret,type=env,target=APP_SECRET
+
+HealthCmd=CMD-SHELL wget -q --spider http://127.0.0.1:4096/ || exit 1
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+HealthStartPeriod=15s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=zerobyte
+Label=tsdproxy.port.web=443/https:4096/http
+Label=homepage.group=Infra
+Label=homepage.name=Zerobyte
+Label=homepage.icon=zerobyte.png
+Label=homepage.href=https://zerobyte.${TAILNET}.ts.net
+Label=homepage.description="Backup automation (Restic)"
+
+Label=wud.watch=true
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

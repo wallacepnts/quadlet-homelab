@@ -1,0 +1,44 @@
+[Unit]
+Description=Traccar (GPS tracking)
+
+[Container]
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+Tmpfs=/opt/traccar/override:size=8M
+DropCapability=ALL
+NoNewPrivileges=true
+PidsLimit=256
+User=1000
+
+Image=docker.io/traccar/traccar:6.14.5
+ContainerName=traccar
+PublishPort=8099:8082
+PublishPort=5056:5055/tcp
+PublishPort=5056:5055/udp
+Volume=%h/.config/containers/volumes/traccar/data:/opt/traccar/data:Z
+Volume=%h/.config/containers/volumes/traccar/logs:/opt/traccar/logs:Z
+Volume=%h/.config/containers/volumes/traccar/conf/traccar.xml:/opt/traccar/conf/traccar.xml:ro,Z
+HealthCmd=CMD-SHELL wget -q -O /dev/null http://127.0.0.1:8082/ || exit 1
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=60s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=traccar
+Label=tsdproxy.port.web=443/https:8082/http
+Label=homepage.group=Home
+Label=homepage.name=Traccar
+Label=homepage.icon=traccar.svg
+Label=homepage.href=https://traccar.${TAILNET}.ts.net
+Label=homepage.description="GPS tracking — live map, history, geofences and reports"
+
+Label=wud.watch=true
+Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+$
+
+[Service]
+Restart=always
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target

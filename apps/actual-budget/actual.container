@@ -1,0 +1,36 @@
+[Unit]
+Description=Actual Budget Server
+
+[Container]
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+User=1000
+PidsLimit=256
+Image=docker.io/actualbudget/actual-server:latest
+AutoUpdate=registry
+ContainerName=actual
+PublishPort=5006:5006
+EnvironmentFile=%h/.config/containers/env/actual.env
+Volume=%h/.config/containers/volumes/actual/data:/data:Z
+
+HealthCmd=CMD-SHELL node /app/src/scripts/health-check.js
+HealthInterval=60s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=20s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=actual
+Label=tsdproxy.port.web=443/https:5006/http
+Label=homepage.group=Self-Hosted
+Label=homepage.name="Actual Budget"
+Label=homepage.icon=actual-budget.svg
+Label=homepage.href=https://actual.${TAILNET}.ts.net
+Label=homepage.description="Self-hosted personal budgeting"
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

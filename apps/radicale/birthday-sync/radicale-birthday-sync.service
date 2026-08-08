@@ -1,0 +1,8 @@
+[Unit]
+Description=Regenerate Radicale's birthday calendar from the contacts
+Requires=radicale.service
+After=radicale.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/podman exec --user radicale -w /data/collections radicale sh -c 'find collection-root -mindepth 3 -name "*.vcf" ! -path "*/.Radicale.cache/*" | python3 /data/birthday-calendar/create_birthday_calendar.py'

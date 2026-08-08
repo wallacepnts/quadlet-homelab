@@ -1,0 +1,41 @@
+[Unit]
+Description=What's Up Docker - image update monitor
+Requires=podman.socket
+After=podman.socket
+
+[Container]
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+NoNewPrivileges=true
+PidsLimit=128
+
+Image=docker.io/getwud/wud:8.3.1
+ContainerName=wud
+PublishPort=8085:3000
+Volume=%t/podman/podman.sock:/var/run/docker.sock:ro,z
+Volume=%h/.config/containers/volumes/wud/store:/store:Z
+EnvironmentFile=%h/.config/containers/env/wud.env
+
+HealthCmd=CMD-SHELL wget -q --spider http://127.0.0.1:3000/ || exit 1
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+HealthStartPeriod=15s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=wud
+Label=tsdproxy.port.web=443/https:3000/http
+Label=homepage.group=Infra
+Label=homepage.name="What's Up Docker"
+Label=homepage.icon=https://cdn.jsdelivr.net/gh/getwud/wud@main/ui/public/img/icons/android-chrome-512x512.png
+Label=homepage.href=https://wud.${TAILNET}.ts.net
+Label=homepage.description="Image update monitor (it never applies them itself)"
+
+Label=wud.watch=true
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

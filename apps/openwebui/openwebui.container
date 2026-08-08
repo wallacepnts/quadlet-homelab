@@ -1,0 +1,40 @@
+[Unit]
+Description=Open WebUI (chat interface for LLMs)
+After=openwebui-ollama.service
+Requires=openwebui-ollama.service
+
+[Container]
+DropCapability=ALL
+PidsLimit=256
+Image=ghcr.io/open-webui/open-webui:v0.11.0
+ContainerName=openwebui
+Network=openwebui-net.network
+PublishPort=3003:8080
+
+Volume=%h/.config/containers/volumes/openwebui/webui:/app/backend/data:Z
+EnvironmentFile=%h/.config/containers/env/openwebui.env
+Secret=openwebui-secret-key,type=env,target=WEBUI_SECRET_KEY
+
+HealthCmd=CMD-SHELL curl -fsS http://127.0.0.1:8080/health || exit 1
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=5
+HealthStartPeriod=120s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=openwebui
+Label=tsdproxy.port.web=443/https:8080/http
+Label=homepage.group=Self-Hosted
+Label=homepage.name="Open WebUI"
+Label=homepage.icon=open-webui.svg
+Label=homepage.href=https://openwebui.${TAILNET}.ts.net
+Label=homepage.description="Chat interface for local LLMs (Ollama) or over an API"
+
+Label=wud.watch=true
+
+[Service]
+Restart=always
+TimeoutStartSec=180
+
+[Install]
+WantedBy=default.target

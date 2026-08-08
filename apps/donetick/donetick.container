@@ -1,0 +1,44 @@
+[Unit]
+Description=Donetick (recurring household chores)
+
+[Container]
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+NoNewPrivileges=true
+PidsLimit=256
+User=1000
+
+Image=docker.io/donetick/donetick:v0.1.76
+ContainerName=donetick
+PublishPort=2021:2021
+
+Environment=DT_ENV=selfhosted
+Environment=DT_SQLITE_PATH=/donetick-data/donetick.db
+Volume=%h/.config/containers/volumes/donetick/config:/config:Z
+Volume=%h/.config/containers/volumes/donetick/data:/donetick-data:Z
+
+HealthCmd=CMD-SHELL wget -q -O /dev/null http://127.0.0.1:2021/ || exit 1
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=20s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=donetick
+Label=tsdproxy.port.web=443/https:2021/http
+Label=homepage.group=Home
+Label=homepage.name=Donetick
+Label=homepage.icon=donetick.svg
+Label=homepage.href=https://donetick.${TAILNET}.ts.net
+Label=homepage.description="Recurring household chores, with who does them and when they are due"
+
+Label=wud.watch=true
+Label=wud.tag.include=^v[0-9]+.[0-9]+.[0-9]+$
+
+[Service]
+Restart=always
+TimeoutStartSec=60
+
+[Install]
+WantedBy=default.target

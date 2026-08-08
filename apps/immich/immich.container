@@ -1,0 +1,46 @@
+[Unit]
+Description=Immich
+After=immich-redis.service immich-postgres.service
+Requires=immich-redis.service immich-postgres.service
+
+[Container]
+PidsLimit=256
+Image=ghcr.io/immich-app/immich-server:v3.1.0
+ContainerName=immich
+Network=immich-net.network
+PublishPort=2283:2283
+Volume=%h/.config/containers/volumes/immich/upload:/data:Z
+Volume=/etc/localtime:/etc/localtime:ro
+EnvironmentFile=%h/.config/containers/env/immich.env
+Environment=DB_USERNAME=postgres
+Environment=DB_DATABASE_NAME=immich
+Secret=immich-db-password,type=env,target=DB_PASSWORD
+
+UserNS=keep-id
+NoNewPrivileges=true
+ReadOnly=true
+Tmpfs=/tmp:size=512M
+DropCapability=ALL
+HealthCmd=CMD-SHELL npm run healthcheck || exit 1
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=5
+HealthStartPeriod=90s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=immich
+Label=tsdproxy.port.web=443/https:2283/http
+Label=homepage.group=Self-Hosted
+Label=homepage.name=Immich
+Label=homepage.icon=immich.svg
+Label=homepage.href=https://immich.${TAILNET}.ts.net
+Label=homepage.description="Photo and video backup and organisation, with face recognition and smart search"
+
+Label=wud.watch=true
+
+[Service]
+Restart=always
+TimeoutStartSec=150
+
+[Install]
+WantedBy=default.target

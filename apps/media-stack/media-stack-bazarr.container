@@ -1,0 +1,41 @@
+[Unit]
+Description=Bazarr (subtitles)
+
+[Container]
+DropCapability=ALL
+AddCapability=CHOWN
+AddCapability=SETUID
+AddCapability=SETGID
+AddCapability=NET_BIND_SERVICE
+PidsLimit=256
+Image=lscr.io/linuxserver/bazarr:1.6.0
+ContainerName=bazarr
+PublishPort=6767:6767
+
+Volume=%h/.config/containers/volumes/media-stack/bazarr/config:/config:Z
+Volume=${MEDIA_DATA_DIR}:/data:Z
+EnvironmentFile=%h/.config/containers/env/media-stack.env
+
+HealthCmd=CMD-SHELL curl --silent --fail http://127.0.0.1:6767/ || exit 1
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+HealthStartPeriod=30s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=bazarr
+Label=tsdproxy.port.web=443/https:6767/http
+Label=homepage.group=Media
+Label=homepage.name=Bazarr
+Label=homepage.icon=bazarr.svg
+Label=homepage.href=https://bazarr.${TAILNET}.ts.net
+Label=homepage.description="Automatic subtitles"
+
+Label=wud.watch=true
+
+[Service]
+Restart=always
+TimeoutStartSec=60
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,29 @@
+[Unit]
+Description=Paperless-ngx Broker (Valkey)
+
+[Container]
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+User=999
+PidsLimit=256
+Image=docker.io/valkey/valkey:9.1.1-alpine3.24
+ContainerName=paperless-ngx-broker
+Network=paperless-ngx-net.network
+NetworkAlias=broker
+
+Volume=%h/.config/containers/volumes/paperless-ngx/broker:/data:Z
+
+HealthCmd=CMD-SHELL valkey-cli ping | grep -q PONG || exit 1
+HealthInterval=5s
+HealthTimeout=5s
+HealthRetries=12
+HealthStartPeriod=10s
+Notify=healthy
+
+[Service]
+Restart=always
+TimeoutStartSec=60
+
+[Install]
+WantedBy=default.target

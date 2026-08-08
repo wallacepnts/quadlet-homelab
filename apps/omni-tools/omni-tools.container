@@ -1,0 +1,39 @@
+[Unit]
+Description=Omni Tools (offline toolbox)
+
+[Container]
+DropCapability=ALL
+AddCapability=CHOWN
+AddCapability=SETUID
+AddCapability=SETGID
+AddCapability=NET_BIND_SERVICE
+NoNewPrivileges=true
+PidsLimit=256
+
+Image=docker.io/iib0011/omni-tools:0.6.0
+ContainerName=omni-tools
+PublishPort=8101:80
+
+HealthCmd=CMD-SHELL wget -q --spider http://127.0.0.1:80/ || exit 1
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+HealthStartPeriod=10s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=omni-tools
+Label=tsdproxy.port.web=443/https:80/http
+Label=homepage.group=Infra
+Label=homepage.name="Omni Tools"
+Label=homepage.icon=omni-tools.png
+Label=homepage.href=https://omni-tools.${TAILNET}.ts.net
+Label=homepage.description="Offline converters, generators and calculators — everything runs in the browser"
+Label=wud.watch=true
+Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+$
+
+[Service]
+Restart=always
+TimeoutStartSec=60
+
+[Install]
+WantedBy=default.target

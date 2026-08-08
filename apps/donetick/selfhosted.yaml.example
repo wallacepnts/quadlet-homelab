@@ -1,0 +1,37 @@
+# Donetick config. Copy it to
+# ~/.config/containers/volumes/donetick/config/selfhosted.yaml and CHANGE
+# jwt.secret to a random value (see the README) before the first start.
+name: "selfhosted"
+is_done_tick_dot_com: false
+# Close it once you have created your account.
+is_user_creation_disabled: false
+telegram:
+  token: ""
+pushover:
+  token: ""
+database:
+  type: "sqlite"
+  migration: true
+jwt:
+  secret: "CHANGEME_openssl_rand_hex_24"
+  session_time: 168h
+  max_refresh: 1440h
+server:
+  port: 2021
+  read_timeout: 10s
+  write_timeout: 10s
+  rate_period: 60s
+  rate_limit: 300
+  cors_allow_origins:
+    - "https://donetick.<your-tailnet>.ts.net"
+    # needed for the Android app to work
+    - "https://localhost"
+    - "http://localhost"
+    - "capacitor://localhost"
+  serve_frontend: true
+  serve_swagger: true
+  public_host: "https://donetick.<your-tailnet>.ts.net"
+logging:
+  level: "info"
+  encoding: "json"
+  development: false

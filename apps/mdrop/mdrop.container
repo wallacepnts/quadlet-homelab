@@ -1,0 +1,37 @@
+[Unit]
+Description=mdrop (converts documents to Markdown)
+
+[Container]
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+NoNewPrivileges=true
+PidsLimit=256
+Image=docker.io/samapriya/mdrop@sha256:692d8f63593667d78ef67d3b79b9e68ce22c8244ace30036fac0fd24cd529ca4
+ContainerName=mdrop
+PublishPort=8292:8000
+Tmpfs=/tmp/mdrop:size=1G,mode=1777
+
+HealthCmd=CMD-SHELL python3 -c "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/')" || exit 1
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=20s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=mdrop
+Label=tsdproxy.port.web=443/https:8000/http
+Label=homepage.group=Self-Hosted
+Label=homepage.name=mdrop
+Label=homepage.icon=mdi-file-document-arrow-right
+Label=homepage.href=https://mdrop.${TAILNET}.ts.net
+Label=homepage.description="Converts PDF, Office, image and audio to Markdown, without leaving the machine"
+
+# check: ignore wud — pinned by digest, nothing to compare.
+
+[Service]
+Restart=always
+TimeoutStartSec=60
+
+[Install]
+WantedBy=default.target

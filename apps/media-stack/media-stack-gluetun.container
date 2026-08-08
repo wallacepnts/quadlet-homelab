@@ -1,0 +1,32 @@
+[Unit]
+Description=Gluetun (VPN tunnel for Deluge)
+
+[Container]
+PidsLimit=256
+Image=docker.io/qmcgaw/gluetun:latest
+ContainerName=gluetun
+AddDevice=/dev/net/tun:/dev/net/tun
+PodmanArgs=--privileged
+EnvironmentFile=%h/.config/containers/env/media-stack-gluetun.env
+
+# check: ignore ports — Deluge's ports live here because it joins with
+# Network=container:gluetun; the two never run at the same time.
+PublishPort=8112:8112
+PublishPort=6881:6881
+PublishPort=6881:6881/udp
+HealthCmd=CMD-SHELL wget -q --spider http://127.0.0.1:9999/ || exit 1
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=5
+HealthStartPeriod=30s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=deluge
+Label=tsdproxy.port.web=443/https:8112/http
+
+[Service]
+Restart=always
+TimeoutStartSec=60
+
+[Install]
+WantedBy=default.target

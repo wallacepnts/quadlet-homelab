@@ -1,0 +1,37 @@
+[Unit]
+Description=Dispatcharr (IPTV, EPG, VOD) — AIO mode (all in one container)
+
+[Container]
+PidsLimit=256
+Image=ghcr.io/dispatcharr/dispatcharr:latest
+ContainerName=dispatcharr
+PublishPort=9191:9191
+
+Environment=DISPATCHARR_ENV=aio
+Environment=DISPATCHARR_LOG_LEVEL=info
+
+Volume=%h/.config/containers/volumes/media-stack/dispatcharr/data:/data:Z
+
+HealthCmd=CMD-SHELL curl --silent --fail http://127.0.0.1:9191/ || exit 1
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+HealthStartPeriod=30s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=dispatcharr
+Label=tsdproxy.port.web=443/https:9191/http
+Label=homepage.group=Media
+Label=homepage.name=Dispatcharr
+Label=homepage.icon=dispatcharr.svg
+Label=homepage.href=https://dispatcharr.${TAILNET}.ts.net
+Label=homepage.description="IPTV manager (streams, EPG, VOD)"
+Label=wud.watch=true
+Label=wud.watch.digest=true
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

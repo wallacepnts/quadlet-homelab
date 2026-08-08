@@ -1,0 +1,40 @@
+[server]
+
+# CalDAV server hostnames separated by a comma
+# IPv4 syntax: address:port
+# IPv6 syntax: [address]:port
+# Hostname syntax (using "getaddrinfo" to resolve to IPv4/IPv6 adress(es)): hostname:port
+# For example: 0.0.0.0:9999, [::]:9999, localhost:9999
+hosts = 0.0.0.0:5232
+
+[auth]
+
+# Authentication method
+# Value: none | htpasswd | remote_user | http_remote_user | http_x_remote_user | dovecot | ldap | oauth2 | pam | denyall
+type = htpasswd
+htpasswd_filename = /config/users
+htpasswd_encryption = bcrypt
+
+[storage]
+
+# Folder for storing local collections, created if not present
+# Do NOT change this — it has to point inside /data (the only writable
+# volume; the root filesystem is read-only). The image's built-in default is
+# /var/lib/radicale/collections, which does not exist outside /data and hangs
+# with "Read-only file system" at start (tested in practice).
+filesystem_folder = /data/collections
+
+# No "hook =" here, on purpose — tested in practice: this version of
+# Radicale (3.7.6, bundled in this image) removed the generic shell-command
+# hook documented at radicale.org/v3.html#versioning-with-git.
+# The hook system is now plugin-based with only three built-in types
+# (none/rabbitmq/email — see radicale/hook/__init__.py inside the image
+# itself), with no "run an arbitrary command" option any more. This
+# repository's birthday calendar uses a periodic timer instead of a hook —
+# see the README.
+
+[headers]
+
+# Set CSP to disallow execution of unknown javascript
+# This may become the default in future versions, override if you need a different CSP.
+Content-Security-Policy = default-src 'self'; object-src 'none'

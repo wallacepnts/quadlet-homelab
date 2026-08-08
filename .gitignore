@@ -1,0 +1,30 @@
+# Secrets — never version these (conventions, rule 2).
+# The secrets' source files and Podman's secrets live ONLY on the host.
+secrets/
+**/secrets/
+
+# Real env files — only the example (.env.example) goes into the repo.
+*.env
+!*.env.example
+.env
+
+# The containers' runtime data — it lives on the host, never in the repo.
+volumes/
+**/volumes/
+
+# Locally generated backups (the pattern in each service's README).
+*.tar.gz
+*-backup-*.tar
+
+# Editor and OS junk.
+*.swp
+*~
+.DS_Store
+
+# Local instruction files for Claude Code — not published on GitHub.
+CLAUDE.md
+_template/
+
+# Cache do Python.
+__pycache__/
+*.pyc

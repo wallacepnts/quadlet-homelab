@@ -1,0 +1,19 @@
+[Unit]
+Description=Paperless-ngx Tika (Office text/metadata extraction)
+
+[Container]
+ReadOnly=true
+Tmpfs=/tmp:size=256M
+DropCapability=ALL
+PidsLimit=256
+Image=docker.io/apache/tika:3.3.1.0
+ContainerName=paperless-ngx-tika
+Network=paperless-ngx-net.network
+NetworkAlias=tika
+
+[Service]
+Restart=always
+TimeoutStartSec=60
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,39 @@
+[Unit]
+Description=Uptime Kuma (uptime monitor)
+
+[Container]
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+NoNewPrivileges=true
+PidsLimit=256
+User=1000
+
+Image=docker.io/louislam/uptime-kuma:2.5.0
+ContainerName=uptime-kuma
+PublishPort=3005:3001
+
+Volume=%h/.config/containers/volumes/uptime-kuma/data:/app/data:Z
+HealthCmd=CMD-SHELL extra/healthcheck || exit 1
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=30s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=uptime-kuma
+Label=tsdproxy.port.web=443/https:3001/http
+Label=homepage.group=Infra
+Label=homepage.name="Uptime Kuma"
+Label=homepage.icon=uptime-kuma.svg
+Label=homepage.href=https://uptime-kuma.${TAILNET}.ts.net
+Label=homepage.description="Uptime monitor for the services and the tailnet"
+
+Label=wud.watch=true
+
+[Service]
+Restart=always
+TimeoutStartSec=60
+
+[Install]
+WantedBy=default.target

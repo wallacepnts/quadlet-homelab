@@ -1,0 +1,35 @@
+[Unit]
+Description=CookCLI (plain-text recipes, CookLang format)
+
+[Container]
+UserNS=keep-id
+
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+NoNewPrivileges=true
+PidsLimit=256
+
+Image=ghcr.io/cooklang/cookcli:0.32.1
+ContainerName=cookcli
+PublishPort=9080:9080
+Volume=%h/.config/containers/volumes/cookcli/recipes:/recipes:Z
+WorkingDir=/recipes
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=cookcli
+Label=tsdproxy.port.web=443/https:9080/http
+Label=homepage.group=Self-Hosted
+Label=homepage.name=CookCLI
+Label=homepage.icon=mdi-chef-hat
+Label=homepage.href=https://cookcli.${TAILNET}.ts.net
+Label=homepage.description="Plain-text recipes (CookLang) — versionable in git, with no database"
+
+Label=wud.watch=true
+Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+$
+
+[Service]
+Restart=always
+TimeoutStartSec=60
+
+[Install]
+WantedBy=default.target

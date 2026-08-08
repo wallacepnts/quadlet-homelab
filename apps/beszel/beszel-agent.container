@@ -1,0 +1,33 @@
+[Unit]
+Description=Beszel Agent (collects this host's metrics)
+Requires=podman.socket
+After=podman.socket
+
+[Container]
+PidsLimit=256
+Image=docker.io/henrygd/beszel-agent:0.18.7
+ContainerName=beszel-agent
+Network=host
+
+Volume=%h/.config/containers/volumes/beszel/agent-data:/var/lib/beszel-agent:Z
+Volume=%h/.config/containers/volumes/beszel/socket:/beszel_socket:Z
+Volume=%t/podman/podman.sock:/var/run/docker.sock:ro,z
+EnvironmentFile=%h/.config/containers/env/beszel.env
+Secret=beszel-agent-key,target=/run/secrets/beszel-key
+Secret=beszel-agent-token,target=/run/secrets/beszel-token
+
+HealthCmd=CMD /agent health
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+HealthStartPeriod=10s
+Notify=healthy
+
+Label=wud.watch=true
+
+[Service]
+Restart=always
+TimeoutStartSec=60
+
+[Install]
+WantedBy=default.target

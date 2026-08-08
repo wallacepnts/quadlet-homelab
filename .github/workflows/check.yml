@@ -1,0 +1,60 @@
+name: check
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # No setup-python on purpose: check.py and install.py are pure stdlib,
+      # and the runner's python3 (3.12) is already past the minimum they need
+      # (3.9, because of str.removeprefix and the list[str] annotations).
+      - name: python version
+        run: python3 --version
+
+      # Parsers first, repository second: if the parser is broken, the result
+      # of the check is worth nothing.
+      - name: script selftests
+        run: |
+          python3 check.py --selftest
+          python3 install.py --selftest
+
+      # Exits != 0 on an error; a warning does not fail it (it is a convention,
+      # not an invariant).
+      - name: check the repository
+        run: python3 check.py
+
+      # Full lifecycle in a sandbox: install, edit a user file, back up,
+      # restore, refuse an invalid restore, remove and purge. Covers what the
+      # dry-run does not — the effect of each step on disk.
+      - name: install.py lifecycle
+        run: python3 test_install.py
+
+      # --prefix is a full sandbox: it only touches files, and neither systemctl
+      # nor podman is executed — which is why this runs on a bare runner. It
+      # covers what check.py cannot see: a manifest with no secret recipe, an
+      # .example with no destination, and the plan built from each unit.
+      - name: build the install plan for every service
+        run: |
+          failed=0
+          for app in apps/*/; do
+            app=$(basename "$app")
+            if ! out=$(python3 install.py "$app" --apply --prefix "$(mktemp -d)" 2>&1); then
+              echo "::error file=apps/$app::install.py $app failed"
+              echo "$out"
+              failed=1
+            fi
+            case "$out" in
+              *"has no obvious destination"*|*"has no recipe in install.ini"*)
+                echo "::error file=apps/$app::manifest is incomplete"
+                echo "$out" | grep '^  !'
+                failed=1
+                ;;
+            esac
+          done
+          exit $failed

@@ -1,0 +1,34 @@
+[Unit]
+Description=LubeLogger
+
+[Container]
+DropCapability=ALL
+PidsLimit=256
+Image=ghcr.io/hargata/lubelogger:v1.7.0
+ContainerName=lubelogger
+PublishPort=8083:8080
+Volume=%h/.config/containers/volumes/lubelogger/data:/App/data:Z
+Volume=%h/.config/containers/volumes/lubelogger/keys:/root/.aspnet/DataProtection-Keys:Z
+EnvironmentFile=%h/.config/containers/env/lubelogger.env
+HealthCmd=CMD-SHELL timeout 3 bash -c "echo > /dev/tcp/127.0.0.1/8080" || exit 1
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+HealthStartPeriod=15s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=lubelogger
+Label=tsdproxy.port.web=443/https:8080/http
+Label=homepage.group=Self-Hosted
+Label=homepage.name=LubeLogger
+Label=homepage.icon=lubelogger.png
+Label=homepage.href=https://lubelogger.${TAILNET}.ts.net
+Label=homepage.description="Self-hosted vehicle maintenance tracking"
+
+Label=wud.watch=true
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

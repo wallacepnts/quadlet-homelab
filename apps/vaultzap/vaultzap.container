@@ -1,0 +1,40 @@
+[Unit]
+Description=vaultzap - archive of exported conversations
+
+[Container]
+Image=ghcr.io/wallacepnts/vaultzap:latest
+ContainerName=vaultzap
+AutoUpdate=registry
+PublishPort=8927:8927
+
+EnvironmentFile=%h/.config/containers/env/vaultzap.env
+
+Volume=%h/.config/containers/volumes/vaultzap/data:/data:z
+Volume=%h/.config/containers/volumes/vaultzap/inbox:/inbox:rw,z
+Secret=vaultzap-basic-auth,type=env,target=VAULTZAP_BASIC_AUTH
+
+UserNS=keep-id:uid=65532,gid=65532
+ReadOnly=true
+Tmpfs=/tmp:size=128M
+NoNewPrivileges=true
+PidsLimit=128
+DropCapability=ALL
+
+HealthCmd=["/vaultzap", "healthcheck"]
+HealthInterval=30s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=vaultzap
+Label=tsdproxy.port.web=443/https:8927/http
+Label=homepage.group=Self-Hosted
+Label=homepage.name=VaultZap
+Label=homepage.icon=/icons/vaultzap.svg
+Label=homepage.href=https://vaultzap.${TAILNET}.ts.net
+Label=homepage.description="A local, browsable archive of exported WhatsApp conversations"
+
+[Service]
+Restart=always
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target

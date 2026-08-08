@@ -1,0 +1,45 @@
+[Unit]
+Description=Stirling-PDF (PDF manipulation)
+
+[Container]
+DropCapability=ALL
+AddCapability=CHOWN
+AddCapability=SETUID
+AddCapability=SETGID
+AddCapability=DAC_OVERRIDE
+AddCapability=FOWNER
+NoNewPrivileges=true
+PidsLimit=256
+
+Image=docker.io/stirlingtools/stirling-pdf:2.14.3
+ContainerName=stirling-pdf
+PublishPort=8095:8080
+
+Volume=%h/.config/containers/volumes/stirling-pdf/config:/configs:Z
+Volume=%h/.config/containers/volumes/stirling-pdf/tessdata:/usr/share/tessdata:Z
+Volume=%h/.config/containers/volumes/stirling-pdf/logs:/logs:Z
+EnvironmentFile=%h/.config/containers/env/stirling-pdf.env
+HealthCmd=CMD-SHELL curl -fs http://127.0.0.1:8080/api/v1/info/status | grep -q UP || exit 1
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=60s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=stirling-pdf
+Label=tsdproxy.port.web=443/https:8080/http
+Label=homepage.group=Self-Hosted
+Label=homepage.name=Stirling-PDF
+Label=homepage.icon=stirling-pdf.svg
+Label=homepage.href=https://stirling-pdf.${TAILNET}.ts.net
+Label=homepage.description="PDF manipulation — merge, split, convert, OCR, sign"
+
+Label=wud.watch=true
+Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+$
+
+[Service]
+Restart=always
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,5 @@
+[Unit]
+Description=Beszel Hub network
+
+[Network]
+NetworkName=beszel-net

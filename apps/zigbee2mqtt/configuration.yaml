@@ -1,0 +1,37 @@
+# Zigbee2MQTT's initial config — copy it to
+# ~/.config/containers/volumes/zigbee2mqtt/data/configuration.yaml before the
+# first start. The app rewrites this file on its own as you change things in
+# the frontend; this copy is only the starting point.
+version: 4
+
+mqtt:
+  base_topic: zigbee2mqtt
+  # "mqtt" is zigbee2mqtt-mosquitto.container's NetworkAlias.
+  server: mqtt://mqtt:1883
+
+serial:
+  # CHANGE this to your own coordinator. USB: the same path as the unit's
+  # AddDevice=. Network (e.g. SLZB-06): tcp://<ip>:6638 and no AddDevice.
+  port: /dev/ttyACM0
+  adapter: zstack
+
+frontend:
+  enabled: true
+  port: 8080
+
+# Automatic discovery in Home Assistant — turn it on after pointing HA at
+# the broker on <host-ip>:1884 (see the README).
+homeassistant:
+  enabled: false
+
+advanced:
+  # Generated on the first start if left as GENERATE; write it down
+  # afterwards — it is what lets the devices come back without re-pairing.
+  network_key: GENERATE
+  pan_id: GENERATE
+  ext_pan_id: GENERATE
+  log_level: info
+
+# Do not leave pairing open permanently — turn it on from the frontend only
+# when you are actually adding a device.
+permit_join: false

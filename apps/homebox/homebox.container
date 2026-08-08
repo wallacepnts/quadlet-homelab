@@ -1,0 +1,41 @@
+[Unit]
+Description=HomeBox (home inventory)
+
+[Container]
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+NoNewPrivileges=true
+PidsLimit=256
+User=1000
+
+Image=ghcr.io/sysadminsmedia/homebox:0.26.2
+ContainerName=homebox
+PublishPort=3100:7745
+Volume=%h/.config/containers/volumes/homebox/data:/data:Z
+EnvironmentFile=%h/.config/containers/env/homebox.env
+Secret=homebox-api-key-pepper,type=env,target=HBOX_AUTH_API_KEY_PEPPER
+HealthCmd=CMD-SHELL wget -q -O /dev/null http://127.0.0.1:7745/api/v1/status || exit 1
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=20s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=homebox
+Label=tsdproxy.port.web=443/https:7745/http
+Label=homepage.group=Self-Hosted
+Label=homepage.name=HomeBox
+Label=homepage.icon=homebox.svg
+Label=homepage.href=https://homebox.${TAILNET}.ts.net
+Label=homepage.description="Home inventory — what you own, where it is, the receipt and the warranty"
+
+Label=wud.watch=true
+Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+$
+
+[Service]
+Restart=always
+TimeoutStartSec=90
+
+[Install]
+WantedBy=default.target

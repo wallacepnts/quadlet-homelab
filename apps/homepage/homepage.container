@@ -1,0 +1,36 @@
+[Unit]
+Description=Homepage - services dashboard
+Requires=podman.socket
+After=podman.socket
+
+[Container]
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+NoNewPrivileges=true
+PidsLimit=128
+
+Image=ghcr.io/gethomepage/homepage:latest
+AutoUpdate=registry
+ContainerName=homepage
+PublishPort=3000:3000
+Volume=%t/podman/podman.sock:/var/run/docker.sock:ro,z
+Volume=%h/.config/containers/volumes/homepage/config:/app/config:ro,Z
+Volume=%h/.config/containers/volumes/homepage/icons:/app/public/icons:ro,Z
+EnvironmentFile=%h/.config/containers/env/homepage.env
+
+HealthCmd=CMD-SHELL wget -q --spider http://127.0.0.1:3000/ || exit 1
+HealthInterval=10s
+HealthTimeout=5s
+HealthRetries=5
+HealthStartPeriod=10s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=homepage
+Label=tsdproxy.port.web=443/https:3000/http
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

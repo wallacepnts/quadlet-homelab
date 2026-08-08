@@ -1,0 +1,44 @@
+[Unit]
+Description=Zigbee2MQTT (Zigbee -> MQTT bridge)
+After=zigbee2mqtt-mosquitto.service
+Requires=zigbee2mqtt-mosquitto.service
+
+[Container]
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+NoNewPrivileges=true
+PidsLimit=256
+
+Image=ghcr.io/koenkk/zigbee2mqtt:2.13.0
+ContainerName=zigbee2mqtt
+Network=zigbee2mqtt-net.network
+PublishPort=8097:8080
+Volume=%h/.config/containers/volumes/zigbee2mqtt/data:/app/data:Z
+Volume=/run/host/etc/localtime:/etc/localtime:ro
+
+# USB coordinator: uncomment and use a /dev/serial/by-id/ path (see README).
+#AddDevice=/dev/serial/by-id/usb-XXXX:/dev/ttyACM0
+HealthCmd=CMD-SHELL wget -q -O - http://127.0.0.1:8080/ >/dev/null || exit 1
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=30s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=zigbee2mqtt
+Label=tsdproxy.port.web=443/https:8080/http
+Label=homepage.group=Home
+Label=homepage.name=Zigbee2MQTT
+Label=homepage.icon=zigbee2mqtt.svg
+Label=homepage.href=https://zigbee2mqtt.${TAILNET}.ts.net
+Label=homepage.description="A bridge between Zigbee devices and MQTT, with no proprietary hub"
+
+Label=wud.watch=true
+
+[Service]
+Restart=always
+TimeoutStartSec=90
+
+[Install]
+WantedBy=default.target

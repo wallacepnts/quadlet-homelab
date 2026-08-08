@@ -1,0 +1,33 @@
+[Unit]
+Description=Mosquitto (Zigbee2MQTT's MQTT broker)
+
+[Container]
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+User=1883
+PidsLimit=256
+NoNewPrivileges=true
+Image=docker.io/library/eclipse-mosquitto:2.1.2-alpine
+ContainerName=zigbee2mqtt-mosquitto
+Network=zigbee2mqtt-net.network
+NetworkAlias=mqtt
+PublishPort=1884:1883
+Volume=%h/.config/containers/volumes/zigbee2mqtt/mosquitto/config:/mosquitto/config:Z
+Volume=%h/.config/containers/volumes/zigbee2mqtt/mosquitto/data:/mosquitto/data:Z
+
+HealthCmd=CMD-SHELL mosquitto_sub -h 127.0.0.1 -t '$$SYS/#' -C 1 -W 3 >/dev/null || exit 1
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=10s
+Notify=healthy
+
+Label=wud.watch=true
+
+[Service]
+Restart=always
+TimeoutStartSec=60
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,43 @@
+---
+title: Bolo de cenoura com calda
+description: Receita de referência — usa todos os recursos da sintaxe Cooklang de uma vez.
+author: Wallace
+source: https://cooklang.org/docs/spec/
+course: sobremesa
+cuisine: brasileira
+difficulty: fácil
+diet: [vegetariano]
+servings: 8
+prep time: 20 minutes
+cook time: 40 minutes
+time required: 1h
+tags: [doce, forno, clássico]
+locale: pt_BR
+---
+
+> Bolo de cenoura é das poucas receitas em que o liquidificador faz o trabalho pesado.
+> Se a massa ficar rala demais, uma colher de farinha resolve — não bata de novo.
+
+-- comentário de linha: some da página, serve pra você
+
+= Massa
+
+Descasque a @cenoura{3}(média, em rodelas) e bata no #liquidificador{} com os @ovos{3} e o @óleo{200%ml} até ficar homogêneo. [- bloco de comentário: também some -]
+
+Numa #tigela grande{}, misture o @açúcar{300%g} com a @farinha de trigo{300%g} e o @fermento em pó{1%colher de sopa}(peneirado).
+
+Junte o líquido do liquidificador à mistura seca e mexa com um #fubá{}\
+até incorporar,\
+sem bater demais.
+
+== Forno ==
+
+Unte a #forma{} com @manteiga{} e @farinha de trigo{}.
+
+Asse em #forno{} pré-aquecido a 180°C por ~forno{40%minutos}.
+
+== Finalização ==
+
+Espere amornar e cubra com @./molhos/calda-de-chocolate{1}.
+
+> Sirva no mesmo dia. No dia seguinte a calda endurece — o que também é bom, mas é outro bolo.

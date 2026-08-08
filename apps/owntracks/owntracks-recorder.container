@@ -1,0 +1,39 @@
+[Unit]
+Description=OwnTracks Recorder
+After=owntracks-mosquitto.service
+Requires=owntracks-mosquitto.service
+
+[Container]
+PidsLimit=256
+Image=docker.io/owntracks/recorder:1.0.1
+ContainerName=owntracks-recorder
+Network=owntracks-net.network
+PublishPort=8086:8083
+
+Volume=%h/.config/containers/volumes/owntracks/store:/store:Z
+Volume=%h/.config/containers/volumes/owntracks/config:/config:Z
+EnvironmentFile=%h/.config/containers/env/owntracks-recorder.env
+Secret=owntracks-mqtt-password,type=env,target=OTR_PASS
+HealthCmd=CMD-SHELL curl --silent --fail http://127.0.0.1:8083/ || exit 1
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+HealthStartPeriod=15s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=owntracks
+Label=tsdproxy.port.web=443/https:8083/http
+Label=homepage.group=Self-Hosted
+Label=homepage.name=OwnTracks
+Label=homepage.icon=owntracks.svg
+Label=homepage.href=https://owntracks.${TAILNET}.ts.net
+Label=homepage.description="Self-hosted location tracking"
+Label=wud.watch=true
+Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+$
+
+[Service]
+Restart=always
+TimeoutStartSec=60
+
+[Install]
+WantedBy=default.target

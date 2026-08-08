@@ -1,0 +1,18 @@
+---
+title: Cardápio da semana
+description: Exemplo de .menu — usa seções como dias e referências pra puxar as receitas. (A .menu example: sections as days, references to pull in the recipes.)
+servings: 4
+---
+
+== Segunda (2026-08-10) ==
+
+@./cafe-com-leite{2}
+@./bolo-de-cenoura{4%servings}
+
+== Terça (2026-08-11) ==
+
+@./bolo{1}
+
+== Quarta (2026-08-12) ==
+
+@./molhos/calda-de-chocolate{1}

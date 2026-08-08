@@ -1,0 +1,39 @@
+[Unit]
+Description=Prowlarr (indexer manager)
+
+[Container]
+DropCapability=ALL
+AddCapability=CHOWN
+AddCapability=SETUID
+AddCapability=SETGID
+AddCapability=NET_BIND_SERVICE
+PidsLimit=256
+Image=lscr.io/linuxserver/prowlarr:2.5.2
+ContainerName=prowlarr
+PublishPort=9696:9696
+Volume=%h/.config/containers/volumes/media-stack/prowlarr/config:/config:Z
+EnvironmentFile=%h/.config/containers/env/media-stack.env
+
+HealthCmd=CMD-SHELL curl --silent --fail http://127.0.0.1:9696/ || exit 1
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+HealthStartPeriod=30s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=prowlarr
+Label=tsdproxy.port.web=443/https:9696/http
+Label=homepage.group=Media
+Label=homepage.name=Prowlarr
+Label=homepage.icon=prowlarr.svg
+Label=homepage.href=https://prowlarr.${TAILNET}.ts.net
+Label=homepage.description="Indexer manager"
+
+Label=wud.watch=true
+
+[Service]
+Restart=always
+TimeoutStartSec=60
+
+[Install]
+WantedBy=default.target

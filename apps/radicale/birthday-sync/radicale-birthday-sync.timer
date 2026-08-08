@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Radicale's birthday calendar sync periodically
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=30min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

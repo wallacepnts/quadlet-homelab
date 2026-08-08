@@ -1,0 +1,38 @@
+[Unit]
+Description=MeTube (video downloader via yt-dlp)
+
+[Container]
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+NoNewPrivileges=true
+PidsLimit=256
+User=1000
+
+Image=ghcr.io/alexta69/metube:2026.08.04
+ContainerName=metube
+PublishPort=8100:8081
+Volume=%h/.config/containers/volumes/metube/downloads:/downloads:Z
+HealthCmd=CMD-SHELL curl -fsS -o /dev/null http://127.0.0.1:8081/ || exit 1
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=20s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=metube
+Label=tsdproxy.port.web=443/https:8081/http
+Label=homepage.group=Media
+Label=homepage.name=MeTube
+Label=homepage.icon=metube.svg
+Label=homepage.href=https://metube.${TAILNET}.ts.net
+Label=homepage.description="Web interface for yt-dlp — paste the URL and the video lands on disk"
+Label=wud.watch=true
+Label=wud.tag.include=^[0-9]{4}.[0-9]{2}.[0-9]{2}$
+
+[Service]
+Restart=always
+TimeoutStartSec=60
+
+[Install]
+WantedBy=default.target

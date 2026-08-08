@@ -1,0 +1,18 @@
+# Copyparty config. Copy it to
+# ~/.config/containers/volumes/copyparty/cfg/copyparty.conf and CHANGE the
+# password before the first start — the file stores the password in clear
+# text, which is why it lives in the volume and is not versioned.
+
+[accounts]
+  wallace: CHANGEME_THIS_PASSWORD
+
+[/]                     # the URL root
+  /w                    # serves the /w volume (the host bind)
+  accs:
+    rwmda: wallace      # read, write, move, delete, admin
+
+[global]
+  # No anonymous access: anyone who does not authenticate sees nothing.
+  # (`e2dsa`/`e2ts` turn on indexing and media metadata reading.)
+  e2dsa
+  e2ts

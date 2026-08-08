@@ -1,0 +1,37 @@
+[Unit]
+Description=Node-RED (flow automation via a visual editor)
+
+[Container]
+DropCapability=ALL
+PidsLimit=256
+Image=docker.io/nodered/node-red:5.0.4-minimal
+ContainerName=node-red
+PublishPort=1880:1880
+UserNS=keep-id
+Volume=%h/.config/containers/volumes/node-red/data:/data:Z
+EnvironmentFile=%h/.config/containers/env/node-red.env
+
+HealthCmd=CMD-SHELL wget -q --spider http://127.0.0.1:1880/ || exit 1
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=30s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=node-red
+Label=tsdproxy.port.web=443/https:1880/http
+Label=homepage.group=Self-Hosted
+Label=homepage.name=Node-RED
+Label=homepage.icon=node-red.svg
+Label=homepage.href=https://node-red.${TAILNET}.ts.net
+Label=homepage.description="Flow automation via a visual node editor"
+
+Label=wud.watch=true
+Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+-minimal$
+
+[Service]
+Restart=always
+TimeoutStartSec=60
+
+[Install]
+WantedBy=default.target

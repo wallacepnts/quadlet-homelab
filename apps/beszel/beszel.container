@@ -1,0 +1,39 @@
+[Unit]
+Description=Beszel Hub (monitoring dashboard)
+
+[Container]
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+PidsLimit=256
+Image=docker.io/henrygd/beszel:0.18.7
+ContainerName=beszel
+Network=beszel-net.network
+PublishPort=8090:8090
+
+Volume=%h/.config/containers/volumes/beszel/hub-data:/beszel_data:Z
+Volume=%h/.config/containers/volumes/beszel/socket:/beszel_socket:Z
+EnvironmentFile=%h/.config/containers/env/beszel.env
+HealthCmd=CMD /beszel health --url http://127.0.0.1:8090
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+HealthStartPeriod=10s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=beszel
+Label=tsdproxy.port.web=443/https:8090/http
+Label=homepage.group=Infra
+Label=homepage.name=Beszel
+Label=homepage.icon=beszel.svg
+Label=homepage.href=https://beszel.${TAILNET}.ts.net
+Label=homepage.description="CPU/RAM/disk/network and container monitoring for this host"
+
+Label=wud.watch=true
+
+[Service]
+Restart=always
+TimeoutStartSec=60
+
+[Install]
+WantedBy=default.target

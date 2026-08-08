@@ -1,0 +1,27 @@
+[Unit]
+Description=Immich Redis
+
+[Container]
+PidsLimit=256
+Image=docker.io/valkey/valkey:9@sha256:8e8d64b405ce18f41b8e5ee20aa4687a8ed0022d1298f2ce31cdcf3a76e09411
+ContainerName=immich-redis
+Network=immich-net.network
+NetworkAlias=redis
+UserNS=keep-id
+Volume=%h/.config/containers/volumes/immich/redis:/data:Z
+
+NoNewPrivileges=true
+PodmanArgs=--cap-drop=NET_RAW
+HealthCmd=CMD-SHELL redis-cli ping || exit 1
+HealthInterval=10s
+HealthTimeout=5s
+HealthRetries=12
+HealthStartPeriod=15s
+Notify=healthy
+
+[Service]
+Restart=always
+TimeoutStartSec=60
+
+[Install]
+WantedBy=default.target

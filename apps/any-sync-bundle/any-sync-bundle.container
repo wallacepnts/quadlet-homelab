@@ -1,0 +1,40 @@
+[Unit]
+Description=Any-Sync-Bundle server — AIO mode (Mongo + Redis embedded)
+
+[Container]
+DropCapability=ALL
+AddCapability=CHOWN
+AddCapability=SETUID
+AddCapability=SETGID
+AddCapability=DAC_OVERRIDE
+AddCapability=FOWNER
+PidsLimit=512
+Image=ghcr.io/grishy/any-sync-bundle:1.5.0-2026-07-17
+ContainerName=any-sync-bundle
+PublishPort=33010:33010
+PublishPort=33020:33020/udp
+Volume=%h/.config/containers/volumes/any-sync-bundle/data:/data:Z
+EnvironmentFile=%h/.config/containers/env/any-sync-bundle.env
+HealthCmd=CMD-SHELL bash -c '</dev/tcp/127.0.0.1/33010' || exit 1
+HealthInterval=15s
+HealthTimeout=5s
+HealthRetries=5
+HealthStartPeriod=30s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=any-sync
+Label=tsdproxy.port.sync=33010/tcp:33010/tcp
+Label=tsdproxy.port.quic=33020/udp:33020/udp
+Label=homepage.group=Self-Hosted
+Label=homepage.name=Any-Sync-Bundle
+Label=homepage.icon=anytype.svg
+Label=homepage.description="Self-hosted Anytype backend"
+Label=wud.watch=true
+Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+-[0-9]+-[0-9]+-[0-9]+$
+
+[Service]
+Restart=always
+TimeoutStartSec=90
+
+[Install]
+WantedBy=default.target

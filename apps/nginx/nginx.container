@@ -1,0 +1,40 @@
+[Unit]
+Description=nginx (static file server)
+
+[Container]
+DropCapability=ALL
+AddCapability=CHOWN
+AddCapability=SETUID
+AddCapability=SETGID
+AddCapability=NET_BIND_SERVICE
+PidsLimit=256
+Image=docker.io/library/nginx:1.30.4-alpine
+ContainerName=nginx
+PublishPort=8103:80
+Volume=%h/.config/containers/volumes/nginx/html:/usr/share/nginx/html:ro,Z
+Volume=%h/.config/containers/volumes/nginx/conf.d:/etc/nginx/conf.d:ro,Z
+
+HealthCmd=CMD-SHELL wget -q --spider http://127.0.0.1:80/ || exit 1
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+HealthStartPeriod=10s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=nginx
+Label=tsdproxy.port.web=443/https:80/http
+Label=homepage.group=Self-Hosted
+Label=homepage.name=nginx
+Label=homepage.icon=nginx.svg
+Label=homepage.href=https://nginx.${TAILNET}.ts.net
+Label=homepage.description="Static file server"
+
+Label=wud.watch=true
+Label=wud.tag.include=^1.30.[0-9]+-alpine$
+
+[Service]
+Restart=always
+TimeoutStartSec=60
+
+[Install]
+WantedBy=default.target

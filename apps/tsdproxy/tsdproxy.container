@@ -1,0 +1,34 @@
+[Unit]
+Description=tsdproxy - Tailscale reverse proxy manager
+Requires=podman.socket
+After=podman.socket
+
+[Container]
+DropCapability=ALL
+PidsLimit=128
+Image=docker.io/almeidapaulopt/tsdproxy:2
+ContainerName=tsdproxy
+
+PublishPort=8080:8080
+Volume=%t/podman/podman.sock:/var/run/docker.sock:z
+Volume=%h/.config/containers/volumes/tsdproxy/data:/data:Z
+Volume=%h/.config/containers/volumes/tsdproxy/config:/config:Z
+
+AddHost=host.docker.internal:host-gateway
+Secret=authkey
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=dash
+Label=tsdproxy.dash.visible=false
+Label=homepage.group=Infra
+Label=homepage.name=tsdproxy
+Label=homepage.icon=tailscale.svg
+Label=homepage.href=https://dash.${TAILNET}.ts.net
+Label=homepage.description="Publishes containers on the tailnet automatically"
+Label=wud.watch=true
+Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+$
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target
