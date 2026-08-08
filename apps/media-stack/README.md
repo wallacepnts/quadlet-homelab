@@ -138,6 +138,50 @@ Reach each of them through [tsdproxy](../tsdproxy/) (tailnet, e.g.
 `https://sonarr.<your-tailnet>.ts.net`) or locally
 (`http://localhost:<port>`, see the table above).
 
+### Installing only some of them
+
+Nothing here requires anything else. There is no `Requires=` between the units
+— Dispatcharr carries its own Postgres and Redis, and the rest only find each
+other through the configuration you enter by hand later. So take the ones you
+want and leave the rest:
+
+```bash
+python3 install.py media-stack-jellyfin --apply                        # just a media server
+python3 install.py media-stack-sonarr media-stack-prowlarr --apply     # just the TV chain
+```
+
+Naming a unit instead of the folder installs that one alone — its volumes, the
+shared `.env`, and nothing else. The units land in the same
+`systemd/media-stack/` subfolder either way, so adding another later is the same
+command again.
+
+**The one thing `install.py` cannot do for you is `MEDIA_DATA_DIR`.** It is a
+systemd manager variable rather than an `EnvironmentFile=`, so it has to exist
+in the environment before the unit starts, and the script neither creates nor
+warns about it. Eight of the twelve mount the media root and will fail to start
+without it — everything except `dispatcharr`, `prowlarr`, `seerr` and
+`gluetun`. Set it once, no matter how many apps you install:
+
+```bash
+mkdir -p ~/.config/environment.d
+echo "MEDIA_DATA_DIR=$HOME/data" > ~/.config/environment.d/media-stack.conf
+mkdir -p "$HOME/data"
+systemctl --user daemon-reload      # the manager has to re-read the environment
+```
+
+Two per-app details that only bite a partial install:
+
+- **Downtify** bind-mounts `$MEDIA_DATA_DIR/downloads` directly, and a bind
+  mount of a missing directory fails. Deluge creates that folder on first use;
+  installing Downtify without Deluge means creating it yourself
+  (`mkdir -p "$MEDIA_DATA_DIR/downloads"`).
+- **Gluetun and Deluge publish the same ports** (8112, 6881) because Gluetun is
+  meant to *replace* Deluge's own networking — see the VPN section below. Pick
+  one; starting both is a port conflict.
+
+Whatever subset you install, the [wiring section](#wiring-the-services-to-each-other-after-the-first-access)
+still applies to the pieces you have.
+
 <details>
 <summary><b>Manual installation</b> (advanced) — the same steps, one at a time</summary>
 

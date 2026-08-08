@@ -143,6 +143,50 @@ Acessar cada um via [tsdproxy](../tsdproxy/README.pt-BR.md) (tailnet, ex.:
 `https://sonarr.<your-tailnet>.ts.net`) ou local
 (`http://localhost:<porta>`, ver tabela acima).
 
+### Instalando só alguns
+
+Nada aqui exige o resto. Não existe `Requires=` entre as units — o Dispatcharr
+carrega o próprio Postgres e Redis, e os demais só se encontram pela
+configuração que você preenche na mão depois. Então leve os que quiser e deixe
+o resto:
+
+```bash
+python3 install.py media-stack-jellyfin --apply                        # só um servidor de mídia
+python3 install.py media-stack-sonarr media-stack-prowlarr --apply     # só a cadeia de séries
+```
+
+Nomear a unit em vez da pasta instala só aquela — os volumes dela, o `.env`
+compartilhado, e mais nada. As units caem na mesma subpasta
+`systemd/media-stack/` de qualquer jeito, então acrescentar outra depois é o
+mesmo comando de novo.
+
+**A única coisa que o `install.py` não faz por você é o `MEDIA_DATA_DIR`.** Ele
+é variável do manager do systemd, não um `EnvironmentFile=`, então precisa
+existir no ambiente antes de a unit subir — e o script nem cria nem avisa. Oito
+das doze montam a raiz de mídia e não sobem sem ela: todas menos
+`dispatcharr`, `prowlarr`, `seerr` e `gluetun`. Definir uma vez, não importa
+quantos apps você instale:
+
+```bash
+mkdir -p ~/.config/environment.d
+echo "MEDIA_DATA_DIR=$HOME/data" > ~/.config/environment.d/media-stack.conf
+mkdir -p "$HOME/data"
+systemctl --user daemon-reload      # é o manager que precisa reler o ambiente
+```
+
+Dois detalhes por app que só mordem em instalação parcial:
+
+- **Downtify** monta `$MEDIA_DATA_DIR/downloads` direto, e bind mount de
+  diretório inexistente falha. Quem cria essa pasta é o Deluge no primeiro uso;
+  instalar o Downtify sem o Deluge significa criá-la você
+  (`mkdir -p "$MEDIA_DATA_DIR/downloads"`).
+- **Gluetun e Deluge publicam as mesmas portas** (8112, 6881) porque o Gluetun
+  existe pra *substituir* a rede do Deluge — ver a seção de VPN abaixo. Escolher
+  um; subir os dois é conflito de porta.
+
+Seja qual for o subconjunto, a seção de ligação entre os serviços continua
+valendo pras peças que você tem.
+
 <details>
 <summary><b>Instalação manual</b> (avançado) — os mesmos passos, um a um</summary>
 
