@@ -1056,11 +1056,24 @@ def pull(image):
     subprocess.run(["podman", "pull", image], check=True)
 
 
+def moving_tag(image):
+    """True when the tag can point at a different image than it did yesterday.
+
+    `image_exists` is the right skip for a pinned tag — `:1.5.1-stable` is the
+    same bytes forever, and re-pulling it is wasted time. It is exactly wrong
+    for a moving tag: the local copy having the name proves nothing about it
+    being current, so the pull gets skipped and `--update` silently keeps
+    running yesterday's build.
+    """
+    tag = image.rpartition(":")[2]
+    return "/" in tag or tag in ("latest", "main", "master", "edge", "nightly", "develop")
+
+
 def pull_steps(s):
-    """A pull step per image the host does not have yet."""
+    """A pull step per image the host does not have yet, or whose tag moves."""
     out = []
     for image in s.images():
-        if not SANDBOX and image_exists(image):
+        if not SANDBOX and image_exists(image) and not moving_tag(image):
             continue
         out.append((f"podman pull {image}", lambda image=image: pull(image)))
     return out
@@ -1238,6 +1251,16 @@ def selftest():
     assert boot[0][0] == "alpine", boot[0]            # first option is the default
     lang = next(o for _, k, _, o in ch if k == "LANGUAGE")
     assert lang[0] == ("English", ""), lang[0]        # a bare value keeps an empty label
+
+    # a pinned tag is the same bytes forever; a moving one is not, and skipping
+    # its pull is how `--update` silently keeps yesterday's build
+    assert not moving_tag("ghcr.io/x/y:1.5.1-stable")
+    assert not moving_tag("docker.io/dockurr/windows:6.04")
+    assert moving_tag("ghcr.io/wallacepnts/vaultzap:latest")
+    assert moving_tag("ghcr.io/x/y:main")
+    # no tag at all means :latest, and the registry port must not read as one
+    assert moving_tag("ghcr.io/x/y")
+    assert not moving_tag("registry:5000/x/y:2.1")
 
     # what show_secrets() gates on: names when there are any, nothing otherwise
     assert Service("filebrowser").secrets() == ["filebrowser-admin-password",
