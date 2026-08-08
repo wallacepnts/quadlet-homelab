@@ -252,9 +252,27 @@ class Service:
         what the username next to it is — a JWT key and an API token are also
         secrets, and neither is something you type into a form. `install.ini`
         says so explicitly rather than the script guessing.
+
+        Two shapes, because services store it two ways. Either the username is
+        fixed in the app and only the password is a secret:
+
+            [login]
+            user = admin
+            password = filebrowser-admin-password
+
+        or one secret holds both as `user:password`, because that is the form
+        the app itself reads (vaultzap's basic auth). Then the username comes
+        back as None and the caller splits at the first `:`, where the app
+        splits too.
+
+            [login]
+            credentials = vaultzap-basic-auth
         """
         if not self.ini.has_section("login"):
             return None
+        both = self.ini.get("login", "credentials", fallback=None)
+        if both:
+            return (None, both)
         user = self.ini.get("login", "user", fallback=None)
         secret = self.ini.get("login", "password", fallback=None)
         return (user, secret) if user and secret else None
@@ -1228,6 +1246,8 @@ def selftest():
     # [login] picks the one secret worth printing; without the section, none
     assert Service("filebrowser").login() == ("admin", "filebrowser-admin-password")
     assert Service("homebox").login() is None       # prints nothing at all
+    # the combined shape: no username of its own, the secret carries both
+    assert Service("vaultzap").login() == (None, "vaultzap-basic-auth")
 
     # --ask-secrets swaps the generate step for a prompt, and only with a
     # terminal to prompt on
@@ -1338,7 +1358,11 @@ def show_secrets(s):
     if not login or not secret_exists(login[1]):
         return
     user, secret = login
-    print(f"\n  user:     {user}\n  password: {read_secret(secret)}")
+    password = read_secret(secret)
+    if user is None:
+        # one secret holding `user:password` — split where the app splits
+        user, _, password = password.partition(":")
+    print(f"\n  user:     {user}\n  password: {password}")
 
 
 def find_app(name):

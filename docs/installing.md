@@ -334,6 +334,18 @@ user = admin
 password = filebrowser-admin-password
 ```
 
+Some services keep both halves in a single secret, because that is the form the
+app itself reads. Then name it once and the install splits it at the first `:`,
+where the app splits too:
+
+```ini
+[login]
+credentials = vaultzap-basic-auth
+```
+
+That second shape earns its keep on a secret you chose by hand months ago:
+`install.py vaultzap` reads it back without you going looking for it.
+
 `check.py` fails the build if that name is not a `Secret=` any unit declares,
 because a typo there would silently drop the credentials instead of erroring.
 A service with no `[login]` section prints nothing here.

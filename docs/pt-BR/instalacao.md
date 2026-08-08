@@ -334,6 +334,18 @@ user = admin
 password = filebrowser-admin-password
 ```
 
+Alguns serviços guardam os dois lados num secret só, porque é a forma que o
+próprio app lê. Aí basta nomear uma vez, e a instalação divide no primeiro `:`,
+onde o app também divide:
+
+```ini
+[login]
+credentials = vaultzap-basic-auth
+```
+
+Essa segunda forma se paga num secret que você escolheu na mão meses atrás: o
+`install.py vaultzap` lê ele de volta sem você ter que ir procurar.
+
 O `check.py` reprova o build se esse nome não for um `Secret=` declarado por
 alguma unit, porque um erro de digitação ali sumiria com as credenciais em
 silêncio em vez de dar erro. Serviço sem seção `[login]` não imprime nada aqui.
