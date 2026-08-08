@@ -1,0 +1,44 @@
+[Unit]
+Description=macOS in a container (QEMU/KVM)
+
+[Container]
+PidsLimit=512
+
+Image=docker.io/dockurr/macos:3.09
+ContainerName=macos
+PublishPort=8008:8006
+PublishPort=5900:5900/tcp
+PublishPort=5900:5900/udp
+
+AddDevice=/dev/kvm
+AddDevice=/dev/net/tun
+AddCapability=NET_ADMIN
+
+Volume=%h/.config/containers/volumes/macos/storage:/storage:Z
+EnvironmentFile=%h/.config/containers/env/macos.env
+
+HealthCmd=CMD-SHELL curl -fsS -o /dev/null http://127.0.0.1:8006/ || exit 1
+HealthInterval=60s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=300s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=macos
+Label=tsdproxy.port.web=443/https:8006/http
+Label=homepage.group=Infra
+Label=homepage.name=macOS
+Label=homepage.icon=https://cdn.simpleicons.org/macos/000000
+Label=homepage.href=https://macos.${TAILNET}.ts.net
+Label=homepage.description="A macOS VM reachable in the browser, with VNC on 5900"
+
+Label=wud.watch=true
+Label=wud.tag.include=^[0-9]+.[0-9]+$
+
+[Service]
+Restart=always
+TimeoutStartSec=600
+TimeoutStopSec=120
+
+[Install]
+WantedBy=default.target
