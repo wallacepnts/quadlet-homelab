@@ -1,0 +1,44 @@
+[Unit]
+Description=Proxmox VE (hypervisor management, in a container)
+
+[Container]
+Image=docker.io/dockurr/proxmox:9.2.9
+ContainerName=proxmox
+HostName=pve
+PublishPort=8010:8006
+
+# Upstream's entrypoint refuses to start without it, by design: Proxmox runs
+# systemd as PID 1 and manages bridges, storage and KVM from inside.
+PodmanArgs=--privileged
+
+Volume=%h/.config/containers/volumes/proxmox/data:/var/lib/vz:Z
+Volume=%h/.config/containers/volumes/proxmox/config:/var/lib/pve-cluster:Z
+Secret=proxmox-root-password,type=env,target=PASSWORD
+
+# -k because Proxmox serves its own self-signed certificate; plain http here
+# answers 301 rather than proving the UI is up.
+HealthCmd=CMD-SHELL curl -fsSk -o /dev/null https://127.0.0.1:8006/ || exit 1
+HealthInterval=60s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=120s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=proxmox
+Label=tsdproxy.port.web=443/https:8006/https
+Label=homepage.group=Infra
+Label=homepage.name=Proxmox
+Label=homepage.icon=https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/proxmox.svg
+Label=homepage.href=https://proxmox.${TAILNET}.ts.net
+Label=homepage.description="Proxmox VE web interface, for trying it without dedicating a machine"
+
+Label=wud.watch=true
+Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+$
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+TimeoutStopSec=120
+
+[Install]
+WantedBy=default.target
