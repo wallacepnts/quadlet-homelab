@@ -21,12 +21,12 @@ e as quatro distros são as que ele suporta oficialmente. São feitas pra uso
 interativo — `bash`, `git` e o ferramental de shell de sempre já vêm dentro,
 coisa que imagem base de distro não dá.
 
-| Unit | Imagem | Gerenciador de pacotes |
-| --- | --- | --- |
-| `toolbx-arch` | `quay.io/toolbx/arch-toolbox` (por digest) | `pacman -S` |
-| `toolbx-fedora` | `registry.fedoraproject.org/fedora-toolbox:45` | `dnf install` |
-| `toolbx-rhel` | `registry.access.redhat.com/ubi10/toolbox:10.2` | `dnf install` |
-| `toolbx-ubuntu` | `quay.io/toolbx/ubuntu-toolbox:26.04` | `apt install` |
+| | Unit | Imagem | Gerenciador de pacotes |
+| --- | --- | --- | --- |
+| <img src="https://cdn.simpleicons.org/archlinux/1793D1" width="24" height="24" alt=""> | `toolbx-arch` | `quay.io/toolbx/arch-toolbox` (por digest) | `pacman -S` |
+| <img src="https://cdn.simpleicons.org/fedora/51A2DA" width="24" height="24" alt=""> | `toolbx-fedora` | `registry.fedoraproject.org/fedora-toolbox:45` | `dnf install` |
+| <img src="https://cdn.simpleicons.org/redhat/EE0000" width="24" height="24" alt=""> | `toolbx-rhel` | `registry.access.redhat.com/ubi10/toolbox:10.2` | `dnf install` |
+| <img src="https://cdn.simpleicons.org/ubuntu/E95420" width="24" height="24" alt=""> | `toolbx-ubuntu` | `quay.io/toolbx/ubuntu-toolbox:26.04` | `apt install` |
 
 **Não é o CLI `toolbox`.** Estes pegam emprestado as imagens do projeto e a
 lista de distros dele, não a ferramenta: não tem comando `toolbox` aqui nem
