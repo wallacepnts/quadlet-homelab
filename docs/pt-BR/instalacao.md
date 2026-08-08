@@ -301,6 +301,19 @@ https://traccar.your-tailnet.ts.net
 Stack multi-container lista uma por unit. Sem tailnet, só a primeira
 linha.
 
+Quando o serviço gerou secrets, o rodapé também imprime **como lê-los de
+volta** — o comando, nunca o valor:
+
+```
+Generated secrets — read one with:
+  podman secret inspect --showsecret --format '{{.SecretData}}' filebrowser-admin-password
+```
+
+Senha gerada que você não acha de novo não serve pra nada, mas imprimir ela
+aqui deixaria o valor no scrollback, em qualquer screenshot da instalação e em
+qualquer saída colada em outro lugar. Uma linha a mais mantém a senha onde o
+`podman secret` a colocou.
+
 **Validado contra a instalação real**: rodar o `install.py --prefix` num
 diretório vazio e comparar com o que está no host reproduz arquivo por
 arquivo em 10 serviços conferidos. As duas diferenças que apareceram eram

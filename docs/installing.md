@@ -300,6 +300,19 @@ https://traccar.your-tailnet.ts.net
 A multi-container stack lists one per unit. Without a tailnet, only the first
 line.
 
+When the service generated secrets, the footer also prints **how to read them
+back** — the command, never the value:
+
+```
+Generated secrets — read one with:
+  podman secret inspect --showsecret --format '{{.SecretData}}' filebrowser-admin-password
+```
+
+A generated password is useless if you cannot find it again, but printing it
+here would leave it in the scrollback, in any screenshot of the install, and in
+any output pasted elsewhere. One extra line keeps it where `podman secret put`
+it.
+
 **Validated against the real installation**: running `install.py --prefix`
 into an empty directory and comparing with what is on the host reproduces it
 file by file across the 10 services that were checked. The two differences

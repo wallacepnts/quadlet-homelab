@@ -1164,6 +1164,11 @@ def selftest():
     lang = next(o for _, k, _, o in ch if k == "LANGUAGE")
     assert lang[0] == ("English", ""), lang[0]        # a bare value keeps an empty label
 
+    # what show_secrets() gates on: names when there are any, nothing otherwise
+    assert Service("filebrowser").secrets() == ["filebrowser-admin-password",
+                                                "filebrowser-jwt-secret"]
+    assert Service("toolbx").secrets() == []
+
     with tempfile.TemporaryDirectory() as d:
         env = Path(d) / "x.env"
         env.write_text("VERSION=11\n# LANGUAGE=Portuguese\nRAM_SIZE=4G\n")
@@ -1226,6 +1231,23 @@ def show_addresses(s, tailnet):
         for url in (local, tail):
             if url:
                 print(f"  {url}" if many else url)
+
+
+def show_secrets(s):
+    """How to read back what was just generated — the command, never the value.
+
+    A generated password is useless if you cannot find it, and every service
+    README ends up repeating the same incantation. Printing the value here
+    instead would put it in the scrollback, in any screenshot of the install,
+    and in any output pasted somewhere else; the command costs one more line
+    and keeps the secret where it was put.
+    """
+    names = s.secrets()
+    if not names:
+        return
+    print("\nGenerated secrets — read one with:")
+    for n in names:
+        print(f"  podman secret inspect --showsecret --format '{{{{.SecretData}}}}' {n}")
 
 
 def find_app(name):
@@ -1317,6 +1339,7 @@ def run_one(a, ap, app, access, href_local):
     else:
         print(f"\n{app}: done. Check with:  systemctl --user status {unit}")
         show_addresses(s, tailnet)
+        show_secrets(s)
     if warnings and not (a.remove or a.backup or a.restore):
         print("The items marked (!) above were not done — see apps/%s/README.md" % s.name)
     return 0
