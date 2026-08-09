@@ -44,7 +44,14 @@ PT = {
     "outdated,": "desatualizadas,",
     "up to date,": "em dia,",
     "with a floating tag,": "com tag flutuante,",
-    "not compared": "não comparadas",
+    'waiting for the image': 'aguardando a imagem',
+    'on a floating tag': 'com tag flutuante',
+    'all up to date': 'tudo em dia',
+    'images': 'imagens',
+    'outdated': 'desatualizadas',
+    'up to date': 'em dia',
+    'not compared': 'não comparadas',
+
 }
 loc = translator(PT)
 
@@ -498,10 +505,22 @@ def main():
         table(f"cannot compare ({len(unclear)}):", unclear)
         table("up to date:", [l for l in rows if l[4] == "up to date"], green)
 
-    floating = sum(1 for l in rows if l[4] == "floating tag")
-    print(loc(f"\n{len(rows)} images: {len(behind)} outdated, "
-              f"{sum(1 for l in rows if l[4] == 'up to date')} up to date, "
-              f"{floating} with a floating tag, {len(unclear)} not compared"))
+    # Zeros are not news. What is left is coloured by whether it asks anything
+    # of you: red acts now, yellow waits, the rest is background.
+    partes = []
+    for n, rotulo, cor in (
+            (len(behind), "outdated", red),
+            (len(pendente), "waiting for the image", yellow),
+            (sum(1 for l in rows if l[4] == "up to date"), "up to date", green),
+            (sum(1 for l in rows if l[4] == "floating tag"), "on a floating tag", dim),
+            (len(unclear), "not compared", dim)):
+        if n:
+            partes.append(cor(f"{n} {loc(rotulo)}"))
+    cabeca = dim(loc(f"{len(rows)} images"))
+    if not behind and not pendente:
+        print(f"\n{cabeca} {dim('·')} {green(loc('all up to date'))}")
+    else:
+        print("\n" + f" {dim('·')} ".join([cabeca] + partes))
     return 0
 
 
