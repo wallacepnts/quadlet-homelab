@@ -42,6 +42,8 @@ PT = {
 loc = translator(PT)
 
 
+UA = "quadlet-homelab updates.py"
+
 RAIZ = Path(__file__).resolve().parent
 APPS = RAIZ / "apps"
 
@@ -59,6 +61,51 @@ def directives(text):
         if sep:
             out.append((key.strip(), value.strip()))
     return out
+
+
+def compose_tag(spec, ref, image):
+    """The tag this image carries in the app's own compose, at version `ref`.
+
+    A sidecar follows the version the app validates, not its own upstream: the
+    Postgres in immich's compose moves when immich moves it, and reporting
+    Postgres's latest release would only ever say "behind". Spelled in
+    install.ini as
+
+        [upstream]
+        immich-postgres = compose:immich-app/immich:docker/docker-compose.yml
+
+    and read from the tag the main unit is pinned at, which is the version you
+    would be going to.
+    """
+    resto = spec.partition(":")[2]
+    nome = image.split("@")[0].rpartition(":")[0].split("/")[-1]
+    if resto.startswith(("http://", "https://")):
+        # Not every project keeps its compose in the repository: authentik
+        # publishes it on its own site, and that is the file its docs tell you
+        # to use.
+        urls = [resto]
+    else:
+        try:
+            repo, path = resto.split(":", 1)
+        except ValueError:
+            return None
+        urls = [f"https://raw.githubusercontent.com/{repo}/{r}/{path}"
+                for r in (ref, "v" + ref, "main", "master")]
+    for url in urls:
+        try:
+            # Some sites answer 403 to urllib's default agent; GitHub does not,
+            # but goauthentik.io does, and that is where its compose lives.
+            req = urllib.request.Request(url, headers={"User-Agent": UA})
+            with urllib.request.urlopen(req, timeout=20) as f:
+                texto = f.read().decode("utf-8", "replace")
+        except Exception:
+            continue
+        for m in re.finditer(r"image:\s*[\"\']?([^\s\"\']+)", texto):
+            cand = m.group(1)
+            if cand.split("@")[0].rpartition(":")[0].split("/")[-1] == nome:
+                return cand.split("@")[0].rpartition(":")[2] or None
+        return None
+    return None
 
 
 def github_repo(image, override):
@@ -125,15 +172,30 @@ def services():
         ini = configparser.ConfigParser(interpolation=None)
         ini.read(folder / "install.ini")
         overrides = dict(ini.items("upstream")) if ini.has_section("upstream") else {}
-        for cont in sorted(folder.glob("*.container")):
+        principal = folder / f"{folder.name}.container"
+        conts = sorted(folder.glob("*.container"))
+        if not principal.exists() and len(conts) == 1:
+            principal = conts[0]
+        ref = ""
+        if principal.exists():
+            img = next((v for k, v in directives(principal.read_text()) if k == "Image"), "")
+            ref = img.split("@")[0].rpartition(":")[2]
+        for cont in conts:
             for key, value in directives(cont.read_text()):
                 if key == "Image":
-                    yield folder.name, cont.stem, value, overrides.get(cont.stem)
+                    yield folder.name, cont.stem, value, overrides.get(cont.stem), ref
 
 
 def check(item):
-    app, unit, image, override = item
-    tag = image.rpartition(":")[2]
+    app, unit, image, override, ref = item
+    tag = image.split("@")[0].rpartition(":")[2]
+    if override and override.startswith("compose:"):
+        there = compose_tag(override, ref, image)
+        if not there:
+            return (unit, image, tag, "?", "compose: image not found there")
+        if version(there) and version(tag) and version(there) > version(tag):
+            return (unit, image, tag, there, "BEHIND")
+        return (unit, image, tag, there, "up to date")
     if tag in FLOATING or "/" in tag:
         return (unit, image, tag, "—", "floating tag")
     repo = github_repo(image, override)
@@ -166,7 +228,7 @@ def main():
         rows = list(pool.map(check, items))
 
     behind = [l for l in rows if l[4] == "BEHIND"]
-    unclear = [l for l in rows if l[4].startswith(("unknown repo", "not comparable"))
+    unclear = [l for l in rows if l[4].startswith(("unknown repo", "not comparable", "compose:"))
                or "no published release" in l[4]]
 
     def table(label, ls):
