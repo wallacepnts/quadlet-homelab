@@ -87,6 +87,17 @@ PT = {
     "nothing was done. repeat with --apply": "nada foi feito. repita com --apply",
     "done. Check with:": "pronto. Confira com:",
     "already installed —": "já instalado —",
+    'service': 'serviço',
+    'container': 'container',
+    'repo': 'repo',
+    'active': 'ativo',
+    'inactive': 'inativo',
+    'failed': 'falhou',
+    'healthy': 'saudável',
+    'unhealthy': 'doente',
+    'up': 'no ar',
+    'down': 'parado',
+    'changed': 'mudou',
     "unit(s) in": "unit(s) em",
     "  --update     re-copies the units and restarts, keeping data, env and secrets":
         "  --update     recopia as units e reinicia, mantendo dados, env e secrets",
@@ -1854,16 +1865,17 @@ def show_status():
     if not linhas:
         say(loc("nothing installed yet."))
         return 0
-    say(f"  {'service':<26} {'unit':<10} {'container':<10} repo")
+    say(dim(f"  {loc('service'):<26} {loc('unit'):<10} {loc('container'):<10} {loc('repo')}"))
     def coluna(v, largura, bons=(), ruins=()):
-        """Colour, then pad by the visible text: an escape code has width 0, so
-        padding the coloured string collapses every column after it."""
+        """Translate, colour, then pad by the visible text: an escape code has
+        width 0, so padding the coloured string collapses every column after."""
         cor = green if v in bons else red if v in ruins else dim
-        return cor(v) + " " * max(0, largura - len(v))
+        texto = loc(v)
+        return cor(texto) + " " * max(0, largura - len(texto))
     for n, e, c, dv in linhas:
         say(f"  {n:<26} {coluna(e, 10, ('active',), ('failed',))}"
             f" {coluna(c, 10, ('healthy', 'up'), ('unhealthy', 'down'))}"
-            f" {yellow(dv) if dv == 'changed' else dim(dv)}")
+            f" {yellow(loc(dv)) if dv == 'changed' else dim(dv)}")
     say("")
     say(loc("  installed:") + f" {len(linhas)}  "
         + loc("needing attention:") + f" {problemas}  "
