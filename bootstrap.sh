@@ -62,19 +62,47 @@ fi
 
 cd "$DEST"
 
-# 5. Hand over. With an argument, show that service's plan — still a dry-run.
+# 5. The three tools on PATH, so the repository's location stops mattering.
+#    Only ever into ~/.local/bin: no sudo, nothing outside your home, and
+#    nothing written to your shell's rc file — a bootstrap that edits how every
+#    future shell starts is doing more than it was asked to. If PATH needs the
+#    line, you get told, and you add it. Set NO_LINKS=1 to skip this entirely.
+link() {
+    local target="$DEST/$1" name=$2 dest="$HOME/.local/bin/$2"
+    if [ -e "$dest" ] && [ "$(readlink -f "$dest" 2>/dev/null)" != "$(readlink -f "$target")" ]; then
+        say "$name: a different file is already there — left alone"
+        return
+    fi
+    ln -sfn "$target" "$dest"
+    say "$name -> ${target/#$HOME/\~}"
+}
+
+if [ "${NO_LINKS:-}" != 1 ]; then
+    mkdir -p "$HOME/.local/bin"
+    printf '\n'
+    link install.py qh
+    link check.py   qh-check
+    link updates.py qh-updates
+    case ":$PATH:" in
+        *":$HOME/.local/bin:"*) ;;
+        *) say ""
+           say "~/.local/bin is not in PATH yet. Add this line to your shell's rc file:"
+           say '  export PATH="$HOME/.local/bin:$PATH"' ;;
+    esac
+fi
+
+# 6. Hand over. With an argument, show that service's plan — still a dry-run.
 printf '\n'
 if [ $# -gt 0 ]; then
     say "the plan for $1 (nothing is done yet):"
     printf '\n'
     python3 install.py "$@"
     printf '\n'
-    say "to run it:  cd $DEST && python3 install.py $* --apply"
+    say "to run it:  qh $* --apply"
 else
     say "next:"
-    say "  cd $DEST"
-    say "  python3 install.py --list          # the services"
-    say "  python3 install.py memos           # the plan for one, without doing it"
-    say "  python3 install.py memos --apply   # do it"
+    say "  qh --list          # the services"
+    say "  qh memos           # the plan for one, without doing it"
+    say "  qh memos --apply   # do it"
 fi
 printf '\n'

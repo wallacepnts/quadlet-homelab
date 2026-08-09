@@ -137,9 +137,26 @@ curl -fsSL https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/bo
 ```
 
 It checks git/python3/podman and `systemd --user`, creates Podman's folders,
-clones this repository into `~/quadlet-homelab`, and stops there. **No `sudo`,
-no packages installed, no service started** — everything here is rootless and
-lives in your home, and `install.py` is dry-run by default on purpose.
+clones this repository into `~/quadlet-homelab`, links the three tools into
+`~/.local/bin`, and stops there. **No `sudo`, no packages installed, no service
+started** — everything here is rootless and lives in your home, and
+`install.py` is dry-run by default on purpose.
+
+After it, the repository's location stops mattering:
+
+```bash
+qh --list            # the services
+qh memos             # the plan for one, without doing it
+qh memos --apply     # do it
+qh-check             # the repository's own checks
+qh-updates           # which images are behind
+```
+
+`qh` is a symlink to `install.py`, so `qh --help` and `python3 install.py
+--help` are the same program — the help even adapts its examples to whichever
+name you called it by. A name already taken in `~/.local/bin` is left alone,
+your shell's rc file is never edited (if PATH needs a line, it tells you and
+you add it), and `NO_LINKS=1` skips the step entirely.
 
 Pass a service to see its plan on the way out:
 

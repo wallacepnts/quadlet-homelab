@@ -1515,7 +1515,12 @@ def run_one(a, ap, app, access, href_local):
 
 
 def main():
-    ap = argparse.ArgumentParser(description=__doc__,
+    # The examples in the docstring have to match how you actually invoked it:
+    # installed as a `qh` symlink, telling you to type `python3 install.py`
+    # sends you back to a directory you no longer need to be in.
+    called = Path(sys.argv[0]).name
+    how = "python3 install.py" if called.endswith(".py") else called
+    ap = argparse.ArgumentParser(description=__doc__.replace("python3 install.py", how),
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("app", nargs="*", metavar="APP",
                     help="one or more services, or a single unit of one "

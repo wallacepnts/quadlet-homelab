@@ -134,9 +134,26 @@ curl -fsSL https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/bo
 ```
 
 Ele confere git/python3/podman e o `systemd --user`, cria as pastas do Podman,
-clona este repositório em `~/quadlet-homelab` e para por aí. **Sem `sudo`, sem
-instalar pacote, sem subir serviço** — tudo aqui é rootless e mora na sua home,
-e o `install.py` é dry-run por padrão de propósito.
+clona este repositório em `~/quadlet-homelab`, liga as três ferramentas em
+`~/.local/bin` e para por aí. **Sem `sudo`, sem instalar pacote, sem subir
+serviço** — tudo aqui é rootless e mora na sua home, e o `install.py` é dry-run
+por padrão de propósito.
+
+Depois dele, onde o repositório está deixa de importar:
+
+```bash
+qh --list            # os serviços
+qh memos             # o plano de um, sem fazer
+qh memos --apply     # fazer
+qh-check             # as checagens do próprio repositório
+qh-updates           # quais imagens estão atrasadas
+```
+
+O `qh` é um link simbólico pro `install.py`, então `qh --help` e `python3
+install.py --help` são o mesmo programa — a ajuda até adapta os exemplos ao
+nome pelo qual você chamou. Nome já ocupado em `~/.local/bin` é deixado em paz,
+o rc do seu shell nunca é editado (se faltar a linha no PATH, ele avisa e você
+põe), e `NO_LINKS=1` pula o passo inteiro.
 
 Passando um serviço, ele mostra o plano na saída:
 
