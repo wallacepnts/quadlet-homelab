@@ -1,0 +1,40 @@
+[Unit]
+Description=Postfix relay (null client) for the other containers
+
+[Container]
+NoNewPrivileges=true
+PidsLimit=256
+DropCapability=ALL
+AddCapability=CHOWN
+AddCapability=DAC_OVERRIDE
+AddCapability=FOWNER
+AddCapability=NET_BIND_SERVICE
+AddCapability=SETGID
+AddCapability=SETUID
+
+Image=docker.io/boky/postfix:v5.1.0
+ContainerName=postfix
+PublishPort=1587:587
+
+Volume=%h/.config/containers/volumes/postfix/spool:/var/spool/postfix:Z
+EnvironmentFile=%h/.config/containers/env/postfix.env
+# The relay's password, when the provider asks for one. Create the secret and
+# uncomment both lines (see the README).
+#Secret=postfix-relayhost-password,type=env,target=RELAYHOST_PASSWORD
+
+HealthCmd=CMD-SHELL /scripts/healthcheck.sh || exit 1
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=40s
+Notify=healthy
+
+Label=wud.watch=true
+Label=wud.tag.include=^v[0-9]+.[0-9]+.[0-9]+$
+
+[Service]
+Restart=always
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target
