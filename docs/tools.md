@@ -1,5 +1,8 @@
 # Tools
 
+Both speak Portuguese when the system does, like `qh`. `QH_LANG=en` or
+`QH_LANG=pt` forces either.
+
 ## `qh-check`
 
 Reads every unit in `apps/` and fails on what breaks silently. It also runs in

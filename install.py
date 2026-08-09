@@ -29,6 +29,9 @@ import sys
 import time
 from pathlib import Path
 
+import qhlang
+from qhlang import translator
+
 ROOT = Path(__file__).resolve().parent
 APPS = ROOT / "apps"
 
@@ -191,26 +194,7 @@ PT = {
     "failed:": "falharam:",
 }
 
-# pt only when the environment asks for it; QH_LANG wins, so a single run can
-# be forced either way without touching the locale.
-_lang = (os.environ.get("QH_LANG")
-         or os.environ.get("LC_ALL") or os.environ.get("LANG") or "")
-PTBR = _lang.lower().startswith("pt")
-
-
-# Longest first: "act on ALL the services in apps/" has to win over the
-# "the services" that is a substring of it, or the line comes out half English.
-_PT_ORDER = sorted(PT.items(), key=lambda kv: -len(kv[0]))
-
-
-def loc(s):
-    """The line as the user should read it."""
-    if not PTBR:
-        return s
-    for en, pt in _PT_ORDER:
-        if en in s:
-            s = s.replace(en, pt)
-    return s
+loc = translator(PT)
 
 
 def say(*a, **kw):
@@ -1635,18 +1619,17 @@ def selftest():
             assert not any(l.startswith("#") for l in dns), (modo, dns)
 
     # the language layer: longest phrase wins, and a path is never mangled
-    global PTBR
-    antes = PTBR
+    antes = qhlang.PTBR
     try:
-        PTBR = True
+        qhlang.PTBR = True
         assert loc("act on ALL the services in apps/") == "age sobre TODOS os serviços de apps/"
         assert loc("the services") == "os serviços"
         # um caminho que contém uma palavra traduzível continua intacto
         assert loc("mkdir -p /home/x/install/data") == "mkdir -p /home/x/install/data"
-        PTBR = False
+        qhlang.PTBR = False
         assert loc("act on ALL the services in apps/") == "act on ALL the services in apps/"
     finally:
-        PTBR = antes
+        qhlang.PTBR = antes
 
     # what the already-installed guard gates on, in both layouts
     with tempfile.TemporaryDirectory() as d:

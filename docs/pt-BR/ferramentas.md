@@ -1,5 +1,8 @@
 # Ferramentas
 
+Os dois falam português quando o sistema fala, como o `qh`. O `QH_LANG=en` ou
+`QH_LANG=pt` força um dos dois.
+
 ## `qh-check`
 
 Lê todas as units de `apps/` e reprova o que falha em silêncio. Roda também no

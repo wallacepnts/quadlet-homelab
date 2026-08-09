@@ -18,6 +18,43 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
+from qhlang import translator
+
+PT = {
+    "services,": "serviços,",
+    "containers,": "containers,",
+    "published ports": "portas publicadas",
+    "error(s),": "erro(s),",
+    "warning(s)": "aviso(s)",
+    "does not use the app name as a prefix": "não usa o nome do app como prefixo",
+    "is single-container but has a .network": "tem um container só mas tem uma .network",
+    "(single-container uses the default network)": "(um container só usa a rede padrão)",
+    "— they become the same systemd unit": "— viram a mesma unit do systemd",
+    "repeated in": "repetido em",
+    "uses Notify=healthy without HealthCmd=": "usa Notify=healthy sem HealthCmd=",
+    "(the image's own HEALTHCHECK does not count)": "(o HEALTHCHECK da própria imagem não conta)",
+    "uses localhost in HealthCmd": "usa localhost no HealthCmd",
+    "(resolves IPv4+IPv6; use 127.0.0.1)": "(resolve IPv4+IPv6; use 127.0.0.1)",
+    "has a bare $ in HealthCmd (escape it as $$)": "tem um $ solto no HealthCmd (escape como $$)",
+    "Label with a backslash — Quadlet drops the whole line":
+        "Label com barra invertida — o Quadlet descarta a linha inteira",
+    "Label with an unquoted space, truncates at the first one":
+        "Label com espaço sem aspas, corta no primeiro",
+    "has neither AutoUpdate= nor wud.watch —": "não tem AutoUpdate= nem wud.watch —",
+    "nothing will report a new version": "nada vai reportar versão nova",
+    "published by": "publicada por",
+    "has no recipe in install.ini [secrets] — install.py cannot generate it":
+        "não tem receita em install.ini [secrets] — o install.py não consegue gerá-lo",
+    "install.ini has a recipe for": "install.ini tem receita para",
+    "which no unit uses": "que nenhuma unit usa",
+    "which no unit declares as a Secret=": "que nenhuma unit declara como Secret=",
+    "has no row in the README version table": "não tem linha na tabela de versões do README",
+    "the README says": "o README diz",
+    "the unit says": "a unit diz",
+}
+loc = translator(PT)
+
+
 ROOT = Path(__file__).resolve().parent
 APPS = ROOT / "apps"
 
@@ -345,14 +382,15 @@ def main():
     check_tailnet()
 
     conts = sum(len(list(p.glob("*.container"))) for p in folders)
-    print(f"{len(folders)} services, {conts} containers, {len(uses)} published ports\n")
+    print(loc(f"{len(folders)} services, {conts} containers, "
+              f"{len(uses)} published ports\n"))
 
     for label, items in (("ERROR", errors), ("warn ", warnings)):
         for i in items:
-            print(f"  {label}  {i}")
+            print(loc(f"  {label}  {i}"))
     if errors or warnings:
         print()
-    print(f"{len(errors)} error(s), {len(warnings)} warning(s)")
+    print(loc(f"{len(errors)} error(s), {len(warnings)} warning(s)"))
     return 1 if errors else 0
 
 

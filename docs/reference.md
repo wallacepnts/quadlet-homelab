@@ -29,6 +29,8 @@ apps/<app>/
 └── README.pt-BR.md
 ```
 
+At the root, `qhlang.py` holds the language detection the three tools share.
+
 ## Anatomy of a `.container`
 
 ```ini

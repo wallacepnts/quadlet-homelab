@@ -29,6 +29,8 @@ apps/<app>/
 └── README.pt-BR.md
 ```
 
+Na raiz, o `qhlang.py` guarda a detecção de idioma que as três ferramentas compartilham.
+
 ## Anatomia de um `.container`
 
 ```ini

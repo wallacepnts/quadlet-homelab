@@ -27,6 +27,21 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+from qhlang import translator
+
+PT = {
+    "BEHIND (": "ATRASADOS (",
+    "cannot compare (": "sem comparação (",
+    "up to date:": "em dia:",
+    "images:": "imagens:",
+    "behind,": "atrasadas,",
+    "up to date,": "em dia,",
+    "with a floating tag,": "com tag flutuante,",
+    "not compared": "não comparadas",
+}
+loc = translator(PT)
+
+
 RAIZ = Path(__file__).resolve().parent
 APPS = RAIZ / "apps"
 
@@ -157,7 +172,7 @@ def main():
     def table(label, ls):
         if not ls:
             return
-        print(f"\n{label}")
+        print(loc(f"\n{label}"))
         for unit, _, here, there, _ in sorted(ls):
             print(f"  {unit:<28} {here:<24} -> {there}")
 
@@ -168,9 +183,9 @@ def main():
         table("up to date:", [l for l in rows if l[4] == "up to date"])
 
     floating = sum(1 for l in rows if l[4] == "floating tag")
-    print(f"\n{len(rows)} images: {len(behind)} behind, "
-          f"{sum(1 for l in rows if l[4] == 'up to date')} up to date, "
-          f"{floating} with a floating tag, {len(unclear)} not compared")
+    print(loc(f"\n{len(rows)} images: {len(behind)} behind, "
+              f"{sum(1 for l in rows if l[4] == 'up to date')} up to date, "
+              f"{floating} with a floating tag, {len(unclear)} not compared"))
     return 0
 
 
