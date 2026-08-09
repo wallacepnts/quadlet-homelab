@@ -11,6 +11,21 @@ rootless, um serviço por pasta.
 curl -fsSL https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/bootstrap.sh | bash
 ```
 
+Com `wget`, que algumas instalações mínimas têm e `curl` não:
+
+```bash
+wget -qO- https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/bootstrap.sh | bash
+```
+
+Instalação crua pode não ter nenhum dos dois — a imagem base do Debian não tem
+`curl` nem `wget`. Aí você vai instalar pacote de qualquer jeito, e o `git` (que
+o bootstrap exige de toda forma) basta:
+
+```bash
+git clone https://github.com/wallacepnts/quadlet-homelab
+bash quadlet-homelab/bootstrap.sh
+```
+
 Ele confere git/python3/podman e o `systemd --user`, cria as pastas do Podman,
 clona o repositório em `~/quadlet-homelab` e liga `qh`, `qh-check` e
 `qh-updates` em `~/.local/bin`. Sem `sudo`, sem instalar pacote, sem subir

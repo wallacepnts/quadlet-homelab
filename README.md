@@ -11,6 +11,21 @@ units, rootless, one service per folder.
 curl -fsSL https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/bootstrap.sh | bash
 ```
 
+With `wget` instead, which some minimal installs have and `curl` not:
+
+```bash
+wget -qO- https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/bootstrap.sh | bash
+```
+
+A bare install may have neither — Debian's base image has no `curl` and no
+`wget`. Then you are installing packages anyway, and `git` (which the bootstrap
+needs regardless) is enough:
+
+```bash
+git clone https://github.com/wallacepnts/quadlet-homelab
+bash quadlet-homelab/bootstrap.sh
+```
+
 It checks git/python3/podman and `systemd --user`, creates Podman's folders,
 clones the repository into `~/quadlet-homelab` and links `qh`, `qh-check` and
 `qh-updates` into `~/.local/bin`. No `sudo`, no packages installed, no service
