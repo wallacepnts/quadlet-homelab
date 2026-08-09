@@ -16,7 +16,7 @@ Network=tsdproxy-net.network
 Network=zigbee2mqtt-net.network
 PublishPort=8097:8080
 Volume=%h/.config/containers/volumes/zigbee2mqtt/data:/app/data:Z
-Volume=/run/host/etc/localtime:/etc/localtime:ro
+Volume=/etc/localtime:/etc/localtime:ro
 
 # USB coordinator: uncomment and use a /dev/serial/by-id/ path (see README).
 #AddDevice=/dev/serial/by-id/usb-XXXX:/dev/ttyACM0

@@ -87,17 +87,6 @@ PT = {
     "nothing was done. repeat with --apply": "nada foi feito. repita com --apply",
     "done. Check with:": "pronto. Confira com:",
     "already installed —": "já instalado —",
-    'service': 'serviço',
-    'container': 'container',
-    'repo': 'repo',
-    'active': 'ativo',
-    'inactive': 'inativo',
-    'failed': 'falhou',
-    'healthy': 'saudável',
-    'unhealthy': 'doente',
-    'up': 'no ar',
-    'down': 'parado',
-    'changed': 'mudou',
     "unit(s) in": "unit(s) em",
     "  --update     re-copies the units and restarts, keeping data, env and secrets":
         "  --update     recopia as units e reinicia, mantendo dados, env e secrets",
@@ -1647,6 +1636,17 @@ def selftest():
     assert run_read(["false"]) is None
     assert run_read(["comando-que-nao-existe-xyz"]) is None
 
+    # status words are looked up whole: `up` is a substring of `update`, and
+    # the phrase translator once turned an update summary into "1 no ardate"
+    import qhui as _u
+    a = _u.PTBR
+    try:
+        _u.PTBR = True
+        assert est("up") == "no ar" and est("update") == "update"
+        assert loc("update") == "atualização" or "update" in loc("update")
+    finally:
+        _u.PTBR = a
+
     # colour never reaches a pipe, and never changes the text itself
     import qhui as _ui
     antes_cor = _ui.COLOR
@@ -1820,6 +1820,23 @@ def run_read(cmd):
         return None
 
 
+ESTADOS = {
+    "service": "serviço", "unit": "unit", "container": "container", "repo": "repo",
+    "active": "ativo", "inactive": "inativo", "failed": "falhou",
+    "healthy": "saudável", "unhealthy": "doente", "up": "no ar", "down": "parado",
+    "changed": "mudou",
+}
+
+
+def est(v):
+    """A closed set of words, looked up whole.
+
+    Not through the phrase translator: `up` is a substring of `update`, and a
+    three hundred line run once ended in "1 no ardate".
+    """
+    return ESTADOS.get(v, v) if qhui.PTBR else v
+
+
 def show_status():
     """What is installed, what is running, and what drifted from the repository.
 
@@ -1865,17 +1882,17 @@ def show_status():
     if not linhas:
         say(loc("nothing installed yet."))
         return 0
-    say(dim(f"  {loc('service'):<26} {loc('unit'):<10} {loc('container'):<10} {loc('repo')}"))
+    say(dim(f"  {est('service'):<26} {est('unit'):<10} {est('container'):<10} {est('repo')}"))
     def coluna(v, largura, bons=(), ruins=()):
         """Translate, colour, then pad by the visible text: an escape code has
         width 0, so padding the coloured string collapses every column after."""
         cor = green if v in bons else red if v in ruins else dim
-        texto = loc(v)
+        texto = est(v)
         return cor(texto) + " " * max(0, largura - len(texto))
     for n, e, c, dv in linhas:
         say(f"  {n:<26} {coluna(e, 10, ('active',), ('failed',))}"
             f" {coluna(c, 10, ('healthy', 'up'), ('unhealthy', 'down'))}"
-            f" {yellow(loc(dv)) if dv == 'changed' else dim(dv)}")
+            f" {yellow(est(dv)) if dv == 'changed' else dim(dv)}")
     say("")
     say(loc("  installed:") + f" {len(linhas)}  "
         + loc("needing attention:") + f" {problemas}  "
