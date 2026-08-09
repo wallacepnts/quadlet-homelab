@@ -27,7 +27,7 @@ Label=tsdproxy.dash.visible=false
 
 Label=homepage.group="Network & Security"
 Label=homepage.name=tsdproxy
-Label=homepage.icon=tailscale.svg
+Label=homepage.icon=sh-tsdproxy.svg
 Label=homepage.href=https://dash.${TAILNET}.ts.net
 Label=homepage.description="Publishes containers on the tailnet automatically"
 Label=wud.watch=true

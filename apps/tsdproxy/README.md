@@ -1,6 +1,6 @@
 # tsdproxy
 
-<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/tailscale.svg" width="64" height="64" alt="">
+<img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/tsdproxy.svg" width="64" height="64" alt="">
 
 **[🇧🇷 Leia em português](./README.pt-BR.md)**
 
