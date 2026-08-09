@@ -95,20 +95,31 @@ media-stack-gluetun.env.example
 install.ini
 ```
 
-Units in this stack:
+The stack is a chain: **Seerr** takes the request, the ***arr** apps look the
+title up through **Prowlarr**, hand the download to **SABnzbd** or **Deluge**,
+rename the file into the media root, and **Jellyfin** plays it. Each piece runs
+on its own and is useful without the rest.
 
-- `media-stack-bazarr`
-- `media-stack-deluge`
-- `media-stack-dispatcharr`
-- `media-stack-downtify`
-- `media-stack-gluetun`
-- `media-stack-jellyfin`
-- `media-stack-lidarr`
-- `media-stack-prowlarr`
-- `media-stack-radarr`
-- `media-stack-sabnzbd`
-- `media-stack-seerr`
-- `media-stack-sonarr`
+| Unit | What it does | Port | Version |
+| --- | --- | --- | --- |
+| `media-stack-jellyfin` | Plays the library — films, series, music — to a browser, a TV or a phone | 8096 | `10.11.11` |
+| `media-stack-seerr` | Where you ask for a title. Passes the request to Sonarr or Radarr | 5055 | `v3.4.1` |
+| `media-stack-prowlarr` | Holds the indexer list and feeds it to the other *arr apps, so you configure them once | 9696 | `2.5.2` |
+| `media-stack-sonarr` | Series: watches for new episodes, downloads and files them | 8989 | `4.0.19` |
+| `media-stack-radarr` | The same, for films | 7878 | `6.3.0` |
+| `media-stack-lidarr` | The same, for music | 8686 | `3.1.0` |
+| `media-stack-bazarr` | Fetches subtitles for what Sonarr and Radarr brought in | 6767 | `1.6.0` |
+| `media-stack-sabnzbd` | Downloads from Usenet | 8081 | `version-5.0.4` |
+| `media-stack-deluge` | Downloads torrents. Has no port of its own — it goes through Gluetun | via Gluetun | `2.2.0` |
+| `media-stack-gluetun` | The VPN tunnel Deluge runs inside. Publishes Deluge's interface | 8112 | `latest` |
+| `media-stack-dispatcharr` | IPTV: channels, EPG and VOD, apart from the chain above | 9191 | `latest` |
+| `media-stack-downtify` | Downloads music from Spotify into the media root | 8000 | `2.9.1` |
+
+Deluge is the one exception worth knowing: it declares
+`Network=media-stack-gluetun.container`, so it shares Gluetun's network stack
+and every packet of it leaves through the VPN. That is also why it publishes
+nothing — the port on the host belongs to Gluetun, and stopping Gluetun takes
+Deluge's interface with it.
 
 ## Update
 
@@ -116,8 +127,8 @@ Units in this stack:
 qh media-stack --update --apply
 ```
 
-Pinned to `1.6.0`, `10.11.11`, `2.2.0`. Nothing updates on its own — a new version is applied
-when you run the command above.
+Each unit carries its own tag — the table above lists them. Nothing updates
+on its own; the command above applies whatever the repository pins.
 
 ## Backup
 
@@ -150,13 +161,32 @@ this — that is done in the Tailscale admin.
 
 ## Commands
 
+There is no `media-stack` unit — act on the piece you mean:
+
 ```bash
-systemctl --user status media-stack
-podman logs -f media-stack
+systemctl --user status media-stack-jellyfin
+podman logs -f jellyfin
+qh media-stack-sonarr --update --apply   # one unit of the folder
 ```
+
+Deluge is the exception: it has no port and no container log of its own worth
+watching in isolation — `podman logs -f gluetun` shows the tunnel it depends on.
 
 ## Credits
 
-[jellyfin/jellyfin](https://github.com/jellyfin/jellyfin) — GPL-2.0
+[Jellyfin](https://github.com/jellyfin/jellyfin) — GPL-2.0 ·
+[Sonarr](https://github.com/Sonarr/Sonarr) ·
+[Radarr](https://github.com/Radarr/Radarr) ·
+[Lidarr](https://github.com/Lidarr/Lidarr) ·
+[Prowlarr](https://github.com/Prowlarr/Prowlarr) ·
+[Bazarr](https://github.com/morpheus65535/bazarr) ·
+[Seerr](https://github.com/seerr-team/seerr) ·
+[SABnzbd](https://github.com/sabnzbd/sabnzbd) ·
+[Deluge](https://github.com/deluge-torrent/deluge) ·
+[Gluetun](https://github.com/qdm12/gluetun) ·
+[Dispatcharr](https://github.com/Dispatcharr/Dispatcharr) ·
+[Downtify](https://github.com/henriquesebastiao/downtify)
+
+Most images come from [LinuxServer.io](https://www.linuxserver.io/).
 
 [Official documentation](https://jellyfin.org)
