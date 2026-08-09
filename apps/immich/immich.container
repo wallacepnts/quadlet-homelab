@@ -22,7 +22,7 @@ NoNewPrivileges=true
 ReadOnly=true
 Tmpfs=/tmp:size=512M
 DropCapability=ALL
-HealthCmd=CMD-SHELL npm run healthcheck || exit 1
+HealthCmd=CMD-SHELL curl -fsS -o /dev/null http://127.0.0.1:2283/api/server/ping || exit 1
 HealthInterval=30s
 HealthTimeout=10s
 HealthRetries=5
