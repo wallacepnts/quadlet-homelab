@@ -564,6 +564,29 @@ class Service:
                 return v.split(":")[0]
         return None
 
+    def chowns(self):
+        """[(directory, uid)] — each unit's own volumes, at that unit's uid.
+
+        Not the folder's volume root: a stack can have one unit with `User=`
+        and others without, and chowning the shared root to that one uid takes
+        the other containers' directories with it. immich is the case — the
+        Postgres runs as 999, the server does not, and one `chown -R` on
+        `volumes/immich` left the server unable to write its own uploads.
+        """
+        out = []
+        for u in self.units:
+            if u.suffix != ".container":
+                continue
+            texto = u.read_text()
+            uid = next((v.split(":")[0] for k, v in directives(texto) if k == "User"), None)
+            if not uid or uid == "0":
+                continue
+            for valor in (v for k, v in directives(texto) if k == "Volume"):
+                origem = self._expand(valor.split(":")[0])
+                if origem.startswith(str(self.home)) and "$" not in origem:
+                    out.append((origem, uid))
+        return out
+
     def images(self):
         """The `Image=` values, deduplicated, in declaration order.
 
@@ -743,12 +766,10 @@ def plan_install(s, tailnet, force=False, interactive=False, access="tailnet",
         steps.append((f"podman secret create {name}  ({r})",
                       lambda name=name, r=r: create_secret(s, name, r)))
 
-    uid = s.uid()
-    if uid:
-        for root in s.volume_roots():
-            steps.append((f"podman unshare chown -R {uid}:{uid} {root}",
-                          lambda root=root: run(["podman", "unshare", "chown", "-R",
-                                                 f"{uid}:{uid}", root])))
+    for diretorio, uid in s.chowns():
+        steps.append((f"podman unshare chown -R {uid}:{uid} {diretorio}",
+                      lambda d=diretorio, u=uid: run(["podman", "unshare", "chown", "-R",
+                                                      f"{u}:{u}", d])))
 
     # Before the start, not during it: systemd would pull the image too, but
     # into the journal, leaving the terminal silent for gigabytes at a time.
@@ -994,16 +1015,16 @@ def plan_restore(s, archive):
     # comes back wrong.
     steps.append((f"tar xzf {tgz.name} -C {base}   ({len(inside)} entries)",
                   lambda: tar_cmd("xzf", str(tgz), "-C", str(base))))
-    uid = s.uid()
-    if uid:
-        # Only the roots the archive carries: chown on a path that was not
-        # extracted fails, and since run() uses check=True that would abort the
-        # plan with the service already stopped and never restarted.
-        for root in restored:
-            steps.append((f"podman unshare chown -R {uid}:{uid} {root}   "
+    # Per unit, like the install: one unit's User= must not chown a sibling's
+    # directory. Only what the archive carries — a chown on a path that was not
+    # extracted fails, and run() uses check=True, which would abort the plan
+    # with the service stopped and never restarted.
+    for diretorio, uid in s.chowns():
+        if any(str(diretorio).startswith(str(r)) for r in restored):
+            steps.append((f"podman unshare chown -R {uid}:{uid} {diretorio}   "
                           f"(a backup from another machine carries another subuid)",
-                          lambda root=root: run(["podman", "unshare", "chown", "-R",
-                                                 f"{uid}:{uid}", root])))
+                          lambda d=diretorio, u=uid: run(["podman", "unshare", "chown",
+                                                          "-R", f"{u}:{u}", d])))
     # The tar carries the secret's FILE, but what the service reads is the
     # podman secret — and that one disappears on --remove --purge, or never
     # existed on a fresh machine. Without recreating it, Quadlet cannot resolve
