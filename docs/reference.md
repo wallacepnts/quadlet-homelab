@@ -29,7 +29,8 @@ apps/<app>/
 └── README.pt-BR.md
 ```
 
-At the root, `qhlang.py` holds the language detection the three tools share.
+At the root, `qhui.py` holds the language detection and the colouring the
+three tools share.
 
 ## Anatomy of a `.container`
 

@@ -1,7 +1,8 @@
 # Tools
 
 Both speak Portuguese when the system does, like `qh`. `QH_LANG=en` or
-`QH_LANG=pt` forces either.
+`QH_LANG=pt` forces either, and `NO_COLOR=1` turns the colouring off — which
+is also off automatically whenever the output is not a terminal.
 
 ## `qh-check`
 
@@ -41,6 +42,19 @@ often not named like the repository (`dockurr/windows` against `dockur/windows`)
 A GitHub release is not a published image: the release can land hours before the
 registry has the tag. That case is reported separately — the tag is checked in
 the registry before an update is called available.
+
+A sidecar follows the version the app's own compose validates, not its own
+upstream — the Postgres in immich's compose moves when immich moves it:
+
+```ini
+[upstream]
+immich-postgres = compose:immich-app/immich:docker/docker-compose.yml
+authentik-postgres = compose:https://goauthentik.io/docker-compose.yml
+```
+
+The compose is read at the version the main unit is pinned at, which is the one
+you would be going to. A direct URL works too, for a project that publishes its
+compose on its site instead of in the repository.
 
 An image that does not version by GitHub release — a distro tag, a project
 that only publishes git tags, an image versioned apart from its repository —

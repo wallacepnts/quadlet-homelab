@@ -29,7 +29,8 @@ apps/<app>/
 └── README.pt-BR.md
 ```
 
-Na raiz, o `qhlang.py` guarda a detecção de idioma que as três ferramentas compartilham.
+Na raiz, o `qhui.py` guarda a detecção de idioma e a coloração que as três
+ferramentas compartilham.
 
 ## Anatomia de um `.container`
 
