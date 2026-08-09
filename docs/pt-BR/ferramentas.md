@@ -27,7 +27,8 @@ Pra dispensar uma regra de propósito, a unit diz isso e o motivo é obrigatóri
 ## `qh-updates`
 
 Compara cada tag de `Image=` com a última release do projeto no GitHub e mostra
-só o que está atrasado.
+só o que está desatualizado. O `--all` acrescenta o que está em dia e o que não
+deu pra comparar.
 
 ```bash
 qh-updates

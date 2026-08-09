@@ -30,11 +30,11 @@ from pathlib import Path
 from qhlang import translator
 
 PT = {
-    "BEHIND (": "ATRASADOS (",
+    "OUTDATED (": "DESATUALIZADOS (",
     "cannot compare (": "sem comparação (",
     "up to date:": "em dia:",
     "images:": "imagens:",
-    "behind,": "atrasadas,",
+    "outdated,": "desatualizadas,",
     "up to date,": "em dia,",
     "with a floating tag,": "com tag flutuante,",
     "not compared": "não comparadas",
@@ -238,14 +238,15 @@ def main():
         for unit, _, here, there, _ in sorted(ls):
             print(f"  {unit:<28} {here:<24} -> {there}")
 
-    table(f"BEHIND ({len(behind)}):", behind)
-    table(f"cannot compare ({len(unclear)}):",
-          [(u, i, t, m, s) for u, i, t, m, s in unclear])
+    table(f"OUTDATED ({len(behind)}):", behind)
+    # What could not be compared stays out of the way: it is a property of the
+    # image's naming, not something to act on. --all brings it back.
     if a.all:
+        table(f"cannot compare ({len(unclear)}):", unclear)
         table("up to date:", [l for l in rows if l[4] == "up to date"])
 
     floating = sum(1 for l in rows if l[4] == "floating tag")
-    print(loc(f"\n{len(rows)} images: {len(behind)} behind, "
+    print(loc(f"\n{len(rows)} images: {len(behind)} outdated, "
               f"{sum(1 for l in rows if l[4] == 'up to date')} up to date, "
               f"{floating} with a floating tag, {len(unclear)} not compared"))
     return 0

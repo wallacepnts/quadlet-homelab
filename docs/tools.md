@@ -27,7 +27,8 @@ To waive a rule deliberately, the unit says so and the reason is required:
 ## `qh-updates`
 
 Compares every `Image=` tag against the project's latest GitHub release and
-prints only what is behind.
+prints only what is outdated. `--all` adds what is up to date and what could
+not be compared.
 
 ```bash
 qh-updates
