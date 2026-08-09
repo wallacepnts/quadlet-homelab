@@ -27,7 +27,7 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=actual
 Label=tsdproxy.port.web=443/https:5006/http
 
-Label=homepage.group=Self-Hosted
+Label=homepage.group=Personal
 Label=homepage.name="Actual Budget"
 Label=homepage.icon=actual-budget.svg
 Label=homepage.href=https://actual.${TAILNET}.ts.net

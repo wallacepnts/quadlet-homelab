@@ -24,7 +24,7 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=frigate
 Label=tsdproxy.port.web=443/https:8971/https
 
-Label=homepage.group=Self-Hosted
+Label=homepage.group=Home
 Label=homepage.name=Frigate
 Label=homepage.icon=frigate.svg
 Label=homepage.href=https://frigate.${TAILNET}.ts.net

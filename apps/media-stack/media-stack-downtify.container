@@ -24,7 +24,7 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=downtify
 Label=tsdproxy.port.web=443/https:8000/http
 
-Label=homepage.group=Media
+Label=homepage.group=Downloads
 Label=homepage.name=Downtify
 Label=homepage.icon=downtify.png
 Label=homepage.href=https://downtify.${TAILNET}.ts.net

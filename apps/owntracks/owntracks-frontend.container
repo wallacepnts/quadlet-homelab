@@ -27,7 +27,7 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=owntracks-ui
 Label=tsdproxy.port.web=443/https:80/http
 
-Label=homepage.group=Self-Hosted
+Label=homepage.group=Home
 Label=homepage.name="OwnTracks UI"
 Label=homepage.icon=owntracks.svg
 Label=homepage.href=https://owntracks-ui.${TAILNET}.ts.net

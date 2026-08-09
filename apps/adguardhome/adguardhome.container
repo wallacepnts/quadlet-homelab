@@ -31,7 +31,7 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=adguardhome
 Label=tsdproxy.port.web=443/https:3000/http
 
-Label=homepage.group=Self-Hosted
+Label=homepage.group="Network & Security"
 Label=homepage.name="AdGuard Home"
 Label=homepage.icon=adguard-home.svg
 Label=homepage.href=https://adguardhome.${TAILNET}.ts.net

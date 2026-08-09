@@ -27,7 +27,7 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=uptime-kuma
 Label=tsdproxy.port.web=443/https:3001/http
 
-Label=homepage.group=Infra
+Label=homepage.group=Monitoring
 Label=homepage.name="Uptime Kuma"
 Label=homepage.icon=uptime-kuma.svg
 Label=homepage.href=https://uptime-kuma.${TAILNET}.ts.net

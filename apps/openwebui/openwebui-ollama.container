@@ -22,7 +22,7 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=ollama
 Label=tsdproxy.port.web=443/https:11434/http
 
-Label=homepage.group=Self-Hosted
+Label=homepage.group=AI
 Label=homepage.name=Ollama
 Label=homepage.icon=ollama.svg
 Label=homepage.href=https://ollama.${TAILNET}.ts.net

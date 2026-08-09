@@ -31,7 +31,7 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=donetick
 Label=tsdproxy.port.web=443/https:2021/http
 
-Label=homepage.group=Home
+Label=homepage.group=Personal
 Label=homepage.name=Donetick
 Label=homepage.icon=donetick.svg
 Label=homepage.href=https://donetick.${TAILNET}.ts.net

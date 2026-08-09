@@ -29,7 +29,7 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=freshrss
 Label=tsdproxy.port.web=443/https:80/http
 
-Label=homepage.group=Self-Hosted
+Label=homepage.group=Productivity
 Label=homepage.name=FreshRSS
 Label=homepage.icon=freshrss.svg
 Label=homepage.href=https://freshrss.${TAILNET}.ts.net

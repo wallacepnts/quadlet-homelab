@@ -30,7 +30,7 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=gitea
 Label=tsdproxy.port.web=443/https:3000/http
 
-Label=homepage.group=Self-Hosted
+Label=homepage.group=Tools
 Label=homepage.name=Gitea
 Label=homepage.icon=gitea.svg
 Label=homepage.href=https://gitea.${TAILNET}.ts.net

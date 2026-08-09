@@ -25,7 +25,7 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=dash
 Label=tsdproxy.dash.visible=false
 
-Label=homepage.group=Infra
+Label=homepage.group="Network & Security"
 Label=homepage.name=tsdproxy
 Label=homepage.icon=tailscale.svg
 Label=homepage.href=https://dash.${TAILNET}.ts.net

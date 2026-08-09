@@ -32,7 +32,7 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=netbootxyz
 Label=tsdproxy.port.web=443/https:3000/http
 
-Label=homepage.group=Self-Hosted
+Label=homepage.group="Network & Security"
 Label=homepage.name=netboot.xyz
 Label=homepage.icon=netbootxyz.svg
 Label=homepage.href=https://netbootxyz.${TAILNET}.ts.net

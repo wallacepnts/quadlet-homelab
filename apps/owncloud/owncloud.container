@@ -30,7 +30,7 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=owncloud
 Label=tsdproxy.port.web=443/https:8080/http
 
-Label=homepage.group=Self-Hosted
+Label=homepage.group=Files
 Label=homepage.name=ownCloud
 Label=homepage.icon=owncloud.svg
 Label=homepage.href=https://owncloud.${TAILNET}.ts.net

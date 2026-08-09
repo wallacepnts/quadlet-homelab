@@ -37,7 +37,7 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=authentik
 Label=tsdproxy.port.web=443/https:9000/http
 
-Label=homepage.group=Infra
+Label=homepage.group="Network & Security"
 Label=homepage.name=Authentik
 Label=homepage.icon=authentik.svg
 Label=homepage.href=https://authentik.${TAILNET}.ts.net

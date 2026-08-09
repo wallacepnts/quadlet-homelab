@@ -26,7 +26,7 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=n8n
 Label=tsdproxy.port.web=443/https:5678/http
 
-Label=homepage.group=Self-Hosted
+Label=homepage.group=Automation
 Label=homepage.name=n8n
 Label=homepage.icon=n8n.svg
 Label=homepage.href=https://n8n.${TAILNET}.ts.net

@@ -25,7 +25,7 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=mdrop
 Label=tsdproxy.port.web=443/https:8000/http
 
-Label=homepage.group=Self-Hosted
+Label=homepage.group=Tools
 Label=homepage.name=mdrop
 Label=homepage.icon=mdi-file-document-arrow-right
 Label=homepage.href=https://mdrop.${TAILNET}.ts.net

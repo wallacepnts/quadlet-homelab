@@ -61,7 +61,7 @@ Notify=healthy
 Label=tsdproxy.enable=true
 Label=tsdproxy.name=<app>
 Label=tsdproxy.port.web=443/https:<porta>/http
-Label=homepage.group=Self-Hosted
+Label=homepage.group=<group>
 Label=homepage.name=<App>
 Label=homepage.icon=<url>
 Label=homepage.href=https://<app>.${TAILNET}.ts.net
@@ -74,7 +74,13 @@ Restart=always
 WantedBy=default.target
 ```
 
-O `%h` é a home do usuário, expandida pelo systemd. O `${TAILNET}` vem do
+O `homepage.group` é um de AI, Automation, Downloads, Files, Home, Media,
+Monitoring, `"Network & Security"`, Personal, Productivity, Tools e
+`"Virtual Machines"` — entre aspas quando tem espaço. O nome é traduzido na
+instalação. Valor fora dessa lista reprova o `qh --selftest`, que é o que
+impede o dashboard de criar um grupo de um item só.
+
+`%h` é a home do usuário, expandida pelo systemd. O `${TAILNET}` vem do
 `~/.config/environment.d/tailnet.conf` e continua literal no `systemctl cat` —
 quem mostra o valor resolvido é o `podman inspect`.
 

@@ -28,7 +28,7 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=homebox
 Label=tsdproxy.port.web=443/https:7745/http
 
-Label=homepage.group=Self-Hosted
+Label=homepage.group=Personal
 Label=homepage.name=HomeBox
 Label=homepage.icon=homebox.svg
 Label=homepage.href=https://homebox.${TAILNET}.ts.net

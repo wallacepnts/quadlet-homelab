@@ -37,7 +37,7 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=chromeos
 Label=tsdproxy.port.web=443/https:8006/http
 
-Label=homepage.group=Infra
+Label=homepage.group="Virtual Machines"
 Label=homepage.name=ChromeOS
 Label=homepage.icon=https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/chrome.svg
 Label=homepage.href=https://chromeos.${TAILNET}.ts.net

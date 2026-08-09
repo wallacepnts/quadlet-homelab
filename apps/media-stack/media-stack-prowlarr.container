@@ -27,7 +27,7 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=prowlarr
 Label=tsdproxy.port.web=443/https:9696/http
 
-Label=homepage.group=Media
+Label=homepage.group=Downloads
 Label=homepage.name=Prowlarr
 Label=homepage.icon=prowlarr.svg
 Label=homepage.href=https://prowlarr.${TAILNET}.ts.net

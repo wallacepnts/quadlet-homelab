@@ -30,7 +30,7 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=proxmox
 Label=tsdproxy.port.web=443/https:8006/https
 
-Label=homepage.group=Infra
+Label=homepage.group="Virtual Machines"
 Label=homepage.name=Proxmox
 Label=homepage.icon=https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/proxmox.svg
 Label=homepage.href=https://proxmox.${TAILNET}.ts.net

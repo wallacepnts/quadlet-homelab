@@ -33,7 +33,7 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=radicale
 Label=tsdproxy.port.web=443/https:5232/http
 
-Label=homepage.group=Self-Hosted
+Label=homepage.group=Productivity
 Label=homepage.name=Radicale
 Label=homepage.icon=radicale.svg
 Label=homepage.href=https://radicale.${TAILNET}.ts.net

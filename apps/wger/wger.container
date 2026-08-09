@@ -34,7 +34,7 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=wger
 Label=tsdproxy.port.web=443/https:8000/http
 
-Label=homepage.group=Self-Hosted
+Label=homepage.group=Personal
 Label=homepage.name=wger
 Label=homepage.icon=wger.svg
 Label=homepage.href=https://wger.${TAILNET}.ts.net

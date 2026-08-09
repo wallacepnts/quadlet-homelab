@@ -29,7 +29,7 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=sonarr
 Label=tsdproxy.port.web=443/https:8989/http
 
-Label=homepage.group=Media
+Label=homepage.group=Downloads
 Label=homepage.name=Sonarr
 Label=homepage.icon=sonarr.svg
 Label=homepage.href=https://sonarr.${TAILNET}.ts.net

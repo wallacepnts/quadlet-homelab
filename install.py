@@ -1247,6 +1247,23 @@ DESCRICOES = {
     "ZimaOS in a VM — the CasaOS-derived NAS interface, without the hardware": "ZimaOS numa VM — a interface de NAS derivada do CasaOS, sem o hardware",
 }
 
+# The dashboard's groups, by what the service is for — a name is only useful
+# here if it tells you where to look for something.
+GRUPOS = {
+    "AI": "IA",
+    "Automation": "Automação",
+    "Downloads": "Downloads",
+    "Files": "Arquivos",
+    "Home": "Casa",
+    "Media": "Mídia",
+    "Monitoring": "Monitoramento",
+    "Network & Security": "Rede e Segurança",
+    "Personal": "Pessoal",
+    "Productivity": "Produtividade",
+    "Tools": "Ferramentas",
+    "Virtual Machines": "Máquinas Virtuais",
+}
+
 
 def unit_bytes(source, access, href_local):
     """Copies the unit, adjusting how the service becomes reachable.
@@ -1266,14 +1283,19 @@ def unit_bytes(source, access, href_local):
     """
     data = source.read_bytes()
 
-    # The dashboard reads this label; swapping it here is the same place
-    # `--access local` rewrites `homepage.href`. A description with no entry
-    # keeps the English rather than failing.
+    # The dashboard reads these labels; swapping them here is the same place
+    # `--access local` rewrites `homepage.href`. A value with no entry keeps the
+    # English rather than failing. Quotes are re-added when the translation
+    # brings in a space the English did not have, because an unquoted value is
+    # truncated at the first one (rule 12 of the conventions).
     if qhui.PTBR:
-        data = re.sub(rb'(?m)^(Label=homepage\.description=")([^"]*)(")',
-                      lambda m: m.group(1)
-                      + DESCRICOES.get(m.group(2).decode(), m.group(2).decode()).encode()
-                      + m.group(3), data)
+        for chave, tabela in ((b"description", DESCRICOES), (b"group", GRUPOS)):
+            def troca(m, tabela=tabela):
+                bruto = m.group(2).decode()
+                novo = tabela.get(bruto.strip('"'), bruto.strip('"'))
+                aspas = bruto.startswith('"') or " " in novo
+                return m.group(1) + (f'"{novo}"' if aspas else novo).encode()
+            data = re.sub(rb'(?m)^(Label=homepage\.' + chave + rb'=)(.*)$', troca, data)
 
     # On the tailnet and nowhere else: the port tsdproxy proxies is commented
     # out, so nothing of it is open on the LAN. tsdproxy still reaches the
@@ -1785,11 +1807,24 @@ def selftest():
     assert run_read(["false"]) is None
     assert run_read(["comando-que-nao-existe-xyz"]) is None
 
-    # every dashboard description a unit carries has a Portuguese entry
-    usadas = set()
-    for u in APPS.glob("*/*.container"):
-        usadas |= set(re.findall(r'(?m)^Label=homepage\.description="([^"]*)"', u.read_text()))
-    assert not usadas - set(DESCRICOES), sorted(usadas - set(DESCRICOES))
+    # every dashboard label a unit carries has a Portuguese entry
+    for chave, tabela in (("description", DESCRICOES), ("group", GRUPOS)):
+        usadas = set()
+        for u in APPS.glob("*/*.container"):
+            usadas |= {v.strip('"') for v in re.findall(
+                r'(?m)^Label=homepage\.' + chave + r'=(.*)$', u.read_text())}
+        assert not usadas - set(tabela), (chave, sorted(usadas - set(tabela)))
+
+    # a group whose Portuguese name has a space stays quoted, or systemd cuts it
+    grupo = APPS / "vm" / "vm-windows.container"
+    antes_pt = qhui.PTBR
+    try:
+        qhui.PTBR = True
+        assert 'Label=homepage.group="Máquinas Virtuais"'.encode() in unit_bytes(grupo, "both", False)
+        qhui.PTBR = False
+        assert b'Label=homepage.group="Virtual Machines"' in unit_bytes(grupo, "both", False)
+    finally:
+        qhui.PTBR = antes_pt
 
     # removing one unit of a folder touches only what is that unit's own
     def _um(nome):

@@ -37,7 +37,7 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=ntfy
 Label=tsdproxy.port.web=443/https:2586/http
 
-Label=homepage.group=Infra
+Label=homepage.group=Monitoring
 Label=homepage.name=ntfy
 Label=homepage.icon=ntfy.svg
 Label=homepage.href=https://ntfy.${TAILNET}.ts.net

@@ -34,7 +34,7 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=immich
 Label=tsdproxy.port.web=443/https:2283/http
 
-Label=homepage.group=Self-Hosted
+Label=homepage.group=Media
 Label=homepage.name=Immich
 Label=homepage.icon=immich.svg
 Label=homepage.href=https://immich.${TAILNET}.ts.net

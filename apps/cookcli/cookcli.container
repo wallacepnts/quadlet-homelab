@@ -22,7 +22,7 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=cookcli
 Label=tsdproxy.port.web=443/https:9080/http
 
-Label=homepage.group=Self-Hosted
+Label=homepage.group=Productivity
 Label=homepage.name=CookCLI
 Label=homepage.icon=mdi-chef-hat
 Label=homepage.href=https://cookcli.${TAILNET}.ts.net

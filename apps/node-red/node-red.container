@@ -24,7 +24,7 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=node-red
 Label=tsdproxy.port.web=443/https:1880/http
 
-Label=homepage.group=Self-Hosted
+Label=homepage.group=Automation
 Label=homepage.name=Node-RED
 Label=homepage.icon=node-red.svg
 Label=homepage.href=https://node-red.${TAILNET}.ts.net

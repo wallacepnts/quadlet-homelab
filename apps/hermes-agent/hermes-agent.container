@@ -38,7 +38,7 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=hermes
 Label=tsdproxy.port.web=443/https:9119/http
 
-Label=homepage.group=Self-Hosted
+Label=homepage.group=AI
 Label=homepage.name="Hermes Agent"
 Label=homepage.icon=https://cdn.jsdelivr.net/gh/NousResearch/hermes-agent@main/website/static/img/logo.png
 Label=homepage.href=https://hermes.${TAILNET}.ts.net

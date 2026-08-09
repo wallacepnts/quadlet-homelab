@@ -27,7 +27,7 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=deluge
 Label=tsdproxy.port.web=443/https:8112/http
 
-Label=homepage.group=Media
+Label=homepage.group=Downloads
 Label=homepage.name=Deluge
 Label=homepage.icon=deluge.svg
 Label=homepage.href=https://deluge.${TAILNET}.ts.net
