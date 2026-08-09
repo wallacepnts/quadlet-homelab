@@ -1171,6 +1171,83 @@ def size(path):
     return r.stdout.split("\t")[0].strip() if r.returncode == 0 else "?"
 
 
+# The dashboard's one-line description, in Portuguese. It is a display string
+# like every other, so it lives with them instead of doubling a label in 69
+# units — and `unit_bytes` swaps it in as the unit is written, the same place
+# `--access local` rewrites `homepage.href`.
+DESCRICOES = {
+    "A bridge between Zigbee devices and MQTT, with no proprietary hub": "Ponte entre dispositivos Zigbee e MQTT, sem hub proprietário",
+    "Advanced web interface (Vue.js) for OwnTracks Recorder": "Interface web avançada (Vue.js) para o OwnTracks Recorder",
+    "A light, minimal CalDAV/CardDAV server": "Servidor CalDAV/CardDAV leve e mínimo",
+    "A local, browsable archive of exported WhatsApp conversations": "Acervo local e navegável de conversas exportadas do WhatsApp",
+    "A macOS VM reachable in the browser, with VNC on 5900": "VM de macOS acessível no navegador, com VNC na 5900",
+    "An ARM64 Windows VM, for an ARM host": "VM de Windows ARM64, para host ARM",
+    "Any OS in a VM, reachable in the browser": "Qualquer sistema numa VM, acessível no navegador",
+    "Audiobook and podcast server, with progress synced across devices": "Servidor de audiolivros e podcasts, com progresso sincronizado entre dispositivos",
+    "Automatic subtitles": "Legendas automáticas",
+    "A web file manager with search, previews and WebDAV": "Gerenciador de arquivos web com busca, prévias e WebDAV",
+    "A Windows VM reachable in the browser, with RDP on 3389": "VM de Windows acessível no navegador, com RDP na 3389",
+    "Backup automation (Restic)": "Automação de backup (Restic)",
+    "Bookmark manager with full-text search and automatic page archiving": "Gerenciador de favoritos com busca no texto e arquivamento automático das páginas",
+    "Chat interface for local LLMs (Ollama) or over an API": "Interface de chat para LLMs locais (Ollama) ou por API",
+    "ChromeOS Flex in a VM, with GPU acceleration and a login on the viewer": "ChromeOS Flex numa VM, com aceleração de GPU e login no visualizador",
+    "Cloud file sync and sharing (SQLite evaluation)": "Sincronização e compartilhamento de arquivos na nuvem (avaliação em SQLite)",
+    "Converts PDF, Office, image and audio to Markdown, without leaving the machine": "Converte PDF, Office, imagem e áudio para Markdown, sem sair da máquina",
+    "CPU/RAM/disk/network and container monitoring for this host": "Monitoramento de CPU/RAM/disco/rede e containers deste host",
+    "File server with uploads from the browser, the phone or WebDAV": "Servidor de arquivos com upload pelo navegador, pelo celular ou por WebDAV",
+    "Flow automation via a visual node editor": "Automação de fluxos por editor visual de nós",
+    "GPS tracking — live map, history, geofences and reports": "Rastreamento GPS — mapa ao vivo, histórico, cercas e relatórios",
+    "Home inventory — what you own, where it is, the receipt and the warranty": "Inventário doméstico — o que você tem, onde está, a nota e a garantia",
+    "Identity server / SSO (the portal only — no forward-auth in this repository, see the README)": "Servidor de identidade / SSO (só o portal — sem forward-auth neste repositório, ver o README)",
+    "Image update monitor (it never applies them itself)": "Monitor de atualização de imagens (nunca aplica nada sozinho)",
+    "Indexer manager": "Gerenciador de indexadores",
+    "Invoicing and invoice tracking, with no external service": "Emissão e acompanhamento de faturas, sem serviço externo",
+    "IPTV manager (streams, EPG, VOD)": "Gerenciador de IPTV (streams, EPG, VOD)",
+    "Local LLM server, Open WebUI's backend": "Servidor de LLM local, backend do Open WebUI",
+    "Movie and TV requests (integrates with Sonarr/Radarr/Jellyfin)": "Pedidos de filmes e séries (integra com Sonarr/Radarr/Jellyfin)",
+    "Movie automation": "Automação de filmes",
+    "Music automation": "Automação de músicas",
+    "Network PXE boot server": "Servidor de boot PXE pela rede",
+    "Network-wide ad and tracker blocking over DNS": "Bloqueio de anúncios e rastreadores por DNS, para a rede toda",
+    "NVR with AI object detection": "NVR com detecção de objetos por IA",
+    "Offline converters, generators and calculators — everything runs in the browser": "Conversores, geradores e calculadoras offline — tudo roda no navegador",
+    "P2P file sync between devices, with no central server": "Sincronização P2P de arquivos entre dispositivos, sem servidor central",
+    "PDF manipulation — merge, split, convert, OCR, sign": "Manipulação de PDF — juntar, dividir, converter, OCR, assinar",
+    "Personal AI agent with skills and memory, exposing an OpenAI-compatible API": "Agente de IA pessoal com habilidades e memória, expondo API compatível com a da OpenAI",
+    "Personal CRM — relationships, contacts, reminders": "CRM pessoal — relacionamentos, contatos, lembretes",
+    "Photo and video backup and organisation, with face recognition and smart search": "Backup e organização de fotos e vídeos, com reconhecimento facial e busca inteligente",
+    "Plain-text recipes (CookLang) — versionable in git, with no database": "Receitas em texto puro (CookLang) — versionáveis em git, sem banco de dados",
+    "Proxmox VE web interface, for trying it without dedicating a machine": "Interface web do Proxmox VE, para experimentar sem dedicar uma máquina",
+    "Publishes containers on the tailnet automatically": "Publica containers na tailnet automaticamente",
+    "Push notification server — where the uptime-kuma, wud and zerobyte alerts go": "Servidor de notificações push — para onde vão os alertas do uptime-kuma, do wud e do zerobyte",
+    "Quick notes, self-hosted and markdown-native": "Notas rápidas, self-hosted e markdown-native",
+    "Recurring household chores, with who does them and when they are due": "Tarefas recorrentes da casa, com quem faz e quando vence",
+    "Self-hosted Anytype backend": "Backend do Anytype self-hosted",
+    "Self-hosted blog/newsletter (SQLite, development mode)": "Blog/newsletter self-hosted (SQLite, modo de desenvolvimento)",
+    "Self-hosted document manager": "Gerenciador de documentos self-hosted",
+    "Self-hosted ebook library server": "Servidor de biblioteca de ebooks self-hosted",
+    "Self-hosted Git": "Git self-hosted",
+    "Self-hosted home automation": "Automação residencial self-hosted",
+    "Self-hosted location tracking": "Rastreamento de localização self-hosted",
+    "Self-hosted media server": "Servidor de mídia self-hosted",
+    "Self-hosted password vault (Bitwarden)": "Cofre de senhas self-hosted (Bitwarden)",
+    "Self-hosted personal budgeting": "Orçamento pessoal self-hosted",
+    "Self-hosted RSS/Atom feed aggregator": "Agregador de feeds RSS/Atom self-hosted",
+    "Self-hosted Spotify music downloader": "Baixador de músicas do Spotify self-hosted",
+    "Self-hosted vehicle maintenance tracking": "Controle de manutenção de veículos self-hosted",
+    "Static file server": "Servidor de arquivos estáticos",
+    "Torrent client, behind the VPN": "Cliente de torrent, atrás da VPN",
+    "TV series automation": "Automação de séries",
+    "Uptime monitor for the services and the tailnet": "Monitor de disponibilidade dos serviços e da tailnet",
+    "Usenet client": "Cliente de Usenet",
+    "Web interface for yt-dlp — paste the URL and the video lands on disk": "Interface web para o yt-dlp — cole a URL e o vídeo cai no disco",
+    "WhatsApp API gateway — sessions, webhooks and message sending over HTTP": "Gateway de API do WhatsApp — sessões, webhooks e envio de mensagens por HTTP",
+    "Workflow automation via a visual node editor": "Automação de fluxos de trabalho por editor visual de nós",
+    "Workout planning and tracking, with an exercise database and body measurements": "Planejamento e acompanhamento de treinos, com base de exercícios e medidas corporais",
+    "ZimaOS in a VM — the CasaOS-derived NAS interface, without the hardware": "ZimaOS numa VM — a interface de NAS derivada do CasaOS, sem o hardware",
+}
+
+
 def unit_bytes(source, access, href_local):
     """Copies the unit, adjusting how the service becomes reachable.
 
@@ -1188,6 +1265,15 @@ def unit_bytes(source, access, href_local):
     LAN without the proxy hop, adds `--href-local`.
     """
     data = source.read_bytes()
+
+    # The dashboard reads this label; swapping it here is the same place
+    # `--access local` rewrites `homepage.href`. A description with no entry
+    # keeps the English rather than failing.
+    if qhui.PTBR:
+        data = re.sub(rb'(?m)^(Label=homepage\.description=")([^"]*)(")',
+                      lambda m: m.group(1)
+                      + DESCRICOES.get(m.group(2).decode(), m.group(2).decode()).encode()
+                      + m.group(3), data)
 
     # On the tailnet and nowhere else: the port tsdproxy proxies is commented
     # out, so nothing of it is open on the LAN. tsdproxy still reaches the
@@ -1699,6 +1785,12 @@ def selftest():
     assert run_read(["false"]) is None
     assert run_read(["comando-que-nao-existe-xyz"]) is None
 
+    # every dashboard description a unit carries has a Portuguese entry
+    usadas = set()
+    for u in APPS.glob("*/*.container"):
+        usadas |= set(re.findall(r'(?m)^Label=homepage\.description="([^"]*)"', u.read_text()))
+    assert not usadas - set(DESCRICOES), sorted(usadas - set(DESCRICOES))
+
     # removing one unit of a folder touches only what is that unit's own
     def _um(nome):
         pasta, only = find_app(nome)
@@ -1718,7 +1810,18 @@ def selftest():
         write_unit(src, alvo, "tailnet", False)
         assert alvo.read_bytes() != src.read_bytes(), "tailnet comenta a porta"
         assert unit_bytes(src, "tailnet", False) == alvo.read_bytes()
-        assert unit_bytes(src, "both", False) == src.read_bytes()
+        # `both` changes nothing — in English. In Portuguese the dashboard
+        # description is swapped, which is a change by design.
+        antes_pt = qhui.PTBR
+        try:
+            qhui.PTBR = False
+            assert unit_bytes(src, "both", False) == src.read_bytes()
+            qhui.PTBR = True
+            traduzida = unit_bytes(src, "both", False)
+            assert traduzida != src.read_bytes()
+            assert b"Notas r" in traduzida, "a descrição do memos vira português"
+        finally:
+            qhui.PTBR = antes_pt
 
     # verbs are a closed set too: `remove` is a substring of half the sentences
     import qhui as _v
