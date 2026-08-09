@@ -42,6 +42,19 @@ Release no GitHub não é imagem publicada: a release pode sair horas antes de o
 registry ter a tag. Esse caso é reportado à parte — a tag é conferida no
 registry antes de a atualização ser dada como disponível.
 
+Imagem que não versiona por release do GitHub — tag de distribuição, projeto
+que só publica tags git, imagem versionada à parte do repositório — compara
+com o registry:
+
+```ini
+[upstream]
+nginx = registry
+```
+
+Ele lista as tags do registry e pega a mais nova com o mesmo formato da nossa:
+com `1.30.4-alpine` instalada, as candidatas são `\d+.\d+.\d+-alpine`, então
+`-perl` e `latest` nunca vencem.
+
 Tag flutuante (`latest`, major solto) não tem versão pra comparar, então a
 comparação é por digest: se a tag hoje aponta pra outro lugar que a imagem
 deste host, ele diz. Isso exige podman e a imagem já baixada.

@@ -70,6 +70,111 @@ def directives(text):
     return out
 
 
+def _repo_ref(image):
+    """(host, repo) for the registry API, from an image reference."""
+    ref = image.split("@")[0]
+    if ":" in ref.rsplit("/", 1)[-1]:
+        ref = ref.rpartition(":")[0]
+    parts = ref.split("/")
+    if "." in parts[0] or ":" in parts[0]:
+        host, repo = parts[0], "/".join(parts[1:])
+    else:
+        host, repo = "registry-1.docker.io", ref if "/" in ref else "library/" + ref
+    return ("registry-1.docker.io" if host == "docker.io" else host), repo
+
+
+def _registry_get(url, token=None):
+    """GET with the registry's token dance. (body, token) or (None, None)."""
+    cab = {"User-Agent": UA}
+    if token:
+        cab["Authorization"] = f"Bearer {token}"
+    try:
+        with urllib.request.urlopen(urllib.request.Request(url, headers=cab), timeout=25) as f:
+            return f.read().decode("utf-8", "replace"), token
+    except urllib.error.HTTPError as e:
+        if e.code != 401 or token:
+            return None, token
+        campos = dict(re.findall(r'(\w+)="([^"]*)"', e.headers.get("WWW-Authenticate", "")))
+        if "realm" not in campos:
+            return None, None
+        q = urllib.parse.urlencode({k: v for k, v in campos.items() if k != "realm"})
+        try:
+            with urllib.request.urlopen(urllib.request.Request(
+                    f"{campos['realm']}?{q}", headers={"User-Agent": UA}), timeout=20) as f:
+                dados = json.load(f)
+            tok = dados.get("token") or dados.get("access_token")
+        except Exception:
+            return None, None
+        return _registry_get(url, tok)
+    except Exception:
+        return None, token
+
+
+def _registry_get_link(url, token=None):
+    """_registry_get plus the `Link: rel="next"` of a paginated listing."""
+    cab = {"User-Agent": UA}
+    if token:
+        cab["Authorization"] = f"Bearer {token}"
+    try:
+        with urllib.request.urlopen(urllib.request.Request(url, headers=cab), timeout=25) as f:
+            link = f.headers.get("Link", "")
+            prox = re.search(r'<([^>]+)>;\s*rel="next"', link)
+            return f.read().decode("utf-8", "replace"), token, prox.group(1) if prox else None
+    except urllib.error.HTTPError as e:
+        if e.code != 401 or token:
+            return None, token, None
+        corpo, tok = _registry_get(url, None)
+        if corpo is None:
+            return None, None, None
+        # segunda ida, agora com o token, para pegar o Link
+        return _registry_get_link(url, tok)
+    except Exception:
+        return None, token, None
+
+
+def registry_tags(image, paginas=20):
+    """Every tag the registry lists for this image, or None if it cannot.
+
+    Paginated and capped: nginx publishes thousands, and the newest versions
+    are what matter — a cap keeps one image from spending the whole run.
+    """
+    host, repo = _repo_ref(image)
+    url = f"https://{host}/v2/{repo}/tags/list?n=1000"
+    todas, token, visto = [], None, set()
+    for _ in range(paginas):
+        corpo, token, prox = _registry_get_link(url, token)
+        if corpo is None:
+            break
+        try:
+            todas += json.loads(corpo).get("tags") or []
+        except Exception:
+            break
+        if not prox or prox in visto:
+            break
+        visto.add(prox)
+        url = prox if prox.startswith("http") else f"https://{host}{prox}"
+    return todas or None
+
+
+def registry_newest(image, tag):
+    """The newest registry tag shaped like ours, or None.
+
+    Shape matters: `1.31.1-alpine` and `1.31.1-perl` are different images with
+    the same version, and `26.04` must not be compared against `latest`. The
+    pattern comes from our own tag — digits become \\d+, everything else stays.
+    """
+    tags = registry_tags(image)
+    if not tags:
+        return None
+    forma = "".join(r"\d+" if p.isdigit() else re.escape(p)
+                    for p in re.findall(r"\d+|\D+", tag))
+    rx = re.compile("^" + forma + "$")
+    def numeros(x):
+        return tuple(int(n) for n in re.findall(r"\d+", x))
+    candidatas = [(numeros(x), x) for x in tags if rx.match(x)]
+    return max(candidatas)[1] if candidatas else None
+
+
 def _manifest_head(image, tag):
     """HEAD on the manifest, with the registry's token dance. Headers, or None.
 
@@ -289,6 +394,18 @@ def services():
 def check(item):
     app, unit, image, override, ref = item
     tag = image.split("@")[0].rpartition(":")[2]
+    if override == "registry":
+        # For an image that does not version by GitHub release — a distro tag,
+        # a project that only publishes git tags, an image versioned apart from
+        # its repository — the registry is the only source that knows.
+        there = registry_newest(image, tag)
+        if not there:
+            return (unit, image, tag, "?", "registry: no comparable tag")
+        n = lambda x: tuple(int(v) for v in re.findall(r"\d+", x))
+        if n(there) > n(tag):
+            return (unit, image, tag, there, "BEHIND")
+        return (unit, image, tag, there, "up to date")
+
     if override and override.startswith("compose:"):
         there = compose_tag(override, ref, image)
         if not there:

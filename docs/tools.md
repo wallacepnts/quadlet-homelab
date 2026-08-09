@@ -42,6 +42,19 @@ A GitHub release is not a published image: the release can land hours before the
 registry has the tag. That case is reported separately — the tag is checked in
 the registry before an update is called available.
 
+An image that does not version by GitHub release — a distro tag, a project
+that only publishes git tags, an image versioned apart from its repository —
+compares against the registry instead:
+
+```ini
+[upstream]
+nginx = registry
+```
+
+It lists the registry's tags and takes the newest one shaped like ours: with
+`1.30.4-alpine` installed the candidates are `\d+.\d+.\d+-alpine`, so `-perl`
+and `latest` never win.
+
 A floating tag (`latest`, a bare major) has no version to compare, so it is
 compared by digest instead: if the tag now points somewhere else than the image
 on this host, it says so. That needs podman and the image already pulled.
