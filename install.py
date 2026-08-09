@@ -158,6 +158,16 @@ PT = {
     'local: no tsdproxy, link to the LAN | tailnet: link via the ': 'local: sem tsdproxy, link pra LAN | tailnet: link pelo nome da ',
     'tailnet name (default) | both: on the tailnet, with a LAN link': 'tailnet (padrão) | both: na tailnet, com link da LAN',
     "(run it with no arguments to see the list)": "(rode sem argumentos para ver a lista)",
+    'To be on a tailnet, in this order:': 'Para estar numa tailnet, nesta ordem:',
+    '  1. Tailscale, as a host package — not a Quadlet. It has to integrate': '  1. Tailscale, como pacote do sistema — não Quadlet. Ele precisa se',
+    "     with the host's systemd-resolved for MagicDNS, and a container": '     integrar ao systemd-resolved do host pro MagicDNS, e container',
+    '     does not share the D-Bus and mount namespaces.': '     não compartilha os namespaces de D-Bus e mount.',
+    '     install the tailscale package for your distribution': '     instale o pacote tailscale da sua distribuição',
+    '  2. The name of your tailnet, which the units use in their links:': '  2. O nome da sua tailnet, que as units usam nos links:',
+    '  3. tsdproxy, which publishes every other service on the tailnet:': '  3. tsdproxy, que publica todos os outros serviços na tailnet:',
+    '  Without a tailnet, install any service with --local.': '  Sem tailnet, instale qualquer serviço com --local.',
+    "to join a tailnet:": "para entrar numa tailnet:",
+    "(https://tailscale.com/download), then:": "(https://tailscale.com/download) e depois:",
     "failed:": "falharam:",
 }
 
@@ -197,20 +207,28 @@ def say(*a, **kw):
 # neighbour of it.
 NOT_QUADLET = {
     "tailscale": (
-        "Tailscale is not a Quadlet here, on purpose (root README, rule 21):\n"
-        "  it needs to integrate with the host's systemd-resolved for MagicDNS\n"
-        "  to work, and a container does not share the D-Bus/mount namespace.\n"
+        "To be on a tailnet, in this order:\n"
         "\n"
-        "  install the tailscale package for your distribution\n"
-        "  (https://tailscale.com/download), then:\n"
-        "  sudo systemctl enable --now tailscaled\n"
-        "  sudo tailscale up\n"
+        "  1. Tailscale, as a host package — not a Quadlet. It has to integrate\n"
+        "     with the host's systemd-resolved for MagicDNS, and a container\n"
+        "     does not share the D-Bus and mount namespaces.\n"
         "\n"
-        "  Then, the variable the units use in homepage.href:\n"
-        "  echo 'TAILNET=<your-tailnet>' > ~/.config/environment.d/tailnet.conf\n"
-        "  systemctl --user daemon-reload && systemctl --user import-environment\n"
+        "     install the tailscale package for your distribution\n"
+        "     (https://tailscale.com/download), then:\n"
+        "     sudo systemctl enable --now tailscaled\n"
+        "     sudo tailscale up\n"
         "\n"
-        "  Only then tsdproxy: python3 install.py tsdproxy --apply"
+        "  2. The name of your tailnet, which the units use in their links:\n"
+        "\n"
+        "     mkdir -p ~/.config/environment.d\n"
+        "     echo 'TAILNET=<your-tailnet>' > ~/.config/environment.d/tailnet.conf\n"
+        "     systemctl --user daemon-reload\n"
+        "\n"
+        "  3. tsdproxy, which publishes every other service on the tailnet:\n"
+        "\n"
+        "     qh tsdproxy --apply\n"
+        "\n"
+        "  Without a tailnet, install any service with --local."
     ),
 }
 
@@ -1698,8 +1716,7 @@ def main():
     if not a.app:
         for p in sorted(x.name for x in APPS.iterdir() if x.is_dir()):
             say(" ", p)
-        say("\n  (tailscale is not here: it is not a Quadlet, see "
-              "`python3 install.py tailscale`)")
+        say(loc("\n  to join a tailnet:  qh tailscale"))
         return 0
 
     if a.purge and not a.remove:
@@ -1750,7 +1767,9 @@ def main():
         say("\n" + "─" * 62)
         say(f"{len(a.app) - len(failures)}/{len(a.app)} ok"
               + (f" — failed: {', '.join(failures)}" if failures else ""))
-    if not a.apply:
+    # Not for the entries that only print instructions: nothing was going to be
+    # done for them with --apply either, so the line would be a wrong nudge.
+    if not a.apply and any(x not in NOT_QUADLET for x in a.app):
         say("\nnothing was done. repeat with --apply")
     return 1 if failures else 0
 
