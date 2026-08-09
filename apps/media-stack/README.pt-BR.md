@@ -2,11 +2,11 @@
 
 **[🇺🇸 Read in English](./README.md)**
 
-Jellyfin mais a cadeia *arr, os downloaders e um gateway de VPN — uma pasta,
-doze units.
+Jellyfin mais a cadeia *arr e os downloaders — uma pasta, doze units, cada
+uma na sua porta. O Gluetun está ali para quem quiser o Deluge atrás de uma
+VPN; nada depende dele.
 
 ## Instalar
-Jellyfin mais a cadeia *arr, os downloaders e um gateway de VPN — uma pasta, doze units.
 ```bash
 qh media-stack            # mostra o plano
 qh media-stack --apply
@@ -67,7 +67,8 @@ sed -i "s/^PUID=.*/PUID=$(id -u)/;s/^PGID=.*/PGID=$(id -g)/" \
 #    o serviço — é o systemd --user que precisa reler o ambiente)
 systemctl --user daemon-reload
 
-# 6. Subir (sem o Gluetun — ver seção própria pra ativar VPN). Sem
+# 6. Subir. O Gluetun fica de fora: não faz nada até você configurar um
+#    provedor. Sem
 #    Requires= entre serviços aqui — Dispatcharr é um container só,
 #    Postgres/Redis sobem dentro dele mesmo.
 systemctl --user start media-stack-jellyfin media-stack-dispatcharr media-stack-downtify media-stack-prowlarr media-stack-sonarr media-stack-radarr media-stack-lidarr media-stack-bazarr media-stack-seerr media-stack-deluge media-stack-sabnzbd
@@ -101,26 +102,26 @@ título pelo **Prowlarr**, entregam o download ao **SABnzbd** ou ao **Deluge**,
 renomeiam o arquivo dentro da raiz de mídia, e o **Jellyfin** reproduz. Cada
 peça roda sozinha e serve sem as outras.
 
-| Unit | Para que serve | Porta | Versão |
-| --- | --- | --- | --- |
-| `media-stack-jellyfin` | Reproduz a biblioteca — filmes, séries, música — no navegador, na TV ou no celular | 8096 | `10.11.11` |
-| `media-stack-seerr` | Onde você pede um título. Repassa o pedido ao Sonarr ou ao Radarr | 5055 | `v3.4.1` |
-| `media-stack-prowlarr` | Guarda a lista de indexadores e alimenta os outros *arr, então você configura uma vez só | 9696 | `2.5.2` |
-| `media-stack-sonarr` | Séries: acompanha episódios novos, baixa e arquiva | 8989 | `4.0.19` |
-| `media-stack-radarr` | O mesmo, para filmes | 7878 | `6.3.0` |
-| `media-stack-lidarr` | O mesmo, para músicas | 8686 | `3.1.0` |
-| `media-stack-bazarr` | Busca legendas para o que o Sonarr e o Radarr trouxeram | 6767 | `1.6.0` |
-| `media-stack-sabnzbd` | Baixa da Usenet | 8081 | `version-5.0.4` |
-| `media-stack-deluge` | Baixa torrents. Não tem porta própria — sai pelo Gluetun | pelo Gluetun | `2.2.0` |
-| `media-stack-gluetun` | O túnel VPN por onde o Deluge roda. Publica a interface do Deluge | 8112 | `latest` |
-| `media-stack-dispatcharr` | IPTV: canais, EPG e VOD, à parte da corrente acima | 9191 | `latest` |
-| `media-stack-downtify` | Baixa músicas do Spotify na raiz de mídia | 8000 | `2.9.1` |
+| | Unit | Para que serve | Porta | Versão |
+| --- | --- | --- | --- | --- |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/jellyfin.svg" width="28" height="28" alt=""> | `media-stack-jellyfin` | Reproduz a biblioteca — filmes, séries, música — no navegador, na TV ou no celular | 8096 | `10.11.11` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/seerr.svg" width="28" height="28" alt=""> | `media-stack-seerr` | Onde você pede um título. Repassa o pedido ao Sonarr ou ao Radarr | 5055 | `v3.4.1` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/prowlarr.svg" width="28" height="28" alt=""> | `media-stack-prowlarr` | Guarda a lista de indexadores e alimenta os outros *arr, então você configura uma vez só | 9696 | `2.5.2` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/sonarr.svg" width="28" height="28" alt=""> | `media-stack-sonarr` | Séries: acompanha episódios novos, baixa e arquiva | 8989 | `4.0.19` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/radarr.svg" width="28" height="28" alt=""> | `media-stack-radarr` | O mesmo, para filmes | 7878 | `6.3.0` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/lidarr.svg" width="28" height="28" alt=""> | `media-stack-lidarr` | O mesmo, para músicas | 8686 | `3.1.0` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/bazarr.svg" width="28" height="28" alt=""> | `media-stack-bazarr` | Busca legendas para o que o Sonarr e o Radarr trouxeram | 6767 | `1.6.0` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/sabnzbd.svg" width="28" height="28" alt=""> | `media-stack-sabnzbd` | Baixa da Usenet | 8081 | `version-5.0.4` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/deluge.svg" width="28" height="28" alt=""> | `media-stack-deluge` | Baixa torrents | 8112 | `2.2.0` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/gluetun.svg" width="28" height="28" alt=""> | `media-stack-gluetun` | **Opcional.** Túnel VPN para colocar o Deluge atrás — desligado até você configurar | — | `latest` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/dispatcharr.svg" width="28" height="28" alt=""> | `media-stack-dispatcharr` | IPTV: canais, EPG e VOD, à parte da corrente acima | 9191 | `latest` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/downtify.png" width="28" height="28" alt=""> | `media-stack-downtify` | Baixa músicas do Spotify na raiz de mídia | 8000 | `2.9.1` |
 
-O Deluge é a exceção que vale conhecer: ele declara
-`Network=media-stack-gluetun.container`, então compartilha a pilha de rede do
-Gluetun e todo pacote dele sai pela VPN. É também por isso que não publica
-nada — a porta no host é do Gluetun, e parar o Gluetun leva junto a interface
-do Deluge.
+O Gluetun é a única peça opcional. O Deluge publica a porta dele e funciona sem
+o Gluetun; instalar a pasta traz o Gluetun junto, parado até você configurar um
+provedor. Colocar o Deluge atrás da VPN é uma troca, não um acréscimo — os
+comentários no topo das duas units dizem quais linhas mover, e as duas não
+podem publicar a 8112 ao mesmo tempo.
 
 ## Atualizar
 
@@ -170,8 +171,8 @@ podman logs -f jellyfin
 qh media-stack-sonarr --update --apply   # uma unit da pasta
 ```
 
-O Deluge é a exceção: não tem porta nem log próprio que valha olhar isolado —
-o `podman logs -f gluetun` mostra o túnel de que ele depende.
+Com o Deluge atrás da VPN, a interface responde na porta do Gluetun e o log do
+túnel é o `podman logs -f gluetun`.
 
 ## Créditos
 

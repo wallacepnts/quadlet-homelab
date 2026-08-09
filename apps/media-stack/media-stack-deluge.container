@@ -10,10 +10,17 @@ AddCapability=NET_BIND_SERVICE
 PidsLimit=256
 Image=lscr.io/linuxserver/deluge:2.2.0
 ContainerName=deluge
-# Deluge's traffic goes out through the VPN, so it reuses gluetun's network
-# stack: no interface of its own, no port of its own. Quadlet turns this into
-# a dependency, and gluetun publishes and proxies on its behalf.
-Network=media-stack-gluetun.container
+Network=tsdproxy-net.network
+PublishPort=8112:8112
+PublishPort=6881:6881
+PublishPort=6881:6881/udp
+
+# To send Deluge's traffic through the VPN instead: comment the four lines
+# above and uncomment the one below, then do the mirror image in
+# media-stack-gluetun.container, which then publishes and proxies on Deluge's
+# behalf. Deluge cannot keep its own ports in that mode — it stops having an
+# interface of its own.
+#Network=media-stack-gluetun.container
 
 Volume=%h/.config/containers/volumes/media-stack/deluge/config:/config:Z
 Volume=${MEDIA_DATA_DIR}:/data:Z
@@ -25,6 +32,18 @@ HealthTimeout=5s
 HealthRetries=3
 HealthStartPeriod=30s
 Notify=healthy
+
+Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
+Label=tsdproxy.name=deluge
+Label=tsdproxy.port.web=443/https:8112/http
+Label=tsdproxy.dash.icon=sh/deluge
+
+Label=homepage.group=Downloads
+Label=homepage.name=Deluge
+Label=homepage.icon=deluge.svg
+Label=homepage.href=https://deluge.${TAILNET}.ts.net
+Label=homepage.description="Torrent client, with the queue in the browser"
 
 Label=wud.watch=true
 

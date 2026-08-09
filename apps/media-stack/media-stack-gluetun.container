@@ -1,5 +1,5 @@
 [Unit]
-Description=Gluetun (VPN tunnel for Deluge)
+Description=Gluetun (optional VPN tunnel for Deluge)
 
 [Container]
 PidsLimit=256
@@ -10,29 +10,30 @@ AddDevice=/dev/net/tun:/dev/net/tun
 PodmanArgs=--privileged
 EnvironmentFile=%h/.config/containers/env/media-stack-gluetun.env
 
-# Deluge's ports, published here because Deluge reuses this container's
-# network stack and cannot publish anything itself.
-PublishPort=8112:8112
-PublishPort=6881:6881
-PublishPort=6881:6881/udp
+# Deluge runs on its own by default and this container does nothing until you
+# ask for it. To put Deluge behind the VPN, uncomment everything below and
+# comment the ports and the labels in media-stack-deluge.container — the two
+# cannot publish 8112 at the same time.
+#PublishPort=8112:8112
+#PublishPort=6881:6881
+#PublishPort=6881:6881/udp
+#Label=tsdproxy.enable=true
+#Label=tsdproxy.autodetect=true
+#Label=tsdproxy.name=deluge
+#Label=tsdproxy.port.web=443/https:8112/http
+#Label=tsdproxy.dash.icon=sh/deluge
+#Label=homepage.group=Downloads
+#Label=homepage.name=Deluge
+#Label=homepage.icon=deluge.svg
+#Label=homepage.href=https://deluge.${TAILNET}.ts.net
+#Label=homepage.description="Torrent client, behind the VPN"
+
 HealthCmd=CMD-SHELL wget -q --spider http://127.0.0.1:9999/ || exit 1
 HealthInterval=30s
 HealthTimeout=10s
 HealthRetries=5
 HealthStartPeriod=30s
 Notify=healthy
-
-Label=tsdproxy.enable=true
-Label=tsdproxy.autodetect=true
-Label=tsdproxy.name=deluge
-Label=tsdproxy.port.web=443/https:8112/http
-
-Label=homepage.group=Downloads
-Label=homepage.name=Deluge
-Label=homepage.icon=deluge.svg
-Label=homepage.href=https://deluge.${TAILNET}.ts.net
-Label=homepage.description="Torrent client, behind the VPN"
-
 
 [Service]
 Restart=always

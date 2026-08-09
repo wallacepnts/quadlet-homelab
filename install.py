@@ -1365,6 +1365,7 @@ DESCRICOES = {
     "Self-hosted Spotify music downloader": "Baixador de músicas do Spotify self-hosted",
     "Self-hosted vehicle maintenance tracking": "Controle de manutenção de veículos self-hosted",
     "Static file server": "Servidor de arquivos estáticos",
+    "Torrent client, with the queue in the browser": "Cliente de torrent, com a fila no navegador",
     "Torrent client, behind the VPN": "Cliente de torrent, atrás da VPN",
     "TV series automation": "Automação de séries",
     "Uptime monitor for the services and the tailnet": "Monitor de disponibilidade dos serviços e da tailnet",
