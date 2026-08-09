@@ -2158,7 +2158,11 @@ def main():
             say(loc("  installed but not following it:") + f" {len(fora)}"
                 + f" ({', '.join(fora[:4])}{', …' if len(fora) > 4 else ''})")
             say(loc("  bring them in line:  qh --all --update --apply"))
-        say(loc("  to join a tailnet:  qh tailscale"))
+        # Only when there is something to join: telling someone already on a
+        # tailnet how to join one is the kind of line that trains people to
+        # stop reading the output.
+        if any(not feito for feito, _, _ in tailscale_steps()):
+            say(loc("  to join a tailnet:  qh tailscale"))
         return 0
 
     if a.purge and not a.remove:
