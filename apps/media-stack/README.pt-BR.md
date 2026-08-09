@@ -1,5 +1,7 @@
 # Media Stack
 
+<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/jellyfin.svg" width="64" height="64" alt="">
+
 **[🇺🇸 Read in English](./README.md)**
 
 Jellyfin mais a cadeia *arr e os downloaders — uma pasta, doze units, cada
@@ -80,22 +82,15 @@ systemctl --user start media-stack-jellyfin media-stack-dispatcharr media-stack-
 ## Arquivos
 
 ```
-media-stack-bazarr.container
-media-stack-deluge.container
-media-stack-dispatcharr.container
-media-stack-downtify.container
-media-stack-gluetun.container
-media-stack-jellyfin.container
-media-stack-lidarr.container
-media-stack-prowlarr.container
-media-stack-radarr.container
-media-stack-sabnzbd.container
-media-stack-seerr.container
-media-stack-sonarr.container
-.env.example
-media-stack-gluetun.env.example
+media-stack-<app>.container       uma unit por app, doze delas
+.env.example                      compartilhado: PUID, PGID e TZ
+media-stack-gluetun.env.example   o provedor de VPN, só se usar o Gluetun
 install.ini
+docs/                             uma página por app
 ```
+
+Config em `~/.config/containers/volumes/media-stack/<app>/`, mídia dentro do
+`$MEDIA_DATA_DIR`. A porta de cada app está na página dele, abaixo.
 
 O stack é uma corrente: o **Seerr** recebe o pedido, os ***arr** procuram o
 título pelo **Prowlarr**, entregam o download ao **SABnzbd** ou ao **Deluge**,

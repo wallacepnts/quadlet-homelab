@@ -30,7 +30,7 @@ SMTP_PORT=1587
 ```
 
 <details>
-<summary><b>Instalação manual (avançado)</b></summary>
+<summary><b>Instalação manual</b></summary>
 
 ```bash
 mkdir -p ~/.config/containers/systemd ~/.config/containers/env
