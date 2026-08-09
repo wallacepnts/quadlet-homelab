@@ -36,6 +36,7 @@ Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=authentik
 Label=tsdproxy.port.web=443/https:9000/http
+Label=tsdproxy.dash.icon=sh/authentik
 
 Label=homepage.group="Network & Security"
 Label=homepage.name=Authentik

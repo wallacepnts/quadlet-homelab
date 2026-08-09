@@ -28,6 +28,7 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=any-sync
 Label=tsdproxy.port.sync=33010/tcp:33010/tcp
 Label=tsdproxy.port.quic=33020/udp:33020/udp
+Label=tsdproxy.dash.icon=sh/anytype
 
 Label=homepage.group=Productivity
 Label=homepage.name=Any-Sync-Bundle

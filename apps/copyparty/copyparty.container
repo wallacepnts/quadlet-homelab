@@ -26,6 +26,7 @@ Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=copyparty
 Label=tsdproxy.port.web=443/https:3923/http
+Label=tsdproxy.dash.icon=sh/copyparty
 
 Label=homepage.group=Files
 Label=homepage.name=Copyparty

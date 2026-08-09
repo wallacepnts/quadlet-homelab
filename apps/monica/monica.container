@@ -24,6 +24,7 @@ Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=monica
 Label=tsdproxy.port.web=443/https:80/http
+Label=tsdproxy.dash.icon=sh/monica
 
 Label=homepage.group=Personal
 Label=homepage.name=Monica

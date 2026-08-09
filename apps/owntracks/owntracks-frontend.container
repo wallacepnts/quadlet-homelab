@@ -26,6 +26,7 @@ Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=owntracks-ui
 Label=tsdproxy.port.web=443/https:80/http
+Label=tsdproxy.dash.icon=sh/owntracks
 
 Label=homepage.group=Home
 Label=homepage.name="OwnTracks UI"

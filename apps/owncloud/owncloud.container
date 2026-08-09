@@ -29,6 +29,7 @@ Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=owncloud
 Label=tsdproxy.port.web=443/https:8080/http
+Label=tsdproxy.dash.icon=sh/owncloud
 
 Label=homepage.group=Files
 Label=homepage.name=ownCloud

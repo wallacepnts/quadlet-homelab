@@ -36,6 +36,7 @@ Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=chromeos
 Label=tsdproxy.port.web=443/https:8006/http
+Label=tsdproxy.dash.icon=si/googlechrome
 
 Label=homepage.group="Virtual Machines"
 Label=homepage.name=ChromeOS
