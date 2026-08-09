@@ -23,6 +23,8 @@ import configparser
 import re
 import sys
 import urllib.error
+import json
+import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -31,6 +33,7 @@ from qhlang import translator
 
 PT = {
     "OUTDATED (": "DESATUALIZADOS (",
+    "released, image not published yet (": "lançado, imagem ainda não publicada (",
     "cannot compare (": "sem comparação (",
     "up to date:": "em dia:",
     "images:": "imagens:",
@@ -61,6 +64,68 @@ def directives(text):
         if sep:
             out.append((key.strip(), value.strip()))
     return out
+
+
+def registry_has(image, tag):
+    """True when that exact tag can be pulled, None when the check itself failed.
+
+    A GitHub release is not a published image: the release can land hours
+    before the registry has the tag, and reporting it as available sends you
+    to a `podman pull` that fails. The token dance is the standard one — ask
+    without auth, read the challenge, come back with the token.
+    """
+    ref = image.split("@")[0]
+    # Only the last segment can carry the tag; a `:` earlier is a registry port.
+    if ":" in ref.rsplit("/", 1)[-1]:
+        ref = ref.rpartition(":")[0]
+    parts = ref.split("/")
+    if "." in parts[0] or ":" in parts[0]:
+        host, repo = parts[0], "/".join(parts[1:])
+    else:
+        host, repo = "registry-1.docker.io", ref if "/" in ref else "library/" + ref
+    if host == "docker.io":
+        host = "registry-1.docker.io"
+    url = f"https://{host}/v2/{repo}/manifests/{tag}"
+    aceita = ("application/vnd.oci.image.index.v1+json,"
+              "application/vnd.docker.distribution.manifest.list.v2+json,"
+              "application/vnd.oci.image.manifest.v1+json,"
+              "application/vnd.docker.distribution.manifest.v2+json")
+
+    def pedir(cabec):
+        req = urllib.request.Request(url, method="HEAD",
+                                     headers={"Accept": aceita, "User-Agent": UA, **cabec})
+        return urllib.request.urlopen(req, timeout=20)
+
+    try:
+        pedir({})
+        return True
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return False
+        if e.code != 401:
+            return None
+        desafio = e.headers.get("WWW-Authenticate", "")
+    except Exception:
+        return None
+    campos = dict(re.findall(r'(\w+)="([^"]*)"', desafio))
+    if "realm" not in campos:
+        return None
+    q = urllib.parse.urlencode({k: v for k, v in campos.items() if k != "realm"})
+    try:
+        with urllib.request.urlopen(
+                urllib.request.Request(f"{campos['realm']}?{q}",
+                                       headers={"User-Agent": UA}), timeout=20) as f:
+            dados = json.load(f)
+            token = dados.get("token") or dados.get("access_token")
+    except Exception:
+        return None
+    try:
+        pedir({"Authorization": f"Bearer {token}"})
+        return True
+    except urllib.error.HTTPError as e:
+        return False if e.code == 404 else None
+    except Exception:
+        return None
 
 
 def compose_tag(spec, ref, image):
@@ -221,7 +286,15 @@ def check(item):
     n = min(len(here), len(there))
     here, there = here[:n], there[:n]
     if there > here:
-        return (unit, image, tag, remote, "BEHIND")
+        # The release names a version; the tag we would pull keeps our own
+        # variant (`-alpine`, `-stable`). Check that exact tag exists before
+        # calling it available: a release can land hours before the image does.
+        sufixo = re.sub(r"^[0-9][0-9.]*", "", tag)
+        alvo = remote.lstrip("v") + sufixo
+        existe = registry_has(image, alvo)
+        if existe is False:
+            return (unit, image, tag, alvo, "released, not published yet")
+        return (unit, image, tag, alvo, "BEHIND")
     return (unit, image, tag, remote, "up to date")
 
 
@@ -238,6 +311,7 @@ def main():
     behind = [l for l in rows if l[4] == "BEHIND"]
     unclear = [l for l in rows if l[4].startswith(("unknown repo", "not comparable", "compose:"))
                or "no published release" in l[4]]
+    pendente = [l for l in rows if l[4] == "released, not published yet"]
 
     def table(label, ls):
         if not ls:
@@ -247,6 +321,7 @@ def main():
             print(f"  {unit:<28} {here:<24} -> {there}")
 
     table(f"OUTDATED ({len(behind)}):", behind)
+    table(f"released, image not published yet ({len(pendente)}):", pendente)
     # What could not be compared stays out of the way: it is a property of the
     # image's naming, not something to act on. --all brings it back.
     if a.all:
