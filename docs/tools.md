@@ -39,4 +39,9 @@ The GitHub repository is derived from the image name where that works, and
 often not named like the repository (`dockurr/windows` against `dockur/windows`).
 
 A GitHub release is not a published image: the release can land hours before the
-registry has the tag. If it reports a version you cannot pull yet, wait.
+registry has the tag. That case is reported separately — the tag is checked in
+the registry before an update is called available.
+
+A floating tag (`latest`, a bare major) has no version to compare, so it is
+compared by digest instead: if the tag now points somewhere else than the image
+on this host, it says so. That needs podman and the image already pulled.

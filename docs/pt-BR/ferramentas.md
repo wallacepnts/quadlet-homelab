@@ -39,5 +39,9 @@ O repositório no GitHub é derivado do nome da imagem quando dá, e o
 nunca tem o nome do repositório (`dockurr/windows` contra `dockur/windows`).
 
 Release no GitHub não é imagem publicada: a release pode sair horas antes de o
-registry ter a tag. Se ele apontar uma versão que você ainda não consegue
-puxar, esperar.
+registry ter a tag. Esse caso é reportado à parte — a tag é conferida no
+registry antes de a atualização ser dada como disponível.
+
+Tag flutuante (`latest`, major solto) não tem versão pra comparar, então a
+comparação é por digest: se a tag hoje aponta pra outro lugar que a imagem
+deste host, ele diz. Isso exige podman e a imagem já baixada.

@@ -24,6 +24,7 @@ import re
 import sys
 import urllib.error
 import json
+import subprocess
 import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
@@ -33,6 +34,9 @@ from qhlang import translator
 
 PT = {
     "OUTDATED (": "DESATUALIZADOS (",
+    "floating tag, moved since your pull (": "tag flutuante, mudou desde o seu pull (",
+    "novo digest": "digest novo",
+    "mesmo digest": "mesmo digest",
     "released, image not published yet (": "lançado, imagem ainda não publicada (",
     "cannot compare (": "sem comparação (",
     "up to date:": "em dia:",
@@ -66,13 +70,12 @@ def directives(text):
     return out
 
 
-def registry_has(image, tag):
-    """True when that exact tag can be pulled, None when the check itself failed.
+def _manifest_head(image, tag):
+    """HEAD on the manifest, with the registry's token dance. Headers, or None.
 
-    A GitHub release is not a published image: the release can land hours
-    before the registry has the tag, and reporting it as available sends you
-    to a `podman pull` that fails. The token dance is the standard one — ask
-    without auth, read the challenge, come back with the token.
+    Ask without auth, read the WWW-Authenticate challenge, come back with the
+    token — the standard flow, so it works on Docker Hub and ghcr without a
+    branch for each.
     """
     ref = image.split("@")[0]
     # Only the last segment can carry the tag; a `:` earlier is a registry port.
@@ -92,13 +95,12 @@ def registry_has(image, tag):
               "application/vnd.docker.distribution.manifest.v2+json")
 
     def pedir(cabec):
-        req = urllib.request.Request(url, method="HEAD",
-                                     headers={"Accept": aceita, "User-Agent": UA, **cabec})
-        return urllib.request.urlopen(req, timeout=20)
+        return urllib.request.urlopen(urllib.request.Request(
+            url, method="HEAD",
+            headers={"Accept": aceita, "User-Agent": UA, **cabec}), timeout=20)
 
     try:
-        pedir({})
-        return True
+        return pedir({}).headers
     except urllib.error.HTTPError as e:
         if e.code == 404:
             return False
@@ -112,20 +114,53 @@ def registry_has(image, tag):
         return None
     q = urllib.parse.urlencode({k: v for k, v in campos.items() if k != "realm"})
     try:
-        with urllib.request.urlopen(
-                urllib.request.Request(f"{campos['realm']}?{q}",
-                                       headers={"User-Agent": UA}), timeout=20) as f:
+        with urllib.request.urlopen(urllib.request.Request(
+                f"{campos['realm']}?{q}", headers={"User-Agent": UA}), timeout=20) as f:
             dados = json.load(f)
-            token = dados.get("token") or dados.get("access_token")
-    except Exception:
-        return None
-    try:
-        pedir({"Authorization": f"Bearer {token}"})
-        return True
+        token = dados.get("token") or dados.get("access_token")
+        return pedir({"Authorization": f"Bearer {token}"}).headers
     except urllib.error.HTTPError as e:
         return False if e.code == 404 else None
     except Exception:
         return None
+
+
+def registry_has(image, tag):
+    """True when that exact tag can be pulled, None when the check itself failed.
+
+    A GitHub release is not a published image: the release can land hours
+    before the registry has the tag, and reporting it as available sends you
+    to a `podman pull` that fails.
+    """
+    h = _manifest_head(image, tag)
+    return None if h is None else bool(h)
+
+
+def moved(image, tag):
+    """True when a floating tag now points somewhere else than the local copy.
+
+    A floating tag has no version to compare, but it does have a digest. The
+    local image carries both digests podman knows — the platform manifest and
+    the multi-arch index — and the registry answers with the index, so the
+    check is whether the registry's is among them. Without podman, or with the
+    image not pulled yet, there is nothing to compare and it returns None.
+    """
+    h = _manifest_head(image, tag)
+    if not h:
+        return None
+    remoto = h.get("Docker-Content-Digest")
+    if not remoto:
+        return None
+    try:
+        r = subprocess.run(["podman", "image", "inspect", image, "--format",
+                            "{{.Digest}} {{range .RepoDigests}}{{.}} {{end}}"],
+                           capture_output=True, text=True, timeout=30)
+    except Exception:
+        return None
+    if r.returncode != 0 or not r.stdout.strip():
+        return None
+    locais = {x.rpartition("@")[2] or x for x in r.stdout.split()}
+    return remoto not in locais
 
 
 def compose_tag(spec, ref, image):
@@ -270,6 +305,15 @@ def check(item):
     # A bare major (`:2`) moves the same way `latest` does: the digest changes
     # under the same name, so there is no version to compare.
     if tag in FLOATING or "/" in tag or tag.isdigit():
+        # No version to compare, but there is a digest: if the tag now points
+        # somewhere else than the local copy, an update is waiting behind the
+        # same name. Without podman, or before the first pull, there is nothing
+        # to compare against.
+        m = moved(image, tag)
+        if m is True:
+            return (unit, image, tag, "novo digest", "MOVED")
+        if m is False:
+            return (unit, image, tag, "mesmo digest", "up to date")
         return (unit, image, tag, "—", "floating tag")
     repo = github_repo(image, override)
     if not repo:
@@ -309,6 +353,7 @@ def main():
         rows = list(pool.map(check, items))
 
     behind = [l for l in rows if l[4] == "BEHIND"]
+    movidas = [l for l in rows if l[4] == "MOVED"]
     unclear = [l for l in rows if l[4].startswith(("unknown repo", "not comparable", "compose:"))
                or "no published release" in l[4]]
     pendente = [l for l in rows if l[4] == "released, not published yet"]
@@ -322,6 +367,7 @@ def main():
 
     table(f"OUTDATED ({len(behind)}):", behind)
     table(f"released, image not published yet ({len(pendente)}):", pendente)
+    table(f"floating tag, moved since your pull ({len(movidas)}):", movidas)
     # What could not be compared stays out of the way: it is a property of the
     # image's naming, not something to act on. --all brings it back.
     if a.all:
