@@ -74,6 +74,10 @@ qh                          # shows the rule in force
 | `tailnet` | on | **closed** |
 | `both` | on | open |
 
+`qh` reports how many installed services do not follow it, and the command
+that brings them in line — a rule that only applied to the next install would
+be half a rule.
+
 The bootstrap asks for it on the first run. Until it is set, `tailnet` is the
 default. Naming `--access` on a single command wins over the rule for that
 command only, and changes nothing saved.

@@ -73,6 +73,9 @@ qh                          # mostra a regra em vigor
 | `tailnet` | ligado | **fechada** |
 | `both` | ligado | aberta |
 
+O `qh` informa quantos serviços instalados não a seguem, e o comando que os
+alinha — regra que só valesse pra próxima instalação seria meia regra.
+
 O bootstrap pergunta no primeiro uso. Enquanto não houver regra, o padrão é
 `tailnet`. Nomear o `--access` num comando vence a regra só naquele comando, e
 não muda nada do que está salvo.

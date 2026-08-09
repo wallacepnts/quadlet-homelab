@@ -186,6 +186,8 @@ PT = {
     '  rule:': '  regra:',
     '  (default, never set)': '  (padrão, nunca definida)',
     '  change it with:  qh --set-access <local|tailnet|both>': '  mudar com:  qh --set-access <local|tailnet|both>',
+    '  installed but not following it:': '  instalados que não a seguem:',
+    '  bring them in line:  qh --all --update --apply': '  alinhar todos:  qh --all --update --apply',
     "failed:": "falharam:",
 }
 
@@ -294,6 +296,23 @@ def show_tailscale():
     else:
         say(loc("  nothing pending — you are on the tailnet."))
     say(loc("  Without a tailnet, install any service with --local."))
+
+
+def access_drift(regra):
+    """Installed services whose unit does not match the rule in force.
+
+    A rule that only applies to what you install next is half a rule: the
+    services already on the host keep whatever they were installed with, and
+    nothing says so. This is what turns that into one line.
+    """
+    fora = []
+    for d in sorted(x.name for x in APPS.iterdir() if x.is_dir()):
+        s = Service(d)
+        for u in s.installed():
+            if installed_access(u) != regra:
+                fora.append(u.stem)
+                break
+    return fora
 
 
 def published_port(value):
@@ -1575,6 +1594,13 @@ def selftest():
     assert _login("vm-macos") is None                  # essa não tem senha
     assert Service("proxmox").login() == ("root", "proxmox-root-password")
 
+    # drift: what is installed against the rule in force
+    for regra in ("local", "tailnet", "both"):
+        fora = access_drift(regra)
+        assert isinstance(fora, list) and all(isinstance(x, str) for x in fora)
+    # nem toda regra pode ter tudo alinhado ao mesmo tempo
+    assert not (not access_drift("local") and not access_drift("tailnet"))
+
     # the saved rule: command line beats it, it beats what the host has
     with tempfile.TemporaryDirectory() as d:
         h = Path(d)
@@ -1913,6 +1939,11 @@ def main():
         say(loc("\n  rule:") + f" --access {regra or 'tailnet'}"
             + ("" if regra else loc("  (default, never set)")))
         say(loc("  change it with:  qh --set-access <local|tailnet|both>"))
+        fora = access_drift(regra or "tailnet")
+        if fora:
+            say(loc("  installed but not following it:") + f" {len(fora)}"
+                + f" ({', '.join(fora[:4])}{', …' if len(fora) > 4 else ''})")
+            say(loc("  bring them in line:  qh --all --update --apply"))
         say(loc("  to join a tailnet:  qh tailscale"))
         return 0
 
