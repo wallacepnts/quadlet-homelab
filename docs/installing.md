@@ -124,8 +124,9 @@ qh traccar --apply --href-local       # on the tailnet, dashboard link to the LA
 ```
 
 `--local` is shorthand for `--access local`. The `tsdproxy.*` labels are
-commented out rather than deleted, so changing your mind later is another
-install with a different mode.
+commented out rather than deleted, so changing your mind later is an `--update`
+with another mode — not a `--reinstall`, which would overwrite env, config and
+secrets to change a label.
 
 `--access tailnet` also **closes the LAN port**. The service joins the
 `tsdproxy-net` network and tsdproxy reaches it at the container's own address,

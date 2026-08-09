@@ -172,9 +172,19 @@ systemctl --user daemon-reload
 qh tsdproxy --apply
 ```
 
-Without a tailnet, install with `--local`: it points the dashboard link at the
-LAN address and comments the `tsdproxy.*` labels out instead of deleting them,
-so turning it on later is a reinstall without the flag.
+Without a tailnet, set the rule once and every install follows it:
+
+```bash
+qh --set-access local
+```
+
+It points the dashboard link at the LAN address and comments the `tsdproxy.*`
+labels out instead of deleting them. Turning it on later is an update, which
+keeps the data:
+
+```bash
+qh --all --update --apply --access tailnet
+```
 
 ## On an ARM server
 

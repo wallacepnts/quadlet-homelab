@@ -173,9 +173,19 @@ systemctl --user daemon-reload
 qh tsdproxy --apply
 ```
 
-Sem tailnet, instalar com `--local`: ele aponta o link do dashboard pro
-endereço da LAN e comenta as labels `tsdproxy.*` em vez de apagá-las, então
-ligar depois é reinstalar sem a flag.
+Sem tailnet, defina a regra uma vez e toda instalação a segue:
+
+```bash
+qh --set-access local
+```
+
+Ele aponta o link do dashboard pro endereço da LAN e comenta as labels
+`tsdproxy.*` em vez de apagá-las. Ligar depois é uma atualização, que preserva
+os dados:
+
+```bash
+qh --all --update --apply --access tailnet
+```
 
 ## Num servidor ARM
 
