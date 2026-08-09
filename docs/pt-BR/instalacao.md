@@ -58,6 +58,25 @@ que torna o backup restaurável.
 extrair, confere se o arquivo é daquele serviço, e pede o nome digitado pra
 confirmar.
 
+## Estado
+
+```bash
+qh --status
+```
+
+```
+service                    unit       container  repo
+adguardhome                failed     —          changed
+filebrowser                active     healthy    changed
+memos                      active     healthy    —
+```
+
+O `unit` é o que o systemd diz, o `container` é o que o podman diz — uma unit
+pode estar `active` com o app morto lá dentro, então não são a mesma pergunta.
+O `repo` avisa que o arquivo aqui difere do instalado, que é o que o `--update`
+resolve. Versão não está aqui: isso exige rede, e é o que o `qh-updates` faz.
+Sai com código diferente de zero quando há algo precisando de atenção.
+
 ## A regra de acesso
 
 Escolhida uma vez, seguida por toda instalação e atualização:

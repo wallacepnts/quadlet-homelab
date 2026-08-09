@@ -59,6 +59,25 @@ tiny and are what makes it restorable.
 extracting, checks the archive belongs to that service, and asks for the typed
 name to confirm.
 
+## Status
+
+```bash
+qh --status
+```
+
+```
+service                    unit       container  repo
+adguardhome                failed     —          changed
+filebrowser                active     healthy    changed
+memos                      active     healthy    —
+```
+
+`unit` is what systemd says, `container` is what podman says — a unit can be
+`active` with the app inside it dead, so the two are not the same question.
+`repo` says the file here differs from the one installed, which is what
+`--update` would fix. Versions are not here: that needs the network, and it is
+what `qh-updates` is for. It exits non-zero when anything needs attention.
+
 ## The access rule
 
 Chosen once, followed by every install and update:

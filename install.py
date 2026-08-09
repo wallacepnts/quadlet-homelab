@@ -191,6 +191,11 @@ PT = {
     '  change it with:  qh --set-access <local|tailnet|both>': '  mudar com:  qh --set-access <local|tailnet|both>',
     '  installed but not following it:': '  instalados que não a seguem:',
     '  bring them in line:  qh --all --update --apply': '  alinhar todos:  qh --all --update --apply',
+    'what is installed, running, and changed in the repository': 'o que está instalado, rodando, e mudou no repositório',
+    'nothing installed yet.': 'nada instalado ainda.',
+    '  installed:': '  instalados:',
+    'needing attention:': 'precisando de atenção:',
+    'changed in the repository:': 'mudaram no repositório:',
     "failed:": "falharam:",
 }
 
@@ -1585,6 +1590,12 @@ def selftest():
     # nem toda regra pode ter tudo alinhado ao mesmo tempo
     assert not (not access_drift("local") and not access_drift("tailnet"))
 
+    # --status reads the host, so the numbers vary; the shape must not
+    assert callable(show_status)
+    assert run_read(["true"]) == ""
+    assert run_read(["false"]) is None
+    assert run_read(["comando-que-nao-existe-xyz"]) is None
+
     # the saved rule: command line beats it, it beats what the host has
     with tempfile.TemporaryDirectory() as d:
         h = Path(d)
@@ -1720,6 +1731,71 @@ def show_addresses(s, tailnet, modo="both"):
             say(f"{unit}:")
         for url in urls:
             say(f"  {url}" if many else url)
+
+
+def run_read(cmd):
+    """stdout of a read-only command, or None when it is not available."""
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        return r.stdout if r.returncode == 0 else None
+    except Exception:
+        return None
+
+
+def show_status():
+    """What is installed, what is running, and what drifted from the repository.
+
+    Answers in one screen what took `systemctl --user is-active` per service,
+    `podman ps` to see whether "started" also means healthy, and a diff to know
+    the repository moved. Versions are not here on purpose: that needs the
+    network, and it is what `qh-updates` is for.
+    """
+    ativos, saude = {}, {}
+    r = run_read(["systemctl", "--user", "list-units", "--type=service",
+                  "--all", "--no-legend", "--plain"])
+    for linha in (r or "").splitlines():
+        campos = linha.split()
+        if len(campos) >= 4 and campos[0].endswith(".service"):
+            ativos[campos[0][:-8]] = campos[2]
+    r = run_read(["podman", "ps", "-a", "--format", "{{.Names}}|{{.Status}}"])
+    for linha in (r or "").splitlines():
+        nome, _, estado = linha.partition("|")
+        saude[nome] = estado
+
+    linhas, problemas = [], 0
+    for d in sorted(x.name for x in APPS.iterdir() if x.is_dir()):
+        s = Service(d)
+        for u in s.installed():
+            if u.suffix != ".container":
+                continue          # .network não é serviço
+            nome = u.stem
+            estado = ativos.get(nome, "—")
+            cont = next((v for k, v in directives(u.read_text())
+                         if k == "ContainerName"), nome)
+            c = saude.get(cont, "—")
+            c = ("healthy" if "healthy" in c else
+                 "unhealthy" if "unhealthy" in c else
+                 "up" if c.startswith("Up") else
+                 "—" if c == "—" else "down")
+            fonte = APPS / d / u.name
+            deriva = "changed" if (fonte.exists()
+                                   and fonte.read_bytes() != u.read_bytes()) else ""
+            if estado != "active" or c in ("unhealthy", "down"):
+                problemas += 1
+            linhas.append((nome, estado, c, deriva or "—"))
+
+    if not linhas:
+        say(loc("nothing installed yet."))
+        return 0
+    say(f"  {'service':<26} {'unit':<10} {'container':<10} repo")
+    for n, e, c, dv in linhas:
+        say(f"  {n:<26} {e:<10} {c:<10} {dv}")
+    say("")
+    say(loc("  installed:") + f" {len(linhas)}  "
+        + loc("needing attention:") + f" {problemas}  "
+        + loc("changed in the repository:")
+        + f" {sum(1 for l in linhas if l[3] == 'changed')}")
+    return 1 if problemas else 0
 
 
 def show_secrets(s):
@@ -1887,6 +1963,8 @@ def main():
     ap.add_argument("--apply", action="store_true", help=loc("execute (without it, only show)"))
     ap.add_argument("--prefix", help=loc("use another home (to test without touching the real one)"))
     ap.add_argument("--selftest", action="store_true", help=loc("test the script's parser"))
+    ap.add_argument("--status", action="store_true",
+                    help=loc("what is installed, running, and changed in the repository"))
     ap.add_argument("--set-access", choices=ACCESS_MODES, metavar="MODE",
                     help=loc("save the rule every install and update follows "
                              "(local, tailnet or both), and exit"))
@@ -1923,6 +2001,9 @@ def main():
     if a.selftest:
         selftest()
         return 0
+
+    if a.status:
+        return show_status()
 
     if a.set_access:
         f = save_access(a.set_access, Path(a.prefix) if a.prefix else None)
