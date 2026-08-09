@@ -16,19 +16,23 @@ qh toolbx --apply
 ## Files
 
 ```
-toolbx-arch.container
-toolbx-fedora.container
-toolbx-rhel.container
-toolbx-ubuntu.container
-install.ini
+toolbx-<distro>.container   one unit per shell, four of them
+install.ini                 where updates.py should look for each
+docs/                       a page per shell
 ```
 
-Units in this stack:
+Data in `~/.config/containers/volumes/toolbx/<distro>`, mounted at `/work`. No
+`.env`, no secrets and no ports: these are shells, not services.
 
-- `toolbx-arch`
-- `toolbx-fedora`
-- `toolbx-rhel`
-- `toolbx-ubuntu`
+| | Shell | What it is | Version |
+| --- | --- | --- | --- |
+| <img src="https://cdn.simpleicons.org/fedora" width="28" height="28" alt=""> | [Fedora](./docs/fedora.md) | A Fedora shell with `dnf`, on Fedora's own image | `45` |
+| <img src="https://cdn.simpleicons.org/ubuntu" width="28" height="28" alt=""> | [Ubuntu](./docs/ubuntu.md) | An Ubuntu shell with `apt`, for anything that ships a `.deb` | `26.04` |
+| <img src="https://cdn.simpleicons.org/archlinux" width="28" height="28" alt=""> | [Arch Linux](./docs/arch.md) | An Arch shell with `pacman` and the AUR. Pinned by digest, not by tag | `digest` |
+| <img src="https://cdn.simpleicons.org/redhat" width="28" height="28" alt=""> | [RHEL](./docs/rhel.md) | A Red Hat Enterprise Linux shell, on the subscription-free UBI image | `10.2` |
+
+They are independent — installing the folder brings all four, and you start the
+one you need. Nothing is lost by leaving the others stopped.
 
 ## Update
 
@@ -36,8 +40,8 @@ Units in this stack:
 qh toolbx --update --apply
 ```
 
-Pinned to `10.2`, `26.04`, `38d89c96265cfa7d6795c2e6f4b5b803df3e1f3d934fcfbabb346153aabdf985`. Nothing updates on its own — a new version is applied
-when you run the command above.
+Each shell carries its own tag — the table above lists them. Arch is the
+exception, pinned by digest because its only tag is `latest`.
 
 ## Backup
 
@@ -45,9 +49,10 @@ when you run the command above.
 qh toolbx --backup --apply --out ~/backups
 ```
 
-It stops the service, packs the data, the `.env` and the secrets, and starts
-it again. Cold on purpose: copying a live database gives an archive that only
-fails when you restore it.
+It stops the four, packs the four `/work` directories and starts them again.
+There is no `.env` and no secret here to pack. A single shell can be backed up
+on its own — `qh toolbx-fedora --backup --apply` — because none of them shares
+a directory with the others.
 
 To restore, over the current data:
 
@@ -65,15 +70,20 @@ qh toolbx --remove --apply           # stops it, keeps the data
 qh toolbx --remove --purge --apply   # and deletes volumes, secrets and .env
 ```
 
-`--purge` asks for the typed name too. The tailnet node is not deregistered by
-this — that is done in the Tailscale admin.
+`--purge` asks for the typed name too, and deletes the `/work` of all four.
+There is no tailnet node to deregister: none of these is published.
 
 ## Commands
 
+There is no `toolbx` unit — name the shell you mean:
+
 ```bash
-systemctl --user status toolbx
-podman logs -f toolbx
+systemctl --user status toolbx-fedora
+podman exec -it toolbx-fedora bash
 ```
+
+The log is not where the interesting part is: these run `sleep infinity`, so
+`podman logs` stays empty by design.
 
 ## Credits
 
