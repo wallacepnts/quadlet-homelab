@@ -41,6 +41,51 @@ def translator(phrases):
     return loc
 
 
+# argparse's own words: the `usage:` line, the section headings, `-h` and every
+# error it raises. They come from gettext, and there is no pt_BR catalogue
+# shipped with Python, so the lookup is replaced instead — the keys are the
+# literals in the stdlib's argparse, and a miss falls back to English.
+_ARGPARSE = {
+    "usage: ": "uso: ",
+    "positional arguments": "argumentos posicionais",
+    "options": "opções",
+    "show this help message and exit": "mostra esta ajuda e sai",
+    "the following arguments are required: %s": "faltam estes argumentos: %s",
+    "unrecognized arguments: %s": "argumentos desconhecidos: %s",
+    "one of the arguments %s is required": "é preciso um destes argumentos: %s",
+    "not allowed with argument %s": "não pode junto com %s",
+    "expected one argument": "esperava um argumento",
+    "expected at least one argument": "esperava ao menos um argumento",
+    "expected at most one argument": "esperava no máximo um argumento",
+    "ignored explicit argument %r": "argumento %r ignorado",
+    "invalid choice: %(value)r (choose from %(choices)s)":
+        "opção inválida: %(value)r (escolha entre %(choices)s)",
+    "invalid %(type)s value: %(value)r": "valor inválido para %(type)s: %(value)r",
+    "ambiguous option: %(option)s could match %(matches)s":
+        "opção ambígua: %(option)s pode ser %(matches)s",
+    "unexpected option: %(option)s": "opção inesperada: %(option)s",
+    "argument %(argument_name)s: %(message)s": "argumento %(argument_name)s: %(message)s",
+    "%(prog)s: error: %(message)s\n": "%(prog)s: erro: %(message)s\n",
+    " (default: %(default)s)": " (padrão: %(default)s)",
+    "expected %s argument": "esperava %s argumento",
+    "expected %s arguments": "esperava %s argumentos",
+}
+
+
+def argparse_ptbr():
+    """Translates argparse itself. Call before building the parser.
+
+    `-h`'s own help text is translated when `add_argument` runs, which is inside
+    `ArgumentParser.__init__` — patching afterwards leaves that one line English.
+    """
+    if not PTBR:
+        return
+    import argparse
+    argparse._ = lambda s: _ARGPARSE.get(s, s)
+    argparse.ngettext = lambda um, varios, n: _ARGPARSE.get(
+        um if n == 1 else varios, um if n == 1 else varios)
+
+
 # Colour only when a person is looking: piped into a file or a grep, the escape
 # codes are noise that breaks the very matching the pipe was for. NO_COLOR is
 # the convention every tool that does this respects.

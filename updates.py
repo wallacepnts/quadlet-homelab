@@ -30,9 +30,11 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+import qhui
 from qhui import translator, red, yellow, green, dim
 
 PT = {
+    "also show what is up to date": "mostra também o que está em dia",
     "OUTDATED (": "DESATUALIZADOS (",
     "floating tag, moved since your pull (": "tag flutuante, mudou desde o seu pull (",
     "novo digest": "digest novo",
@@ -54,6 +56,28 @@ PT = {
 
 }
 loc = translator(PT)
+
+# The docstring `--help` opens with, in Portuguese.
+AJUDA_PT = """Compara as tags `Image=` deste repositório com a última release no GitHub.
+
+A regra que este script existe pra automatizar: **a fonte é a página de
+releases do projeto no GitHub, não a lista de tags do registry**. Registry
+lista beta, RC e variante de build que ordenam como "mais novo" sem serem
+release — o n8n mantém a 2.33.x e a 2.34.x em paralelo e marca a 2.33 como
+latest; nginx, AdGuard, Memos e Frigate publicam RC junto das estáveis.
+
+Por isso a consulta segue o redirect de
+`github.com/<org>/<repo>/releases/latest`, que devolve a tag sem gastar rate
+limit da API.
+
+    python3 updates.py           # tabela do que está atrasado
+    python3 updates.py --all     # inclui o que está em dia
+
+Sem dependências: só a stdlib. Sai 0 mesmo com serviço desatualizado — estar
+atrás é informação, não defeito; só erro de execução reprova.
+"""
+
+
 
 
 UA = "quadlet-homelab updates.py"
@@ -474,9 +498,10 @@ def check(item):
 
 
 def main():
-    ap = argparse.ArgumentParser(description=__doc__,
+    qhui.argparse_ptbr()
+    ap = argparse.ArgumentParser(description=AJUDA_PT if qhui.PTBR else __doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--all", action="store_true", help="also show what is up to date")
+    ap.add_argument("--all", action="store_true", help=loc("also show what is up to date"))
     a = ap.parse_args()
 
     items = list(services())

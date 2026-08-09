@@ -30,6 +30,27 @@ import time
 from pathlib import Path
 
 import qhui
+
+# The docstring `--help` opens with. It is prose, not a phrase, so it is a
+# second text rather than an entry in a translation table.
+AJUDA_PT = """Instala um serviço deste repositório no host, derivando os passos da unit.
+
+Quase tudo que o README de um serviço manda fazer já está declarado, de forma
+estruturada, dentro do próprio `.container`: o `Volume=` diz qual diretório
+criar, o `EnvironmentFile=` diz onde vai o `.env`, o `Secret=` diz quais
+segredos existem, o `User=` diz que o volume precisa de `podman unshare chown`.
+Este script lê isso e executa.
+
+O que NÃO dá pra derivar fica em `apps/<app>/install.ini` — hoje só a receita
+de cada segredo e o destino de um arquivo de config que cai dentro de um volume
+de diretório.
+
+    python3 install.py traccar             # simulação: só mostra o que faria
+    python3 install.py traccar --apply
+    python3 install.py traccar --apply --prefix /tmp/teste   # sandbox
+
+Sem dependências: só a stdlib.
+"""
 from qhui import translator, red, yellow, green, dim, bold
 
 ROOT = Path(__file__).resolve().parent
@@ -1815,6 +1836,19 @@ def selftest():
                 r'(?m)^Label=homepage\.' + chave + r'=(.*)$', u.read_text())}
         assert not usadas - set(tabela), (chave, sorted(usadas - set(tabela)))
 
+    # argparse's own words. Rendering real help is what catches a Python whose
+    # literals no longer match our keys — the table would silently miss instead.
+    antes_pt, guardado = qhui.PTBR, (argparse._, argparse.ngettext)
+    try:
+        qhui.PTBR = True
+        qhui.argparse_ptbr()
+        texto = argparse.ArgumentParser(prog="qh").format_help()
+        for esperado in ("uso: ", "opções:", "mostra esta ajuda"):
+            assert esperado in texto, (esperado, texto)
+    finally:
+        qhui.PTBR = antes_pt
+        argparse._, argparse.ngettext = guardado
+
     # a group whose Portuguese name has a space stays quoted, or systemd cuts it
     grupo = APPS / "vm" / "vm-windows.container"
     antes_pt = qhui.PTBR
@@ -2411,7 +2445,9 @@ def main():
     # sends you back to a directory you no longer need to be in.
     called = Path(sys.argv[0]).name
     how = "python3 install.py" if called.endswith(".py") else called
-    ap = argparse.ArgumentParser(description=__doc__.replace("python3 install.py", how),
+    qhui.argparse_ptbr()
+    abertura = AJUDA_PT if qhui.PTBR else __doc__
+    ap = argparse.ArgumentParser(description=abertura.replace("python3 install.py", how),
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("app", nargs="*", metavar="APP",
                     help=loc("one or more services, or a single unit of one "
