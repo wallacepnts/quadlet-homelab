@@ -1,13 +1,33 @@
-# quadlet-homelab
+# Quadlet Homelab
 
-**[🇬🇧 Read in English](../../README.md)**
+**[🇺🇸 Read in English](../../README.md)**
 
-Coleção pessoal de deploys via [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)
-(rootless), um serviço por pasta. Este README é o padrão de referência —
-regras e exemplos verificados na prática, pra seguir em qualquer serviço
-novo adicionado aqui.
+54 serviços self-hosted como units do [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html),
+rootless, um serviço por pasta.
 
-## Serviços neste repositório
+## Início rápido
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/bootstrap.sh | bash
+```
+
+Ele confere git/python3/podman e o `systemd --user`, cria as pastas do Podman,
+clona o repositório em `~/quadlet-homelab` e liga `qh`, `qh-check` e
+`qh-updates` em `~/.local/bin`. Sem `sudo`, sem instalar pacote, sem subir
+serviço.
+
+Depois:
+
+```bash
+qh --list            # os serviços
+qh memos             # o plano de um, sem fazer
+qh memos --apply     # fazer
+```
+
+Todo serviço fica acessível em `http://<ip-do-host>:<porta>` sem mais nada
+configurado — sem domínio, sem certificado, sem mexer no roteador.
+
+## Serviços
 
 | Logo | Aplicativo | Versão | Descrição |
 | --- | --- | --- | --- |
@@ -66,184 +86,56 @@ novo adicionado aqui.
 | <img src="https://cdn.jsdelivr.net/gh/getwud/wud@main/ui/public/img/icons/android-chrome-512x512.png" width="48" height="48" alt=""> | [WUD (What's Up Docker)](../../apps/wud/README.pt-BR.md) | `8.3.1` | Monitora as atualizações de imagem disponíveis pros containers, sem aplicar nada sozinho — só avisa |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/zerobyte.png" width="48" height="48" alt=""> | [Zerobyte](../../apps/zerobyte/README.pt-BR.md) | `v0.41.0` | Automatiza backup (via Restic) dos dados de todos os outros serviços deste repositório |
 
-**AutoUpdate ligado**: [Actual Budget](../../apps/actual-budget/README.pt-BR.md), [homepage](../../apps/homepage/README.pt-BR.md), [VaultZap](../../apps/vaultzap/README.pt-BR.md)
-— todo o resto usa tag explícita + bump manual (padrão deste repositório,
-regra 9). Critério de quando ativar e por que a maioria fica desligada:
-ver seção [Auto-update](./auto-update.md).
+**AutoUpdate ligado**: Actual Budget, homepage, VaultZap. Todo o resto tem tag
+fixa e é atualizado na mão.
 
-A coluna Versão espelha a tag em `Image=` do `.container` de cada
-serviço — atualizar aqui junto de qualquer bump manual, não é gerado
-automaticamente.
+## Opcional: a tailnet
+
+O [Tailscale](https://tailscale.com) com o tsdproxy dá a cada serviço um nome
+HTTPS próprio, alcançável de qualquer lugar sem abrir porta. O Vaultwarden
+precisa disso — ele só decifra a sessão em contexto seguro.
+
+No MicroOS, nesta ordem:
+
+```bash
+sudo transactional-update pkg install tailscale
+sudo systemctl reboot
+sudo systemctl enable --now tailscaled
+sudo tailscale up
+
+mkdir -p ~/.config/environment.d
+echo 'TAILNET=<your-tailnet>' > ~/.config/environment.d/tailnet.conf
+systemctl --user daemon-reload
+
+qh tsdproxy --apply
+```
+
+Sem tailnet, instalar com `--local`: ele aponta o link do dashboard pro
+endereço da LAN e comenta as labels `tsdproxy.*` em vez de apagá-las, então
+ligar depois é reinstalar sem a flag.
 
 ## Num servidor ARM
 
-**Quase toda imagem daqui publica variante `arm64`.** Esses serviços instalam
-sem alteração nenhuma — o Podman escolhe o manifesto certo sozinho, e o
-`install.py <app> --apply` funciona igual ao x86.
+Quase toda imagem aqui publica variante `arm64` e instala sem mudança. Três
+não publicam, e levam o serviço junto:
 
-Três imagens são só `amd64`, e levam o serviço delas junto:
+| Imagem | Serviço |
+| --- | --- |
+| `dockurr/macos` | `vm-macos` |
+| `dockurr/chromeos` | `vm-chromeos` |
+| `quay.io/toolbx/arch-toolbox` | `toolbx-arch` |
 
-| Imagem | Serviço | Por quê |
-| --- | --- | --- |
-| `dockurr/macos` | `vm-macos` | sem build ARM; ela emula um Mac Intel, e macOS em ARM é outra máquina |
-| `dockurr/chromeos` | `vm-chromeos` | sem build ARM publicado |
-| `quay.io/toolbx/arch-toolbox` | `toolbx-arch` | o Arch Linux não tem porte ARM oficial |
-
-**Ter imagem compatível não resolve tudo nos serviços de VM.** O KVM só acelera
-convidado da mesma arquitetura, então quem decide é o convidado, não a imagem —
-e convidado x86 num host ARM cai em emulação e fica lento a ponto de ser
-inviável. Por isso o `apps/vm` traz uma unit por combinação:
-
-| Host | Windows | Linux | macOS |
-| --- | --- | --- | --- |
-| x86_64 | `vm-windows` | `vm-qemu` | `vm-macos` |
-| ARM64 | `vm-windows-arm` | [qemus/qemu-arm](https://github.com/qemus/qemu-arm/), não empacotado aqui | — |
-
-O `vm-windows-arm` foi escrito a partir da documentação do upstream, não
-medido: aqui não existe host ARM pra testá-lo.
-
-Pra conferir qualquer imagem antes de escolher um host:
-
-```bash
-podman manifest inspect docker.io/library/postgres:16-alpine \
-  | python3 -c "import sys,json;print(sorted({m['platform']['architecture'] for m in json.load(sys.stdin)['manifests'] if m['platform']['architecture']!='unknown'}))"
-```
-
-O Docker Hub limita consulta anônima de manifesto, então uma leva dessas começa
-a falhar no meio — espaçar, ou consultar a API de registry direto.
+Nos serviços de VM quem decide é o convidado, não a imagem: o KVM só acelera
+convidado da mesma arquitetura. O `apps/vm` traz `vm-windows` pra x86_64 e
+`vm-windows-arm` pra ARM64.
 
 ## Documentação
 
 | | |
 | --- | --- |
-| [Instalando e operando](./instalacao.md) | o `install.py`: instalar, atualizar, backup, restaurar, remover |
-| [Recuperação e migração](./recuperacao.md) | a máquina morreu, ou mudar de servidor |
-| [Ferramentas](./ferramentas.md) | `check.py` e `updates.py`, e o que o CI roda |
-| [Convenções](./convencoes.md) | as 22 regras, cada uma com o caso real que a originou |
-| [Referência](./referencia.md) | onde cada arquivo mora e um `.container` comentado |
-| [Auto-update](./auto-update.md) | por que quase tudo aqui atualiza na mão |
-
-A **instalação manual** de cada serviço está no README dele, num bloco
-recolhível *"Instalação manual (avançado)"* — os mesmos passos que o
-`install.py` executa, um a um.
-
-## Início rápido
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/bootstrap.sh | bash
-```
-
-Ele confere git/python3/podman e o `systemd --user`, cria as pastas do Podman,
-clona este repositório em `~/quadlet-homelab`, liga as três ferramentas em
-`~/.local/bin` e para por aí. **Sem `sudo`, sem instalar pacote, sem subir
-serviço** — tudo aqui é rootless e mora na sua home, e o `install.py` é dry-run
-por padrão de propósito.
-
-Depois dele, onde o repositório está deixa de importar:
-
-```bash
-qh --list            # os serviços
-qh memos             # o plano de um, sem fazer
-qh memos --apply     # fazer
-qh-check             # as checagens do próprio repositório
-qh-updates           # quais imagens estão atrasadas
-```
-
-O `qh` é um link simbólico pro `install.py`, então `qh --help` e `python3
-install.py --help` são o mesmo programa — a ajuda até adapta os exemplos ao
-nome pelo qual você chamou. Nome já ocupado em `~/.local/bin` é deixado em paz,
-o rc do seu shell nunca é editado (se faltar a linha no PATH, ele avisa e você
-põe), e `NO_LINKS=1` pula o passo inteiro.
-
-Passando um serviço, ele mostra o plano na saída:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/bootstrap.sh | bash -s -- memos
-```
-
-Ou sem o pipe, que são os mesmos três passos:
-
-```bash
-# 1. as pastas do Podman (o único passo obrigatório)
-mkdir -p ~/.config/containers/{systemd,secrets,env,volumes}
-
-# 2. este repositório
-git clone https://github.com/wallacepnts/quadlet-homelab && cd quadlet-homelab
-
-# 3. instalar um serviço
-python3 install.py memos --apply
-```
-
-Tailscale e tsdproxy são **opcionais** — ver
-[Passo zero](#passo-zero-preparar-o-host). Sem eles, `--access local`.
-
-## Passo zero: preparar o host
-
-**O mínimo, e é só isto:**
-
-```bash
-mkdir -p ~/.config/containers/{systemd,secrets,env,volumes}
-```
-
-Todo serviço deste repositório publica uma porta no host. Com as pastas
-criadas e o Podman rootless funcionando, dá pra instalar qualquer um e
-acessar em `http://<ip-do-host>:<porta>` — nada aqui exige rede externa,
-domínio ou certificado.
-
-### Opcional: a tailnet
-
-O [Tailscale](https://tailscale.com) e o [tsdproxy](../../apps/tsdproxy/README.pt-BR.md) são
-**opcionais**. Eles resolvem duas coisas: acessar de fora de casa sem
-abrir porta no roteador, e ter HTTPS de verdade por serviço (o que
-importa pra app que usa WebCrypto — o [Vaultwarden](../../apps/vaultwarden/README.pt-BR.md)
-só descriptografa a sessão em contexto seguro).
-
-Quem quiser, nesta ordem:
-
-**1. Tailscale, e não por Quadlet.** Ele precisa integrar com o
-`systemd-resolved` do host pro MagicDNS funcionar, e container não
-compartilha D-Bus/mount namespace com o host (regra 21). No MicroOS:
-
-```bash
-sudo transactional-update pkg install tailscale
-sudo systemctl reboot            # transactional-update só aplica no próximo boot
-sudo systemctl enable --now tailscaled
-sudo tailscale up
-```
-
-**2. A variável `TAILNET`**, que resolve os `homepage.href` de todas as
-units (regra 19):
-
-```bash
-mkdir -p ~/.config/environment.d
-echo 'TAILNET=<your-tailnet>' > ~/.config/environment.d/tailnet.conf
-systemctl --user daemon-reload
-```
-
-**3. O [tsdproxy](../../apps/tsdproxy/README.pt-BR.md)**, que publica todo o resto na tailnet
-automaticamente por label:
-
-```bash
-python3 install.py tsdproxy --apply
-```
-
-`python3 install.py tailscale` repete essas instruções, já que o Tailscale
-não tem pasta em `apps/`.
-
-### Instalando sem tailnet
-
-Só uma coisa quebra sem ela: o `homepage.href` das units aponta pra um
-domínio `.ts.net` que não existe, e o link do dashboard morre. O
-`--local` troca esse label pelo endereço da LAN na hora de copiar:
-
-```bash
-python3 install.py memos --apply --local
-# Label=homepage.href=http://192.168.1.12:5230
-```
-
-Ele também **comenta** as labels de `tsdproxy.*` (comenta, não apaga), então
-ligar a tailnet depois é reinstalar o serviço sem `--local`, não editar unit
-na mão. Pra manter o nó do tsdproxy e só trocar o link do dashboard, use
-`--href-local` sozinho. Os `.env.example` que citam `<your-tailnet>`
-(vaultwarden, gitea, karakeep e outros 14) continuam pedindo revisão à
-mão: são `DOMAIN`/`ALLOWED_HOSTS` que o próprio app grava no banco.
+| [Instalando e operando](./instalacao.md) | instalar, atualizar, backup, restaurar, remover |
+| [Recuperação e migração](./recuperacao.md) | a máquina morreu, ou você está mudando de host |
+| [Convenções](./convencoes.md) | as 22 regras |
+| [Referência](./referencia.md) | onde cada arquivo mora, e um `.container` anotado |
+| [Auto-update](./auto-update.md) | por que quase tudo atualiza na mão |
+| [Ferramentas](./ferramentas.md) | `qh-check` e `qh-updates` |
