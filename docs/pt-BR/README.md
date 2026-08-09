@@ -130,10 +130,30 @@ recolhível *"Instalação manual (avançado)"* — os mesmos passos que o
 ## Início rápido
 
 ```bash
+curl -fsSL https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/bootstrap.sh | bash
+```
+
+Ele confere git/python3/podman e o `systemd --user`, cria as pastas do Podman,
+clona este repositório em `~/quadlet-homelab` e para por aí. **Sem `sudo`, sem
+instalar pacote, sem subir serviço** — tudo aqui é rootless e mora na sua home,
+e o `install.py` é dry-run por padrão de propósito.
+
+Passando um serviço, ele mostra o plano na saída:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/bootstrap.sh | bash -s -- memos
+```
+
+Ou sem o pipe, que são os mesmos três passos:
+
+```bash
 # 1. as pastas do Podman (o único passo obrigatório)
 mkdir -p ~/.config/containers/{systemd,secrets,env,volumes}
 
-# 2. instalar um serviço
+# 2. este repositório
+git clone https://github.com/wallacepnts/quadlet-homelab && cd quadlet-homelab
+
+# 3. instalar um serviço
 python3 install.py memos --apply
 ```
 
