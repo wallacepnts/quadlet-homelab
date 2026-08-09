@@ -1317,6 +1317,7 @@ DESCRICOES = {
     "A Windows VM reachable in the browser, with RDP on 3389": "VM de Windows acessível no navegador, com RDP na 3389",
     "Backup automation (Restic)": "Automação de backup (Restic)",
     "Bookmark manager with full-text search and automatic page archiving": "Gerenciador de favoritos com busca no texto e arquivamento automático das páginas",
+    "Catches the email your apps send, to read in the browser": "Captura o e-mail que seus apps enviam, para ler no navegador",
     "Chat interface for local LLMs (Ollama) or over an API": "Interface de chat para LLMs locais (Ollama) ou por API",
     "ChromeOS Flex in a VM, with GPU acceleration and a login on the viewer": "ChromeOS Flex numa VM, com aceleração de GPU e login no visualizador",
     "Cloud file sync and sharing (SQLite evaluation)": "Sincronização e compartilhamento de arquivos na nuvem (avaliação em SQLite)",
