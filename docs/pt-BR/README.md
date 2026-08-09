@@ -47,7 +47,7 @@ Medido, instalando o podman em cada uma e lendo a versão:
 | Distribuição | Podman | |
 | --- | --- | --- |
 | Arch | 6.0.2 | funciona |
-| openSUSE Tumbleweed | 6.0.2 | funciona |
+| openSUSE Tumbleweed, Slowroll | 6.0.2 | funciona |
 | openSUSE MicroOS, Aeon, Kalpa | 5.8 | funciona |
 | Fedora 42 | 5.8.2 | funciona |
 | Debian 13 | 5.4.2 | funciona |
@@ -58,9 +58,9 @@ Medido, instalando o podman em cada uma e lendo a versão:
 | Debian 12 | 4.3.1 | **antiga demais** |
 
 Aeon e Kalpa são MicroOS com desktop e compartilham os repositórios dele. O
-Slowroll acompanha o Tumbleweed em cadência mais lenta, e o Leap Micro segue a
-geração do Leap que o originou — nenhum dos dois publica imagem de container,
-então nenhum foi medido aqui.
+Leap Micro segue a geração do Leap que o originou, então a linha 5.x herda o
+problema do Leap 15 — ele não publica imagem de container e não foi medido
+aqui.
 
 ## Serviços
 
