@@ -116,6 +116,38 @@ Quando o serviço tem login, a instalação termina com ele:
 Aparece no dry-run também, então `qh <app>` num serviço já instalado responde
 "qual era mesmo a minha senha". Isso fica no seu scrollback.
 
+Qual secret é esse vem do `install.ini`. Só o que é senha digitada é impresso —
+chave de JWT e token de API ao lado também são secrets:
+
+```ini
+[login]
+user = admin
+password = filebrowser-admin-password
+```
+
+Stack cujas units têm logins diferentes nomeia um por unit:
+
+```ini
+[login.vm-windows]
+user = Docker
+password = vm-windows-password
+
+[login.vm-chromeos]
+user = admin
+password = vm-chromeos-password
+```
+
+Quando um secret guarda os dois lados, na forma `usuario:senha` que o app lê,
+basta nomear uma vez e a instalação divide no primeiro `:`:
+
+```ini
+[login]
+credentials = vaultzap-basic-auth
+```
+
+O `check.py` reprova o build se algum desses nomes não for um `Secret=`
+declarado por alguma unit.
+
 Pra digitar os secrets em vez de gerá-los:
 
 ```bash

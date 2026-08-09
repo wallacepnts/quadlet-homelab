@@ -216,11 +216,11 @@ def check_manifest(folders):
         # either shape (`password` next to a literal user, or `credentials`
         # holding `user:password`). A typo here is silent — the footer would
         # just skip the block.
-        if ini.has_section("login"):
+        for secao in [s for s in ini.sections() if s == "login" or s.startswith("login.")]:
             for key in ("password", "credentials"):
-                name = ini.get("login", key, fallback=None)
+                name = ini.get(secao, key, fallback=None)
                 if name and name not in declared:
-                    error("manifest", f"apps/{folder.name}: install.ini [login] {key} = "
+                    error("manifest", f"apps/{folder.name}: install.ini [{secao}] {key} = "
                                       f"{name}, which no unit declares as a Secret=")
 
 

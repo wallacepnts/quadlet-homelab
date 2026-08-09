@@ -465,13 +465,20 @@ class Service:
             [login]
             credentials = vaultzap-basic-auth
         """
-        if not self.ini.has_section("login"):
+        secao = "login"
+        if self.only:
+            # A stack can have one login per unit — vm-windows and vm-chromeos
+            # have different users and different passwords.
+            porunit = f"login.{Path(self.only).stem}"
+            if self.ini.has_section(porunit):
+                secao = porunit
+        if not self.ini.has_section(secao):
             return None
-        both = self.ini.get("login", "credentials", fallback=None)
+        both = self.ini.get(secao, "credentials", fallback=None)
         if both:
             return (None, both)
-        user = self.ini.get("login", "user", fallback=None)
-        secret = self.ini.get("login", "password", fallback=None)
+        user = self.ini.get(secao, "user", fallback=None)
+        secret = self.ini.get(secao, "password", fallback=None)
         return (user, secret) if user and secret else None
 
     def installed(self):
@@ -1558,6 +1565,15 @@ def selftest():
     for feito, titulo, cmds in passos:
         assert isinstance(feito, bool) and titulo and isinstance(cmds, list)
         assert feito == (not cmds), (feito, cmds)   # pendente sempre traz o comando
+
+    # one login per unit, where a stack has more than one
+    def _login(nome):
+        pasta, only = find_app(nome)
+        return Service(pasta, None, only).login()
+    assert _login("vm-windows") == ("Docker", "vm-windows-password")
+    assert _login("vm-chromeos") == ("admin", "vm-chromeos-password")
+    assert _login("vm-macos") is None                  # essa não tem senha
+    assert Service("proxmox").login() == ("root", "proxmox-root-password")
 
     # the saved rule: command line beats it, it beats what the host has
     with tempfile.TemporaryDirectory() as d:

@@ -117,6 +117,38 @@ When a service has a login, the install ends with it:
 This shows in the dry-run too, so `qh <app>` on something already installed is
 also the answer to "what was my password". It lands in your scrollback.
 
+Which secret that is comes from `install.ini`. Only the one that is a typed
+password is printed — the JWT keys and API tokens next to it are secrets too:
+
+```ini
+[login]
+user = admin
+password = filebrowser-admin-password
+```
+
+A stack whose units have different logins names one per unit:
+
+```ini
+[login.vm-windows]
+user = Docker
+password = vm-windows-password
+
+[login.vm-chromeos]
+user = admin
+password = vm-chromeos-password
+```
+
+When one secret holds both halves, in the `user:password` form the app reads,
+name it once and the install splits it at the first `:`:
+
+```ini
+[login]
+credentials = vaultzap-basic-auth
+```
+
+`check.py` fails the build if any of those names is not a `Secret=` some unit
+declares.
+
 To type the secrets instead of generating them:
 
 ```bash
