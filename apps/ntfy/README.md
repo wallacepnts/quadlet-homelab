@@ -13,7 +13,7 @@ qh ntfy            # shows the plan
 qh ntfy --apply
 ```
 
-Open `http://<host-ip>:8098` or `https://ntfy.<your-tailnet>.ts.net`.
+Open `http://<host-ip>:2586` or `https://ntfy.<your-tailnet>.ts.net`.
 
 <details>
 <summary><b>Manual install</b></summary>

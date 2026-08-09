@@ -13,7 +13,7 @@ qh uptime-kuma            # mostra o plano
 qh uptime-kuma --apply
 ```
 
-Abrir `http://<ip-do-host>:3005` ou `https://uptime-kuma.<your-tailnet>.ts.net`.
+Abrir `http://<ip-do-host>:3001` ou `https://uptime-kuma.<your-tailnet>.ts.net`.
 
 <details>
 <summary><b>Instalação manual</b></summary>

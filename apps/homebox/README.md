@@ -13,7 +13,7 @@ qh homebox            # shows the plan
 qh homebox --apply
 ```
 
-Open `http://<host-ip>:3100` or `https://homebox.<your-tailnet>.ts.net`.
+Open `http://<host-ip>:7745` or `https://homebox.<your-tailnet>.ts.net`.
 
 <details>
 <summary><b>Manual install</b></summary>
@@ -57,7 +57,7 @@ sed -i 's/^HBOX_OPTIONS_ALLOW_REGISTRATION=true/HBOX_OPTIONS_ALLOW_REGISTRATION=
   ~/.config/containers/env/homebox.env
 systemctl --user restart homebox
 # conferir: allowRegistration deve virar false
-curl -s http://127.0.0.1:3100/api/v1/status | grep -o '"allowRegistration":[a-z]*'
+curl -s http://127.0.0.1:7745/api/v1/status | grep -o '"allowRegistration":[a-z]*'
 ```
 
 </details>

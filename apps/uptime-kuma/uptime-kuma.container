@@ -11,7 +11,7 @@ User=1000
 
 Image=docker.io/louislam/uptime-kuma:2.5.0
 ContainerName=uptime-kuma
-PublishPort=3005:3001
+PublishPort=3001:3001
 
 Volume=%h/.config/containers/volumes/uptime-kuma/data:/app/data:Z
 HealthCmd=CMD-SHELL extra/healthcheck || exit 1

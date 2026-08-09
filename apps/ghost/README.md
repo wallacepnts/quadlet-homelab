@@ -13,7 +13,7 @@ qh ghost            # shows the plan
 qh ghost --apply
 ```
 
-Open `http://<host-ip>:9094` or `https://ghost.<your-tailnet>.ts.net`.
+Open `http://<host-ip>:2368` or `https://ghost.<your-tailnet>.ts.net`.
 
 <details>
 <summary><b>Manual install</b></summary>

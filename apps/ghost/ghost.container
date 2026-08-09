@@ -9,7 +9,7 @@ User=1000
 PidsLimit=256
 Image=docker.io/library/ghost:6.56.0-alpine
 ContainerName=ghost
-PublishPort=9094:2368
+PublishPort=2368:2368
 Environment=NODE_ENV=development
 Environment=database__client=sqlite3
 Environment=database__connection__filename=/var/lib/ghost/content/data/ghost.db
