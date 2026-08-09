@@ -20,7 +20,7 @@ Depois:
 
 ```bash
 qh                   # os serviços
-qh memos             # o plano de um, sem fazer
+qh memos             # o plano de um, sem instalar
 qh memos --apply     # fazer
 ```
 

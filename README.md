@@ -20,7 +20,7 @@ Then:
 
 ```bash
 qh                   # the services
-qh memos             # the plan for one, without doing it
+qh memos             # the plan for one, without installing
 qh memos --apply     # do it
 ```
 
