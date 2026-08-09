@@ -102,26 +102,24 @@ título pelo **Prowlarr**, entregam o download ao **SABnzbd** ou ao **Deluge**,
 renomeiam o arquivo dentro da raiz de mídia, e o **Jellyfin** reproduz. Cada
 peça roda sozinha e serve sem as outras.
 
-| | Unit | Para que serve | Porta | Versão |
-| --- | --- | --- | --- | --- |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/jellyfin.svg" width="28" height="28" alt=""> | `media-stack-jellyfin` | Reproduz a biblioteca — filmes, séries, música — no navegador, na TV ou no celular | 8096 | `10.11.11` |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/seerr.svg" width="28" height="28" alt=""> | `media-stack-seerr` | Onde você pede um título. Repassa o pedido ao Sonarr ou ao Radarr | 5055 | `v3.4.1` |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/prowlarr.svg" width="28" height="28" alt=""> | `media-stack-prowlarr` | Guarda a lista de indexadores e alimenta os outros *arr, então você configura uma vez só | 9696 | `2.5.2` |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/sonarr.svg" width="28" height="28" alt=""> | `media-stack-sonarr` | Séries: acompanha episódios novos, baixa e arquiva | 8989 | `4.0.19` |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/radarr.svg" width="28" height="28" alt=""> | `media-stack-radarr` | O mesmo, para filmes | 7878 | `6.3.0` |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/lidarr.svg" width="28" height="28" alt=""> | `media-stack-lidarr` | O mesmo, para músicas | 8686 | `3.1.0` |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/bazarr.svg" width="28" height="28" alt=""> | `media-stack-bazarr` | Busca legendas para o que o Sonarr e o Radarr trouxeram | 6767 | `1.6.0` |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/sabnzbd.svg" width="28" height="28" alt=""> | `media-stack-sabnzbd` | Baixa da Usenet | 8081 | `version-5.0.4` |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/deluge.svg" width="28" height="28" alt=""> | `media-stack-deluge` | Baixa torrents | 8112 | `2.2.0` |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/gluetun.svg" width="28" height="28" alt=""> | `media-stack-gluetun` | **Opcional.** Túnel VPN para colocar o Deluge atrás — desligado até você configurar | — | `latest` |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/dispatcharr.svg" width="28" height="28" alt=""> | `media-stack-dispatcharr` | IPTV: canais, EPG e VOD, à parte da corrente acima | 9191 | `latest` |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/downtify.png" width="28" height="28" alt=""> | `media-stack-downtify` | Baixa músicas do Spotify na raiz de mídia | 8000 | `2.9.1` |
+| | App | Para que serve | Versão |
+| --- | --- | --- | --- |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/jellyfin.svg" width="28" height="28" alt=""> | [Jellyfin](./docs/pt-BR/jellyfin.md) | Reproduz a biblioteca — filmes, séries, música — no navegador, na TV ou no celular | `10.11.11` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/seerr.svg" width="28" height="28" alt=""> | [Seerr](./docs/pt-BR/seerr.md) | Onde você pede um título. Repassa o pedido ao Sonarr ou ao Radarr | `v3.4.1` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/prowlarr.svg" width="28" height="28" alt=""> | [Prowlarr](./docs/pt-BR/prowlarr.md) | Guarda a lista de indexadores e alimenta os outros *arr | `2.5.2` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/sonarr.svg" width="28" height="28" alt=""> | [Sonarr](./docs/pt-BR/sonarr.md) | Séries: acompanha episódios novos, baixa e arquiva | `4.0.19` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/radarr.svg" width="28" height="28" alt=""> | [Radarr](./docs/pt-BR/radarr.md) | O mesmo, para filmes | `6.3.0` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/lidarr.svg" width="28" height="28" alt=""> | [Lidarr](./docs/pt-BR/lidarr.md) | O mesmo, para músicas | `3.1.0` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/bazarr.svg" width="28" height="28" alt=""> | [Bazarr](./docs/pt-BR/bazarr.md) | Busca legendas para o que o Sonarr e o Radarr trouxeram | `1.6.0` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/sabnzbd.svg" width="28" height="28" alt=""> | [SABnzbd](./docs/pt-BR/sabnzbd.md) | Baixa da Usenet | `version-5.0.4` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/deluge.svg" width="28" height="28" alt=""> | [Deluge](./docs/pt-BR/deluge.md) | Baixa torrents | `2.2.0` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/gluetun.svg" width="28" height="28" alt=""> | [Gluetun](./docs/pt-BR/gluetun.md) | **Opcional.** Túnel VPN para colocar o Deluge atrás | `latest` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/dispatcharr.svg" width="28" height="28" alt=""> | [Dispatcharr](./docs/pt-BR/dispatcharr.md) | IPTV: canais, EPG e VOD, à parte da corrente acima | `latest` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/downtify.png" width="28" height="28" alt=""> | [Downtify](./docs/pt-BR/downtify.md) | Baixa músicas do Spotify na raiz de mídia | `2.9.1` |
 
-O Gluetun é a única peça opcional. O Deluge publica a porta dele e funciona sem
-o Gluetun; instalar a pasta traz o Gluetun junto, parado até você configurar um
-provedor. Colocar o Deluge atrás da VPN é uma troca, não um acréscimo — os
-comentários no topo das duas units dizem quais linhas mover, e as duas não
-podem publicar a 8112 ao mesmo tempo.
+Cada página acima diz o que o app precisa no primeiro uso e como ele se liga
+aos outros. O Gluetun é a única peça opcional: o Deluge publica a porta dele e
+funciona sem ele.
 
 ## Atualizar
 
