@@ -11,15 +11,9 @@ rootless, um serviço por pasta.
 curl -fsSL https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/bootstrap.sh | bash
 ```
 
-Com `wget`, que algumas instalações mínimas têm e `curl` não:
-
-```bash
-wget -qO- https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/bootstrap.sh | bash
-```
-
-Instalação crua pode não ter nenhum dos dois — a imagem base do Debian não tem
-`curl` nem `wget`. Aí você vai instalar pacote de qualquer jeito, e o `git` (que
-o bootstrap exige de toda forma) basta:
+Debian e Ubuntu não trazem `curl` nem `wget` numa instalação crua — medido nas
+imagens base dos dois. Ali você vai instalar pacote de qualquer forma, então
+instale o `git`, que o bootstrap exige de toda maneira:
 
 ```bash
 git clone https://github.com/wallacepnts/quadlet-homelab

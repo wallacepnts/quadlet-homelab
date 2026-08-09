@@ -11,15 +11,9 @@ units, rootless, one service per folder.
 curl -fsSL https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/bootstrap.sh | bash
 ```
 
-With `wget` instead, which some minimal installs have and `curl` not:
-
-```bash
-wget -qO- https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/bootstrap.sh | bash
-```
-
-A bare install may have neither — Debian's base image has no `curl` and no
-`wget`. Then you are installing packages anyway, and `git` (which the bootstrap
-needs regardless) is enough:
+Debian and Ubuntu ship neither `curl` nor `wget` in a bare install — measured
+on their base images. There you are installing packages anyway, so install
+`git`, which the bootstrap needs regardless:
 
 ```bash
 git clone https://github.com/wallacepnts/quadlet-homelab
