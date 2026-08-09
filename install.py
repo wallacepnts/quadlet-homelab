@@ -571,6 +571,28 @@ class Service:
                 return v.split(":")[0]
         return None
 
+    def exclusive_volumes(self):
+        """Volume directories that belong to the picked unit and to no other.
+
+        `volume_roots()` collapses a folder to `volumes/<app>`, which is right
+        for a stack that shares its data and wrong for a folder of independent
+        services: purging one of media-stack's twelve would take the other
+        eleven with it. A path with a systemd variable is never included —
+        `${MEDIA_DATA_DIR}` is the library, not this service's data.
+        """
+        if not self.only:
+            return None
+        minhas, outras = set(), set()
+        for u in self.dir.glob("*.container"):
+            alvo = minhas if u.stem == self.only else outras
+            for k, v in directives(u.read_text()):
+                if k == "Volume":
+                    origem = v.split(":")[0]
+                    if "$" in origem or not origem.startswith("%h"):
+                        continue
+                    alvo.add(self._expand(origem))
+        return sorted(minhas - outras)
+
     def chowns(self):
         """[(directory, uid)] — each unit's own volumes, at that unit's uid.
 
@@ -1074,7 +1096,9 @@ def plan_remove(s, purge):
     steps.append((f"systemctl --user reset-failed {' '.join(units)}",
                   lambda: run_lenient(["systemctl", "--user", "reset-failed", *units])))
     dest = s.unit_dest
-    if dest.name == s.name and dest.is_dir():
+    # Only when the whole folder is being removed: with one unit picked, its
+    # eleven siblings live in that same directory.
+    if not s.only and dest.name == s.name and dest.is_dir():
         steps.append((f"rm -rf {dest}", lambda: _rmtree(dest)))
     else:
         for u in s.units:
@@ -1084,23 +1108,31 @@ def plan_remove(s, purge):
     steps.append(("systemctl --user daemon-reload",
                   lambda: run(["systemctl", "--user", "daemon-reload"])))
 
+    # With a single unit picked, only what is that unit's own: its siblings keep
+    # their directories, the shared .env and the secrets they also read.
+    proprios = s.exclusive_volumes()
+    alvos = proprios if proprios is not None else s.volume_roots()
     if purge:
-        for root in s.volume_roots():
+        for root in alvos:
             if Path(root).exists():
                 steps.append((f"rm -rf {root}   ({size(root)})",
                               lambda root=root: _rmtree(Path(root))))
-        for name in s.secrets():
-            if secret_exists(name):
-                steps.append((f"podman secret rm {name}",
-                              lambda name=name: run(["podman", "secret", "rm", name])))
-        source = s.home / ".config/containers/secrets" / s.name
-        if source.exists():
-            steps.append((f"rm -rf {source}", lambda: _rmtree(source)))
-        for e in s.env_files():
-            if Path(e).exists():
-                steps.append((f"rm {e}", lambda e=e: Path(e).unlink()))
+        if proprios is None:
+            for name in s.secrets():
+                if secret_exists(name):
+                    steps.append((f"podman secret rm {name}",
+                                  lambda name=name: run(["podman", "secret", "rm", name])))
+            source = s.home / ".config/containers/secrets" / s.name
+            if source.exists():
+                steps.append((f"rm -rf {source}", lambda: _rmtree(source)))
+            for e in s.env_files():
+                if Path(e).exists():
+                    steps.append((f"rm {e}", lambda e=e: Path(e).unlink()))
+        else:
+            warnings.append("shared .env and secrets kept — they belong to the "
+                            "other units of this folder too")
     else:
-        kept = [r for r in s.volume_roots() if Path(r).exists()]
+        kept = [r for r in alvos if Path(r).exists()]
         if kept:
             warnings.append("data kept: " + ", ".join(f"{r} ({size(r)})" for r in kept))
         warnings.append("tsdproxy does NOT deregister the tailnet node — "
@@ -1620,15 +1652,23 @@ def selftest():
     # --ask-secrets swaps the generate step for a prompt, and only with a
     # terminal to prompt on
     with tempfile.TemporaryDirectory() as d:
-        fb = Service("filebrowser", d)
-        plain = [t for t, _ in plan_install(fb, None)[0] if "secret" in t]
-        asked = [t for t, _ in plan_install(fb, None, interactive=True,
-                                            ask_secrets=True)[0] if "secret" in t]
-        assert all(t.startswith("podman secret create") for t in plain), plain
-        assert len(asked) == len(plain) and all("ask for the value" in t for t in asked), asked
+        # SANDBOX so secret_exists() answers the same on any host: the first
+        # version of this test read the real podman, and passed only while both
+        # secrets happened to exist.
+        antes_sb = SANDBOX
+        try:
+            SANDBOX = True
+            fb = Service("filebrowser", d)
+            passos = lambda **kw: [t for t, _ in plan_install(fb, None, **kw)[0]]
+            plain = [t for t in passos() if t.startswith("podman secret create")]
+            asked = [t for t in passos(interactive=True, ask_secrets=True)
+                     if t.startswith("ask for the value")]
+            assert len(plain) == 2, plain          # senha e chave do JWT
+            assert len(asked) == len(plain), (asked, plain)
+        finally:
+            SANDBOX = antes_sb
         # without a terminal the flag is ignored rather than silently skipping
-        descs = lambda **kw: [t for t, _ in plan_install(fb, None, **kw)[0]]
-        assert descs(ask_secrets=True) == descs()
+        assert passos(ask_secrets=True) == passos()
 
     # tailscale_steps() reads the host, so the values vary; the shape must not
     passos = tailscale_steps()
@@ -1658,6 +1698,16 @@ def selftest():
     assert run_read(["true"]) == ""
     assert run_read(["false"]) is None
     assert run_read(["comando-que-nao-existe-xyz"]) is None
+
+    # removing one unit of a folder touches only what is that unit's own
+    def _um(nome):
+        pasta, only = find_app(nome)
+        return Service(pasta, None, only)
+    assert [str(x).split("/volumes/")[-1] for x in _um("media-stack-bazarr").exclusive_volumes()] \
+        == ["media-stack/bazarr/config"], "só o diretório da unit"
+    assert _um("media-stack").exclusive_volumes() is None, "pasta inteira não filtra"
+    # ${MEDIA_DATA_DIR} é a biblioteca compartilhada, nunca alvo de purge
+    assert not any("$" in str(x) for x in _um("media-stack-deluge").exclusive_volumes())
 
     # the repo column compares against what an install would write, not the raw
     # file: --access tailnet comments the proxied port out, and a byte compare
@@ -2311,15 +2361,24 @@ def main():
         ap.error("not found in apps/: " + ", ".join(unknown)
                  + "  (run it with no arguments to see the list)")
 
-    # A single unit out of a stack is an install/update concept only. The data
-    # actions work on the folder's volume roots — `volume_roots()` collapses
-    # `volumes/media-stack/jellyfin/...` to `volumes/media-stack` — so a
-    # `--remove --purge` on one unit would delete the whole stack's data.
+    # Backup and restore always take the folder: the archive is the service's,
+    # and restoring one piece of a stack over data the others share is how you
+    # corrupt it. Remove is allowed on a single unit when that unit's volumes
+    # are its own — media-stack's twelve each have a directory nobody else
+    # touches, and refusing there was protecting nothing.
     picked = [x for x in a.app if find_app(x)[1]]
-    if picked and (a.backup or a.restore or a.remove):
-        ap.error(f"{', '.join(picked)}: naming a single unit works for install and "
-                 f"--update only. Backup, restore and remove act on the whole "
-                 f"service, whose data these units share — use the folder name.")
+    if picked and (a.backup or a.restore):
+        ap.error(f"{', '.join(picked)}: naming a single unit works for install, "
+                 f"--update and --remove. Backup and restore act on the whole "
+                 f"service's data — use the folder name.")
+    if picked and a.remove:
+        compartilham = [x for x in picked
+                        if not Service(*[y for y in find_app(x)][:1],
+                                       a.prefix, find_app(x)[1]).exclusive_volumes()]
+        if compartilham:
+            ap.error(f"{', '.join(compartilham)}: this unit's volumes are shared with "
+                     f"the rest of the service — removing it alone would take their "
+                     f"data too. Use the folder name.")
 
     if a.restore and len(a.app) > 1:
         ap.error("--restore acts on a single service: the .tar.gz belongs to one")
