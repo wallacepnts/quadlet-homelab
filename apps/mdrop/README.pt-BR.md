@@ -1,6 +1,6 @@
 # mdrop
 
-<img src="https://cdn.simpleicons.org/markdown" width="64" height="64" alt="">
+<img src="https://cdn.simpleicons.org/markdown/888888" width="64" height="64" alt="">
 
 **[🇺🇸 Read in English](./README.md)**
 

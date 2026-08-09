@@ -46,8 +46,8 @@ nothing to a disk already written.
 | <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/zimaos.svg" width="20" height="20" alt=""> | `zima` | ZimaOS — 1.4 GB |
 | <img src="https://cdn.simpleicons.org/tails" width="20" height="20" alt=""> | `tails` | Tails — 1.5 GB |
 | <img src="https://cdn.simpleicons.org/rockylinux" width="20" height="20" alt=""> | `rocky` | Rocky Linux — 2.1 GB |
-| <img src="https://cdn.simpleicons.org/almalinux" width="20" height="20" alt=""> | `alma` | Alma Linux — 2.2 GB |
-| <img src="https://cdn.simpleicons.org/mxlinux" width="20" height="20" alt=""> | `mx` | MX Linux — 2.2 GB |
+| <img src="https://cdn.simpleicons.org/almalinux/888888" width="20" height="20" alt=""> | `alma` | Alma Linux — 2.2 GB |
+| <img src="https://cdn.simpleicons.org/mxlinux/888888" width="20" height="20" alt=""> | `mx` | MX Linux — 2.2 GB |
 | <img src="https://cdn.simpleicons.org/fedora" width="20" height="20" alt=""> | `fedora` | Fedora — 2.3 GB |
 | <img src="https://cdn.simpleicons.org/nixos" width="20" height="20" alt=""> | `nixos` | NixOS — 2.4 GB |
 | <img src="https://cdn.simpleicons.org/cachyos" width="20" height="20" alt=""> | `cachy` | CachyOS — 2.6 GB |
@@ -55,7 +55,7 @@ nothing to a disk already written.
 | <img src="https://cdn.simpleicons.org/ubuntu" width="20" height="20" alt=""> | `ubuntus` | Ubuntu Server — 3.0 GB |
 | <img src="https://cdn.simpleicons.org/debian" width="20" height="20" alt=""> | `debian` | Debian — 3.3 GB |
 | <img src="https://cdn.simpleicons.org/gentoo" width="20" height="20" alt=""> | `gentoo` | Gentoo — 3.6 GB |
-| <img src="https://cdn.simpleicons.org/slackware" width="20" height="20" alt=""> | `slack` | Slackware — 3.7 GB |
+| <img src="https://cdn.simpleicons.org/slackware/888888" width="20" height="20" alt=""> | `slack` | Slackware — 3.7 GB |
 | <img src="https://cdn.simpleicons.org/kalilinux" width="20" height="20" alt=""> | `kali` | Kali Linux — 3.8 GB |
 | <img src="https://cdn.simpleicons.org/zorin" width="20" height="20" alt=""> | `zorin` | Zorin OS — 3.8 GB |
 | <img src="https://cdn.simpleicons.org/xubuntu" width="20" height="20" alt=""> | `xubuntu` | Xubuntu — 4.0 GB |
