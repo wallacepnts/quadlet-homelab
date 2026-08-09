@@ -51,6 +51,7 @@ PT = {
     "has no row in the README version table": "não tem linha na tabela de versões do README",
     "the README says": "o README diz",
     "the unit says": "a unit diz",
+    "could not find": "não encontrei",
 }
 loc = translator(PT)
 
@@ -371,7 +372,7 @@ def main():
         return 0
 
     if not APPS.is_dir():
-        print(f"could not find {APPS}", file=sys.stderr)
+        print(loc(f"could not find {APPS}"), file=sys.stderr)
         return 2
 
     folders = sorted(p for p in APPS.iterdir() if p.is_dir())

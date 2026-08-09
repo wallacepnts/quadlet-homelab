@@ -92,6 +92,9 @@ PT = {
     'This OVERWRITES the current data, with no way back.': 'Isso SOBRESCREVE os dados atuais, sem volta.',
     'This DELETES the data listed above, with no way back.': 'Isso APAGA os dados listados acima, sem volta.',
     'cancelled.': 'cancelado.',
+    '  number or value [': '  número ou valor [',
+    '  (default)': '  (padrão)',
+    'could not find the file': 'não encontrei o arquivo',
     "unit(s) in": "unit(s) em",
     "  --update     re-copies the units and restarts, keeping data, env and secrets":
         "  --update     recopia as units e reinicia, mantendo dados, env e secrets",
@@ -1235,7 +1238,8 @@ def ask_choices(path, choices):
             sep = "  " if label else ""
             say(f"   {i:>2}) {value:<10}{sep}{label}{mark}")
         try:
-            raw = input(f"  number or value [{default}]: ").strip()
+            # loc() by hand: input() does not go through say()
+            raw = input(loc(f"  number or value [{default}]: ")).strip()
         except EOFError:
             raw = ""
         if not raw:
