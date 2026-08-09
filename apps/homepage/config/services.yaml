@@ -1,0 +1,4 @@
+---
+# Empty on purpose: every service here comes from the container labels, read
+# through docker.yaml. Homepage writes a sample file when this one is missing,
+# and that sample is what puts "My First Group" on the dashboard.
