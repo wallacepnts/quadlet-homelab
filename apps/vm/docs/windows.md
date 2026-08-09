@@ -40,27 +40,27 @@ nothing to a disk already written.
 
 `VERSION` — Which Windows to install (downloaded on first boot).
 
-| Value | What it is |
-| --- | --- |
-| `11` | Windows 11 Pro — 7.9 GB |
-| `11l` | Windows 11 LTSC — 4.7 GB, no Store, long-term servicing |
-| `11e` | Windows 11 Enterprise — 6.6 GB |
-| `10` | Windows 10 Pro — 5.7 GB |
-| `10l` | Windows 10 LTSC — 4.6 GB |
-| `10e` | Windows 10 Enterprise — 5.2 GB |
-| `2025` | Windows Server 2025 — 7.6 GB |
-| `2022` | Windows Server 2022 — 6.0 GB |
-| `2019` | Windows Server 2019 — 5.3 GB |
-| `2016` | Windows Server 2016 — 6.5 GB |
-| `tiny11` | Tiny11 — 5.3 GB, trimmed community build |
-| `core11` | Tiny11 Core — 3.0 GB, the smallest Windows 11 here |
-| `tiny10` | Tiny10 — 3.6 GB |
-| `8e` | Windows 8.1 Enterprise — 3.7 GB |
-| `7u` | Windows 7 Ultimate — 3.1 GB |
-| `vu` | Windows Vista Ultimate — 3.0 GB |
-| `xp` | Windows XP Professional — 0.6 GB |
-| `2k` | Windows 2000 Professional — 0.4 GB |
-| `reactos` | ReactOS — 0.1 GB, not Windows, no licence needed |
+| | Value | What it is |
+| --- | --- | --- |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/windows-11.png" width="20" height="20" alt=""> | `11` | Windows 11 Pro — 7.9 GB |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/windows-11.png" width="20" height="20" alt=""> | `11l` | Windows 11 LTSC — 4.7 GB, no Store, long-term servicing |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/windows-11.png" width="20" height="20" alt=""> | `11e` | Windows 11 Enterprise — 6.6 GB |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/windows-10.png" width="20" height="20" alt=""> | `10` | Windows 10 Pro — 5.7 GB |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/windows-10.png" width="20" height="20" alt=""> | `10l` | Windows 10 LTSC — 4.6 GB |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/windows-10.png" width="20" height="20" alt=""> | `10e` | Windows 10 Enterprise — 5.2 GB |
+| <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/microsoft-windows.svg" width="20" height="20" alt=""> | `2025` | Windows Server 2025 — 7.6 GB |
+| <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/microsoft-windows.svg" width="20" height="20" alt=""> | `2022` | Windows Server 2022 — 6.0 GB |
+| <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/microsoft-windows.svg" width="20" height="20" alt=""> | `2019` | Windows Server 2019 — 5.3 GB |
+| <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/microsoft-windows.svg" width="20" height="20" alt=""> | `2016` | Windows Server 2016 — 6.5 GB |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/windows-11.png" width="20" height="20" alt=""> | `tiny11` | Tiny11 — 5.3 GB, trimmed community build |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/windows-11.png" width="20" height="20" alt=""> | `core11` | Tiny11 Core — 3.0 GB, the smallest Windows 11 here |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/windows-10.png" width="20" height="20" alt=""> | `tiny10` | Tiny10 — 3.6 GB |
+| <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/microsoft-windows.svg" width="20" height="20" alt=""> | `8e` | Windows 8.1 Enterprise — 3.7 GB |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/windows-7.png" width="20" height="20" alt=""> | `7u` | Windows 7 Ultimate — 3.1 GB |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/windows-vista.png" width="20" height="20" alt=""> | `vu` | Windows Vista Ultimate — 3.0 GB |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/windows-xp.png" width="20" height="20" alt=""> | `xp` | Windows XP Professional — 0.6 GB |
+| <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/microsoft-windows.svg" width="20" height="20" alt=""> | `2k` | Windows 2000 Professional — 0.4 GB |
+| <img src="https://cdn.simpleicons.org/reactos" width="20" height="20" alt=""> | `reactos` | ReactOS — 0.1 GB, not Windows, no licence needed |
 
 `LANGUAGE` — Installation language — any of the 33 upstream names is accepted, not just these.
 

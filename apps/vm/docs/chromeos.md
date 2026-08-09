@@ -38,12 +38,12 @@ nothing to a disk already written.
 
 `VERSION` — Which ChromeOS Flex channel to track.
 
-| Value | What it is |
-| --- | --- |
-| `stable` | Stable — updates about every 4 weeks |
-| `ltc` | Long-Term Channel — about every 6 months |
-| `ltr` | Long-Term Release — about every 18 months |
-| `beta` | Beta — about weekly |
+| | Value | What it is |
+| --- | --- | --- |
+| <img src="https://cdn.simpleicons.org/googlechrome" width="20" height="20" alt=""> | `stable` | Stable — updates about every 4 weeks |
+| <img src="https://cdn.simpleicons.org/googlechrome" width="20" height="20" alt=""> | `ltc` | Long-Term Channel — about every 6 months |
+| <img src="https://cdn.simpleicons.org/googlechrome" width="20" height="20" alt=""> | `ltr` | Long-Term Release — about every 18 months |
+| <img src="https://cdn.simpleicons.org/googlechrome" width="20" height="20" alt=""> | `beta` | Beta — about weekly |
 
 ## Files
 

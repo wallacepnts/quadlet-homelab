@@ -37,31 +37,31 @@ escrito.
 
 `BOOT` — Qual sistema instalar (baixado no primeiro boot).
 
-| Valor | O que é |
-| --- | --- |
-| `alpine` | Alpine Linux — 60 MB, o jeito mais rápido de provar que o KVM funciona |
-| `suse` | openSUSE — 1.0 GB |
-| `arch` | Arch Linux — 1.2 GB |
-| `zima` | ZimaOS — 1.4 GB |
-| `tails` | Tails — 1.5 GB |
-| `rocky` | Rocky Linux — 2.1 GB |
-| `alma` | Alma Linux — 2.2 GB |
-| `mx` | MX Linux — 2.2 GB |
-| `fedora` | Fedora — 2.3 GB |
-| `nixos` | NixOS — 2.4 GB |
-| `cachy` | CachyOS — 2.6 GB |
-| `mint` | Linux Mint — 2.8 GB, padrão do próprio upstream |
-| `ubuntus` | Ubuntu Server — 3.0 GB |
-| `debian` | Debian — 3.3 GB |
-| `gentoo` | Gentoo — 3.6 GB |
-| `slack` | Slackware — 3.7 GB |
-| `kali` | Kali Linux — 3.8 GB |
-| `zorin` | Zorin OS — 3.8 GB |
-| `xubuntu` | Xubuntu — 4.0 GB |
-| `manjaro` | Manjaro — 4.1 GB |
-| `kubuntu` | Kubuntu — 4.4 GB |
-| `ubuntu` | Ubuntu Desktop — 6.0 GB |
-| `centos` | CentOS — 7.0 GB |
+| | Valor | O que é |
+| --- | --- | --- |
+| <img src="https://cdn.simpleicons.org/alpinelinux" width="20" height="20" alt=""> | `alpine` | Alpine Linux — 60 MB, o jeito mais rápido de provar que o KVM funciona |
+| <img src="https://cdn.simpleicons.org/opensuse" width="20" height="20" alt=""> | `suse` | openSUSE — 1.0 GB |
+| <img src="https://cdn.simpleicons.org/archlinux" width="20" height="20" alt=""> | `arch` | Arch Linux — 1.2 GB |
+| <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/zimaos.svg" width="20" height="20" alt=""> | `zima` | ZimaOS — 1.4 GB |
+| <img src="https://cdn.simpleicons.org/tails" width="20" height="20" alt=""> | `tails` | Tails — 1.5 GB |
+| <img src="https://cdn.simpleicons.org/rockylinux" width="20" height="20" alt=""> | `rocky` | Rocky Linux — 2.1 GB |
+| <img src="https://cdn.simpleicons.org/almalinux" width="20" height="20" alt=""> | `alma` | Alma Linux — 2.2 GB |
+| <img src="https://cdn.simpleicons.org/mxlinux" width="20" height="20" alt=""> | `mx` | MX Linux — 2.2 GB |
+| <img src="https://cdn.simpleicons.org/fedora" width="20" height="20" alt=""> | `fedora` | Fedora — 2.3 GB |
+| <img src="https://cdn.simpleicons.org/nixos" width="20" height="20" alt=""> | `nixos` | NixOS — 2.4 GB |
+| <img src="https://cdn.simpleicons.org/cachyos" width="20" height="20" alt=""> | `cachy` | CachyOS — 2.6 GB |
+| <img src="https://cdn.simpleicons.org/linuxmint" width="20" height="20" alt=""> | `mint` | Linux Mint — 2.8 GB, padrão do próprio upstream |
+| <img src="https://cdn.simpleicons.org/ubuntu" width="20" height="20" alt=""> | `ubuntus` | Ubuntu Server — 3.0 GB |
+| <img src="https://cdn.simpleicons.org/debian" width="20" height="20" alt=""> | `debian` | Debian — 3.3 GB |
+| <img src="https://cdn.simpleicons.org/gentoo" width="20" height="20" alt=""> | `gentoo` | Gentoo — 3.6 GB |
+| <img src="https://cdn.simpleicons.org/slackware" width="20" height="20" alt=""> | `slack` | Slackware — 3.7 GB |
+| <img src="https://cdn.simpleicons.org/kalilinux" width="20" height="20" alt=""> | `kali` | Kali Linux — 3.8 GB |
+| <img src="https://cdn.simpleicons.org/zorin" width="20" height="20" alt=""> | `zorin` | Zorin OS — 3.8 GB |
+| <img src="https://cdn.simpleicons.org/xubuntu" width="20" height="20" alt=""> | `xubuntu` | Xubuntu — 4.0 GB |
+| <img src="https://cdn.simpleicons.org/manjaro" width="20" height="20" alt=""> | `manjaro` | Manjaro — 4.1 GB |
+| <img src="https://cdn.simpleicons.org/kubuntu" width="20" height="20" alt=""> | `kubuntu` | Kubuntu — 4.4 GB |
+| <img src="https://cdn.simpleicons.org/ubuntu" width="20" height="20" alt=""> | `ubuntu` | Ubuntu Desktop — 6.0 GB |
+| <img src="https://cdn.simpleicons.org/centos" width="20" height="20" alt=""> | `centos` | CentOS — 7.0 GB |
 
 ## Arquivos
 

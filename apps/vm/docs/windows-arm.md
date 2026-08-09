@@ -38,16 +38,16 @@ nothing to a disk already written.
 
 `VERSION` — Which ARM64 Windows to install (downloaded on first boot).
 
-| Value | What it is |
-| --- | --- |
-| `11` | Windows 11 Pro — 7.5 GB |
-| `11l` | Windows 11 LTSC — 4.7 GB, no Store, long-term servicing |
-| `11e` | Windows 11 Enterprise — 4.3 GB |
-| `10` | Windows 10 Pro — 3.5 GB |
-| `10l` | Windows 10 LTSC — 4.1 GB |
-| `10e` | Windows 10 Enterprise — 3.4 GB |
-| `tiny11` | Tiny11 — 5.1 GB, trimmed community build |
-| `core11` | Tiny11 Core — 3.0 GB, the smallest here |
+| | Value | What it is |
+| --- | --- | --- |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/windows-11.png" width="20" height="20" alt=""> | `11` | Windows 11 Pro — 7.5 GB |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/windows-11.png" width="20" height="20" alt=""> | `11l` | Windows 11 LTSC — 4.7 GB, no Store, long-term servicing |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/windows-11.png" width="20" height="20" alt=""> | `11e` | Windows 11 Enterprise — 4.3 GB |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/windows-10.png" width="20" height="20" alt=""> | `10` | Windows 10 Pro — 3.5 GB |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/windows-10.png" width="20" height="20" alt=""> | `10l` | Windows 10 LTSC — 4.1 GB |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/windows-10.png" width="20" height="20" alt=""> | `10e` | Windows 10 Enterprise — 3.4 GB |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/windows-11.png" width="20" height="20" alt=""> | `tiny11` | Tiny11 — 5.1 GB, trimmed community build |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/windows-11.png" width="20" height="20" alt=""> | `core11` | Tiny11 Core — 3.0 GB, the smallest here |
 
 `LANGUAGE` — Installation language — any of the 33 upstream names is accepted, not just these.
 

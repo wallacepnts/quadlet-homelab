@@ -37,12 +37,12 @@ escrito.
 
 `VERSION` — Qual canal do ChromeOS Flex acompanhar.
 
-| Valor | O que é |
-| --- | --- |
-| `stable` | Stable — atualiza a cada 4 semanas, mais ou menos |
-| `ltc` | Long-Term Channel — a cada 6 meses, mais ou menos |
-| `ltr` | Long-Term Release — a cada 18 meses, mais ou menos |
-| `beta` | Beta — toda semana, mais ou menos |
+| | Valor | O que é |
+| --- | --- | --- |
+| <img src="https://cdn.simpleicons.org/googlechrome" width="20" height="20" alt=""> | `stable` | Stable — atualiza a cada 4 semanas, mais ou menos |
+| <img src="https://cdn.simpleicons.org/googlechrome" width="20" height="20" alt=""> | `ltc` | Long-Term Channel — a cada 6 meses, mais ou menos |
+| <img src="https://cdn.simpleicons.org/googlechrome" width="20" height="20" alt=""> | `ltr` | Long-Term Release — a cada 18 meses, mais ou menos |
+| <img src="https://cdn.simpleicons.org/googlechrome" width="20" height="20" alt=""> | `beta` | Beta — toda semana, mais ou menos |
 
 ## Arquivos
 

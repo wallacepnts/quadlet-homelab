@@ -37,14 +37,14 @@ escrito.
 
 `VERSION` — Qual macOS instalar (baixado no primeiro boot).
 
-| Valor | O que é |
-| --- | --- |
-| `15` | macOS 15 Sequoia — padrão do upstream |
-| `14` | macOS 14 Sonoma |
-| `13` | macOS 13 Ventura |
-| `12` | macOS 12 Monterey |
-| `11` | macOS 11 Big Sur |
-| `26` | macOS 26 Tahoe — o upstream desaconselha, roda muito devagar |
+| | Valor | O que é |
+| --- | --- | --- |
+| <img src="https://cdn.simpleicons.org/apple" width="20" height="20" alt=""> | `15` | macOS 15 Sequoia — padrão do upstream |
+| <img src="https://cdn.simpleicons.org/apple" width="20" height="20" alt=""> | `14` | macOS 14 Sonoma |
+| <img src="https://cdn.simpleicons.org/apple" width="20" height="20" alt=""> | `13` | macOS 13 Ventura |
+| <img src="https://cdn.simpleicons.org/apple" width="20" height="20" alt=""> | `12` | macOS 12 Monterey |
+| <img src="https://cdn.simpleicons.org/apple" width="20" height="20" alt=""> | `11` | macOS 11 Big Sur |
+| <img src="https://cdn.simpleicons.org/apple" width="20" height="20" alt=""> | `26` | macOS 26 Tahoe — o upstream desaconselha, roda muito devagar |
 
 ## Arquivos
 
