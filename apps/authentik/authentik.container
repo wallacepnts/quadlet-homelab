@@ -25,7 +25,7 @@ Secret=authentik-secret-key,type=env,target=AUTHENTIK_SECRET_KEY
 Volume=%h/.config/containers/volumes/authentik/data:/data:Z
 PodmanArgs=--shm-size=512m
 
-HealthCmd=CMD-SHELL curl -fsS http://127.0.0.1:9000/-/health/live/ || exit 1
+HealthCmd=CMD-SHELL ak healthcheck || exit 1
 HealthInterval=30s
 HealthTimeout=10s
 HealthRetries=5
