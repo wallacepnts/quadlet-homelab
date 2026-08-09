@@ -1126,7 +1126,7 @@ def size(path):
     return r.stdout.split("\t")[0].strip() if r.returncode == 0 else "?"
 
 
-def write_unit(source, destination, access, href_local):
+def unit_bytes(source, access, href_local):
     """Copies the unit, adjusting how the service becomes reachable.
 
     Local access works in all three modes, because every unit publishes a port
@@ -1182,7 +1182,11 @@ def write_unit(source, destination, access, href_local):
             text = re.sub(r"(?m)^(Label=tsdproxy\.)",
                           r"# disabled by --access local: \1", text)
         data = text.encode()
-    destination.write_bytes(data)
+    return data
+
+
+def write_unit(source, destination, access, href_local):
+    destination.write_bytes(unit_bytes(source, access, href_local))
 
 
 def write_example(source, destination, tailnet):
@@ -1641,6 +1645,17 @@ def selftest():
     assert run_read(["false"]) is None
     assert run_read(["comando-que-nao-existe-xyz"]) is None
 
+    # the repo column compares against what an install would write, not the raw
+    # file: --access tailnet comments the proxied port out, and a byte compare
+    # would report every service as changed forever
+    with tempfile.TemporaryDirectory() as d:
+        src = APPS / "memos" / "memos.container"
+        alvo = Path(d) / "memos.container"
+        write_unit(src, alvo, "tailnet", False)
+        assert alvo.read_bytes() != src.read_bytes(), "tailnet comenta a porta"
+        assert unit_bytes(src, "tailnet", False) == alvo.read_bytes()
+        assert unit_bytes(src, "both", False) == src.read_bytes()
+
     # verbs are a closed set too: `remove` is a substring of half the sentences
     import qhui as _v
     b = _v.PTBR
@@ -1909,9 +1924,16 @@ def show_status():
                  "unhealthy" if "unhealthy" in c else
                  "up" if c.startswith("Up") else
                  "—" if c == "—" else "down")
+            # Against what an install would write in the mode this unit is in,
+            # not against the raw file: `--access tailnet` comments the proxied
+            # port out, so a byte comparison would call every service changed
+            # forever.
             fonte = APPS / d / u.name
-            deriva = "changed" if (fonte.exists()
-                                   and fonte.read_bytes() != u.read_bytes()) else ""
+            deriva = ""
+            if fonte.exists():
+                modo = installed_access(u) or "tailnet"
+                esperado = unit_bytes(fonte, modo, modo == "local")
+                deriva = "changed" if esperado != u.read_bytes() else ""
             if estado != "active" or c in ("unhealthy", "down"):
                 problemas += 1
             linhas.append((nome, estado, c, deriva or "—"))
