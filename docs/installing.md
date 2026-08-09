@@ -137,8 +137,10 @@ When a service has a login, the install ends with it:
   password: 7x63tlKq...
 ```
 
-This shows in the dry-run too, so `qh <app>` on something already installed is
-also the answer to "what was my password". It lands in your scrollback.
+Not on `--update`: it changes no credential, and `qh --all --update` would
+spill every password into the terminal at once. Install and `--reinstall` do
+print it, and so does a plain `qh <app>` on something already installed — which
+is the deliberate way to look one up. It lands in your scrollback.
 
 Which secret that is comes from `install.ini`. Only the one that is a typed
 password is printed — the JWT keys and API tokens next to it are secrets too:

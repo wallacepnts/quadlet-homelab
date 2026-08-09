@@ -1911,7 +1911,8 @@ def run_one(a, ap, app, access, href_local):
     if not a.apply:
         if not (a.remove or a.backup or a.restore):
             show_addresses(s, tailnet, modo_efetivo)
-            show_secrets(s)
+            if not a.update:
+                show_secrets(s)
         return 0
 
     if a.purge or a.restore:
@@ -1943,7 +1944,11 @@ def run_one(a, ap, app, access, href_local):
     else:
         say(f"\n{app}: done. Check with:  systemctl --user status {unit}")
         show_addresses(s, tailnet, modo_efetivo)
-        show_secrets(s)
+        # Not on an update: it changes no credential, and `qh --all --update`
+        # would spill every password in the terminal at once. `qh <app>` still
+        # prints it, which is the deliberate way to look one up.
+        if not a.update:
+            show_secrets(s)
     if warnings and not (a.remove or a.backup or a.restore):
         say("The items marked (!) above were not done — see apps/%s/README.md" % s.name)
     return 0

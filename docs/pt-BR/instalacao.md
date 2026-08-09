@@ -135,8 +135,10 @@ Quando o serviço tem login, a instalação termina com ele:
   password: 7x63tlKq...
 ```
 
-Aparece no dry-run também, então `qh <app>` num serviço já instalado responde
-"qual era mesmo a minha senha". Isso fica no seu scrollback.
+No `--update` não: ele não muda credencial nenhuma, e um `qh --all --update`
+despejaria todas as senhas no terminal de uma vez. A instalação e o
+`--reinstall` imprimem, e o `qh <app>` simples num serviço já instalado também
+— que é a forma deliberada de consultar. Isso fica no seu scrollback.
 
 Qual secret é esse vem do `install.ini`. Só o que é senha digitada é impresso —
 chave de JWT e token de API ao lado também são secrets:
