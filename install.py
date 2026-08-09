@@ -95,6 +95,7 @@ PT = {
     '  number or value [': '  número ou valor [',
     '  (default)': '  (padrão)',
     'could not find the file': 'não encontrei o arquivo',
+    '  name a service to expand its units:  qh --status media-stack': '  nomeie um serviço para expandir as units:  qh --status media-stack',
     "unit(s) in": "unit(s) em",
     "  --update     re-copies the units and restarts, keeping data, env and secrets":
         "  --update     recopia as units e reinicia, mantendo dados, env e secrets",
@@ -1896,13 +1897,12 @@ def est(v):
     return ESTADOS.get(v, v) if qhui.PTBR else v
 
 
-def show_status():
+def show_status(apps=None):
     """What is installed, what is running, and what drifted from the repository.
 
-    Answers in one screen what took `systemctl --user is-active` per service,
-    `podman ps` to see whether "started" also means healthy, and a diff to know
-    the repository moved. Versions are not here on purpose: that needs the
-    network, and it is what `qh-updates` is for.
+    One row per service: a folder with several units collapses into `2/12`,
+    because the question at this level is "is this service up", not which of
+    its twelve pieces. Naming services expands those into a row each.
     """
     ativos, saude = {}, {}
     r = run_read(["systemctl", "--user", "list-units", "--type=service",
@@ -1916,54 +1916,79 @@ def show_status():
         nome, _, estado = linha.partition("|")
         saude[nome] = estado
 
-    linhas, problemas = [], 0
+    def estado_container(u):
+        cont = next((v for k, v in directives(u.read_text())
+                     if k == "ContainerName"), u.stem)
+        c = saude.get(cont, "—")
+        return ("healthy" if "healthy" in c else
+                "unhealthy" if "unhealthy" in c else
+                "up" if c.startswith("Up") else
+                "—" if c == "—" else "down")
+
+    linhas, problemas, mudados = [], 0, 0
     for d in sorted(x.name for x in APPS.iterdir() if x.is_dir()):
+        if apps and d not in apps:
+            continue
         s = Service(d)
-        for u in s.installed():
-            if u.suffix != ".container":
-                continue          # .network não é serviço
-            nome = u.stem
-            estado = ativos.get(nome, "—")
-            cont = next((v for k, v in directives(u.read_text())
-                         if k == "ContainerName"), nome)
-            c = saude.get(cont, "—")
-            c = ("healthy" if "healthy" in c else
-                 "unhealthy" if "unhealthy" in c else
-                 "up" if c.startswith("Up") else
-                 "—" if c == "—" else "down")
-            # Against what an install would write in the mode this unit is in,
-            # not against the raw file: `--access tailnet` comments the proxied
-            # port out, so a byte comparison would call every service changed
-            # forever.
+        units = [u for u in s.installed() if u.suffix == ".container"]
+        if not units:
+            continue
+        detalhe = []
+        for u in units:
             fonte = APPS / d / u.name
             deriva = ""
             if fonte.exists():
                 modo = installed_access(u) or "tailnet"
-                esperado = unit_bytes(fonte, modo, modo == "local")
-                deriva = "changed" if esperado != u.read_bytes() else ""
-            if estado != "active" or c in ("unhealthy", "down"):
+                deriva = "changed" if unit_bytes(fonte, modo, modo == "local") != u.read_bytes() else ""
+            e, c = ativos.get(u.stem, "—"), estado_container(u)
+            if e != "active" or c in ("unhealthy", "down"):
                 problemas += 1
-            linhas.append((nome, estado, c, deriva or "—"))
+            if deriva:
+                mudados += 1
+            detalhe.append((u.stem, e, c, deriva or "—"))
+        # A folder with its own .network is one service in pieces — immich is
+        # down when its Postgres is, and hiding that behind `3/4` hides the
+        # reason. A folder without one is independent services that happen to
+        # share a directory, and there the list is just long.
+        stack = any(u.suffix == ".network" for u in s.units)
+        if len(detalhe) == 1 or apps or stack:
+            linhas += detalhe
+        else:
+            # Collapsed: how many are up, out of how many. The worst container
+            # state wins, so one unhealthy piece is not hidden by eleven fine.
+            no_ar = sum(1 for _, e, _, _ in detalhe if e == "active")
+            piores = [c for _, _, c, _ in detalhe]
+            c = ("unhealthy" if "unhealthy" in piores else
+                 "healthy" if "healthy" in piores else
+                 "up" if "up" in piores else "—")
+            dv = "changed" if any(x[3] == "changed" for x in detalhe) else "—"
+            linhas.append((f"{d}  ({no_ar}/{len(detalhe)})",
+                           "active" if no_ar == len(detalhe) else
+                           "failed" if any(x[1] == "failed" for x in detalhe) else "inactive",
+                           c, dv))
 
     if not linhas:
         say(loc("nothing installed yet."))
         return 0
-    say(dim(f"  {est('service'):<26} {est('unit'):<10} {est('container'):<10} {est('repo')}"))
+
     def coluna(v, largura, bons=(), ruins=()):
         """Translate, colour, then pad by the visible text: an escape code has
         width 0, so padding the coloured string collapses every column after."""
         cor = green if v in bons else red if v in ruins else dim
         texto = est(v)
         return cor(texto) + " " * max(0, largura - len(texto))
+
+    say(dim(f"  {est('service'):<26} {est('unit'):<10} {est('container'):<10} {est('repo')}"))
     for n, e, c, dv in linhas:
         say(f"  {n:<26} {coluna(e, 10, ('active',), ('failed',))}"
             f" {coluna(c, 10, ('healthy', 'up'), ('unhealthy', 'down'))}"
             f" {yellow(est(dv)) if dv == 'changed' else dim(dv)}")
     say("")
-    say(loc("  installed:") + f" {len(linhas)}  "
+    say(loc("  installed:") + f" {sum(1 for _ in linhas)}  "
         + loc("needing attention:") + f" {problemas}  "
-        + loc("changed in the repository:")
-        + f" {sum(1 for l in linhas if l[3] == 'changed')}")
+        + loc("changed in the repository:") + f" {mudados}")
+    if not apps and any("(" in n for n, *_ in linhas):
+        say(dim(loc("  name a service to expand its units:  qh --status media-stack")))
     return 1 if problemas else 0
 
 
@@ -2250,7 +2275,7 @@ def main():
         return 0
 
     if a.status:
-        return show_status()
+        return show_status(a.app or None)
 
     if a.set_access:
         f = save_access(a.set_access, Path(a.prefix) if a.prefix else None)
