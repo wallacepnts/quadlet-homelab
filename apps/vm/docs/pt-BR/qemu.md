@@ -29,6 +29,40 @@ qh vm-qemu --apply
 
 Instalar a pasta — `qh vm --apply` — traz esta junto com as outras.
 
+## Sistemas
+
+A instalação pergunta e grava a resposta no `.env`. Só vale no primeiro boot:
+a imagem é baixada uma vez, e mudar o valor depois não faz nada num disco já
+escrito.
+
+`BOOT` — Qual sistema instalar (baixado no primeiro boot).
+
+| Valor | O que é |
+| --- | --- |
+| `alpine` | Alpine Linux — 60 MB, o jeito mais rápido de provar que o KVM funciona |
+| `suse` | openSUSE — 1.0 GB |
+| `arch` | Arch Linux — 1.2 GB |
+| `zima` | ZimaOS — 1.4 GB |
+| `tails` | Tails — 1.5 GB |
+| `rocky` | Rocky Linux — 2.1 GB |
+| `alma` | Alma Linux — 2.2 GB |
+| `mx` | MX Linux — 2.2 GB |
+| `fedora` | Fedora — 2.3 GB |
+| `nixos` | NixOS — 2.4 GB |
+| `cachy` | CachyOS — 2.6 GB |
+| `mint` | Linux Mint — 2.8 GB, padrão do próprio upstream |
+| `ubuntus` | Ubuntu Server — 3.0 GB |
+| `debian` | Debian — 3.3 GB |
+| `gentoo` | Gentoo — 3.6 GB |
+| `slack` | Slackware — 3.7 GB |
+| `kali` | Kali Linux — 3.8 GB |
+| `zorin` | Zorin OS — 3.8 GB |
+| `xubuntu` | Xubuntu — 4.0 GB |
+| `manjaro` | Manjaro — 4.1 GB |
+| `kubuntu` | Kubuntu — 4.4 GB |
+| `ubuntu` | Ubuntu Desktop — 6.0 GB |
+| `centos` | CentOS — 7.0 GB |
+
 ## Arquivos
 
 ```

@@ -29,6 +29,39 @@ qh vm-windows-arm --apply
 
 Instalar a pasta — `qh vm --apply` — traz esta junto com as outras.
 
+## Sistemas
+
+A instalação pergunta e grava a resposta no `.env`. Só vale no primeiro boot:
+a imagem é baixada uma vez, e mudar o valor depois não faz nada num disco já
+escrito.
+
+`VERSION` — Qual Windows ARM64 instalar (baixado no primeiro boot).
+
+| Valor | O que é |
+| --- | --- |
+| `11` | Windows 11 Pro — 7.5 GB |
+| `11l` | Windows 11 LTSC — 4.7 GB, sem a Store, manutenção de longo prazo |
+| `11e` | Windows 11 Enterprise — 4.3 GB |
+| `10` | Windows 10 Pro — 3.5 GB |
+| `10l` | Windows 10 LTSC — 4.1 GB |
+| `10e` | Windows 10 Enterprise — 3.4 GB |
+| `tiny11` | Tiny11 — 5.1 GB, versão enxuta da comunidade |
+| `core11` | Tiny11 Core — 3.0 GB, o menor daqui |
+
+`LANGUAGE` — Idioma de instalação — qualquer um dos 33 nomes do upstream vale, não só estes.
+
+| Valor | O que é |
+| --- | --- |
+| `English` |  |
+| `Portuguese` | para pt-BR, ajuste também REGION e KEYBOARD no .env |
+| `Spanish` |  |
+| `French` |  |
+| `German` |  |
+| `Italian` |  |
+| `Japanese` |  |
+| `Chinese` |  |
+| `Russian` |  |
+
 ## Arquivos
 
 ```

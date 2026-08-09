@@ -29,6 +29,23 @@ qh vm-macos --apply
 
 Instalar a pasta — `qh vm --apply` — traz esta junto com as outras.
 
+## Sistemas
+
+A instalação pergunta e grava a resposta no `.env`. Só vale no primeiro boot:
+a imagem é baixada uma vez, e mudar o valor depois não faz nada num disco já
+escrito.
+
+`VERSION` — Qual macOS instalar (baixado no primeiro boot).
+
+| Valor | O que é |
+| --- | --- |
+| `15` | macOS 15 Sequoia — padrão do upstream |
+| `14` | macOS 14 Sonoma |
+| `13` | macOS 13 Ventura |
+| `12` | macOS 12 Monterey |
+| `11` | macOS 11 Big Sur |
+| `26` | macOS 26 Tahoe — o upstream desaconselha, roda muito devagar |
+
 ## Arquivos
 
 ```

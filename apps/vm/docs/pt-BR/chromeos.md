@@ -29,6 +29,21 @@ qh vm-chromeos --apply
 
 Instalar a pasta — `qh vm --apply` — traz esta junto com as outras.
 
+## Sistemas
+
+A instalação pergunta e grava a resposta no `.env`. Só vale no primeiro boot:
+a imagem é baixada uma vez, e mudar o valor depois não faz nada num disco já
+escrito.
+
+`VERSION` — Qual canal do ChromeOS Flex acompanhar.
+
+| Valor | O que é |
+| --- | --- |
+| `stable` | Stable — atualiza a cada 4 semanas, mais ou menos |
+| `ltc` | Long-Term Channel — a cada 6 meses, mais ou menos |
+| `ltr` | Long-Term Release — a cada 18 meses, mais ou menos |
+| `beta` | Beta — toda semana, mais ou menos |
+
 ## Arquivos
 
 ```

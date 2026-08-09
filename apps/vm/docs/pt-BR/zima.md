@@ -16,6 +16,9 @@ O que você guardar nele cai no disco virtual, dentro do volume na sua home. O `
 
 É um sistema de NAS rodando como convidado numa máquina que já tem os seus discos. Serve para experimentar, e é esquisito como lugar onde os arquivos realmente moram.
 
+Não há versão a escolher: a tag do `Image=` é o ZimaOS que será instalado, e
+ela muda quando a unit sobe de versão.
+
 Todas precisam do `/dev/kvm` no host — sem virtualização por hardware a VM
 não sobe ou fica lentíssima. O `RAM_SIZE` é reservado por toda a vida da VM,
 então deixe o host respirar; o `DISK_SIZE` é um teto e cresce conforme o uso.

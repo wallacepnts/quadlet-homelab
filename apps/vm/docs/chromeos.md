@@ -30,6 +30,21 @@ qh vm-chromeos --apply
 
 Installing the folder — `qh vm --apply` — brings this one along with the rest.
 
+## Systems
+
+The install asks, and writes the answer to the `.env`. It only matters on the
+first boot: the image is downloaded once, and changing the value later does
+nothing to a disk already written.
+
+`VERSION` — Which ChromeOS Flex channel to track.
+
+| Value | What it is |
+| --- | --- |
+| `stable` | Stable — updates about every 4 weeks |
+| `ltc` | Long-Term Channel — about every 6 months |
+| `ltr` | Long-Term Release — about every 18 months |
+| `beta` | Beta — about weekly |
+
 ## Files
 
 ```

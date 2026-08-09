@@ -16,6 +16,9 @@ Whatever you store in it lands in the virtual disk, inside the volume under your
 
 It is a NAS operating system running as a guest on a machine that already has your disks. Useful for trying it, awkward as the place your files actually live.
 
+There is no version to pick: the tag in `Image=` is the ZimaOS that gets
+installed, and it moves when the unit is bumped.
+
 All of these need `/dev/kvm` on the host — without hardware virtualisation
 the VM either refuses to start or crawls. `RAM_SIZE` is reserved for the whole
 life of the VM, so leave the host enough to breathe; `DISK_SIZE` is a ceiling

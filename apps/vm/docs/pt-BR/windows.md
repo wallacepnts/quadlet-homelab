@@ -31,6 +31,50 @@ qh vm-windows --apply
 
 Instalar a pasta — `qh vm --apply` — traz esta junto com as outras.
 
+## Sistemas
+
+A instalação pergunta e grava a resposta no `.env`. Só vale no primeiro boot:
+a imagem é baixada uma vez, e mudar o valor depois não faz nada num disco já
+escrito.
+
+`VERSION` — Qual Windows instalar (baixado no primeiro boot).
+
+| Valor | O que é |
+| --- | --- |
+| `11` | Windows 11 Pro — 7.9 GB |
+| `11l` | Windows 11 LTSC — 4.7 GB, sem a Store, manutenção de longo prazo |
+| `11e` | Windows 11 Enterprise — 6.6 GB |
+| `10` | Windows 10 Pro — 5.7 GB |
+| `10l` | Windows 10 LTSC — 4.6 GB |
+| `10e` | Windows 10 Enterprise — 5.2 GB |
+| `2025` | Windows Server 2025 — 7.6 GB |
+| `2022` | Windows Server 2022 — 6.0 GB |
+| `2019` | Windows Server 2019 — 5.3 GB |
+| `2016` | Windows Server 2016 — 6.5 GB |
+| `tiny11` | Tiny11 — 5.3 GB, versão enxuta da comunidade |
+| `core11` | Tiny11 Core — 3.0 GB, o menor Windows 11 daqui |
+| `tiny10` | Tiny10 — 3.6 GB |
+| `8e` | Windows 8.1 Enterprise — 3.7 GB |
+| `7u` | Windows 7 Ultimate — 3.1 GB |
+| `vu` | Windows Vista Ultimate — 3.0 GB |
+| `xp` | Windows XP Professional — 0.6 GB |
+| `2k` | Windows 2000 Professional — 0.4 GB |
+| `reactos` | ReactOS — 0.1 GB, não é Windows, não precisa de licença |
+
+`LANGUAGE` — Idioma de instalação — qualquer um dos 33 nomes do upstream vale, não só estes.
+
+| Valor | O que é |
+| --- | --- |
+| `English` |  |
+| `Portuguese` | para pt-BR, ajuste também REGION e KEYBOARD no .env |
+| `Spanish` |  |
+| `French` |  |
+| `German` |  |
+| `Italian` |  |
+| `Japanese` |  |
+| `Chinese` |  |
+| `Russian` |  |
+
 ## Arquivos
 
 ```

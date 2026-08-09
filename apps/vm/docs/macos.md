@@ -30,6 +30,23 @@ qh vm-macos --apply
 
 Installing the folder — `qh vm --apply` — brings this one along with the rest.
 
+## Systems
+
+The install asks, and writes the answer to the `.env`. It only matters on the
+first boot: the image is downloaded once, and changing the value later does
+nothing to a disk already written.
+
+`VERSION` — Which macOS to install (downloaded on first boot).
+
+| Value | What it is |
+| --- | --- |
+| `15` | macOS 15 Sequoia — upstream's default |
+| `14` | macOS 14 Sonoma |
+| `13` | macOS 13 Ventura |
+| `12` | macOS 12 Monterey |
+| `11` | macOS 11 Big Sur |
+| `26` | macOS 26 Tahoe — upstream advises against it, runs very slowly |
+
 ## Files
 
 ```
