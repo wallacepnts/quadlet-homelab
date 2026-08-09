@@ -42,9 +42,9 @@ host não a tem.
 caminhos:
 
 ```
-filebrowser: already installed — 1 of 1 unit(s) in ~/.config/containers/systemd
-  --update     re-copies the units and restarts, keeping data, env and secrets
-  --reinstall  installs again, OVERWRITING env, config and secrets
+filebrowser: já instalado — 1/1 unit(s) em ~/.config/containers/systemd
+  --update     recopia as units e reinicia, mantendo dados, env e secrets
+  --reinstall  instala de novo, SOBRESCREVENDO env, config e secrets
 ```
 
 **Depois de um `--remove`**, instalar de novo encontra o `.env`, a config e os
@@ -145,8 +145,8 @@ qh memos --update --apply --access tailnet    # e fecha a porta dele na LAN
 Quando o serviço tem login, a instalação termina com ele:
 
 ```
-  user:     admin
-  password: 7x63tlKq...
+  usuário:  admin
+  senha:    7x63tlKq...
 ```
 
 No `--update` não: ele não muda credencial nenhuma, e um `qh --all --update`
@@ -202,8 +202,8 @@ primeiro start — a edição do Windows é baixada uma vez e nunca mais revista
 Essas são perguntadas, com o padrão primeiro:
 
 ```
-VERSION — which Windows to install
-  1) 11   Windows 11 Pro — 7.9 GB   [default]
+VERSION — qual Windows instalar
+  1) 11   Windows 11 Pro — 7.9 GB   [padrão]
   2) 10   Windows 10 Pro — 5.8 GB
 ```
 

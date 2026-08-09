@@ -231,6 +231,7 @@ PT = {
     ' backups': ' backups',
     'done.': 'pronto.',
     'Check with:': 'Confira com:',
+    "unit(s) in": "unit(s) em",
     "failed:": "falharam:",
 }
 
@@ -1986,8 +1987,11 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
         if here:
             # "1 of 6" is the case worth seeing: a stack where only some units
             # are on the host refuses too, and --reinstall is what completes it.
-            say(f"{app}: {yellow(loc('already installed —'))} {len(here)} of {len(s.units)} "
-                  f"unit(s) in {here[0].parent}")
+            # `1/1` instead of "1 of 1": a word interpolated between two
+            # translated halves is a word that stays English.
+            say(f"{app}: {yellow(loc('already installed —'))}"
+                f" {len(here)}/{len(s.units)} " + loc("unit(s) in")
+                + f" {here[0].parent}")
             say("  --update     re-copies the units and restarts, keeping data, "
                   "env and secrets")
             say("  --reinstall  installs again, OVERWRITING env, config and secrets")

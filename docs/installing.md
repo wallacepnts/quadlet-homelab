@@ -43,7 +43,7 @@ pinned one only when the host does not have it.
 forward:
 
 ```
-filebrowser: already installed — 1 of 1 unit(s) in ~/.config/containers/systemd
+filebrowser: already installed — 1/1 unit(s) in ~/.config/containers/systemd
   --update     re-copies the units and restarts, keeping data, env and secrets
   --reinstall  installs again, OVERWRITING env, config and secrets
 ```
