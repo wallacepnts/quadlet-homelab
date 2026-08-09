@@ -222,6 +222,14 @@ PT = {
     'needing attention:': 'precisando de atenção:',
     'already up to date — nothing to change': 'já está em dia — nada a mudar',
     'nothing to do for': 'nada a fazer para',
+    '--ask-secrets needs a terminal and --apply': '--ask-secrets precisa de um terminal e de --apply',
+    '--purge only makes sense with --remove': '--purge só faz sentido com --remove',
+    'not found in apps/: ': 'não encontrado em apps/: ',
+    '  (run it with no arguments to see the list)': '  (rode sem argumento nenhum para ver a lista)',
+    "naming a single unit works for install, --update and --remove. Backup and restore act on the whole service's data — use the folder name.": 'nomear uma unit só vale para instalar, --update e --remove. Backup e restauração agem sobre os dados do serviço inteiro — use o nome da pasta.',
+    'this unit shares directories with the rest of the service — removing it alone would take their data too. Use the folder name.': 'esta unit compartilha diretórios com o resto do serviço — removê-la sozinha levaria os dados dos outros junto. Use o nome da pasta.',
+    '--restore acts on a single service: the .tar.gz belongs to one': '--restore age sobre um serviço só: o .tar.gz é de um',
+    '--all does not work with --restore': '--all não funciona com --restore',
     'changed in the repository:': 'mudaram no repositório:',
     'duplicated': 'duplicada',
     'done:': 'feito:',
@@ -614,14 +622,11 @@ class Service:
                 return v.split(":")[0]
         return None
 
-    def exclusive_volumes(self):
-        """Volume directories that belong to the picked unit and to no other.
+    def _volume_sets(self):
+        """(the picked unit's directories, its siblings'), or None if none picked.
 
-        `volume_roots()` collapses a folder to `volumes/<app>`, which is right
-        for a stack that shares its data and wrong for a folder of independent
-        services: purging one of media-stack's twelve would take the other
-        eleven with it. A path with a systemd variable is never included —
-        `${MEDIA_DATA_DIR}` is the library, not this service's data.
+        A path with a systemd variable is never included — `${MEDIA_DATA_DIR}`
+        is the library, not this service's data.
         """
         if not self.only:
             return None
@@ -634,7 +639,29 @@ class Service:
                     if "$" in origem or not origem.startswith("%h"):
                         continue
                     alvo.add(self._expand(origem))
-        return sorted(minhas - outras)
+        return minhas, outras
+
+    def exclusive_volumes(self):
+        """Volume directories that belong to the picked unit and to no other.
+
+        `volume_roots()` collapses a folder to `volumes/<app>`, which is right
+        for a stack that shares its data and wrong for a folder of independent
+        services: purging one of media-stack's twelve would take the other
+        eleven with it.
+        """
+        pares = self._volume_sets()
+        return None if pares is None else sorted(pares[0] - pares[1])
+
+    def shared_volumes(self):
+        """Directories of the picked unit that a sibling declares as well.
+
+        Not the inverse of `exclusive_volumes()`: a unit with no `Volume=` at
+        all yields the empty list from both, and reading that as "everything is
+        shared" is what refused `--remove` on gluetun, which owns no data and
+        shares none.
+        """
+        pares = self._volume_sets()
+        return [] if pares is None else sorted(pares[0] & pares[1])
 
     def chowns(self):
         """[(directory, uid)] — each unit's own volumes, at that unit's uid.
@@ -1977,6 +2004,13 @@ def selftest():
     assert [str(x).split("/volumes/")[-1] for x in _um("media-stack-bazarr").exclusive_volumes()] \
         == ["media-stack/bazarr/config"], "só o diretório da unit"
     assert _um("media-stack").exclusive_volumes() is None, "pasta inteira não filtra"
+    # sharing is not the inverse of owning: gluetun declares no Volume= at all,
+    # so both lists are empty and --remove on it alone is safe
+    assert _um("media-stack-gluetun").exclusive_volumes() == []
+    assert _um("media-stack-gluetun").shared_volumes() == []
+    assert [str(x).split("/volumes/")[-1] for x in _um("authentik-worker").shared_volumes()] \
+        == ["authentik/data"], "o worker grava no mesmo diretório do authentik"
+    assert _um("media-stack-bazarr").shared_volumes() == []
     # ${MEDIA_DATA_DIR} é a biblioteca compartilhada, nunca alvo de purge
     assert not any("$" in str(x) for x in _um("media-stack-deluge").exclusive_volumes())
 
@@ -2478,7 +2512,7 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
         verb = "reinstall" if a.reinstall else "install"
         interactive = a.apply and not a.prefix and sys.stdin.isatty()
         if a.ask_secrets and not interactive:
-            ap.error("--ask-secrets needs a terminal and --apply")
+            ap.error(loc("--ask-secrets needs a terminal and --apply"))
         steps, warnings = plan_install(s, tailnet, force=a.reinstall,
                                        interactive=interactive,
                                        access=access or saved_access(s.home) or "tailnet",
@@ -2643,14 +2677,14 @@ def main():
         return 0
 
     if a.purge and not a.remove:
-        ap.error("--purge only makes sense with --remove")
+        ap.error(loc("--purge only makes sense with --remove"))
     # Check the names BEFORE starting: with several services, finding out
     # halfway through that the third does not exist leaves the job half done.
     unknown = [x for x in a.app
                if x not in NOT_QUADLET and find_app(x) == (None, None)]
     if unknown:
-        ap.error("not found in apps/: " + ", ".join(unknown)
-                 + "  (run it with no arguments to see the list)")
+        ap.error(loc("not found in apps/: ") + ", ".join(unknown)
+                 + loc("  (run it with no arguments to see the list)"))
 
     # Backup and restore always take the folder: the archive is the service's,
     # and restoring one piece of a stack over data the others share is how you
@@ -2659,22 +2693,21 @@ def main():
     # touches, and refusing there was protecting nothing.
     picked = [x for x in a.app if find_app(x)[1]]
     if picked and (a.backup or a.restore):
-        ap.error(f"{', '.join(picked)}: naming a single unit works for install, "
-                 f"--update and --remove. Backup and restore act on the whole "
-                 f"service's data — use the folder name.")
+        ap.error(loc(f"{', '.join(picked)}: naming a single unit works for install, "
+                     f"--update and --remove. Backup and restore act on the whole "
+                     f"service's data — use the folder name."))
     if picked and a.remove:
         compartilham = [x for x in picked
-                        if not Service(*[y for y in find_app(x)][:1],
-                                       a.prefix, find_app(x)[1]).exclusive_volumes()]
+                        if Service(find_app(x)[0], a.prefix, find_app(x)[1]).shared_volumes()]
         if compartilham:
-            ap.error(f"{', '.join(compartilham)}: this unit's volumes are shared with "
-                     f"the rest of the service — removing it alone would take their "
-                     f"data too. Use the folder name.")
+            ap.error(loc(f"{', '.join(compartilham)}: this unit shares directories with "
+                         f"the rest of the service — removing it alone would take their "
+                         f"data too. Use the folder name."))
 
     if a.restore and len(a.app) > 1:
-        ap.error("--restore acts on a single service: the .tar.gz belongs to one")
+        ap.error(loc("--restore acts on a single service: the .tar.gz belongs to one"))
     if a.all and a.restore:
-        ap.error("--all does not work with --restore")
+        ap.error(loc("--all does not work with --restore"))
 
     global SANDBOX
     SANDBOX = bool(a.prefix)
