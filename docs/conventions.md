@@ -279,35 +279,24 @@ A file-mounted `Secret=` does not coexist with `ReadOnly=true` — use
 each attempt. Five failures in a row hit the rate limit, and then every start
 fails — including the one that works.
 
-### 21. Not everything becomes a Quadlet: software that needs to *be* the host on the network uses `transactional-update`
+### 21. Not everything becomes a Quadlet: software that needs to *be* the host on the network is a host package
 
-This repository runs on top of immutable distros (openSUSE MicroOS) — but
-"immutable" does not mean "everything in a container". The deciding question
-is: **does this software need its own isolated identity (its own port, data
-and network), or does it need to be indistinguishable from the host on the
-network (the same hostname, the same routing table, integrated with the DNS
-the host's other processes also use)?** In the first case, Quadlet as usual.
-In the second, `transactional-update pkg install <package>` — MicroOS's native
-mechanism for this, which is still reproducible and reversible (it applies to
-a new Btrfs snapshot on the next boot, and `transactional-update rollback`
-undoes it), only without the isolation layers that get in the way of exactly
-what that kind of software needs to do.
+The deciding question: **does this software need its own isolated identity (its
+own port, data and network), or does it need to be indistinguishable from the
+host on the network — the same hostname, the same routing table, integrated
+with the DNS the host's other processes use?** In the first case, Quadlet as
+usual. In the second, the distribution's package.
 
-A concrete case: **Tailscale as the host's identity** (not an app behind
-[tsdproxy](../apps/tsdproxy/), which is a different thing — that remains the
-standard for publishing services). Running `tailscaled` in a container with
-`--network=host` shares the network interface with the host (SSH over the
-tailnet works), but it does **not** share the D-Bus/mount namespace — the
-container cannot integrate with the host's `systemd-resolved`, and MagicDNS
-ends up broken for the host's own processes (other tailnet peers still resolve
-this host's name normally; what breaks is resolution *leaving* this host).
-Confirmed by research: even guides dedicated to running Tailscale on immutable
-distros (openSUSE Kalpa) run into the same limitation and do not recommend
-that route for the host's primary identity. `transactional-update pkg install
-tailscale` avoids the whole problem — it gets native integration with
-`systemd-resolved` and the routes, at the cost of needing a reboot to apply
-(normal for that kind of package, unlike an app that only needs a `systemctl
---user restart`).
+The concrete case here is **Tailscale as the host's identity** — not an app
+published through a proxy, which is a different thing and stays Quadlet.
+Running `tailscaled` in a container with `--network=host` shares the network
+interface (SSH over the tailnet works), but it does **not** share the D-Bus and
+mount namespaces: the container cannot integrate with the host's
+`systemd-resolved`, and MagicDNS breaks for the host's own processes. Other
+peers still resolve this host's name; what breaks is resolution *leaving* it.
+
+Installing the package instead gets native integration with `systemd-resolved`
+and the routes, at the cost of a reboot on distributions that need one.
 
 ### 22. A service with a database: SQLite whenever the app supports it
 

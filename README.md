@@ -95,11 +95,10 @@ pinned to a tag and updated by hand.
 HTTPS name, reachable from anywhere without opening a port. Vaultwarden needs
 it — it only decrypts the session in a secure context.
 
-On MicroOS, in this order:
+Install Tailscale for your distribution (see
+[tailscale.com/download](https://tailscale.com/download)), then:
 
 ```bash
-sudo transactional-update pkg install tailscale
-sudo systemctl reboot
 sudo systemctl enable --now tailscaled
 sudo tailscale up
 

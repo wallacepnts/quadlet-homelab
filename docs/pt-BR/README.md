@@ -95,11 +95,10 @@ O [Tailscale](https://tailscale.com) com o tsdproxy dá a cada serviço um nome
 HTTPS próprio, alcançável de qualquer lugar sem abrir porta. O Vaultwarden
 precisa disso — ele só decifra a sessão em contexto seguro.
 
-No MicroOS, nesta ordem:
+Instalar o Tailscale pela sua distribuição (ver
+[tailscale.com/download](https://tailscale.com/download)) e depois:
 
 ```bash
-sudo transactional-update pkg install tailscale
-sudo systemctl reboot
 sudo systemctl enable --now tailscaled
 sudo tailscale up
 

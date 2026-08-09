@@ -9,8 +9,9 @@
 #   - run as root. Every service here is rootless Podman under `systemd --user`;
 #     nothing in this repository writes outside your home. A bootstrap asking
 #     for sudo would be the wrong shape for what it installs.
-#   - install packages. On openSUSE MicroOS that is `transactional-update` plus
-#     a reboot (rule 21), which is not a thing to trigger from a pipe.
+#   - install packages. Which command that is depends on your distribution, and
+#     on an immutable one it also needs a reboot — not a thing to trigger from
+#     a pipe.
 #   - install a service. `install.py` is dry-run by default on purpose: you read
 #     the plan, then you run it with --apply. Piping to bash does not change that.
 set -euo pipefail
@@ -32,9 +33,8 @@ for c in git python3 podman; do command -v "$c" >/dev/null || missing+=("$c"); d
 if [ ${#missing[@]} -gt 0 ]; then
     say "missing: ${missing[*]}"
     say ""
-    say "On openSUSE MicroOS (needs a reboot, rule 21):"
-    say "  sudo transactional-update pkg install ${missing[*]}"
-    say "  sudo systemctl reboot"
+    say "Install them with your distribution's package manager, then run this"
+    say "again. On an immutable system the command differs and needs a reboot."
     fail "install them, then run this again."
 fi
 say "git, python3, podman: ok"
