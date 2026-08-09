@@ -339,7 +339,7 @@ def show_tailscale():
     say(loc("  Without a tailnet, install any service with --local."))
 
 
-def access_drift(regra):
+def access_drift(regra, prefix=None):
     """Installed services whose unit does not match the rule in force.
 
     A rule that only applies to what you install next is half a rule: the
@@ -348,7 +348,7 @@ def access_drift(regra):
     """
     fora = []
     for d in sorted(x.name for x in APPS.iterdir() if x.is_dir()):
-        s = Service(d)
+        s = Service(d, prefix)
         for u in s.installed():
             if installed_access(u) != regra:
                 fora.append(u.stem)
@@ -1895,12 +1895,15 @@ def selftest():
     assert _login("vm-macos") is None                  # essa não tem senha
     assert Service("proxmox").login() == ("root", "proxmox-root-password")
 
-    # drift: what is installed against the rule in force
-    for regra in ("local", "tailnet", "both"):
-        fora = access_drift(regra)
-        assert isinstance(fora, list) and all(isinstance(x, str) for x in fora)
-    # nem toda regra pode ter tudo alinhado ao mesmo tempo
-    assert not (not access_drift("local") and not access_drift("tailnet"))
+    # drift: a unit installed under one rule is the others' drift. In a sandbox,
+    # because the real host may have nothing installed — which is every CI run.
+    with tempfile.TemporaryDirectory() as d:
+        s = Service("memos", prefix=d)
+        s.unit_dest.mkdir(parents=True, exist_ok=True)
+        write_unit(s.units[0], s.unit_dest / "memos.container", "local", True)
+        assert access_drift("local", d) == []
+        assert access_drift("tailnet", d) == ["memos"]
+        assert access_drift("both", d) == ["memos"]
 
     # --status reads the host, so the numbers vary; the shape must not
     assert callable(show_status)
