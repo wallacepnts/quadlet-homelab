@@ -1,5 +1,10 @@
 # Conventions
 
+For adding or changing a service here — not for installing one. Six of these
+rules are named in `check.py`'s error messages (1, 7, 12, 13, 14, 18), which is
+what the numbering is for. To install and operate, see
+[Installing and operating](./installing.md).
+
 This repository's 22 rules, each with the real case that produced it. They are
 what [`check.py`](../check.py) verifies automatically where it can.
 

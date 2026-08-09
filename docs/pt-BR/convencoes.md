@@ -1,5 +1,10 @@
 # Convenções
 
+Para acrescentar ou mudar um serviço aqui — não para instalar um. Seis destas
+regras são citadas nas mensagens de erro do `check.py` (1, 7, 12, 13, 14, 18),
+que é para isso que a numeração serve. Para instalar e operar, ver
+[Instalando e operando](./instalacao.md).
+
 As 22 regras deste repositório, cada uma com o caso real que a originou.
 São o que o [`check.py`](../../check.py) confere automaticamente onde dá.
 
