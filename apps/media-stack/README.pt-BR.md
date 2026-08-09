@@ -1,6 +1,6 @@
 # Media Stack
 
-<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/jellyfin.svg" width="64" height="64" alt="">
+<img src="https://api.iconify.design/mdi/multimedia.svg?color=%23888888" width="64" height="64" alt="">
 
 **[🇺🇸 Read in English](./README.md)**
 
