@@ -55,12 +55,20 @@ you run the command above.
 ## Backup
 
 ```bash
-qh vm --backup --apply --out ~/backups
+qh vm-windows --backup --apply --out ~/backups
 ```
 
-Backup acts on the whole folder, not on one unit — naming `vm-windows` here is
-refused. The archive holds every app of `vm`, and restoring it is
-`qh vm --restore <file> --apply`.
+The archive holds this unit's directories, its secrets and its own `.env` — nothing a sibling also reads.
+
+It stops this unit, packs it and starts it again. Cold on purpose: copying a
+live database gives an archive that only fails when you restore it.
+
+```bash
+qh vm-windows --restore ~/backups/vm-windows-20260809-1200.tar.gz --apply
+```
+
+Restoring asks you to type `vm-windows` to confirm, because the current data is
+deleted before the archive is unpacked.
 
 ## Remove
 

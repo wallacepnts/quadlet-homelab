@@ -44,12 +44,20 @@ you run the command above.
 ## Backup
 
 ```bash
-qh media-stack --backup --apply --out ~/backups
+qh media-stack-lidarr --backup --apply --out ~/backups
 ```
 
-Backup acts on the whole folder, not on one unit — naming `media-stack-lidarr` here is
-refused. The archive holds every app of `media-stack`, and restoring it is
-`qh media-stack --restore <file> --apply`.
+The archive holds this unit's directories only. The folder's shared `.env` stays out, so restoring one app cannot hand an old copy back to the other eleven.
+
+It stops this unit, packs it and starts it again. Cold on purpose: copying a
+live database gives an archive that only fails when you restore it.
+
+```bash
+qh media-stack-lidarr --restore ~/backups/media-stack-lidarr-20260809-1200.tar.gz --apply
+```
+
+Restoring asks you to type `media-stack-lidarr` to confirm, because the current data is
+deleted before the archive is unpacked.
 
 ## Remove
 

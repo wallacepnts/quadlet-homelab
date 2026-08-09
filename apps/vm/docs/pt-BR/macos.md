@@ -50,12 +50,20 @@ o comando acima.
 ## Backup
 
 ```bash
-qh vm --backup --apply --out ~/backups
+qh vm-macos --backup --apply --out ~/backups
 ```
 
-O backup age sobre a pasta inteira, não sobre uma unit — nomear `vm-macos` aqui é
-recusado. O arquivo guarda todos os apps de `vm`, e restaurar é
-`qh vm --restore <arquivo> --apply`.
+O arquivo guarda os diretórios desta unit, os segredos dela e o `.env` próprio — nada que uma irmã também leia.
+
+Ele para esta unit, empacota e religa. A frio de propósito: copiar banco em uso
+gera um arquivo que só falha na hora de restaurar.
+
+```bash
+qh vm-macos --restore ~/backups/vm-macos-20260809-1200.tar.gz --apply
+```
+
+A restauração pede que você digite `vm-macos` para confirmar, porque os dados
+atuais são apagados antes de o arquivo ser desempacotado.
 
 ## Remover
 

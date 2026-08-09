@@ -227,7 +227,7 @@ PT = {
     'not found in apps/: ': 'não encontrado em apps/: ',
     '  (run it with no arguments to see the list)': '  (rode sem argumento nenhum para ver a lista)',
     "naming a single unit works for install, --update and --remove. Backup and restore act on the whole service's data — use the folder name.": 'nomear uma unit só vale para instalar, --update e --remove. Backup e restauração agem sobre os dados do serviço inteiro — use o nome da pasta.',
-    'this unit shares directories with the rest of the service — removing it alone would take their data too. Use the folder name.': 'esta unit compartilha diretórios com o resto do serviço — removê-la sozinha levaria os dados dos outros junto. Use o nome da pasta.',
+    'this unit shares directories with the rest of the service — acting on it alone would take their data too. Use the folder name.': 'esta unit compartilha diretórios com o resto do serviço — agir sobre ela sozinha levaria os dados dos outros junto. Use o nome da pasta.',
     '--restore acts on a single service: the .tar.gz belongs to one': '--restore age sobre um serviço só: o .tar.gz é de um',
     '--all does not work with --restore': '--all não funciona com --restore',
     'changed in the repository:': 'mudaram no repositório:',
@@ -651,6 +651,33 @@ class Service:
         """
         pares = self._volume_sets()
         return None if pares is None else sorted(pares[0] - pares[1])
+
+    def exclusive_envs(self):
+        """EnvironmentFile= this unit declares and no sibling of the folder does.
+
+        media-stack's twelve read one shared `.env`; each VM reads its own.
+        A per-unit backup carries only the second kind, so restoring one unit
+        cannot hand an old shared file back to the other eleven.
+        """
+        if not self.only:
+            return None
+        minhas, outras = set(), set()
+        for u in self.dir.glob("*.container"):
+            alvo = minhas if u.stem == self.only else outras
+            for k, v in directives(u.read_text()):
+                if k == "EnvironmentFile":
+                    alvo.add(self._expand(v))
+        return sorted(minhas - outras)
+
+    def secret_files(self):
+        """The files under secrets/<folder>/ holding this service's secrets.
+
+        The directory belongs to the folder, so a picked unit takes the files
+        it declares and not the directory — vm-windows' backup must not carry
+        the ChromeOS password.
+        """
+        d = self.home / ".config/containers/secrets" / self.name
+        return [d / (n.removeprefix(self.name + "-") + ".txt") for n in self.secrets()]
 
     def shared_volumes(self):
         """Directories of the picked unit that a sibling declares as well.
@@ -1084,7 +1111,11 @@ def plan_backup(s, destination):
     base = s.home / ".config/containers"
     targets = []                                # relative to ~/.config/containers
 
-    for root in s.volume_roots():
+    # With one unit picked, only what is that unit's own — the same rule that
+    # decides what --remove --purge may delete. Anything a sibling also uses
+    # stays out, so restoring one unit can never rewrite another one's data.
+    proprios = s.exclusive_volumes()
+    for root in (proprios if proprios is not None else s.volume_roots()):
         if Path(root).exists():
             targets.append(str(Path(root).relative_to(base)))
     if not targets:
@@ -1092,18 +1123,27 @@ def plan_backup(s, destination):
 
     # Secrets and .env are tiny and they are what makes the backup restorable:
     # without them the data comes back, but the service does not start.
-    source = base / "secrets" / s.name
-    if source.exists():
-        targets.append(str(source.relative_to(base)))
-    for e in s.env_files():
+    if proprios is None:
+        source = base / "secrets" / s.name
+        if source.exists():
+            targets.append(str(source.relative_to(base)))
+    else:
+        for f in s.secret_files():
+            if f.exists():
+                targets.append(str(f.relative_to(base)))
+    envs = s.exclusive_envs() if proprios is not None else s.env_files()
+    for e in envs:
         if Path(e).exists():
             targets.append(str(Path(e).relative_to(base)))
+    if proprios is not None and not s.exclusive_envs() and s.env_files():
+        warnings.append("the folder's shared .env is not in the archive — it belongs "
+                        "to the other units too")
 
     if not targets:
         return steps, warnings
 
     stamp = time.strftime("%Y%m%d-%H%M%S")
-    archive = Path(destination).expanduser().resolve() / f"{s.name}-{stamp}.tar.gz"
+    archive = Path(destination).expanduser().resolve() / f"{s.only or s.name}-{stamp}.tar.gz"
     units = service_units(s)
 
     steps.append((f"systemctl --user stop {' '.join(units)}",
@@ -1138,9 +1178,12 @@ def plan_restore(s, archive):
     except tarfile.TarError as e:
         return steps, [f"{tgz.name} is not a readable tar.gz: {e}"]
 
-    expected = [str(Path(r).relative_to(base)) for r in s.volume_roots()]
+    proprios = s.exclusive_volumes()
+    raizes = proprios if proprios is not None else s.volume_roots()
+    expected = [str(Path(r).relative_to(base)) for r in raizes]
     expected.append(f"secrets/{s.name}")
-    expected += [str(Path(e).relative_to(base)) for e in s.env_files()]
+    expected += [str(Path(e).relative_to(base))
+                 for e in (s.exclusive_envs() if proprios is not None else s.env_files())]
     top = {n.split("/")[0] + "/" + n.split("/")[1] for n in inside if "/" in n}
     if not any(any(t.startswith(e) for e in expected) for t in top):
         return steps, [f"{tgz.name} does not look like a backup of {s.name} "
@@ -1164,7 +1207,7 @@ def plan_restore(s, archive):
     # the bad scenario. Only the roots the archive actually carries, so a
     # partial backup does not delete what it cannot put back.
     restored = []
-    for root in s.volume_roots():
+    for root in raizes:
         rel = str(Path(root).relative_to(base))
         if not any(n == rel or n.startswith(rel + "/") for n in inside):
             continue
@@ -1948,6 +1991,17 @@ def selftest():
                 r'(?m)^Label=homepage\.' + chave + r'=(.*)$', u.read_text())}
         assert not usadas - set(tabela), (chave, sorted(usadas - set(tabela)))
 
+    # a picked unit backs up its own data, and nothing a sibling shares
+    with tempfile.TemporaryDirectory() as d:
+        s = Service("vm", prefix=d, only="vm-windows")
+        assert s.exclusive_envs() == [str(Path(d) / ".config/containers/env/vm-windows.env")]
+        assert [f.name for f in s.secret_files()] == ["windows-password.txt"]
+        # media-stack's .env is read by the twelve, so it is nobody's alone
+        assert Service("media-stack", prefix=d, only="media-stack-sonarr").exclusive_envs() == []
+        # and a unit that shares a directory is still refused by the caller
+        assert Service("authentik", prefix=d, only="authentik-worker").shared_volumes()
+        assert Service("vm", prefix=d, only="vm-windows").shared_volumes() == []
+
     # in sync means the file matches AND a container answers for it
     with tempfile.TemporaryDirectory() as d:
         u = Service("memos", prefix=d).units[0]
@@ -2694,16 +2748,12 @@ def main():
     # are its own — media-stack's twelve each have a directory nobody else
     # touches, and refusing there was protecting nothing.
     picked = [x for x in a.app if find_app(x)[1]]
-    if picked and (a.backup or a.restore):
-        ap.error(loc(f"{', '.join(picked)}: naming a single unit works for install, "
-                     f"--update and --remove. Backup and restore act on the whole "
-                     f"service's data — use the folder name."))
-    if picked and a.remove:
+    if picked and (a.remove or a.backup or a.restore):
         compartilham = [x for x in picked
                         if Service(find_app(x)[0], a.prefix, find_app(x)[1]).shared_volumes()]
         if compartilham:
             ap.error(loc(f"{', '.join(compartilham)}: this unit shares directories with "
-                         f"the rest of the service — removing it alone would take their "
+                         f"the rest of the service — acting on it alone would take their "
                          f"data too. Use the folder name."))
 
     if a.restore and len(a.app) > 1:

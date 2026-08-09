@@ -44,12 +44,20 @@ o comando acima.
 ## Backup
 
 ```bash
-qh media-stack --backup --apply --out ~/backups
+qh media-stack-prowlarr --backup --apply --out ~/backups
 ```
 
-O backup age sobre a pasta inteira, não sobre uma unit — nomear `media-stack-prowlarr` aqui é
-recusado. O arquivo guarda todos os apps de `media-stack`, e restaurar é
-`qh media-stack --restore <arquivo> --apply`.
+O arquivo guarda só os diretórios desta unit. O `.env` compartilhado da pasta fica de fora, para restaurar um app não devolver uma cópia velha aos outros onze.
+
+Ele para esta unit, empacota e religa. A frio de propósito: copiar banco em uso
+gera um arquivo que só falha na hora de restaurar.
+
+```bash
+qh media-stack-prowlarr --restore ~/backups/media-stack-prowlarr-20260809-1200.tar.gz --apply
+```
+
+A restauração pede que você digite `media-stack-prowlarr` para confirmar, porque os dados
+atuais são apagados antes de o arquivo ser desempacotado.
 
 ## Remover
 

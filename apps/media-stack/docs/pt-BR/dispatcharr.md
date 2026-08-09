@@ -43,12 +43,20 @@ o comando acima.
 ## Backup
 
 ```bash
-qh media-stack --backup --apply --out ~/backups
+qh media-stack-dispatcharr --backup --apply --out ~/backups
 ```
 
-O backup age sobre a pasta inteira, não sobre uma unit — nomear `media-stack-dispatcharr` aqui é
-recusado. O arquivo guarda todos os apps de `media-stack`, e restaurar é
-`qh media-stack --restore <arquivo> --apply`.
+O arquivo guarda os diretórios desta unit, os segredos dela e o `.env` próprio — nada que uma irmã também leia.
+
+Ele para esta unit, empacota e religa. A frio de propósito: copiar banco em uso
+gera um arquivo que só falha na hora de restaurar.
+
+```bash
+qh media-stack-dispatcharr --restore ~/backups/media-stack-dispatcharr-20260809-1200.tar.gz --apply
+```
+
+A restauração pede que você digite `media-stack-dispatcharr` para confirmar, porque os dados
+atuais são apagados antes de o arquivo ser desempacotado.
 
 ## Remover
 
