@@ -221,8 +221,10 @@ PT = {
     '  installed:': '  instalados:',
     'needing attention:': 'precisando de atenção:',
     'changed in the repository:': 'mudaram no repositório:',
+    'duplicated': 'duplicada',
     'done:': 'feito:',
     'directories': 'diretórios',
+    '(old copy, same unit)': '(cópia antiga, mesma unit)',
     'units and files copied': 'units e arquivos copiados',
     'secrets created': 'secrets criados',
     'images pulled': 'imagens baixadas',
@@ -555,6 +557,24 @@ class Service:
                     break
         return found
 
+    def strays(self):
+        """Copies of this service's units sitting outside `unit_dest`.
+
+        The destination is not fixed: one Quadlet file lands flat in
+        `systemd/`, two or more get a subfolder. A service that gains a
+        `.network` therefore moves, and the copy at the old address stays.
+        Quadlet reads the whole tree, so both keep defining the same unit
+        name and the stale one can be the one that wins — with nothing in
+        `systemctl status` naming the file it came from. tsdproxy ran for a
+        week on labels the repository had already replaced.
+        """
+        base = self.home / ".config/containers/systemd"
+        nomes = {u.name for u in self.folder_units}
+        if not base.is_dir():
+            return []
+        return sorted(p for p in base.rglob("*")
+                      if p.name in nomes and p.is_file() and p.parent != self.unit_dest)
+
     def main_unit(self):
         """The .container that represents the app — the one you `start`.
 
@@ -721,6 +741,18 @@ class Service:
             # With `only`, an unmatched .example belongs to one of the units we
             # filtered out (media-stack's gluetun env when installing jellyfin).
             # Reporting it as "no obvious destination" would be a false alarm.
+
+        # A config the app reads but never writes has no `.example` suffix and no
+        # name to match a volume by — homepage's `config/*.yaml`. Naming it in
+        # [config] is what makes `qh` install it; without this the app starts on
+        # whatever sample it ships, which is how the dashboard grew a "My First
+        # Group". The path is relative to the app's folder.
+        for rel, dest in ini_dests.items():
+            if rel.endswith(".example"):
+                continue
+            f = self.dir / rel
+            if f.is_file():
+                pairs.append((f, self._expand(dest)))
         return pairs
 
 
@@ -735,6 +767,9 @@ def plan_install(s, tailnet, force=False, interactive=False, access="tailnet",
 
     dest = s.unit_dest
     steps.append((f"mkdir -p {dest}", lambda: dest.mkdir(parents=True, exist_ok=True)))
+    for velha in s.strays():
+        steps.append((f"rm {velha}  (old copy, same unit)",
+                      lambda velha=velha: velha.unlink()))
     for u in s.units:
         target = dest / u.name
         mark = ""
@@ -932,6 +967,11 @@ def plan_update(s, access="tailnet", href_local=False):
         # installed.
         return [], ["does not look installed — use the normal install"]
     steps.append((f"mkdir -p {dest}", lambda: dest.mkdir(parents=True, exist_ok=True)))
+    # Before writing: a copy left at the old address would go on defining the
+    # same unit, and copying over one of the two does not settle which wins.
+    for velha in s.strays():
+        steps.append((f"rm {velha}  (old copy, same unit)",
+                      lambda velha=velha: velha.unlink()))
     for u in s.units:
         target = dest / u.name
         modo = access or saved_access(s.home) or installed_access(target) or "tailnet"
@@ -1836,6 +1876,18 @@ def selftest():
                 r'(?m)^Label=homepage\.' + chave + r'=(.*)$', u.read_text())}
         assert not usadas - set(tabela), (chave, sorted(usadas - set(tabela)))
 
+    # a unit left where the service used to live is found, and only that one
+    with tempfile.TemporaryDirectory() as d:
+        s = Service("tsdproxy", prefix=d)
+        base = Path(d) / ".config/containers/systemd"
+        (base / "tsdproxy").mkdir(parents=True)
+        (base / "tsdproxy" / "tsdproxy.container").write_text("atual")
+        (base / "outro-app.container").write_text("de outro serviço")
+        assert s.strays() == []
+        (base / "tsdproxy.container").write_text("a que ficou pra trás")
+        assert [p.parent for p in s.strays()] == [base]
+        assert [p.name for p in s.strays()] == ["tsdproxy.container"]
+
     # argparse's own words. Rendering real help is what catches a Python whose
     # literals no longer match our keys — the table would silently miss instead.
     antes_pt, guardado = qhui.PTBR, (argparse._, argparse.ngettext)
@@ -2168,6 +2220,10 @@ def show_status(apps=None):
             if fonte.exists():
                 modo = installed_access(u) or "tailnet"
                 deriva = "changed" if unit_bytes(fonte, modo, modo == "local") != u.read_bytes() else ""
+            # Louder than "changed", and reported even when the file the tool
+            # looks at is in fact current: what runs may be the other copy.
+            if any(p.name == u.name for p in s.strays()):
+                deriva = "duplicated"
             e, c = ativos.get(u.stem, "—"), estado_container(u)
             if e != "active" or c in ("unhealthy", "down"):
                 problemas += 1

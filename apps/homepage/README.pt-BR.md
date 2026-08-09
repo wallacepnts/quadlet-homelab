@@ -24,12 +24,15 @@ mkdir -p ~/.config/containers/systemd
 wget -P ~/.config/containers/systemd/ \
   https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/homepage/homepage.container
 
-# 2. Config — precisa existir antes do start; se a pasta estiver vazia a
-#    própria Homepage gera o resto na primeira vez (bookmarks.yaml etc.)
+# 2. Config — precisa existir antes do start. O services.yaml e o
+#    bookmarks.yaml vão vazios: a Homepage escreve um arquivo de exemplo no
+#    lugar de cada um que não encontra, e o exemplo aparece no dashboard.
 mkdir -p ~/.config/containers/volumes/homepage/config
 wget -P ~/.config/containers/volumes/homepage/config/ \
   https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/homepage/config/docker.yaml \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/homepage/config/settings.yaml
+  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/homepage/config/settings.yaml \
+  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/homepage/config/services.yaml \
+  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/homepage/config/bookmarks.yaml
 
 # 2b. Ícones customizados (opcional) — só precisa existir se for usar,
 #     ver seção "Marcando um serviço" abaixo
