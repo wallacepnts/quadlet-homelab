@@ -5,7 +5,6 @@ Description=Hermes Agent (personal AI agent, OpenAI-compatible gateway)
 NoNewPrivileges=true
 PidsLimit=2048
 ShmSize=1g
-Memory=4G
 
 Image=docker.io/nousresearch/hermes-agent:v2026.8.3
 ContainerName=hermes-agent

@@ -1838,6 +1838,7 @@ def verbo(v, n):
 ESTADOS = {
     "service": "serviço", "unit": "unit", "container": "container", "repo": "repo",
     "active": "ativo", "inactive": "inativo", "failed": "falhou",
+    "activating": "iniciando", "deactivating": "parando",
     "healthy": "saudável", "unhealthy": "doente", "up": "no ar", "down": "parado",
     "changed": "mudou",
 }
