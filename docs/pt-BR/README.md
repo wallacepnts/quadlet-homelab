@@ -156,6 +156,9 @@ O [Tailscale](https://tailscale.com) com o tsdproxy dá a cada serviço um nome
 HTTPS próprio, alcançável de qualquer lugar sem abrir porta. O Vaultwarden
 precisa disso — ele só decifra a sessão em contexto seguro.
 
+O `qh tailscale` confere os três passos abaixo no host e mostra só o que
+falta.
+
 Instalar o Tailscale pela sua distribuição (ver
 [tailscale.com/download](https://tailscale.com/download)) e depois:
 

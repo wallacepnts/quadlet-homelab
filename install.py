@@ -168,6 +168,17 @@ PT = {
     '  Without a tailnet, install any service with --local.': '  Sem tailnet, instale qualquer serviço com --local.',
     "to join a tailnet:": "para entrar numa tailnet:",
     "(https://tailscale.com/download), then:": "(https://tailscale.com/download) e depois:",
+    'Tailscale is not installed': 'Tailscale não está instalado',
+    'tailscaled is not running': 'tailscaled não está rodando',
+    'Tailscale is installed but not logged in': 'Tailscale instalado, mas sem login',
+    'Tailscale is up': 'Tailscale no ar',
+    'TAILNET is set': 'TAILNET definida',
+    'TAILNET is not set': 'TAILNET não definida',
+    'tsdproxy is not installed': 'tsdproxy não instalado',
+    'tsdproxy is installed but not running': 'tsdproxy instalado, mas parado',
+    'tsdproxy is running': 'tsdproxy rodando',
+    '  pending: step': '  pendente: passo',
+    '  nothing pending — you are on the tailnet.': '  nada pendente — você está na tailnet.',
     "failed:": "falharam:",
 }
 
@@ -205,32 +216,77 @@ def say(*a, **kw):
 # Software this repository deliberately does NOT install via Quadlet
 # (root README, rule 21): it needs to *be* the host on the network, not a
 # neighbour of it.
-NOT_QUADLET = {
-    "tailscale": (
-        "To be on a tailnet, in this order:\n"
-        "\n"
-        "  1. Tailscale, as a host package — not a Quadlet. It has to integrate\n"
-        "     with the host's systemd-resolved for MagicDNS, and a container\n"
-        "     does not share the D-Bus and mount namespaces.\n"
-        "\n"
-        "     install the tailscale package for your distribution\n"
-        "     (https://tailscale.com/download), then:\n"
-        "     sudo systemctl enable --now tailscaled\n"
-        "     sudo tailscale up\n"
-        "\n"
-        "  2. The name of your tailnet, which the units use in their links:\n"
-        "\n"
-        "     mkdir -p ~/.config/environment.d\n"
-        "     echo 'TAILNET=<your-tailnet>' > ~/.config/environment.d/tailnet.conf\n"
-        "     systemctl --user daemon-reload\n"
-        "\n"
-        "  3. tsdproxy, which publishes every other service on the tailnet:\n"
-        "\n"
-        "     qh tsdproxy --apply\n"
-        "\n"
-        "  Without a tailnet, install any service with --local."
-    ),
-}
+NOT_QUADLET = {"tailscale": None}   # printed by show_tailscale()
+
+
+def tailscale_steps():
+    """The three steps to be on a tailnet, each with what the host actually shows.
+
+    Printing the same instructions to someone who is already on the tailnet is
+    noise; the useful answer is which step is missing. Everything here reads
+    without privilege, so a check never asks for a password.
+    """
+    import shutil
+
+    def ok(cmd):
+        return subprocess.run(cmd, capture_output=True, text=True).returncode == 0
+
+    steps = []
+
+    # 1. the daemon, and whether it is logged in
+    if not shutil.which("tailscale"):
+        steps.append((False, loc("Tailscale is not installed"),
+                      ["install the tailscale package for your distribution",
+                       "(https://tailscale.com/download)"]))
+    elif not ok(["systemctl", "is-active", "--quiet", "tailscaled"]):
+        steps.append((False, loc("tailscaled is not running"),
+                      ["sudo systemctl enable --now tailscaled"]))
+    else:
+        r = subprocess.run(["tailscale", "ip", "-4"], capture_output=True, text=True)
+        ip = r.stdout.strip().splitlines()[0] if r.returncode == 0 and r.stdout.strip() else ""
+        if ip:
+            steps.append((True, loc("Tailscale is up") + f" ({ip})", []))
+        else:
+            steps.append((False, loc("Tailscale is installed but not logged in"),
+                          ["sudo tailscale up"]))
+
+    # 2. TAILNET, which every unit's link is built from
+    tn = find_tailnet()
+    if tn:
+        steps.append((True, loc("TAILNET is set") + f" ({tn})", []))
+    else:
+        steps.append((False, loc("TAILNET is not set"),
+                      ["mkdir -p ~/.config/environment.d",
+                       "echo 'TAILNET=<your-tailnet>' > ~/.config/environment.d/tailnet.conf",
+                       "systemctl --user daemon-reload"]))
+
+    # 3. tsdproxy, which publishes everything else
+    s = Service("tsdproxy")
+    if not s.installed():
+        steps.append((False, loc("tsdproxy is not installed"), ["qh tsdproxy --apply"]))
+    elif not ok(["systemctl", "--user", "is-active", "--quiet", "tsdproxy"]):
+        steps.append((False, loc("tsdproxy is installed but not running"),
+                      ["systemctl --user start tsdproxy"]))
+    else:
+        steps.append((True, loc("tsdproxy is running"), []))
+
+    return steps
+
+
+def show_tailscale():
+    steps = tailscale_steps()
+    say("")
+    for i, (done, titulo, cmds) in enumerate(steps, 1):
+        say(f"  {'✓' if done else ' '} {i}. {titulo}")
+        for c in cmds:
+            say(f"       {c}")
+    pend = [i for i, (d, _, _) in enumerate(steps, 1) if not d]
+    say("")
+    if pend:
+        say(loc("  pending: step") + " " + ", ".join(map(str, pend)))
+    else:
+        say(loc("  nothing pending — you are on the tailnet."))
+    say(loc("  Without a tailnet, install any service with --local."))
 
 
 def published_port(value):
@@ -1426,6 +1482,13 @@ def selftest():
         descs = lambda **kw: [t for t, _ in plan_install(fb, None, **kw)[0]]
         assert descs(ask_secrets=True) == descs()
 
+    # tailscale_steps() reads the host, so the values vary; the shape must not
+    passos = tailscale_steps()
+    assert len(passos) == 3, passos
+    for feito, titulo, cmds in passos:
+        assert isinstance(feito, bool) and titulo and isinstance(cmds, list)
+        assert feito == (not cmds), (feito, cmds)   # pendente sempre traz o comando
+
     # the language layer: longest phrase wins, and a path is never mangled
     global PTBR
     antes = PTBR
@@ -1560,7 +1623,7 @@ def find_app(name):
 def run_one(a, ap, app, access, href_local):
     """Runs the chosen action for ONE service. Returns the exit code."""
     if app in NOT_QUADLET and not (APPS / app).is_dir():
-        say(NOT_QUADLET[app])
+        show_tailscale()
         return 0
 
     folder, only = find_app(app)

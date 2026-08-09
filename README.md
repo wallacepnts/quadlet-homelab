@@ -155,6 +155,9 @@ pinned to a tag and updated by hand.
 HTTPS name, reachable from anywhere without opening a port. Vaultwarden needs
 it — it only decrypts the session in a secure context.
 
+`qh tailscale` checks the three steps below against the host and prints only
+what is missing.
+
 Install Tailscale for your distribution (see
 [tailscale.com/download](https://tailscale.com/download)), then:
 
