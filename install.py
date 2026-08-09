@@ -95,7 +95,6 @@ PT = {
     '  number or value [': '  número ou valor [',
     '  (default)': '  (padrão)',
     'could not find the file': 'não encontrei o arquivo',
-    '  name a service to expand its units:  qh --status media-stack': '  nomeie um serviço para expandir as units:  qh --status media-stack',
     "unit(s) in": "unit(s) em",
     "  --update     re-copies the units and restarts, keeping data, env and secrets":
         "  --update     recopia as units e reinicia, mantendo dados, env e secrets",
@@ -1946,26 +1945,7 @@ def show_status(apps=None):
             if deriva:
                 mudados += 1
             detalhe.append((u.stem, e, c, deriva or "—"))
-        # A folder with its own .network is one service in pieces — immich is
-        # down when its Postgres is, and hiding that behind `3/4` hides the
-        # reason. A folder without one is independent services that happen to
-        # share a directory, and there the list is just long.
-        stack = any(u.suffix == ".network" for u in s.units)
-        if len(detalhe) == 1 or apps or stack:
-            linhas += detalhe
-        else:
-            # Collapsed: how many are up, out of how many. The worst container
-            # state wins, so one unhealthy piece is not hidden by eleven fine.
-            no_ar = sum(1 for _, e, _, _ in detalhe if e == "active")
-            piores = [c for _, _, c, _ in detalhe]
-            c = ("unhealthy" if "unhealthy" in piores else
-                 "healthy" if "healthy" in piores else
-                 "up" if "up" in piores else "—")
-            dv = "changed" if any(x[3] == "changed" for x in detalhe) else "—"
-            linhas.append((f"{d}  ({no_ar}/{len(detalhe)})",
-                           "active" if no_ar == len(detalhe) else
-                           "failed" if any(x[1] == "failed" for x in detalhe) else "inactive",
-                           c, dv))
+        linhas += detalhe
 
     if not linhas:
         say(loc("nothing installed yet."))
@@ -1987,8 +1967,6 @@ def show_status(apps=None):
     say(loc("  installed:") + f" {sum(1 for _ in linhas)}  "
         + loc("needing attention:") + f" {problemas}  "
         + loc("changed in the repository:") + f" {mudados}")
-    if not apps and any("(" in n for n, *_ in linhas):
-        say(dim(loc("  name a service to expand its units:  qh --status media-stack")))
     return 1 if problemas else 0
 
 
