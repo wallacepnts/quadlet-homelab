@@ -1693,20 +1693,33 @@ def selftest():
     say("selftest: ok")
 
 
-def show_addresses(s, tailnet):
-    """The URLs, raw, ready to click or paste. A stack gets the unit name above
-    each one, because otherwise the bare list would not say which is which."""
+def show_addresses(s, tailnet, modo="both"):
+    """The URLs, raw, ready to click or paste, for the mode it was installed in.
+
+    Printing the LAN address of a service whose LAN port was just closed sends
+    you to a connection refused; printing a tailnet name for one installed
+    `--local` sends you to a name that does not resolve. A stack gets the unit
+    name above each one, because otherwise the bare list would not say which is
+    which.
+    """
     lines = addresses(s, tailnet)
     if not lines:
         return
     many = len(lines) > 1
-    say()
+    saida = []
     for unit, local, tail in lines:
+        quais = {"local": (local,), "tailnet": (tail,)}.get(modo, (local, tail))
+        urls = [u for u in quais if u]
+        if urls:
+            saida.append((unit, urls))
+    if not saida:
+        return
+    say()
+    for unit, urls in saida:
         if many:
             say(f"{unit}:")
-        for url in (local, tail):
-            if url:
-                say(f"  {url}" if many else url)
+        for url in urls:
+            say(f"  {url}" if many else url)
 
 
 def show_secrets(s):
@@ -1777,7 +1790,12 @@ def run_one(a, ap, app, access, href_local):
             return 1
 
     tailnet = find_tailnet()
-    modo_efetivo = access or saved_access(s.home) or "tailnet"
+    # Same precedence plan_update uses, so the address printed at the end is the
+    # one the unit actually got: what you typed, then the saved rule, then what
+    # the host already had.
+    primeira = s.installed()
+    modo_efetivo = (access or saved_access(s.home)
+                    or (installed_access(primeira[0]) if primeira else None) or "tailnet")
     for problem in preflight(s, tailnet, modo_efetivo == "local"):
         say(f"  !  {problem}")
     if a.update:
@@ -1816,7 +1834,7 @@ def run_one(a, ap, app, access, href_local):
 
     if not a.apply:
         if not (a.remove or a.backup or a.restore):
-            show_addresses(s, tailnet)
+            show_addresses(s, tailnet, modo_efetivo)
             show_secrets(s)
         return 0
 
@@ -1848,7 +1866,7 @@ def run_one(a, ap, app, access, href_local):
         say(f"\n{app} removed.")
     else:
         say(f"\n{app}: done. Check with:  systemctl --user status {unit}")
-        show_addresses(s, tailnet)
+        show_addresses(s, tailnet, modo_efetivo)
         show_secrets(s)
     if warnings and not (a.remove or a.backup or a.restore):
         say("The items marked (!) above were not done — see apps/%s/README.md" % s.name)
