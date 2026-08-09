@@ -73,6 +73,122 @@ def make_secret(recipe):
 
 
 # --------------------------------------------------------------------------
+# language
+# --------------------------------------------------------------------------
+
+# Translation runs over the composed line, not over each f-string. The keys are
+# whole phrases, long enough that they cannot collide with a path or a service
+# name, and adding a message costs one entry here either way.
+PT = {
+    "shows the plan": "mostra o plano",
+    "(dry-run)": "(simulação)",
+    "nothing was done. repeat with --apply": "nada foi feito. repita com --apply",
+    "done. Check with:": "pronto. Confira com:",
+    "already installed —": "já instalado —",
+    "unit(s) in": "unit(s) em",
+    "  --update     re-copies the units and restarts, keeping data, env and secrets":
+        "  --update     recopia as units e reinicia, mantendo dados, env e secrets",
+    "  --reinstall  installs again, OVERWRITING env, config and secrets":
+        "  --reinstall  instala de novo, SOBRESCREVENDO env, config e secrets",
+    "nothing to do for": "nada a fazer para",
+    "The items marked (!) above were not done — see":
+        "Os itens marcados com (!) acima não foram feitos — ver",
+    "restored.": "restaurado.",
+    "backup ready.": "backup pronto.",
+    "removed.": "removido.",
+    "cancelled.": "cancelado.",
+    "type `": "digite `",
+    "` to confirm: ": "` para confirmar: ",
+    "FAILED at:": "FALHOU em:",
+    "(follows the log while it starts)": "(acompanha o log enquanto sobe)",
+    "(substituting ${TAILNET})": "(substituindo ${TAILNET})",
+    "already exists — kept (use --reinstall to overwrite)":
+        "já existe — mantido (use --reinstall para sobrescrever)",
+    "already exists — kept (recreating changes the value and invalidates sessions/keys)":
+        "já existe — mantido (recriar muda o valor e invalida sessões/chaves)",
+    "has no obvious destination — declare it in install.ini [config]":
+        "não tem destino óbvio — declare em install.ini [config]",
+    "has no recipe in install.ini [secrets]": "não tem receita em install.ini [secrets]",
+    "has a systemd variable — create it by hand once the variable is set":
+        "tem variável do systemd — crie na mão depois que a variável existir",
+    "does not look installed — use the normal install":
+        "não parece instalado — use a instalação normal",
+    "kept at the default — no terminal to ask on. Edit":
+        "mantido no padrão — sem terminal para perguntar. Edite",
+    "before the first start.": "antes do primeiro start.",
+    "still has a placeholder — edit it before using":
+        "ainda tem um placeholder — edite antes de usar",
+    "not one of the listed values — using": "não está entre os valores listados — usando",
+    "as given": "como veio",
+    "empty — skipped, create it by hand later (see the README)":
+        "vazio — pulado, crie na mão depois (ver o README)",
+    "value, or Enter to generate one (not echoed): ":
+        "valor, ou Enter para gerar um (não ecoado): ",
+    "value (not echoed): ": "valor (não ecoado): ",
+    "(sandbox, not executed:": "(sandbox, não executado:",
+    "the services": "os serviços",
+    "user:     ": "usuário:  ",
+    "password: ": "senha:    ",
+    "ask for the value of": "perguntar o valor de",
+    ", or generate one": ", ou gerar um",
+    "steps": "passos",
+    "install,": "instalar,",
+    "update,": "atualizar,",
+    "reinstall,": "reinstalar,",
+    "remove,": "remover,",
+    "backup,": "backup,",
+    "ok —": "ok —",
+    'execute (without it, only show)': 'executa (sem isso, só mostra)',
+    'use another home (to test without touching the real one)': 'usa outra home (pra testar sem tocar na real)',
+    'list the services': 'lista os serviços',
+    "test the script's parser": 'testa o parser do script',
+    'shorthand for --access local': 'atalho para --access local',
+    're-copies the units and restarts; touches no data, env or secret': 'recopia as units e reinicia; não toca em dados, env nem secret',
+    'installs again, OVERWRITING env, config and secrets': 'instala de novo, SOBRESCREVENDO env, config e secrets',
+    'stops and removes the units, keeping the data': 'para e remove as units, mantendo os dados',
+    'cold backup of the data (stop, pack, bring back)': 'backup a frio dos dados (para, empacota, religa)',
+    'restores a .tar.gz from --backup OVER the current data': 'restaura um .tar.gz do --backup POR CIMA dos dados atuais',
+    'with --remove: also delete volumes, secrets and env': 'com --remove: apaga também volumes, secrets e env',
+    'with --backup: where to write the .tar.gz (default: here)': 'com --backup: onde gravar o .tar.gz (padrão: aqui)',
+    'act on ALL the services in apps/': 'age sobre TODOS os serviços de apps/',
+    'one or more services, or a single unit of one ': 'um ou mais serviços, ou uma unit só de um ',
+    'type each secret instead of generating it ': 'digita cada secret em vez de gerá-lo ',
+    '(Enter takes the generated one)': '(Enter aceita o gerado)',
+    'point the dashboard link at the LAN instead of the tailnet ': 'aponta o link do dashboard pra LAN em vez do nome da tailnet ',
+    'name (implied by --access local)': '(implícito no --access local)',
+    'local: no tsdproxy, link to the LAN | tailnet: link via the ': 'local: sem tsdproxy, link pra LAN | tailnet: link pelo nome da ',
+    'tailnet name (default) | both: on the tailnet, with a LAN link': 'tailnet (padrão) | both: na tailnet, com link da LAN',
+    "failed:": "falharam:",
+}
+
+# pt only when the environment asks for it; QH_LANG wins, so a single run can
+# be forced either way without touching the locale.
+_lang = (os.environ.get("QH_LANG")
+         or os.environ.get("LC_ALL") or os.environ.get("LANG") or "")
+PTBR = _lang.lower().startswith("pt")
+
+
+# Longest first: "act on ALL the services in apps/" has to win over the
+# "the services" that is a substring of it, or the line comes out half English.
+_PT_ORDER = sorted(PT.items(), key=lambda kv: -len(kv[0]))
+
+
+def loc(s):
+    """The line as the user should read it."""
+    if not PTBR:
+        return s
+    for en, pt in _PT_ORDER:
+        if en in s:
+            s = s.replace(en, pt)
+    return s
+
+
+def say(*a, **kw):
+    """print(), translated."""
+    print(*(loc(x) if isinstance(x, str) else x for x in a), **kw)
+
+
+# --------------------------------------------------------------------------
 # reading the service
 # --------------------------------------------------------------------------
 
@@ -546,7 +662,7 @@ def plan_install(s, tailnet, force=False, interactive=False, access="tailnet",
 def run_lenient(cmd):
     """Like run(), but without failing: stopping what is already stopped is success."""
     if SANDBOX:
-        print(f"       (sandbox, not executed: {' '.join(cmd)})")
+        say(f"       (sandbox, not executed: {' '.join(cmd)})")
         return
     subprocess.run(cmd, capture_output=True)
 
@@ -872,7 +988,7 @@ def write_example(source, destination, tailnet):
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(txt)
     if re.search(r"CHANGEME|<your-", txt):
-        print(f"    ! {destination} still has a placeholder — edit it before using")
+        say(f"    ! {destination} still has a placeholder — edit it before using")
 
 
 def set_env_value(path, key, value):
@@ -902,11 +1018,11 @@ def ask_choices(path, choices):
     """Asks for each [choices] key and writes the answers into the .env."""
     for key, question, options in choices:
         default = options[0][0]
-        print(f"\n  {question}")
+        say(f"\n  {question}")
         for i, (value, label) in enumerate(options, 1):
             mark = "  (default)" if i == 1 else ""
             sep = "  " if label else ""
-            print(f"   {i:>2}) {value:<10}{sep}{label}{mark}")
+            say(f"   {i:>2}) {value:<10}{sep}{label}{mark}")
         try:
             raw = input(f"  number or value [{default}]: ").strip()
         except EOFError:
@@ -921,9 +1037,9 @@ def ask_choices(path, choices):
             # Not on the list is not necessarily wrong — upstream accepts a URL
             # for VERSION, for instance — so take it and say so.
             picked = raw
-            print(f"  not one of the listed values — using `{raw}` as given")
+            say(f"  not one of the listed values — using `{raw}` as given")
         set_env_value(path, key, picked)
-        print(f"  {key}={picked}")
+        say(f"  {key}={picked}")
 
 
 def ask_secret(s, name, instruction):
@@ -935,11 +1051,11 @@ def ask_secret(s, name, instruction):
     done", which is when the pending step gets forgotten.
     """
     import getpass
-    print(f"\n  {name}")
-    print(f"  {instruction}")
+    say(f"\n  {name}")
+    say(f"  {instruction}")
     value = getpass.getpass("  value (not echoed): ").strip()
     if not value:
-        print("  empty — skipped, create it by hand later (see the README)")
+        say("  empty — skipped, create it by hand later (see the README)")
         return
     store_secret(s, name, value)
 
@@ -953,7 +1069,7 @@ def ask_or_generate(s, name, recipe):
     secret and pasting it in. Enter keeps the old behaviour exactly.
     """
     import getpass
-    print(f"\n  {name}  ({recipe})")
+    say(f"\n  {name}  ({recipe})")
     value = getpass.getpass("  value, or Enter to generate one (not echoed): ").strip()
     store_secret(s, name, value or make_secret(recipe)[0])
 
@@ -1004,7 +1120,7 @@ def restart_unit(unit, container=None):
     """
     cmd = ["systemctl", "--user", "restart", unit]
     if SANDBOX:
-        print(f"       (sandbox, not executed: {' '.join(cmd)})")
+        say(f"       (sandbox, not executed: {' '.join(cmd)})")
         return
     if container is None:
         run(cmd)
@@ -1018,7 +1134,7 @@ def restart_unit(unit, container=None):
         while proc.poll() is None and follow is None:
             if subprocess.run(["podman", "container", "exists", container],
                               capture_output=True).returncode == 0:
-                print()
+                say()
                 follow = subprocess.Popen(["podman", "logs", "-f", container])
             else:
                 time.sleep(0.5)
@@ -1050,9 +1166,9 @@ def pull(image):
     the journal where nobody is watching it.
     """
     if SANDBOX:
-        print(f"       (sandbox, not executed: podman pull {image})")
+        say(f"       (sandbox, not executed: podman pull {image})")
         return
-    print()
+    say()
     subprocess.run(["podman", "pull", image], check=True)
 
 
@@ -1088,7 +1204,7 @@ def run(cmd):
     take down the real service.
     """
     if SANDBOX:
-        print(f"       (sandbox, not executed: {' '.join(cmd)})")
+        say(f"       (sandbox, not executed: {' '.join(cmd)})")
         return
     subprocess.run(cmd, check=True, capture_output=True, text=True)
 
@@ -1292,6 +1408,20 @@ def selftest():
         descs = lambda **kw: [t for t, _ in plan_install(fb, None, **kw)[0]]
         assert descs(ask_secrets=True) == descs()
 
+    # the language layer: longest phrase wins, and a path is never mangled
+    global PTBR
+    antes = PTBR
+    try:
+        PTBR = True
+        assert loc("act on ALL the services in apps/") == "age sobre TODOS os serviços de apps/"
+        assert loc("the services") == "os serviços"
+        # um caminho que contém uma palavra traduzível continua intacto
+        assert loc("mkdir -p /home/x/install/data") == "mkdir -p /home/x/install/data"
+        PTBR = False
+        assert loc("act on ALL the services in apps/") == "act on ALL the services in apps/"
+    finally:
+        PTBR = antes
+
     # what the already-installed guard gates on, in both layouts
     with tempfile.TemporaryDirectory() as d:
         flat, stack = Service("filebrowser", d), Service("vm", d)
@@ -1351,7 +1481,7 @@ def selftest():
     assert published_port("127.0.0.1:8082:80") == 8082
     assert published_port("69") is None, "a bare port is picked by Podman"
 
-    print("selftest: ok")
+    say("selftest: ok")
 
 
 def show_addresses(s, tailnet):
@@ -1361,13 +1491,13 @@ def show_addresses(s, tailnet):
     if not lines:
         return
     many = len(lines) > 1
-    print()
+    say()
     for unit, local, tail in lines:
         if many:
-            print(f"{unit}:")
+            say(f"{unit}:")
         for url in (local, tail):
             if url:
-                print(f"  {url}" if many else url)
+                say(f"  {url}" if many else url)
 
 
 def show_secrets(s):
@@ -1392,7 +1522,7 @@ def show_secrets(s):
     if user is None:
         # one secret holding `user:password` — split where the app splits
         user, _, password = password.partition(":")
-    print(f"\n  user:     {user}\n  password: {password}")
+    say(f"\n  user:     {user}\n  password: {password}")
 
 
 def find_app(name):
@@ -1412,7 +1542,7 @@ def find_app(name):
 def run_one(a, ap, app, access, href_local):
     """Runs the chosen action for ONE service. Returns the exit code."""
     if app in NOT_QUADLET and not (APPS / app).is_dir():
-        print(NOT_QUADLET[app])
+        say(NOT_QUADLET[app])
         return 0
 
     folder, only = find_app(app)
@@ -1427,11 +1557,11 @@ def run_one(a, ap, app, access, href_local):
         if here:
             # "1 of 6" is the case worth seeing: a stack where only some units
             # are on the host refuses too, and --reinstall is what completes it.
-            print(f"{app}: already installed — {len(here)} of {len(s.units)} "
+            say(f"{app}: already installed — {len(here)} of {len(s.units)} "
                   f"unit(s) in {here[0].parent}")
-            print("  --update     re-copies the units and restarts, keeping data, "
+            say("  --update     re-copies the units and restarts, keeping data, "
                   "env and secrets")
-            print("  --reinstall  installs again, OVERWRITING env, config and secrets")
+            say("  --reinstall  installs again, OVERWRITING env, config and secrets")
             # Still the answer to "what was my password" — the refusal is about
             # not reinstalling, not about withholding what is already there.
             show_secrets(s)
@@ -1439,7 +1569,7 @@ def run_one(a, ap, app, access, href_local):
 
     tailnet = find_tailnet()
     for problem in preflight(s, tailnet, access == "local"):
-        print(f"  !  {problem}")
+        say(f"  !  {problem}")
     if a.update:
         verb, (steps, warnings) = "update", plan_update(s)
     elif a.backup:
@@ -1462,16 +1592,16 @@ def run_one(a, ap, app, access, href_local):
     if not steps:
         # With no steps, "done" would be a lie: the reason is in the warnings
         # (wrong file, nothing installed, missing volume).
-        print(f"{app}: nothing to do for `{verb}`.")
+        say(f"{app}: nothing to do for `{verb}`.")
         for w in warnings:
-            print(f"  !  {w}")
+            say(f"  !  {w}")
         return 1
 
-    print(f"{app}: {verb}, {len(steps)} steps" + ("" if a.apply else "  (dry-run)"))
+    say(f"{app}: {verb}, {len(steps)} steps" + ("" if a.apply else "  (dry-run)"))
     for desc, _ in steps:
-        print(f"  {'->' if a.apply else '  '} {desc}")
+        say(f"  {'->' if a.apply else '  '} {desc}")
     for w in warnings:
-        print(f"  !  {w}")
+        say(f"  !  {w}")
 
     if not a.apply:
         if not (a.remove or a.backup or a.restore):
@@ -1482,35 +1612,35 @@ def run_one(a, ap, app, access, href_local):
     if a.purge or a.restore:
         # Deleting/overwriting data is irreversible: confirm by typing the name.
         # With several services, each one asks for its own — on purpose.
-        print("\nThis OVERWRITES the current data, with no way back."
+        say("\nThis OVERWRITES the current data, with no way back."
               if a.restore else "\nThis DELETES the data listed above, with no way back.")
         try:
             if input(f"type `{app}` to confirm: ").strip() != app:
-                print("cancelled.")
+                say("cancelled.")
                 return 1
         except (EOFError, KeyboardInterrupt):
-            print("\ncancelled.")
+            say("\ncancelled.")
             return 1
 
     for desc, action in steps:
         try:
             action()
         except subprocess.CalledProcessError as e:
-            print(f"\nFAILED at: {desc}\n{(e.stderr or '').strip()}", file=sys.stderr)
+            say(f"\nFAILED at: {desc}\n{(e.stderr or '').strip()}", file=sys.stderr)
             return 1
     unit = (s.main_unit() or Path(app)).stem
     if a.restore:
-        print(f"\n{app}: restored.")
+        say(f"\n{app}: restored.")
     elif a.backup:
-        print(f"\n{app}: backup ready.")
+        say(f"\n{app}: backup ready.")
     elif a.remove:
-        print(f"\n{app} removed.")
+        say(f"\n{app} removed.")
     else:
-        print(f"\n{app}: done. Check with:  systemctl --user status {unit}")
+        say(f"\n{app}: done. Check with:  systemctl --user status {unit}")
         show_addresses(s, tailnet)
         show_secrets(s)
     if warnings and not (a.remove or a.backup or a.restore):
-        print("The items marked (!) above were not done — see apps/%s/README.md" % s.name)
+        say("The items marked (!) above were not done — see apps/%s/README.md" % s.name)
     return 0
 
 
@@ -1523,40 +1653,40 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.replace("python3 install.py", how),
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("app", nargs="*", metavar="APP",
-                    help="one or more services, or a single unit of one "
-                         "(`media-stack-jellyfin`, `toolbx-ubuntu`)")
-    ap.add_argument("--apply", action="store_true", help="execute (without it, only show)")
-    ap.add_argument("--prefix", help="use another home (to test without touching the real one)")
-    ap.add_argument("--list", action="store_true", help="list the services")
-    ap.add_argument("--selftest", action="store_true", help="test the script's parser")
+                    help=loc("one or more services, or a single unit of one "
+                             "(`media-stack-jellyfin`, `toolbx-ubuntu`)"))
+    ap.add_argument("--apply", action="store_true", help=loc("execute (without it, only show)"))
+    ap.add_argument("--prefix", help=loc("use another home (to test without touching the real one)"))
+    ap.add_argument("--list", action="store_true", help=loc("list the services"))
+    ap.add_argument("--selftest", action="store_true", help=loc("test the script's parser"))
     ap.add_argument("--access", choices=("local", "tailnet", "both"), default="tailnet",
-                    help="local: no tsdproxy, link to the LAN | tailnet: link via the "
-                         "tailnet name (default) | both: on the tailnet, with a LAN link")
+                    help=loc("local: no tsdproxy, link to the LAN | tailnet: link via the "
+                             "tailnet name (default) | both: on the tailnet, with a LAN link"))
     ap.add_argument("--href-local", action="store_true",
-                    help="point the dashboard link at the LAN instead of the tailnet "
-                         "name (implied by --access local)")
+                    help=loc("point the dashboard link at the LAN instead of the tailnet "
+                             "name (implied by --access local)"))
     ap.add_argument("--local", action="store_true",
-                    help="shorthand for --access local")
+                    help=loc("shorthand for --access local"))
     action = ap.add_mutually_exclusive_group()
     action.add_argument("--update", action="store_true",
-                        help="re-copies the units and restarts; touches no data, env or secret")
+                        help=loc("re-copies the units and restarts; touches no data, env or secret"))
     action.add_argument("--reinstall", action="store_true",
-                        help="installs again, OVERWRITING env, config and secrets")
+                        help=loc("installs again, OVERWRITING env, config and secrets"))
     action.add_argument("--remove", action="store_true",
-                        help="stops and removes the units, keeping the data")
+                        help=loc("stops and removes the units, keeping the data"))
     action.add_argument("--backup", action="store_true",
-                        help="cold backup of the data (stop, pack, bring back)")
+                        help=loc("cold backup of the data (stop, pack, bring back)"))
     action.add_argument("--restore", metavar="FILE",
-                        help="restores a .tar.gz from --backup OVER the current data")
+                        help=loc("restores a .tar.gz from --backup OVER the current data"))
     ap.add_argument("--ask-secrets", action="store_true",
-                    help="type each secret instead of generating it "
-                         "(Enter takes the generated one)")
+                    help=loc("type each secret instead of generating it "
+                             "(Enter takes the generated one)"))
     ap.add_argument("--purge", action="store_true",
-                    help="with --remove: also delete volumes, secrets and env")
+                    help=loc("with --remove: also delete volumes, secrets and env"))
     ap.add_argument("--out", default=".",
-                    help="with --backup: where to write the .tar.gz (default: here)")
+                    help=loc("with --backup: where to write the .tar.gz (default: here)"))
     ap.add_argument("--all", action="store_true",
-                    help="act on ALL the services in apps/")
+                    help=loc("act on ALL the services in apps/"))
     a = ap.parse_args()
 
     if a.selftest:
@@ -1568,8 +1698,8 @@ def main():
 
     if a.list or not a.app:
         for p in sorted(x.name for x in APPS.iterdir() if x.is_dir()):
-            print(" ", p)
-        print("\n  (tailscale is not here: it is not a Quadlet, see "
+            say(" ", p)
+        say("\n  (tailscale is not here: it is not a Quadlet, see "
               "`python3 install.py tailscale`)")
         return 0
 
@@ -1612,17 +1742,17 @@ def main():
     failures = []
     for i, app in enumerate(a.app):
         if len(a.app) > 1:
-            print(("\n" if i else "") + "─" * 62)
+            say(("\n" if i else "") + "─" * 62)
         rc = run_one(a, ap, app, access, href_local)
         if rc:
             failures.append(app)
 
     if len(a.app) > 1:
-        print("\n" + "─" * 62)
-        print(f"{len(a.app) - len(failures)}/{len(a.app)} ok"
+        say("\n" + "─" * 62)
+        say(f"{len(a.app) - len(failures)}/{len(a.app)} ok"
               + (f" — failed: {', '.join(failures)}" if failures else ""))
     if not a.apply:
-        print("\nnothing was done. repeat with --apply")
+        say("\nnothing was done. repeat with --apply")
     return 1 if failures else 0
 
 

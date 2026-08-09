@@ -11,6 +11,7 @@ which touches files only. That is the same reason this fits in a bare CI runner.
 """
 
 import shutil
+import os
 import subprocess
 import sys
 import tarfile
@@ -24,8 +25,10 @@ failures = []
 
 
 def run(*args, stdin="", expected=0):
+    # QH_LANG=en so the assertions do not depend on the machine's locale.
+    env = {**os.environ, "QH_LANG": "en"}
     r = subprocess.run([sys.executable, str(ROOT / "install.py"), *args],
-                       capture_output=True, text=True, input=stdin, cwd=ROOT)
+                       capture_output=True, text=True, input=stdin, cwd=ROOT, env=env)
     if r.returncode != expected:
         failures.append(f"`install.py {' '.join(args)}` exited {r.returncode}, "
                         f"expected {expected}\n{r.stdout}{r.stderr}")
