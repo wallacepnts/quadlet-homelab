@@ -193,10 +193,18 @@ def check(item):
         there = compose_tag(override, ref, image)
         if not there:
             return (unit, image, tag, "?", "compose: image not found there")
+        if there in FLOATING or there.isdigit() and not version(tag):
+            return (unit, image, tag, there, "floating tag")
+        if there in FLOATING:
+            # The app does not pin it either: following the compose says
+            # nothing, and calling that "up to date" would be a false comfort.
+            return (unit, image, tag, there, "compose: not pinned there")
         if version(there) and version(tag) and version(there) > version(tag):
             return (unit, image, tag, there, "BEHIND")
         return (unit, image, tag, there, "up to date")
-    if tag in FLOATING or "/" in tag:
+    # A bare major (`:2`) moves the same way `latest` does: the digest changes
+    # under the same name, so there is no version to compare.
+    if tag in FLOATING or "/" in tag or tag.isdigit():
         return (unit, image, tag, "—", "floating tag")
     repo = github_repo(image, override)
     if not repo:
