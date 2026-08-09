@@ -196,6 +196,39 @@ PT = {
     '  installed:': '  instalados:',
     'needing attention:': 'precisando de atenção:',
     'changed in the repository:': 'mudaram no repositório:',
+    'done:': 'feito:',
+    'directories': 'diretórios',
+    'units and files copied': 'units e arquivos copiados',
+    'secrets created': 'secrets criados',
+    'images pulled': 'imagens baixadas',
+    'volumes chowned': 'volumes com dono ajustado',
+    'services restarted': 'serviços reiniciados',
+    'services stopped': 'serviços parados',
+    'archives written': 'arquivos gravados',
+    'data deleted': 'dados apagados',
+    'secrets removed': 'secrets removidos',
+    'install,': 'instalar,',
+    'update,': 'atualizar,',
+    'reinstall,': 'reinstalar,',
+    'directory': 'diretório',
+    'unit or file copied': 'unit ou arquivo copiado',
+    'secret created': 'secret criado',
+    'image pulled': 'imagem baixada',
+    'volume chowned': 'volume com dono ajustado',
+    'service restarted': 'serviço reiniciado',
+    'service stopped': 'serviço parado',
+    'archive written': 'arquivo gravado',
+    'secret removed': 'secret removido',
+    ' install': ' instalação',
+    ' update': ' atualização',
+    ' reinstall': ' reinstalação',
+    ' remove': ' remoção',
+    ' backup': ' backup',
+    ' installs': ' instalações',
+    ' updates': ' atualizações',
+    ' reinstalls': ' reinstalações',
+    ' removes': ' remoções',
+    ' backups': ' backups',
     "failed:": "falharam:",
 }
 
@@ -1596,6 +1629,15 @@ def selftest():
     assert run_read(["false"]) is None
     assert run_read(["comando-que-nao-existe-xyz"]) is None
 
+    # the summary classifies the steps it already prints; a step that no rule
+    # matches would vanish from it silently
+    assert classificar("mkdir -p /x") == "directories"
+    assert classificar("cp a -> b") == "units and files copied"
+    assert classificar("podman pull x") == "images pulled"
+    assert classificar("systemctl --user restart x  (follows the log)") == "services restarted"
+    assert classificar("systemctl --user daemon-reload") is None
+    assert set(SINGULAR) == {r for _, r in FEITO}, "every label needs a singular"
+
     # the saved rule: command line beats it, it beats what the host has
     with tempfile.TemporaryDirectory() as d:
         h = Path(d)
@@ -1798,6 +1840,62 @@ def show_status():
     return 1 if problemas else 0
 
 
+# What each executed step counts as, matched on the description it already
+# prints. Keeping the classification here means a new step shows up in the
+# summary without a second place to update.
+FEITO = (
+    ("mkdir -p ", "directories"),
+    ("cp ", "units and files copied"),
+    ("podman secret create", "secrets created"),
+    ("ask for the value of", "secrets created"),
+    ("podman pull", "images pulled"),
+    ("podman unshare chown", "volumes chowned"),
+    ("systemctl --user restart", "services restarted"),
+    ("systemctl --user stop", "services stopped"),
+    ("tar ", "archives written"),
+    ("rm -rf ", "data deleted"),
+    ("podman secret rm", "secrets removed"),
+)
+
+
+SINGULAR = {
+    "directories": "directory",
+    "units and files copied": "unit or file copied",
+    "secrets created": "secret created",
+    "images pulled": "image pulled",
+    "volumes chowned": "volume chowned",
+    "services restarted": "service restarted",
+    "services stopped": "service stopped",
+    "archives written": "archive written",
+    "data deleted": "data deleted",
+    "secrets removed": "secret removed",
+}
+
+
+def classificar(desc):
+    for prefixo, rotulo in FEITO:
+        if desc.startswith(prefixo) or f" {prefixo}" in desc[:20]:
+            return rotulo
+    return None
+
+
+def show_summary(feitos, verbos):
+    """What actually ran, once, at the end.
+
+    With one service the step list above is the summary; with `--all` it is
+    three hundred lines, and the question left is "so what changed".
+    """
+    if not feitos:
+        return
+    say("")
+    resumo = ", ".join(f"{n} {loc(SINGULAR[r] if n == 1 else r)}"
+                       for r, n in sorted(feitos.items(), key=lambda kv: -kv[1]))
+    porverbo = ", ".join(f"{n} {loc(v if n == 1 else v + 's')}"
+                         for v, n in sorted(verbos.items()))
+    say(loc("done:") + f" {porverbo}")
+    say(f"  {resumo}")
+
+
 def show_secrets(s):
     """The credentials you log in with, in the clear.
 
@@ -1837,7 +1935,9 @@ def find_app(name):
     return (hits[0].parent.name, name) if hits else (None, None)
 
 
-def run_one(a, ap, app, access, href_local):
+def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
+    feitos = {} if feitos is None else feitos
+    verbos = {} if verbos is None else verbos
     """Runs the chosen action for ONE service. Returns the exit code."""
     if app in NOT_QUADLET and not (APPS / app).is_dir():
         show_tailscale()
@@ -1903,6 +2003,8 @@ def run_one(a, ap, app, access, href_local):
         return 1
 
     say(f"{app}: {verb}, {len(steps)} steps" + ("" if a.apply else "  (dry-run)"))
+    if a.apply:
+        verbos[verb] = verbos.get(verb, 0) + 1
     for desc, _ in steps:
         say(f"  {'->' if a.apply else '  '} {desc}")
     for w in warnings:
@@ -1931,6 +2033,9 @@ def run_one(a, ap, app, access, href_local):
     for desc, action in steps:
         try:
             action()
+            rotulo = classificar(desc)
+            if rotulo:
+                feitos[rotulo] = feitos.get(rotulo, 0) + 1
         except subprocess.CalledProcessError as e:
             say(f"\nFAILED at: {desc}\n{(e.stderr or '').strip()}", file=sys.stderr)
             return 1
@@ -2072,11 +2177,11 @@ def main():
     # has, and a fresh install falls back to the default.
     access = "local" if a.local else a.access
     href_local = a.href_local or access == "local"
-    failures = []
+    failures, feitos, verbos = [], {}, {}
     for i, app in enumerate(a.app):
         if len(a.app) > 1:
             say(("\n" if i else "") + "─" * 62)
-        rc = run_one(a, ap, app, access, href_local)
+        rc = run_one(a, ap, app, access, href_local, feitos, verbos)
         if rc:
             failures.append(app)
 
@@ -2086,7 +2191,9 @@ def main():
               + (f" — failed: {', '.join(failures)}" if failures else ""))
     # Not for the entries that only print instructions: nothing was going to be
     # done for them with --apply either, so the line would be a wrong nudge.
-    if not a.apply and any(x not in NOT_QUADLET for x in a.app):
+    if a.apply:
+        show_summary(feitos, verbos)
+    elif any(x not in NOT_QUADLET for x in a.app):
         say("\nnothing was done. repeat with --apply")
     return 1 if failures else 0
 

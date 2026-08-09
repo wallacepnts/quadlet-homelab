@@ -59,6 +59,19 @@ tiny and are what makes it restorable.
 extracting, checks the archive belongs to that service, and asks for the typed
 name to confirm.
 
+## What was done
+
+With `--apply`, the run ends with what actually ran:
+
+```
+feito: 3 instalações
+  7 diretórios, 6 units e arquivos copiados, 3 volumes com dono ajustado,
+  3 imagens baixadas, 3 serviços reiniciados, 1 secret criado
+```
+
+With one service the step list above already is the summary; with `--all` it is
+three hundred lines and the question left is what changed.
+
 ## Status
 
 ```bash

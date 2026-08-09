@@ -58,6 +58,19 @@ que torna o backup restaurável.
 extrair, confere se o arquivo é daquele serviço, e pede o nome digitado pra
 confirmar.
 
+## O que foi feito
+
+Com `--apply`, a execução termina com o que de fato rodou:
+
+```
+feito: 3 instalações
+  7 diretórios, 6 units e arquivos copiados, 3 volumes com dono ajustado,
+  3 imagens baixadas, 3 serviços reiniciados, 1 secret criado
+```
+
+Com um serviço, a lista de passos acima já é o resumo; com `--all` ela tem
+trezentas linhas e a pergunta que sobra é o que mudou.
+
 ## Estado
 
 ```bash
