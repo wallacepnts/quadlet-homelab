@@ -60,7 +60,11 @@ qh --all --update --apply      # depois de uma leva de bumps
 ```
 
 O `--update` recopia as units, puxa a imagem e reinicia. Não toca em volume,
-`.env` nem secret.
+`.env` nem secret. Serviço que já está em dia é pulado — e isso inclui o
+container em execução, não só o arquivo: o Quadlet grava as labels na
+criação, então uma unit certa no disco pode estar rodando num container com
+as anteriores. Tag móvel (`latest`) é sempre puxada. Para passar por cima,
+use `--reinstall`.
 
 ## Requisitos
 

@@ -220,6 +220,8 @@ PT = {
     'nothing installed yet.': 'nada instalado ainda.',
     '  installed:': '  instalados:',
     'needing attention:': 'precisando de atenção:',
+    'already up to date — nothing to change': 'já está em dia — nada a mudar',
+    'nothing to do for': 'nada a fazer para',
     'changed in the repository:': 'mudaram no repositório:',
     'duplicated': 'duplicada',
     'done:': 'feito:',
@@ -950,6 +952,36 @@ def installed_access(path):
     return "both"
 
 
+# Not a warning: an update that finds everything in place did its job. `run_one`
+# checks for this one by identity, so being in sync does not exit non-zero — on
+# `--all` that would be most of the list.
+EM_DIA = "already up to date — nothing to change"
+# Neither success worth a nudge nor a failure: `run_one` says so with this.
+EM_SINCRONIA = 2
+
+
+def unit_current(u, target, modo, href_local):
+    """True when the host file AND the running container both match the repository.
+
+    The file alone is not enough. Quadlet bakes the labels into the container
+    at creation, so a unit already correct on disk can be backed by a container
+    still running the previous ones — which is exactly how bazarr and jellyfin
+    kept the old dashboard groups after their files had been updated. The
+    container's creation time against the file's mtime settles it, and covers
+    every other thing the unit feeds it (image, env, ports) for free.
+    """
+    if not target.exists() or unit_bytes(u, modo, href_local) != target.read_bytes():
+        return False
+    if u.suffix != ".container":
+        return True
+    criado = (run_read(["podman", "inspect", container_name(u),
+                        "--format", "{{.Created.Unix}}"]) or "").strip()
+    if not criado.isdigit():
+        # Not running: let the restart bring it up rather than call it current.
+        return False
+    return int(criado) >= int(target.stat().st_mtime)
+
+
 def plan_update(s, access="tailnet", href_local=False):
     """Re-copies the units over the installed ones and restarts. Touches no
     data, env or secret.
@@ -966,6 +998,17 @@ def plan_update(s, access="tailnet", href_local=False):
         # limit, and `--all --update` would do that to every service you never
         # installed.
         return [], ["does not look installed — use the normal install"]
+
+    modos = {u.name: access or saved_access(s.home)
+             or installed_access(dest / u.name) or "tailnet" for u in s.units}
+    # The version-bump path: a changed tag means a new image, which is exactly
+    # the download worth watching. Read before the skip, since a moving tag is
+    # reason enough to go on even with every file already in place.
+    pulls = pull_steps(s)
+    if not pulls and not s.strays() and all(
+            unit_current(u, dest / u.name, modos[u.name], href_local) for u in s.units):
+        return [], [EM_DIA]
+
     steps.append((f"mkdir -p {dest}", lambda: dest.mkdir(parents=True, exist_ok=True)))
     # Before writing: a copy left at the old address would go on defining the
     # same unit, and copying over one of the two does not settle which wins.
@@ -974,14 +1017,11 @@ def plan_update(s, access="tailnet", href_local=False):
                       lambda velha=velha: velha.unlink()))
     for u in s.units:
         target = dest / u.name
-        modo = access or saved_access(s.home) or installed_access(target) or "tailnet"
-        mark = "" if target.exists() else "  (changed)"
+        modo = modos[u.name]
         steps.append((f"cp {u.relative_to(ROOT)} -> {target}  (--access {modo})",
                       lambda u=u, target=target, modo=modo:
                           write_unit(u, target, modo, href_local)))
-    # The version-bump path: a changed tag means a new image, which is exactly
-    # the download worth watching.
-    steps.extend(pull_steps(s))
+    steps.extend(pulls)
     steps.append(("systemctl --user daemon-reload",
                   lambda: run(["systemctl", "--user", "daemon-reload"])))
     # Every unit, not just the main one. A sidecar nothing declares as a
@@ -1876,6 +1916,21 @@ def selftest():
                 r'(?m)^Label=homepage\.' + chave + r'=(.*)$', u.read_text())}
         assert not usadas - set(tabela), (chave, sorted(usadas - set(tabela)))
 
+    # in sync means the file matches AND a container answers for it
+    with tempfile.TemporaryDirectory() as d:
+        u = Service("memos", prefix=d).units[0]
+        alvo = Path(d) / u.name
+        assert not unit_current(u, alvo, "both", False), "não instalado"
+        alvo.write_bytes(unit_bytes(u, "both", False))
+        assert not unit_current(u, alvo, "both", False), "arquivo bate, container nenhum responde"
+        alvo.write_bytes(b"[Container]\nImage=outra\n")
+        assert not unit_current(u, alvo, "both", False), "arquivo diferente"
+        # a .network has no container, so the file is the whole answer
+        rede = next(x for x in Service("tsdproxy").units if x.suffix == ".network")
+        alvo = Path(d) / rede.name
+        alvo.write_bytes(unit_bytes(rede, "both", False))
+        assert unit_current(rede, alvo, "both", False)
+
     # a unit left where the service used to live is found, and only that one
     with tempfile.TemporaryDirectory() as d:
         s = Service("tsdproxy", prefix=d)
@@ -2429,11 +2484,14 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
 
     if not steps:
         # With no steps, "done" would be a lie: the reason is in the warnings
-        # (wrong file, nothing installed, missing volume).
-        say(f"{app}: nothing to do for `{verb}`.")
+        # (wrong file, nothing installed, missing volume). Being in sync is the
+        # one case that is not a failure.
+        em_dia = EM_DIA in warnings
+        say(f"{app}: " + (loc(EM_DIA) if em_dia else loc("nothing to do for") + f" `{verb}`."))
         for w in warnings:
-            say(f"  !  {w}")
-        return 1
+            if w is not EM_DIA:
+                say(f"  !  {loc(w)}")
+        return EM_SINCRONIA if em_dia else 1
 
     say(f"{app}: {verbo(verb, 1)}, {len(steps)} " + loc("steps")
         + ("" if a.apply else "  " + loc("(dry-run)")))
@@ -2628,12 +2686,14 @@ def main():
     # has, and a fresh install falls back to the default.
     access = "local" if a.local else a.access
     href_local = a.href_local or access == "local"
-    failures, feitos, verbos = [], {}, {}
+    failures, feitos, verbos, sincronizados = [], {}, {}, 0
     for i, app in enumerate(a.app):
         if len(a.app) > 1:
             say(("\n" if i else "") + "─" * 62)
         rc = run_one(a, ap, app, access, href_local, feitos, verbos)
-        if rc:
+        if rc == EM_SINCRONIA:
+            sincronizados += 1
+        elif rc:
             failures.append(app)
 
     if len(a.app) > 1:
@@ -2644,7 +2704,9 @@ def main():
     # done for them with --apply either, so the line would be a wrong nudge.
     if a.apply:
         show_summary(feitos, verbos)
-    elif any(x not in NOT_QUADLET for x in a.app):
+    elif sincronizados < len(a.app) and any(x not in NOT_QUADLET for x in a.app):
+        # Not when everything was already in sync: --apply would do nothing, and
+        # telling someone to run it again is a nudge into a no-op.
         say("\nnothing was done. repeat with --apply")
     return 1 if failures else 0
 

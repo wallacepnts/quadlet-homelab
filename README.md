@@ -60,7 +60,11 @@ qh --all --update --apply      # after a round of bumps
 ```
 
 `--update` re-copies the units, pulls the image and restarts. It touches no
-volume, no `.env` and no secret.
+volume, no `.env` and no secret. A service already in sync is skipped — and
+that means the running container too, not just the file: Quadlet bakes the
+labels in at creation, so a unit correct on disk can still be backed by a
+container running the previous ones. A moving tag (`latest`) is always
+pulled. To go through anyway, use `--reinstall`.
 
 ## Requirements
 
