@@ -10,7 +10,6 @@ ContainerName=immich-postgres
 Network=immich-net.network
 NetworkAlias=database
 
-UserNS=keep-id
 Volume=%h/.config/containers/volumes/immich/postgres:/var/lib/postgresql/data:Z
 ShmSize=128mb
 
