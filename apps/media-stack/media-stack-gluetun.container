@@ -10,8 +10,8 @@ AddDevice=/dev/net/tun:/dev/net/tun
 PodmanArgs=--privileged
 EnvironmentFile=%h/.config/containers/env/media-stack-gluetun.env
 
-# check: ignore ports — Deluge's ports live here because it joins with
-# Network=container:gluetun; the two never run at the same time.
+# Deluge's ports, published here because Deluge reuses this container's
+# network stack and cannot publish anything itself.
 PublishPort=8112:8112
 PublishPort=6881:6881
 PublishPort=6881:6881/udp
@@ -26,6 +26,13 @@ Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=deluge
 Label=tsdproxy.port.web=443/https:8112/http
+
+Label=homepage.group=Media
+Label=homepage.name=Deluge
+Label=homepage.icon=deluge.svg
+Label=homepage.href=https://deluge.${TAILNET}.ts.net
+Label=homepage.description="Torrent client, behind the VPN"
+
 
 [Service]
 Restart=always
