@@ -95,6 +95,7 @@ PT = {
     '  number or value [': '  número ou valor [',
     '  (default)': '  (padrão)',
     'could not find the file': 'não encontrei o arquivo',
+    'installed and stopped:': 'instalados e parados:',
     "unit(s) in": "unit(s) em",
     "  --update     re-copies the units and restarts, keeping data, env and secrets":
         "  --update     recopia as units e reinicia, mantendo dados, env e secrets",
@@ -1924,7 +1925,7 @@ def show_status(apps=None):
                 "up" if c.startswith("Up") else
                 "—" if c == "—" else "down")
 
-    linhas, problemas, mudados = [], 0, 0
+    linhas, problemas, mudados, escondidas = [], 0, 0, 0
     for d in sorted(x.name for x in APPS.iterdir() if x.is_dir()):
         if apps and d not in apps:
             continue
@@ -1945,7 +1946,17 @@ def show_status(apps=None):
             if deriva:
                 mudados += 1
             detalhe.append((u.stem, e, c, deriva or "—"))
-        linhas += detalhe
+        # In a folder of independent services, an inactive unit is one you chose
+        # not to start — noise, not news. In a real stack (its own .network) an
+        # inactive piece is why the service is down, so those stay. `failed`
+        # always stays: that one nobody chose.
+        stack = any(u.suffix == ".network" for u in s.units)
+        if apps or stack:
+            linhas += detalhe
+        else:
+            visiveis = [x for x in detalhe if x[1] != "inactive"]
+            escondidas += len(detalhe) - len(visiveis)
+            linhas += visiveis
 
     if not linhas:
         say(loc("nothing installed yet."))
@@ -1966,7 +1977,8 @@ def show_status(apps=None):
     say("")
     say(loc("  installed:") + f" {sum(1 for _ in linhas)}  "
         + loc("needing attention:") + f" {problemas}  "
-        + loc("changed in the repository:") + f" {mudados}")
+        + loc("changed in the repository:") + f" {mudados}"
+        + (f"  {loc('installed and stopped:')} {escondidas}" if escondidas else ""))
     return 1 if problemas else 0
 
 
