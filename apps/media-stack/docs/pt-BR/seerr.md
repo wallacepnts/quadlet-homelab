@@ -14,6 +14,53 @@ O assistente pede primeiro o Jellyfin (`http://jellyfin:8096`) e depois o Sonarr
 
 É a peça para dar a alguém que deve pedir sem mexer no resto. É a única do stack pensada para mais de uma pessoa.
 
+## Instalação
+
+```bash
+qh media-stack-seerr
+qh media-stack-seerr --apply
+```
+
+Instalar a pasta — `qh media-stack --apply` — traz esta junto com as outras.
+
+## Arquivos
+
+```
+media-stack-seerr.container   unit
+.env.example                  ambiente, compartilhado com a pasta toda
+```
+
+Dados em `~/.config/containers/volumes/media-stack/seerr/config`.
+
+## Atualizar
+
+```bash
+qh media-stack-seerr --update --apply
+```
+
+Pinado em `v3.4.1`. Nada atualiza sozinho — a versão nova entra quando você roda
+o comando acima.
+
+## Backup
+
+```bash
+qh media-stack --backup --apply --out ~/backups
+```
+
+O backup age sobre a pasta inteira, não sobre uma unit — nomear `media-stack-seerr` aqui é
+recusado. O arquivo guarda todos os apps de `media-stack`, e restaurar é
+`qh media-stack --restore <arquivo> --apply`.
+
+## Remover
+
+```bash
+qh media-stack-seerr --remove --apply           # para, mantém os dados
+qh media-stack-seerr --remove --purge --apply   # e apaga o volume dela
+```
+
+Só o que é desta unit: o `.env` compartilhado e os outros apps da pasta ficam
+intactos.
+
 ## Comandos
 
 ```bash

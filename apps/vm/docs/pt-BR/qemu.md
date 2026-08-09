@@ -20,6 +20,53 @@ Todas precisam do `/dev/kvm` no host — sem virtualização por hardware a VM
 não sobe ou fica lentíssima. O `RAM_SIZE` é reservado por toda a vida da VM,
 então deixe o host respirar; o `DISK_SIZE` é um teto e cresce conforme o uso.
 
+## Instalação
+
+```bash
+qh vm-qemu
+qh vm-qemu --apply
+```
+
+Instalar a pasta — `qh vm --apply` — traz esta junto com as outras.
+
+## Arquivos
+
+```
+vm-qemu.container     unit
+vm-qemu.env.example   ambiente
+```
+
+Dados em `~/.config/containers/volumes/vm/qemu/storage`.
+
+## Atualizar
+
+```bash
+qh vm-qemu --update --apply
+```
+
+Pinado em `7.44`. Nada atualiza sozinho — a versão nova entra quando você roda
+o comando acima.
+
+## Backup
+
+```bash
+qh vm --backup --apply --out ~/backups
+```
+
+O backup age sobre a pasta inteira, não sobre uma unit — nomear `vm-qemu` aqui é
+recusado. O arquivo guarda todos os apps de `vm`, e restaurar é
+`qh vm --restore <arquivo> --apply`.
+
+## Remover
+
+```bash
+qh vm-qemu --remove --apply           # para, mantém os dados
+qh vm-qemu --remove --purge --apply   # e apaga o volume dela
+```
+
+Só os volumes desta VM. O `vm-qemu.env` é mantido mesmo sendo lido só por ela —
+o purge de uma unit não mexe no arquivo de ambiente.
+
 ## Comandos
 
 ```bash

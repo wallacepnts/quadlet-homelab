@@ -16,6 +16,50 @@ Then uncomment the ports and the labels in this unit and comment the matching on
 
 It runs `--privileged` because it creates a network interface and rewrites the routing table. It is the only container in this repository that does.
 
+## Install
+
+```bash
+qh media-stack-gluetun
+qh media-stack-gluetun --apply
+```
+
+Installing the folder — `qh media-stack --apply` — brings this one along with the rest.
+
+## Files
+
+```
+media-stack-gluetun.container     unit
+media-stack-gluetun.env.example   environment
+```
+
+## Update
+
+```bash
+qh media-stack-gluetun --update --apply
+```
+
+Pinned to `latest`. Nothing updates on its own — a new version is applied when
+you run the command above.
+
+## Backup
+
+```bash
+qh media-stack --backup --apply --out ~/backups
+```
+
+Backup acts on the whole folder, not on one unit — naming `media-stack-gluetun` here is
+refused. The archive holds every app of `media-stack`, and restoring it is
+`qh media-stack --restore <file> --apply`.
+
+## Remove
+
+```bash
+qh media-stack-gluetun --remove --apply
+```
+
+It owns no volume, so `--purge` has nothing extra to delete here. The shared
+`.env` and the other apps of the folder are left alone.
+
 ## Commands
 
 ```bash

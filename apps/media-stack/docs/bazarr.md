@@ -14,6 +14,53 @@ Settings -> Sonarr and Settings -> Radarr, with the address (`http://sonarr:8989
 
 It reads the library through the *arr apps, so it only sees what they know about. A file dropped into the folder by hand does not show up.
 
+## Install
+
+```bash
+qh media-stack-bazarr
+qh media-stack-bazarr --apply
+```
+
+Installing the folder — `qh media-stack --apply` — brings this one along with the rest.
+
+## Files
+
+```
+media-stack-bazarr.container   unit
+.env.example                   environment, shared with the whole folder
+```
+
+Data in `~/.config/containers/volumes/media-stack/bazarr/config`.
+
+## Update
+
+```bash
+qh media-stack-bazarr --update --apply
+```
+
+Pinned to `1.6.0`. Nothing updates on its own — a new version is applied when
+you run the command above.
+
+## Backup
+
+```bash
+qh media-stack --backup --apply --out ~/backups
+```
+
+Backup acts on the whole folder, not on one unit — naming `media-stack-bazarr` here is
+refused. The archive holds every app of `media-stack`, and restoring it is
+`qh media-stack --restore <file> --apply`.
+
+## Remove
+
+```bash
+qh media-stack-bazarr --remove --apply           # stops it, keeps the data
+qh media-stack-bazarr --remove --purge --apply   # and deletes its volume
+```
+
+Only what belongs to this unit: the shared `.env` and the other apps of the
+folder are left alone.
+
 ## Commands
 
 ```bash

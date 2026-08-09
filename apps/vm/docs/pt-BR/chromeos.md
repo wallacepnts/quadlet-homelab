@@ -20,6 +20,58 @@ Todas precisam do `/dev/kvm` no host — sem virtualização por hardware a VM
 não sobe ou fica lentíssima. O `RAM_SIZE` é reservado por toda a vida da VM,
 então deixe o host respirar; o `DISK_SIZE` é um teto e cresce conforme o uso.
 
+## Instalação
+
+```bash
+qh vm-chromeos
+qh vm-chromeos --apply
+```
+
+Instalar a pasta — `qh vm --apply` — traz esta junto com as outras.
+
+## Arquivos
+
+```
+vm-chromeos.container     unit
+vm-chromeos.env.example   ambiente
+```
+
+Dados em `~/.config/containers/volumes/vm/chromeos/storage`.
+
+A senha dela é o segredo `vm-chromeos-password`, gerado pela instalação.
+
+## Atualizar
+
+```bash
+qh vm-chromeos --update --apply
+```
+
+Pinado em `1.02`. Nada atualiza sozinho — a versão nova entra quando você roda
+o comando acima.
+
+## Backup
+
+```bash
+qh vm --backup --apply --out ~/backups
+```
+
+O backup age sobre a pasta inteira, não sobre uma unit — nomear `vm-chromeos` aqui é
+recusado. O arquivo guarda todos os apps de `vm`, e restaurar é
+`qh vm --restore <arquivo> --apply`.
+
+## Remover
+
+```bash
+qh vm-chromeos --remove --apply           # para, mantém os dados
+qh vm-chromeos --remove --purge --apply   # e apaga o volume dela
+```
+
+Só os volumes desta VM. O `vm-chromeos.env` é mantido mesmo sendo lido só por ela —
+o purge de uma unit não mexe no arquivo de ambiente.
+
+O segredo `vm-chromeos-password` sobrevive à remoção de uma unit — ele fica registrado no
+podman, não dentro do volume. `podman secret rm vm-chromeos-password` é o passo separado.
+
 ## Comandos
 
 ```bash

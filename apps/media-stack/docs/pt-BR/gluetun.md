@@ -16,6 +16,50 @@ Depois descomente as portas e as labels desta unit e comente as correspondentes 
 
 Ele roda `--privileged` porque cria uma interface de rede e reescreve a tabela de rotas. É o único container deste repositório que faz isso.
 
+## Instalação
+
+```bash
+qh media-stack-gluetun
+qh media-stack-gluetun --apply
+```
+
+Instalar a pasta — `qh media-stack --apply` — traz esta junto com as outras.
+
+## Arquivos
+
+```
+media-stack-gluetun.container     unit
+media-stack-gluetun.env.example   ambiente
+```
+
+## Atualizar
+
+```bash
+qh media-stack-gluetun --update --apply
+```
+
+Pinado em `latest`. Nada atualiza sozinho — a versão nova entra quando você roda
+o comando acima.
+
+## Backup
+
+```bash
+qh media-stack --backup --apply --out ~/backups
+```
+
+O backup age sobre a pasta inteira, não sobre uma unit — nomear `media-stack-gluetun` aqui é
+recusado. O arquivo guarda todos os apps de `media-stack`, e restaurar é
+`qh media-stack --restore <arquivo> --apply`.
+
+## Remover
+
+```bash
+qh media-stack-gluetun --remove --apply
+```
+
+Ela não tem volume, então o `--purge` não tem o que apagar a mais aqui. O `.env`
+compartilhado e os outros apps da pasta ficam intactos.
+
 ## Comandos
 
 ```bash

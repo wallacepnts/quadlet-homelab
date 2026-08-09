@@ -21,6 +21,53 @@ the VM either refuses to start or crawls. `RAM_SIZE` is reserved for the whole
 life of the VM, so leave the host enough to breathe; `DISK_SIZE` is a ceiling
 and grows on demand.
 
+## Install
+
+```bash
+qh vm-qemu
+qh vm-qemu --apply
+```
+
+Installing the folder — `qh vm --apply` — brings this one along with the rest.
+
+## Files
+
+```
+vm-qemu.container     unit
+vm-qemu.env.example   environment
+```
+
+Data in `~/.config/containers/volumes/vm/qemu/storage`.
+
+## Update
+
+```bash
+qh vm-qemu --update --apply
+```
+
+Pinned to `7.44`. Nothing updates on its own — a new version is applied when
+you run the command above.
+
+## Backup
+
+```bash
+qh vm --backup --apply --out ~/backups
+```
+
+Backup acts on the whole folder, not on one unit — naming `vm-qemu` here is
+refused. The archive holds every app of `vm`, and restoring it is
+`qh vm --restore <file> --apply`.
+
+## Remove
+
+```bash
+qh vm-qemu --remove --apply           # stops it, keeps the data
+qh vm-qemu --remove --purge --apply   # and deletes its volume
+```
+
+Only the volumes of this VM. `vm-qemu.env` is kept even though nothing else
+reads it — a per-unit purge does not touch the environment file.
+
 ## Commands
 
 ```bash
