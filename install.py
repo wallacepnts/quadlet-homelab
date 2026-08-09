@@ -488,11 +488,22 @@ class Service:
             if "${" in path:
                 out.append((path, None))     # systemd variable, not resolved here
                 continue
-            # a file if a matching .example exists for the basename
+            # A file if something in the folder says so: either a matching
+            # .example, or a [config] entry naming it as a destination. Without
+            # the second test, a config the repository ships under its real name
+            # gets `mkdir -p`'d into a DIRECTORY with the file's name, and the
+            # container then bind-mounts that directory over the file the app
+            # wanted to read — owntracks' frontend-config.js.
             base = Path(path).name
-            is_file = (self.dir / f"{base}.example").exists()
+            is_file = (self.dir / f"{base}.example").exists() or path in self.config_dests()
             out.append((path, is_file))
         return out
+
+    def config_dests(self):
+        """Expanded destinations declared in install.ini's [config]."""
+        if not self.ini.has_section("config"):
+            return set()
+        return {self._expand(v) for _, v in self.ini.items("config")}
 
     def env_files(self):
         # dict.fromkeys: no duplicates (a stack repeats the same EnvironmentFile
@@ -2001,6 +2012,13 @@ def selftest():
         # and a unit that shares a directory is still refused by the caller
         assert Service("authentik", prefix=d, only="authentik-worker").shared_volumes()
         assert Service("vm", prefix=d, only="vm-windows").shared_volumes() == []
+
+    # a [config] destination is a file, even with no .example next to it
+    ot = Service("owntracks")
+    js = next(c for c, _ in ot.volumes() if c.endswith("frontend-config.js"))
+    assert dict(ot.volumes())[js] is True, "senão o mkdir cria um diretório com o nome do arquivo"
+    assert js in ot.config_dests()
+    assert Service("memos").config_dests() == set(), "sem [config], nada"
 
     # in sync means the file matches AND a container answers for it
     with tempfile.TemporaryDirectory() as d:
