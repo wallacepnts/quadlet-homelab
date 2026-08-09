@@ -87,6 +87,8 @@ PT = {
     "nothing was done. repeat with --apply": "nada foi feito. repita com --apply",
     "done. Check with:": "pronto. Confira com:",
     "already installed —": "já instalado —",
+    'tsdproxy does NOT deregister the tailnet node — remove it in the Tailscale admin': 'o tsdproxy NÃO desregistra o nó da tailnet — isso é no admin do Tailscale',
+    'steps': 'passos',
     "unit(s) in": "unit(s) em",
     "  --update     re-copies the units and restarts, keeping data, env and secrets":
         "  --update     recopia as units e reinicia, mantendo dados, env e secrets",
@@ -134,11 +136,6 @@ PT = {
     "ask for the value of": "perguntar o valor de",
     ", or generate one": ", ou gerar um",
     "steps": "passos",
-    "install,": "instalar,",
-    "update,": "atualizar,",
-    "reinstall,": "reinstalar,",
-    "remove,": "remover,",
-    "backup,": "backup,",
     "ok —": "ok —",
     'execute (without it, only show)': 'executa (sem isso, só mostra)',
     'use another home (to test without touching the real one)': 'usa outra home (pra testar sem tocar na real)',
@@ -207,9 +204,6 @@ PT = {
     'archives written': 'arquivos gravados',
     'data deleted': 'dados apagados',
     'secrets removed': 'secrets removidos',
-    'install,': 'instalar,',
-    'update,': 'atualizar,',
-    'reinstall,': 'reinstalar,',
     'directory': 'diretório',
     'unit or file copied': 'unit ou arquivo copiado',
     'secret created': 'secret criado',
@@ -219,16 +213,6 @@ PT = {
     'service stopped': 'serviço parado',
     'archive written': 'arquivo gravado',
     'secret removed': 'secret removido',
-    ' install': ' instalação',
-    ' update': ' atualização',
-    ' reinstall': ' reinstalação',
-    ' remove': ' remoção',
-    ' backup': ' backup',
-    ' installs': ' instalações',
-    ' updates': ' atualizações',
-    ' reinstalls': ' reinstalações',
-    ' removes': ' remoções',
-    ' backups': ' backups',
     'done.': 'pronto.',
     'Check with:': 'Confira com:',
     "unit(s) in": "unit(s) em",
@@ -1636,6 +1620,18 @@ def selftest():
     assert run_read(["false"]) is None
     assert run_read(["comando-que-nao-existe-xyz"]) is None
 
+    # verbs are a closed set too: `remove` is a substring of half the sentences
+    import qhui as _v
+    b = _v.PTBR
+    try:
+        _v.PTBR = True
+        assert verbo("remove", 1) == "remoção" and verbo("remove", 3) == "remoções"
+        assert loc("remove it in the Tailscale admin") == "remove it in the Tailscale admin"
+        _v.PTBR = False
+        assert verbo("remove", 1) == "remove" and verbo("remove", 2) == "removes"
+    finally:
+        _v.PTBR = b
+
     # status words are looked up whole: `up` is a substring of `update`, and
     # the phrase translator once turned an update summary into "1 no ardate"
     import qhui as _u
@@ -1820,6 +1816,25 @@ def run_read(cmd):
         return None
 
 
+VERBOS = {
+    "install": ("instalação", "instalações"),
+    "reinstall": ("reinstalação", "reinstalações"),
+    "update": ("atualização", "atualizações"),
+    "remove": ("remoção", "remoções"),
+    "remove + DELETE DATA": ("remoção com APAGAR DADOS", "remoções com APAGAR DADOS"),
+    "backup": ("backup", "backups"),
+    "RESTORE (overwrites)": ("RESTAURAÇÃO (sobrescreve)", "RESTAURAÇÕES (sobrescrevem)"),
+}
+
+
+def verbo(v, n):
+    """A closed set too: `remove` is a substring of half the sentences here."""
+    if not qhui.PTBR:
+        return v if n == 1 else v + "s"
+    par = VERBOS.get(v)
+    return (par[0] if n == 1 else par[1]) if par else v
+
+
 ESTADOS = {
     "service": "serviço", "unit": "unit", "container": "container", "repo": "repo",
     "active": "ativo", "inactive": "inativo", "failed": "falhou",
@@ -1951,8 +1966,7 @@ def show_summary(feitos, verbos):
     say("")
     resumo = ", ".join(f"{n} {loc(SINGULAR[r] if n == 1 else r)}"
                        for r, n in sorted(feitos.items(), key=lambda kv: -kv[1]))
-    porverbo = ", ".join(f"{n} {loc(v if n == 1 else v + 's')}"
-                         for v, n in sorted(verbos.items()))
+    porverbo = ", ".join(f"{n} {verbo(v, n)}" for v, n in sorted(verbos.items()))
     say(green(loc("done:")) + f" {porverbo}")
     say(f"  {resumo}")
 
@@ -2013,7 +2027,12 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
     # say which of the two they wanted.
     if not (a.update or a.reinstall or a.remove or a.backup or a.restore):
         here = s.installed()
-        if here:
+        # Half installed does not count: a unit whose volumes were never created
+        # can only fail, and refusing the plain install would send you to
+        # --reinstall, which overwrites env and secrets to fix what is missing.
+        completo = here and all(Path(c).exists() for c, arq in s.volumes()
+                                if arq is not None)
+        if here and completo:
             # "1 of 6" is the case worth seeing: a stack where only some units
             # are on the host refuses too, and --reinstall is what completes it.
             # `1/1` instead of "1 of 1": a word interpolated between two
@@ -2066,7 +2085,8 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
             say(f"  !  {w}")
         return 1
 
-    say(f"{app}: {verb}, {len(steps)} steps" + ("" if a.apply else "  (dry-run)"))
+    say(f"{app}: {verbo(verb, 1)}, {len(steps)} " + loc("steps")
+        + ("" if a.apply else "  " + loc("(dry-run)")))
     if a.apply:
         verbos[verb] = verbos.get(verb, 0) + 1
     for desc, _ in steps:
