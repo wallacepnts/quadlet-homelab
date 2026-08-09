@@ -19,10 +19,12 @@ HealthTimeout=5s
 HealthRetries=3
 HealthStartPeriod=30s
 Notify=healthy
+
 Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=dispatcharr
 Label=tsdproxy.port.web=443/https:9191/http
+
 Label=homepage.group=Media
 Label=homepage.name=Dispatcharr
 Label=homepage.icon=dispatcharr.svg

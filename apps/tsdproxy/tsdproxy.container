@@ -19,10 +19,12 @@ Volume=%h/.config/containers/volumes/tsdproxy/config:/config:Z
 
 AddHost=host.docker.internal:host-gateway
 Secret=authkey
+
 Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=dash
 Label=tsdproxy.dash.visible=false
+
 Label=homepage.group=Infra
 Label=homepage.name=tsdproxy
 Label=homepage.icon=tailscale.svg

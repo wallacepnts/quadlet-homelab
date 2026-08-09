@@ -21,10 +21,12 @@ HealthTimeout=5s
 HealthRetries=3
 HealthStartPeriod=10s
 Notify=healthy
+
 Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=omni-tools
 Label=tsdproxy.port.web=443/https:80/http
+
 Label=homepage.group=Infra
 Label=homepage.name="Omni Tools"
 Label=homepage.icon=omni-tools.png

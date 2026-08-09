@@ -23,10 +23,12 @@ HealthTimeout=5s
 HealthRetries=3
 HealthStartPeriod=15s
 Notify=healthy
+
 Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=vaultwarden
 Label=tsdproxy.port.web=443/https:80/http
+
 Label=homepage.group=Self-Hosted
 Label=homepage.name=Vaultwarden
 Label=homepage.icon=vaultwarden.svg

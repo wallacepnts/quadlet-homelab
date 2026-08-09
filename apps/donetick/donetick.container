@@ -25,10 +25,12 @@ HealthTimeout=10s
 HealthRetries=3
 HealthStartPeriod=20s
 Notify=healthy
+
 Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=donetick
 Label=tsdproxy.port.web=443/https:2021/http
+
 Label=homepage.group=Home
 Label=homepage.name=Donetick
 Label=homepage.icon=donetick.svg

@@ -18,10 +18,12 @@ HealthTimeout=5s
 HealthRetries=3
 HealthStartPeriod=15s
 Notify=healthy
+
 Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=downtify
 Label=tsdproxy.port.web=443/https:8000/http
+
 Label=homepage.group=Media
 Label=homepage.name=Downtify
 Label=homepage.icon=downtify.png

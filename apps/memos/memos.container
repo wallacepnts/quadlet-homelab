@@ -19,10 +19,12 @@ HealthTimeout=10s
 HealthRetries=3
 HealthStartPeriod=15s
 Notify=healthy
+
 Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=memos
 Label=tsdproxy.port.web=443/https:5230/http
+
 Label=homepage.group=Self-Hosted
 Label=homepage.name=Memos
 Label=homepage.icon=memos.svg

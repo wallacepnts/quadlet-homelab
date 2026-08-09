@@ -22,11 +22,13 @@ HealthTimeout=5s
 HealthRetries=5
 HealthStartPeriod=30s
 Notify=healthy
+
 Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=any-sync
 Label=tsdproxy.port.sync=33010/tcp:33010/tcp
 Label=tsdproxy.port.quic=33020/udp:33020/udp
+
 Label=homepage.group=Self-Hosted
 Label=homepage.name=Any-Sync-Bundle
 Label=homepage.icon=anytype.svg

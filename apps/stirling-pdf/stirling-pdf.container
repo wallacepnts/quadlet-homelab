@@ -26,10 +26,12 @@ HealthTimeout=10s
 HealthRetries=3
 HealthStartPeriod=60s
 Notify=healthy
+
 Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=stirling-pdf
 Label=tsdproxy.port.web=443/https:8080/http
+
 Label=homepage.group=Self-Hosted
 Label=homepage.name=Stirling-PDF
 Label=homepage.icon=stirling-pdf.svg

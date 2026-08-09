@@ -31,10 +31,12 @@ HealthTimeout=10s
 HealthRetries=5
 HealthStartPeriod=60s
 Notify=healthy
+
 Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=authentik
 Label=tsdproxy.port.web=443/https:9000/http
+
 Label=homepage.group=Infra
 Label=homepage.name=Authentik
 Label=homepage.icon=authentik.svg

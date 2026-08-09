@@ -20,10 +20,12 @@ HealthTimeout=5s
 HealthRetries=3
 HealthStartPeriod=60s
 Notify=healthy
+
 Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=home-assistant
 Label=tsdproxy.port.web=443/https:8123/http
+
 Label=homepage.group=Self-Hosted
 Label=homepage.name="Home Assistant"
 Label=homepage.icon=home-assistant.svg

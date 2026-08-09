@@ -26,10 +26,12 @@ HealthTimeout=15s
 HealthRetries=3
 HealthStartPeriod=60s
 Notify=healthy
+
 Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=netbootxyz
 Label=tsdproxy.port.web=443/https:3000/http
+
 Label=homepage.group=Self-Hosted
 Label=homepage.name=netboot.xyz
 Label=homepage.icon=netbootxyz.svg

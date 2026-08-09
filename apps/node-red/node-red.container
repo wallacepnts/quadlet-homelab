@@ -18,10 +18,12 @@ HealthTimeout=10s
 HealthRetries=3
 HealthStartPeriod=30s
 Notify=healthy
+
 Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=node-red
 Label=tsdproxy.port.web=443/https:1880/http
+
 Label=homepage.group=Self-Hosted
 Label=homepage.name=Node-RED
 Label=homepage.icon=node-red.svg

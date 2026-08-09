@@ -19,10 +19,12 @@ HealthTimeout=5s
 HealthRetries=3
 HealthStartPeriod=40s
 Notify=healthy
+
 Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=jellyfin
 Label=tsdproxy.port.web=443/https:8096/http
+
 Label=homepage.group=Self-Hosted
 Label=homepage.name=Jellyfin
 Label=homepage.icon=jellyfin.svg

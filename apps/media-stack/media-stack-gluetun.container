@@ -21,6 +21,7 @@ HealthTimeout=10s
 HealthRetries=5
 HealthStartPeriod=30s
 Notify=healthy
+
 Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=deluge
