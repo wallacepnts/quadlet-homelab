@@ -13,7 +13,7 @@ AddCapability=SETUID
 NoNewPrivileges=true
 PidsLimit=2048
 
-Image=ghcr.io/rmyndharis/openwa:0.14.6
+Image=ghcr.io/rmyndharis/openwa:0.15.0
 ContainerName=openwa
 Network=tsdproxy-net.network
 PublishPort=2785:2785

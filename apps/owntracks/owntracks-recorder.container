@@ -5,7 +5,7 @@ Requires=owntracks-mosquitto.service
 
 [Container]
 PidsLimit=256
-Image=docker.io/owntracks/recorder:1.0.1
+Image=docker.io/owntracks/recorder:1.0.2
 ContainerName=owntracks-recorder
 Network=tsdproxy-net.network
 Network=owntracks-net.network

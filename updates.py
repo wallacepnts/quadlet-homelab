@@ -156,7 +156,7 @@ def registry_tags(image, paginas=20):
     return todas or None
 
 
-def registry_newest(image, tag):
+def registry_newest(image, tag, padrao=None):
     """The newest registry tag shaped like ours, or None.
 
     Shape matters: `1.31.1-alpine` and `1.31.1-perl` are different images with
@@ -166,9 +166,15 @@ def registry_newest(image, tag):
     tags = registry_tags(image)
     if not tags:
         return None
-    forma = "".join(r"\d+" if p.isdigit() else re.escape(p)
-                    for p in re.findall(r"\d+|\D+", tag))
-    rx = re.compile("^" + forma + "$")
+    if padrao:
+        # An explicit pattern, for a project whose numbering carries meaning the
+        # shape cannot: nginx puts stable on even minors and mainline on odd,
+        # and both publish `-alpine`.
+        rx = re.compile(padrao)
+    else:
+        forma = "".join(r"\d+" if p.isdigit() else re.escape(p)
+                        for p in re.findall(r"\d+|\D+", tag))
+        rx = re.compile("^" + forma + "$")
     def numeros(x):
         return tuple(int(n) for n in re.findall(r"\d+", x))
     candidatas = [(numeros(x), x) for x in tags if rx.match(x)]
@@ -394,11 +400,12 @@ def services():
 def check(item):
     app, unit, image, override, ref = item
     tag = image.split("@")[0].rpartition(":")[2]
-    if override == "registry":
+    if override and override.startswith("registry"):
         # For an image that does not version by GitHub release — a distro tag,
         # a project that only publishes git tags, an image versioned apart from
         # its repository — the registry is the only source that knows.
-        there = registry_newest(image, tag)
+        _, _, padrao = override.partition(":")
+        there = registry_newest(image, tag, padrao or None)
         if not there:
             return (unit, image, tag, "?", "registry: no comparable tag")
         n = lambda x: tuple(int(v) for v in re.findall(r"\d+", x))
