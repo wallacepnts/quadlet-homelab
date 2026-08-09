@@ -10,6 +10,7 @@ AddCapability=NET_BIND_SERVICE
 PidsLimit=256
 Image=lscr.io/linuxserver/sabnzbd:version-5.0.4
 ContainerName=sabnzbd
+Network=tsdproxy-net.network
 PublishPort=8081:8080
 
 Volume=%h/.config/containers/volumes/media-stack/sabnzbd/config:/config:Z
@@ -23,6 +24,7 @@ HealthRetries=3
 HealthStartPeriod=30s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=sabnzbd
 Label=tsdproxy.port.web=443/https:8080/http
 Label=homepage.group=Media

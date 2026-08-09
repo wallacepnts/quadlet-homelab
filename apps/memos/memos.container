@@ -9,6 +9,7 @@ User=1000
 PidsLimit=256
 Image=docker.io/neosmemo/memos:0.30.0
 ContainerName=memos
+Network=tsdproxy-net.network
 PublishPort=5230:5230
 Volume=%h/.config/containers/volumes/memos/data:/var/opt/memos:Z
 EnvironmentFile=%h/.config/containers/env/memos.env
@@ -19,6 +20,7 @@ HealthRetries=3
 HealthStartPeriod=15s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=memos
 Label=tsdproxy.port.web=443/https:5230/http
 Label=homepage.group=Self-Hosted

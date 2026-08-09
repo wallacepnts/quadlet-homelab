@@ -7,6 +7,7 @@ Requires=immich-redis.service immich-postgres.service
 PidsLimit=256
 Image=ghcr.io/immich-app/immich-server:v3.1.0
 ContainerName=immich
+Network=tsdproxy-net.network
 Network=immich-net.network
 PublishPort=2283:2283
 Volume=%h/.config/containers/volumes/immich/upload:/data:Z
@@ -28,6 +29,7 @@ HealthRetries=5
 HealthStartPeriod=90s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=immich
 Label=tsdproxy.port.web=443/https:2283/http
 Label=homepage.group=Self-Hosted

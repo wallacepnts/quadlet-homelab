@@ -15,6 +15,7 @@ PidsLimit=2048
 
 Image=ghcr.io/rmyndharis/openwa:0.14.6
 ContainerName=openwa
+Network=tsdproxy-net.network
 PublishPort=2785:2785
 
 Environment=HOME=/tmp
@@ -36,6 +37,7 @@ HealthRetries=3
 HealthStartPeriod=45s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=openwa
 Label=tsdproxy.port.web=443/https:2785/http
 Label=homepage.group=Self-Hosted

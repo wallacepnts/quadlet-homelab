@@ -6,6 +6,7 @@ DropCapability=ALL
 PidsLimit=256
 Image=docker.io/ollama/ollama:0.32.6
 ContainerName=ollama
+Network=tsdproxy-net.network
 Network=openwebui-net.network
 PublishPort=11434:11434
 Volume=%h/.config/containers/volumes/openwebui/ollama:/root/.ollama:Z
@@ -16,6 +17,7 @@ HealthRetries=3
 HealthStartPeriod=30s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=ollama
 Label=tsdproxy.port.web=443/https:11434/http
 Label=homepage.group=Self-Hosted

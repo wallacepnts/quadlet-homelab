@@ -12,6 +12,7 @@ PidsLimit=256
 
 Image=ghcr.io/karakeep-app/karakeep:0.33.1
 ContainerName=karakeep
+Network=tsdproxy-net.network
 Network=karakeep-net.network
 PublishPort=8092:3000
 
@@ -29,6 +30,7 @@ HealthRetries=3
 HealthStartPeriod=15s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=karakeep
 Label=tsdproxy.port.web=443/https:3000/http
 Label=homepage.group=Self-Hosted

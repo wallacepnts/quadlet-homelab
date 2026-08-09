@@ -10,6 +10,7 @@ PidsLimit=256
 User=1000
 Image=ghcr.io/9001/copyparty-ac:1.20.20
 ContainerName=copyparty
+Network=tsdproxy-net.network
 PublishPort=3923:3923
 Volume=%h/.config/containers/volumes/copyparty/cfg:/cfg:Z
 Volume=%h/.config/containers/volumes/copyparty/data:/w:Z
@@ -21,6 +22,7 @@ HealthRetries=3
 HealthStartPeriod=15s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=copyparty
 Label=tsdproxy.port.web=443/https:3923/http
 Label=homepage.group=Self-Hosted

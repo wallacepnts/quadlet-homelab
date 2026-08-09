@@ -6,6 +6,7 @@ DropCapability=ALL
 PidsLimit=256
 Image=ghcr.io/hargata/lubelogger:v1.7.0
 ContainerName=lubelogger
+Network=tsdproxy-net.network
 PublishPort=8083:8080
 Volume=%h/.config/containers/volumes/lubelogger/data:/App/data:Z
 Volume=%h/.config/containers/volumes/lubelogger/keys:/root/.aspnet/DataProtection-Keys:Z
@@ -17,6 +18,7 @@ HealthRetries=3
 HealthStartPeriod=15s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=lubelogger
 Label=tsdproxy.port.web=443/https:8080/http
 Label=homepage.group=Self-Hosted

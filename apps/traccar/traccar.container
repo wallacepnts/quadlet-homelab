@@ -12,6 +12,7 @@ User=1000
 
 Image=docker.io/traccar/traccar:6.14.5
 ContainerName=traccar
+Network=tsdproxy-net.network
 PublishPort=8099:8082
 PublishPort=5056:5055/tcp
 PublishPort=5056:5055/udp
@@ -25,6 +26,7 @@ HealthRetries=3
 HealthStartPeriod=60s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=traccar
 Label=tsdproxy.port.web=443/https:8082/http
 Label=homepage.group=Home

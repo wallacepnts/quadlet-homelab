@@ -6,6 +6,7 @@ DropCapability=ALL
 PidsLimit=256
 Image=docker.io/n8nio/n8n:2.33.7
 ContainerName=n8n
+Network=tsdproxy-net.network
 PublishPort=5678:5678
 UserNS=keep-id
 Volume=%h/.config/containers/volumes/n8n/data:/home/node/.n8n:Z
@@ -20,6 +21,7 @@ HealthRetries=3
 HealthStartPeriod=15s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=n8n
 Label=tsdproxy.port.web=443/https:5678/http
 Label=homepage.group=Self-Hosted

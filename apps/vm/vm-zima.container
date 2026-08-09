@@ -6,6 +6,7 @@ PidsLimit=512
 
 Image=docker.io/dockurr/zima:1.7.0
 ContainerName=vm-zima
+Network=tsdproxy-net.network
 PublishPort=8011:80
 PublishPort=8012:8006
 
@@ -23,6 +24,7 @@ HealthRetries=3
 HealthStartPeriod=180s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=zima
 Label=tsdproxy.port.web=443/https:80/http
 Label=homepage.group=Infra

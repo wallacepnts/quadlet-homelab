@@ -8,6 +8,7 @@ DropCapability=ALL
 PidsLimit=256
 Image=ghcr.io/nicotsx/zerobyte:v0.41.0
 ContainerName=zerobyte
+Network=tsdproxy-net.network
 PublishPort=4096:4096
 SecurityLabelDisable=true
 Volume=%h/.config/containers/volumes/zerobyte:/var/lib/zerobyte:Z
@@ -27,6 +28,7 @@ HealthRetries=3
 HealthStartPeriod=15s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=zerobyte
 Label=tsdproxy.port.web=443/https:4096/http
 Label=homepage.group=Infra

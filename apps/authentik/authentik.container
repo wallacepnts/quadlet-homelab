@@ -11,6 +11,7 @@ User=1000
 PidsLimit=256
 Image=ghcr.io/goauthentik/server:2026.5.6
 ContainerName=authentik
+Network=tsdproxy-net.network
 Network=authentik-net.network
 Exec=server
 PublishPort=9000:9000
@@ -31,6 +32,7 @@ HealthRetries=5
 HealthStartPeriod=60s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=authentik
 Label=tsdproxy.port.web=443/https:9000/http
 Label=homepage.group=Infra

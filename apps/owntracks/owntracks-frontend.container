@@ -7,6 +7,7 @@ Requires=owntracks-recorder.service
 PidsLimit=256
 Image=docker.io/owntracks/frontend:2.15.3
 ContainerName=owntracks-frontend
+Network=tsdproxy-net.network
 Network=owntracks-net.network
 PublishPort=8087:80
 Environment=SERVER_HOST=owntracks-recorder
@@ -21,6 +22,7 @@ HealthRetries=3
 HealthStartPeriod=15s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=owntracks-ui
 Label=tsdproxy.port.web=443/https:80/http
 Label=homepage.group=Self-Hosted

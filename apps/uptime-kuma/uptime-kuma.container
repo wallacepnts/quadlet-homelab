@@ -11,6 +11,7 @@ User=1000
 
 Image=docker.io/louislam/uptime-kuma:2.5.0
 ContainerName=uptime-kuma
+Network=tsdproxy-net.network
 PublishPort=3001:3001
 
 Volume=%h/.config/containers/volumes/uptime-kuma/data:/app/data:Z
@@ -21,6 +22,7 @@ HealthRetries=3
 HealthStartPeriod=30s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=uptime-kuma
 Label=tsdproxy.port.web=443/https:3001/http
 Label=homepage.group=Infra

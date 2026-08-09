@@ -8,6 +8,9 @@ DropCapability=ALL
 PidsLimit=128
 Image=docker.io/almeidapaulopt/tsdproxy:2
 ContainerName=tsdproxy
+# check: ignore structure — this .network is not tsdproxy's own, it is the one
+# every proxied service joins so tsdproxy can reach them without a host port.
+Network=tsdproxy-net.network
 
 PublishPort=8080:8080
 Volume=%t/podman/podman.sock:/var/run/docker.sock:z
@@ -17,6 +20,7 @@ Volume=%h/.config/containers/volumes/tsdproxy/config:/config:Z
 AddHost=host.docker.internal:host-gateway
 Secret=authkey
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=dash
 Label=tsdproxy.dash.visible=false
 Label=homepage.group=Infra

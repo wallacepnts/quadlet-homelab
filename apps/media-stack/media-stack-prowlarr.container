@@ -10,6 +10,7 @@ AddCapability=NET_BIND_SERVICE
 PidsLimit=256
 Image=lscr.io/linuxserver/prowlarr:2.5.2
 ContainerName=prowlarr
+Network=tsdproxy-net.network
 PublishPort=9696:9696
 Volume=%h/.config/containers/volumes/media-stack/prowlarr/config:/config:Z
 EnvironmentFile=%h/.config/containers/env/media-stack.env
@@ -21,6 +22,7 @@ HealthRetries=3
 HealthStartPeriod=30s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=prowlarr
 Label=tsdproxy.port.web=443/https:9696/http
 Label=homepage.group=Media

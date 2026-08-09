@@ -12,6 +12,7 @@ AddCapability=FOWNER
 PidsLimit=256
 Image=ghcr.io/netbootxyz/netbootxyz:0.7.6-nbxyz23
 ContainerName=netbootxyz
+Network=tsdproxy-net.network
 PublishPort=69:69/udp
 PublishPort=8088:3000
 PublishPort=8089:80
@@ -26,6 +27,7 @@ HealthRetries=3
 HealthStartPeriod=60s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=netbootxyz
 Label=tsdproxy.port.web=443/https:3000/http
 Label=homepage.group=Self-Hosted

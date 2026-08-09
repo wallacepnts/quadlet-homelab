@@ -5,6 +5,7 @@ Description=Monica (personal CRM)
 PidsLimit=256
 Image=ghcr.io/monicahq/monica-next:main
 ContainerName=monica
+Network=tsdproxy-net.network
 PublishPort=9092:80
 Volume=%h/.config/containers/volumes/monica/storage:/var/www/html/storage:Z
 Environment=DB_DATABASE=/var/www/html/storage/database.sqlite
@@ -19,6 +20,7 @@ HealthRetries=5
 HealthStartPeriod=60s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=monica
 Label=tsdproxy.port.web=443/https:80/http
 Label=homepage.group=Self-Hosted

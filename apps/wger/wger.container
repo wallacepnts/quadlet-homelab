@@ -10,6 +10,7 @@ PidsLimit=256
 
 Image=docker.io/wger/server:2.6.0
 ContainerName=wger
+Network=tsdproxy-net.network
 PublishPort=8102:8000
 Environment=USE_CELERY=False
 Environment=DJANGO_CACHE_BACKEND=django.core.cache.backends.locmem.LocMemCache
@@ -28,6 +29,7 @@ HealthRetries=5
 HealthStartPeriod=120s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=wger
 Label=tsdproxy.port.web=443/https:8000/http
 Label=homepage.group=Self-Hosted

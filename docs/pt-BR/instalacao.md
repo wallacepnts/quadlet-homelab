@@ -71,6 +71,20 @@ O `--local` é atalho pra `--access local`. As labels `tsdproxy.*` são
 comentadas em vez de apagadas, então mudar de ideia depois é outra instalação
 com outro modo.
 
+O `--access tailnet` também **fecha a porta na LAN**. O serviço entra na rede
+`tsdproxy-net` e o tsdproxy o alcança no endereço do próprio container, então
+nada dele fica aberto no host. Só a porta que o tsdproxy faz proxy é fechada:
+unit que também publica DNS, MQTT ou porta de torrent mantém essas em todo
+modo, porque dispositivos falam com elas direto.
+
+Uma atualização mantém o modo que o host já tem, então serviço instalado com
+`--local` não volta calado pra tailnet no próximo bump. Nomear o `--access`
+numa atualização muda isso:
+
+```bash
+qh memos --update --apply --access tailnet    # e fecha a porta dele na LAN
+```
+
 ## Credenciais
 
 Quando o serviço tem login, a instalação termina com ele:

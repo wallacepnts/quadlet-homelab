@@ -6,6 +6,7 @@ PidsLimit=512
 
 Image=docker.io/dockurr/windows:6.04
 ContainerName=vm-windows
+Network=tsdproxy-net.network
 PublishPort=8006:8006
 PublishPort=3389:3389/tcp
 PublishPort=3389:3389/udp
@@ -27,6 +28,7 @@ HealthRetries=3
 HealthStartPeriod=300s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=windows
 Label=tsdproxy.port.web=443/https:8006/http
 Label=homepage.group=Infra

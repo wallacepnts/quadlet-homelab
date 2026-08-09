@@ -12,6 +12,7 @@ PidsLimit=128
 
 Image=docker.io/getwud/wud:8.3.1
 ContainerName=wud
+Network=tsdproxy-net.network
 PublishPort=8085:3000
 Volume=%t/podman/podman.sock:/var/run/docker.sock:ro,z
 Volume=%h/.config/containers/volumes/wud/store:/store:Z
@@ -24,6 +25,7 @@ HealthRetries=3
 HealthStartPeriod=15s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=wud
 Label=tsdproxy.port.web=443/https:3000/http
 Label=homepage.group=Infra

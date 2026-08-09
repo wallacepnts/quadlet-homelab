@@ -9,6 +9,7 @@ NoNewPrivileges=true
 PidsLimit=256
 Image=docker.io/samapriya/mdrop@sha256:692d8f63593667d78ef67d3b79b9e68ce22c8244ace30036fac0fd24cd529ca4
 ContainerName=mdrop
+Network=tsdproxy-net.network
 PublishPort=8292:8000
 Tmpfs=/tmp/mdrop:size=1G,mode=1777
 
@@ -19,6 +20,7 @@ HealthRetries=3
 HealthStartPeriod=20s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=mdrop
 Label=tsdproxy.port.web=443/https:8000/http
 Label=homepage.group=Self-Hosted

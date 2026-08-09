@@ -12,6 +12,7 @@ AddCapability=NET_BIND_SERVICE
 PidsLimit=256
 Image=docker.io/crocodilestick/calibre-web-automated:v4.0.6
 ContainerName=calibre-web-automated
+Network=tsdproxy-net.network
 PublishPort=8105:8083
 Volume=%h/.config/containers/volumes/calibre-web-automated/config:/config:Z
 Volume=%h/.config/containers/volumes/calibre-web-automated/ingest:/cwa-book-ingest:Z
@@ -24,6 +25,7 @@ HealthRetries=3
 HealthStartPeriod=120s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=calibre-web
 Label=tsdproxy.port.web=443/https:8083/http
 Label=homepage.group=Self-Hosted

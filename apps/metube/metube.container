@@ -11,6 +11,7 @@ User=1000
 
 Image=ghcr.io/alexta69/metube:2026.08.04
 ContainerName=metube
+Network=tsdproxy-net.network
 PublishPort=8100:8081
 Volume=%h/.config/containers/volumes/metube/downloads:/downloads:Z
 HealthCmd=CMD-SHELL curl -fsS -o /dev/null http://127.0.0.1:8081/ || exit 1
@@ -20,6 +21,7 @@ HealthRetries=3
 HealthStartPeriod=20s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=metube
 Label=tsdproxy.port.web=443/https:8081/http
 Label=homepage.group=Media

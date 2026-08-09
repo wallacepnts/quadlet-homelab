@@ -5,6 +5,7 @@ Description=Jellyfin (media server)
 PidsLimit=256
 Image=docker.io/jellyfin/jellyfin:10.11.11
 ContainerName=jellyfin
+Network=tsdproxy-net.network
 PublishPort=8096:8096
 UserNS=keep-id
 
@@ -19,6 +20,7 @@ HealthRetries=3
 HealthStartPeriod=40s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=jellyfin
 Label=tsdproxy.port.web=443/https:8096/http
 Label=homepage.group=Self-Hosted

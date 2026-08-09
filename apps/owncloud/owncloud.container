@@ -12,6 +12,7 @@ AddCapability=FOWNER
 PidsLimit=256
 Image=docker.io/owncloud/server:11.0.0-20260802
 ContainerName=owncloud
+Network=tsdproxy-net.network
 PublishPort=8094:8080
 
 Volume=%h/.config/containers/volumes/owncloud/data:/mnt/data:Z
@@ -24,6 +25,7 @@ HealthRetries=5
 HealthStartPeriod=30s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=owncloud
 Label=tsdproxy.port.web=443/https:8080/http
 Label=homepage.group=Self-Hosted

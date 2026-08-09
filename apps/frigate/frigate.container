@@ -5,6 +5,7 @@ Description=Frigate (NVR with AI object detection)
 PidsLimit=256
 Image=ghcr.io/blakeblackshear/frigate:0.17.2
 ContainerName=frigate
+Network=tsdproxy-net.network
 PublishPort=8971:8971
 Volume=%h/.config/containers/volumes/frigate/config:/config:Z
 Volume=${FRIGATE_MEDIA_DIR}:/media/frigate:Z
@@ -18,6 +19,7 @@ HealthRetries=3
 HealthStartPeriod=30s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=frigate
 Label=tsdproxy.port.web=443/https:8971/https
 Label=homepage.group=Self-Hosted

@@ -119,7 +119,8 @@ def check_units(folders):
 
         conts = [a for a in files if a.suffix == ".container"]
         nets = [a for a in files if a.suffix == ".network"]
-        if nets and len(conts) == 1:
+        if nets and len(conts) == 1 and not any(
+                "structure" in exemptions(c.read_text()) for c in conts):
             warn("structure", f"apps/{folder.name} is single-container but has a .network "
                               f"(single-container uses the default network)")
 

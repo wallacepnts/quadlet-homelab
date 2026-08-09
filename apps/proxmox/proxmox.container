@@ -4,6 +4,7 @@ Description=Proxmox VE (hypervisor management, in a container)
 [Container]
 Image=docker.io/dockurr/proxmox:9.2.9
 ContainerName=proxmox
+Network=tsdproxy-net.network
 HostName=pve
 PublishPort=8010:8006
 
@@ -24,6 +25,7 @@ HealthRetries=3
 HealthStartPeriod=120s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=proxmox
 Label=tsdproxy.port.web=443/https:8006/https
 Label=homepage.group=Infra

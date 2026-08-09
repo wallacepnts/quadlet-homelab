@@ -11,6 +11,7 @@ PidsLimit=128
 
 Image=docker.io/vaultwarden/server:1.37.1-alpine
 ContainerName=vaultwarden
+Network=tsdproxy-net.network
 PublishPort=8082:80
 Volume=%h/.config/containers/volumes/vaultwarden/data:/data:Z
 EnvironmentFile=%h/.config/containers/env/vaultwarden.env
@@ -23,6 +24,7 @@ HealthRetries=3
 HealthStartPeriod=15s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=vaultwarden
 Label=tsdproxy.port.web=443/https:80/http
 Label=homepage.group=Self-Hosted

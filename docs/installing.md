@@ -72,6 +72,20 @@ qh traccar --apply --href-local       # on the tailnet, dashboard link to the LA
 commented out rather than deleted, so changing your mind later is another
 install with a different mode.
 
+`--access tailnet` also **closes the LAN port**. The service joins the
+`tsdproxy-net` network and tsdproxy reaches it at the container's own address,
+so nothing of it is open on the host. Only the port tsdproxy proxies is closed:
+a unit that also publishes DNS, MQTT or a torrent port keeps those in every
+mode, because devices reach them directly.
+
+An update keeps the mode the host already has, so a service installed with
+`--local` does not silently rejoin the tailnet on the next version bump. Naming
+`--access` on an update changes it:
+
+```bash
+qh memos --update --apply --access tailnet    # and close its LAN port
+```
+
 ## Credentials
 
 When a service has a login, the install ends with it:

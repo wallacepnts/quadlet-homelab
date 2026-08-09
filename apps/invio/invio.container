@@ -8,6 +8,7 @@ PidsLimit=256
 
 Image=ghcr.io/kittendevv/invio:v2.1.1
 ContainerName=invio
+Network=tsdproxy-net.network
 PublishPort=8106:8000
 Volume=%h/.config/containers/volumes/invio/data:/app/data:Z
 EnvironmentFile=%h/.config/containers/env/invio.env
@@ -20,6 +21,7 @@ HealthRetries=3
 HealthStartPeriod=25s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=invio
 Label=tsdproxy.port.web=443/https:8000/http
 Label=homepage.group=Self-Hosted

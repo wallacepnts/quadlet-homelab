@@ -10,6 +10,7 @@ Tmpfs=/tmp:size=64M
 
 Image=ghcr.io/gtsteffaniak/filebrowser:1.5.1-stable
 ContainerName=filebrowser
+Network=tsdproxy-net.network
 PublishPort=8014:8080
 
 UserNS=keep-id
@@ -27,6 +28,7 @@ HealthRetries=3
 HealthStartPeriod=20s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=filebrowser
 Label=tsdproxy.port.web=443/https:8080/http
 Label=homepage.group=Self-Hosted

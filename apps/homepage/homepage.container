@@ -13,6 +13,7 @@ PidsLimit=128
 Image=ghcr.io/gethomepage/homepage:latest
 AutoUpdate=registry
 ContainerName=homepage
+Network=tsdproxy-net.network
 PublishPort=3000:3000
 Volume=%t/podman/podman.sock:/var/run/docker.sock:ro,z
 Volume=%h/.config/containers/volumes/homepage/config:/app/config:ro,Z
@@ -26,6 +27,7 @@ HealthRetries=5
 HealthStartPeriod=10s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=homepage
 Label=tsdproxy.port.web=443/https:3000/http
 

@@ -7,6 +7,7 @@ Requires=owntracks-mosquitto.service
 PidsLimit=256
 Image=docker.io/owntracks/recorder:1.0.1
 ContainerName=owntracks-recorder
+Network=tsdproxy-net.network
 Network=owntracks-net.network
 PublishPort=8086:8083
 
@@ -21,6 +22,7 @@ HealthRetries=3
 HealthStartPeriod=15s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=owntracks
 Label=tsdproxy.port.web=443/https:8083/http
 Label=homepage.group=Self-Hosted

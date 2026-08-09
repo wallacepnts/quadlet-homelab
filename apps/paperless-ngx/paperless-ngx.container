@@ -10,6 +10,7 @@ DropCapability=ALL
 PidsLimit=256
 Image=ghcr.io/paperless-ngx/paperless-ngx:3.0.5
 ContainerName=paperless-ngx
+Network=tsdproxy-net.network
 Network=paperless-ngx-net.network
 PublishPort=8091:8000
 
@@ -31,6 +32,7 @@ HealthRetries=5
 HealthStartPeriod=60s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=paperless
 Label=tsdproxy.port.web=443/https:8000/http
 Label=homepage.group=Self-Hosted

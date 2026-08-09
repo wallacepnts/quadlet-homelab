@@ -6,6 +6,7 @@ PidsLimit=512
 
 Image=docker.io/dockurr/macos:3.09
 ContainerName=vm-macos
+Network=tsdproxy-net.network
 PublishPort=8008:8006
 PublishPort=5900:5900/tcp
 PublishPort=5900:5900/udp
@@ -24,6 +25,7 @@ HealthRetries=3
 HealthStartPeriod=300s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=macos
 Label=tsdproxy.port.web=443/https:8006/http
 Label=homepage.group=Infra

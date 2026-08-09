@@ -10,6 +10,7 @@ AddCapability=NET_BIND_SERVICE
 PidsLimit=256
 Image=docker.io/gitea/gitea:1.27.1
 ContainerName=gitea
+Network=tsdproxy-net.network
 PublishPort=3002:3000
 
 Volume=%h/.config/containers/volumes/gitea/data:/data:Z
@@ -24,6 +25,7 @@ HealthRetries=3
 HealthStartPeriod=20s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=gitea
 Label=tsdproxy.port.web=443/https:3000/http
 Label=homepage.group=Self-Hosted

@@ -8,6 +8,7 @@ DropCapability=ALL
 PidsLimit=256
 Image=ghcr.io/open-webui/open-webui:v0.11.0
 ContainerName=openwebui
+Network=tsdproxy-net.network
 Network=openwebui-net.network
 PublishPort=3003:8080
 
@@ -22,6 +23,7 @@ HealthRetries=5
 HealthStartPeriod=120s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=openwebui
 Label=tsdproxy.port.web=443/https:8080/http
 Label=homepage.group=Self-Hosted

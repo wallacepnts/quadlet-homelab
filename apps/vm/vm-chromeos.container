@@ -6,6 +6,7 @@ PidsLimit=512
 
 Image=docker.io/dockurr/chromeos:1.02
 ContainerName=vm-chromeos
+Network=tsdproxy-net.network
 PublishPort=8013:8006
 PublishPort=5901:5900/tcp
 PublishPort=5901:5900/udp
@@ -31,6 +32,7 @@ HealthRetries=3
 HealthStartPeriod=180s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=chromeos
 Label=tsdproxy.port.web=443/https:8006/http
 Label=homepage.group=Infra

@@ -9,6 +9,7 @@ User=1000
 PidsLimit=256
 Image=docker.io/library/ghost:6.56.0-alpine
 ContainerName=ghost
+Network=tsdproxy-net.network
 PublishPort=2368:2368
 Environment=NODE_ENV=development
 Environment=database__client=sqlite3
@@ -25,6 +26,7 @@ HealthRetries=3
 HealthStartPeriod=30s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=ghost
 Label=tsdproxy.port.web=443/https:2368/http
 Label=homepage.group=Self-Hosted

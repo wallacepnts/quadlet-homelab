@@ -761,7 +761,25 @@ def service_units(s):
     return sorted(u.stem for u in s.units if u.suffix == ".container")
 
 
-def plan_update(s):
+def installed_access(path):
+    """Which --access the unit on the host was installed with.
+
+    An update has to keep the mode it found, or a service installed with
+    --local silently rejoins the tailnet on the next version bump — and one
+    installed for the tailnet gets its port reopened on the LAN. The unit says
+    which it is: install commented the tsdproxy labels, or the proxied port.
+    """
+    if not path.exists():
+        return None
+    text = path.read_text()
+    if "# disabled by --access local:" in text:
+        return "local"
+    if "# reached over tsdproxy-net" in text:
+        return "tailnet"
+    return "both"
+
+
+def plan_update(s, access="tailnet", href_local=False):
     """Re-copies the units over the installed ones and restarts. Touches no
     data, env or secret.
 
@@ -776,9 +794,11 @@ def plan_update(s):
     steps.append((f"mkdir -p {dest}", lambda: dest.mkdir(parents=True, exist_ok=True)))
     for u in s.units:
         target = dest / u.name
-        mark = "" if target.exists() and target.read_bytes() == u.read_bytes() else "  (changed)"
-        steps.append((f"cp {u.relative_to(ROOT)} -> {target}{mark}",
-                      lambda u=u, target=target: target.write_bytes(u.read_bytes())))
+        modo = access or installed_access(target) or "tailnet"
+        mark = "" if target.exists() else "  (changed)"
+        steps.append((f"cp {u.relative_to(ROOT)} -> {target}  (--access {modo})",
+                      lambda u=u, target=target, modo=modo:
+                          write_unit(u, target, modo, href_local)))
     # The version-bump path: a changed tag means a new image, which is exactly
     # the download worth watching.
     steps.extend(pull_steps(s))
@@ -1033,6 +1053,26 @@ def write_unit(source, destination, access, href_local):
     LAN without the proxy hop, adds `--href-local`.
     """
     data = source.read_bytes()
+
+    # On the tailnet and nowhere else: the port tsdproxy proxies is commented
+    # out, so nothing of it is open on the LAN. tsdproxy still reaches the
+    # container over the shared network — measured: it dials the container's own
+    # IP on the internal port, which is why tsdproxy.autodetect is on the units.
+    # Only that one port: a unit can also publish DNS, MQTT or a torrent port,
+    # which devices reach directly and which no proxy stands in front of.
+    if access == "tailnet" and not href_local:
+        text = data.decode()
+        web = next((v.rpartition(":")[2].partition("/")[0]
+                    for c, v in directives(text)
+                    if c == "Label" and v.startswith("tsdproxy.port.web")), None)
+        if web:
+            def hide(m):
+                if m.group(0).partition("/")[0].rpartition(":")[2] != web:
+                    return m.group(0)
+                return "# reached over tsdproxy-net, not the LAN: " + m.group(0)
+            text = re.sub(r"(?m)^PublishPort=.*$", hide, text)
+            data = text.encode()
+
     if access == "local" or href_local:
         text = data.decode()
         port = {}
@@ -1489,6 +1529,30 @@ def selftest():
         assert isinstance(feito, bool) and titulo and isinstance(cmds, list)
         assert feito == (not cmds), (feito, cmds)   # pendente sempre traz o comando
 
+    # an update keeps the mode it finds, unless --access says otherwise
+    with tempfile.TemporaryDirectory() as d:
+        src, alvo = APPS / "adguardhome" / "adguardhome.container", Path(d) / "a.container"
+        assert installed_access(alvo) is None                  # nada instalado
+        for modo in ("local", "tailnet"):
+            write_unit(src, alvo, modo, False)
+            assert installed_access(alvo) == modo, modo
+        write_unit(src, alvo, "both", False)
+        assert installed_access(alvo) == "both"
+
+    # only the proxied port is hidden, and only on the tailnet: a unit that also
+    # publishes DNS, MQTT or a torrent port keeps those in every mode
+    with tempfile.TemporaryDirectory() as d:
+        src = APPS / "adguardhome" / "adguardhome.container"
+        for modo, escondida in (("tailnet", True), ("local", False), ("both", False)):
+            alvo = Path(d) / f"{modo}.container"
+            write_unit(src, alvo, modo, False)
+            linhas = [l for l in alvo.read_text().splitlines() if "PublishPort" in l]
+            web = [l for l in linhas if l.rstrip().endswith("3006:3000/tcp")]
+            dns = [l for l in linhas if "5335:53" in l]
+            assert len(web) == 1 and len(dns) == 2, (modo, linhas)
+            assert web[0].startswith("#") is escondida, (modo, web)
+            assert not any(l.startswith("#") for l in dns), (modo, dns)
+
     # the language layer: longest phrase wins, and a path is never mangled
     global PTBR
     antes = PTBR
@@ -1652,7 +1716,7 @@ def run_one(a, ap, app, access, href_local):
     for problem in preflight(s, tailnet, access == "local"):
         say(f"  !  {problem}")
     if a.update:
-        verb, (steps, warnings) = "update", plan_update(s)
+        verb, (steps, warnings) = "update", plan_update(s, access, href_local)
     elif a.backup:
         verb, (steps, warnings) = "backup", plan_backup(s, a.out)
     elif a.restore:
@@ -1666,7 +1730,7 @@ def run_one(a, ap, app, access, href_local):
         if a.ask_secrets and not interactive:
             ap.error("--ask-secrets needs a terminal and --apply")
         steps, warnings = plan_install(s, tailnet, force=a.reinstall,
-                                       interactive=interactive, access=access,
+                                       interactive=interactive, access=access or "tailnet",
                                        href_local=href_local,
                                        ask_secrets=a.ask_secrets)
 
@@ -1739,7 +1803,7 @@ def main():
     ap.add_argument("--apply", action="store_true", help=loc("execute (without it, only show)"))
     ap.add_argument("--prefix", help=loc("use another home (to test without touching the real one)"))
     ap.add_argument("--selftest", action="store_true", help=loc("test the script's parser"))
-    ap.add_argument("--access", choices=("local", "tailnet", "both"), default="tailnet",
+    ap.add_argument("--access", choices=("local", "tailnet", "both"), default=None,
                     help=loc("local: no tsdproxy, link to the LAN | tailnet: link via the "
                              "tailnet name (default) | both: on the tailnet, with a LAN link"))
     ap.add_argument("--href-local", action="store_true",
@@ -1816,6 +1880,8 @@ def main():
     if a.local and "--access" in " ".join(sys.argv):
         ap.error("--local is shorthand for --access local; to change only the "
                  "link use --href-local")
+    # None means "not stated": an update then keeps the mode the host already
+    # has, and a fresh install falls back to the default.
     access = "local" if a.local else a.access
     href_local = a.href_local or access == "local"
     failures = []

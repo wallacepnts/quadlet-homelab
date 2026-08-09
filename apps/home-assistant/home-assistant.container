@@ -8,6 +8,7 @@ DropCapability=ALL
 PidsLimit=256
 Image=ghcr.io/home-assistant/home-assistant:2026.8.1
 ContainerName=home-assistant
+Network=tsdproxy-net.network
 PublishPort=8123:8123
 
 Volume=%h/.config/containers/volumes/home-assistant/config:/config:Z
@@ -20,6 +21,7 @@ HealthRetries=3
 HealthStartPeriod=60s
 Notify=healthy
 Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=home-assistant
 Label=tsdproxy.port.web=443/https:8123/http
 Label=homepage.group=Self-Hosted
