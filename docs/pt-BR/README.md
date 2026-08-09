@@ -27,6 +27,32 @@ qh memos --apply     # fazer
 Todo serviço fica acessível em `http://<ip-do-host>:<porta>` sem mais nada
 configurado — sem domínio, sem certificado, sem mexer no roteador.
 
+## Atualizando
+
+Duas coisas diferentes, nesta ordem.
+
+**O repositório** — as units e as receitas. Rodar o mesmo comando de novo, ou
+dar pull no clone; dá no mesmo:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/bootstrap.sh | bash
+```
+
+Ele avança o clone e refaz os links. Clone que divergiu é deixado em paz e
+avisado, então edição local sua nunca é descartada.
+
+**Os serviços no host** — nada se move até você mandar. Unit mais nova no
+repositório não muda o arquivo já instalado:
+
+```bash
+qh-updates                     # quais imagens estão atrás da release do upstream
+qh memos --update --apply      # um serviço
+qh --all --update --apply      # depois de uma leva de bumps
+```
+
+O `--update` recopia as units, puxa a imagem e reinicia. Não toca em volume,
+`.env` nem secret.
+
 ## Requisitos
 
 - **Podman 5.0 ou mais novo.** É a régua de verdade: o `Notify=healthy` chegou

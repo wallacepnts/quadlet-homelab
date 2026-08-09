@@ -27,6 +27,32 @@ qh memos --apply     # do it
 Every service is reachable at `http://<host-ip>:<port>` with nothing else set
 up — no domain, no certificate, no router change.
 
+## Updating
+
+Two different things, in this order.
+
+**The repository** — the units and the recipes. Re-run the same command, or
+pull the clone; they do the same thing:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/bootstrap.sh | bash
+```
+
+It fast-forwards the clone and refreshes the links. A clone that has diverged
+is left alone and told about, so local edits are never dropped.
+
+**The services on the host** — nothing moves until you say so. A newer unit in
+the repository does not change the file already installed:
+
+```bash
+qh-updates                     # which images are behind their upstream release
+qh memos --update --apply      # one service
+qh --all --update --apply      # after a round of bumps
+```
+
+`--update` re-copies the units, pulls the image and restarts. It touches no
+volume, no `.env` and no secret.
+
 ## Requirements
 
 - **Podman 5.0 or newer.** This is the real floor: `Notify=healthy` arrived
