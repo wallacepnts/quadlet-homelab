@@ -42,10 +42,25 @@ up — no domain, no certificate, no router change.
 podman --version
 ```
 
-Distributions that ship Podman 5.x work as they are: Fedora and its atomic
-variants, openSUSE Tumbleweed and MicroOS, Arch, Debian 13, Ubuntu 25.04 and
-newer, RHEL 9.5 and its rebuilds. Debian 12 and Ubuntu LTS up to 24.04 ship
-4.x and are not enough.
+Measured, by installing podman in each and reading the version:
+
+| Distribution | Podman | |
+| --- | --- | --- |
+| Arch | 6.0.2 | works |
+| openSUSE Tumbleweed | 6.0.2 | works |
+| openSUSE MicroOS, Aeon, Kalpa | 5.8 | works |
+| Fedora 42 | 5.8.2 | works |
+| Debian 13 | 5.4.2 | works |
+| openSUSE Leap 16.0 | 5.4.2 | works |
+| Ubuntu 25.04 | 5.4.1 | works |
+| Ubuntu 24.04 LTS | 4.9.3 | **too old** |
+| openSUSE Leap 15.6 | 4.9.5 | **too old** |
+| Debian 12 | 4.3.1 | **too old** |
+
+Aeon and Kalpa are MicroOS with a desktop and share its repositories. Slowroll
+follows Tumbleweed at a slower cadence, and Leap Micro follows the Leap
+generation it is built from — neither publishes a container image, so neither
+was measured here.
 
 ## Services
 
