@@ -34,7 +34,7 @@ wget -O ~/.config/containers/env/invio.env \
 ${EDITOR:-vi} ~/.config/containers/env/invio.env
 
 # 4. Secrets — the admin password and the key that signs the session. They
-#    deliberately do not go in the .env ([rule 2](../../docs/conventions.md)).
+#    deliberately do not go in the .env.
 mkdir -p ~/.config/containers/secrets/invio
 python3 -c "import secrets;print(secrets.token_urlsafe(18),end='')" \
   > ~/.config/containers/secrets/invio/admin-pass.txt

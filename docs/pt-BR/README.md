@@ -217,7 +217,6 @@ convidado da mesma arquitetura. O `apps/vm` traz `vm-windows` pra x86_64 e
 | --- | --- |
 | [Instalando e operando](./instalacao.md) | instalar, atualizar, backup, restaurar, remover |
 | [Recuperação e migração](./recuperacao.md) | a máquina morreu, ou você está mudando de host |
-| [Convenções](./convencoes.md) | para acrescentar serviço, não para usar um — as 22 regras que o `check.py` cobra |
 | [Referência](./referencia.md) | onde cada arquivo mora, e um `.container` anotado |
 | [Auto-update](./auto-update.md) | por que quase tudo atualiza na mão |
 | [Ferramentas](./ferramentas.md) | `qh-check` e `qh-updates` |

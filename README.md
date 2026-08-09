@@ -216,7 +216,6 @@ for x86_64 and `vm-windows-arm` for ARM64.
 | --- | --- |
 | [Installing and operating](./docs/installing.md) | install, update, back up, restore, remove |
 | [Recovery and migration](./docs/recovery.md) | the machine died, or you are moving hosts |
-| [Conventions](./docs/conventions.md) | for adding a service, not for using one — the 22 rules `check.py` enforces |
 | [Reference](./docs/reference.md) | where every file lives, and an annotated `.container` |
 | [Auto-update](./docs/auto-update.md) | why almost everything updates by hand |
 | [Tools](./docs/tools.md) | `qh-check` and `qh-updates` |

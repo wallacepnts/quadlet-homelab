@@ -41,8 +41,8 @@ mkdir -p ~/.config/containers/secrets/owntracks
 MQTT_PW=$(openssl rand -base64 24 | tr -d '\n')
 
 # 3a. Mosquitto's passwd — mosquitto_passwd generates the hash, and we turn
-#     it into a secret rather than leaving it as a loose file in the volume
-#     ([rule 2](../../docs/conventions.md)). A secret mounted as a file comes
+#     it into a secret rather than leaving it as a loose file in the volume.
+#     A secret mounted as a file comes
 #     out 0444 (world-readable) by Podman's default — which works even with
 #     mosquitto running internally as the non-root "mosquitto" user.
 podman run --rm --entrypoint mosquitto_passwd \
