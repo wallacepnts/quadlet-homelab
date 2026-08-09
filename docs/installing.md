@@ -59,6 +59,25 @@ tiny and are what makes it restorable.
 extracting, checks the archive belongs to that service, and asks for the typed
 name to confirm.
 
+## The access rule
+
+Chosen once, followed by every install and update:
+
+```bash
+qh --set-access tailnet     # local | tailnet | both
+qh                          # shows the rule in force
+```
+
+| rule | tsdproxy | LAN port |
+| --- | --- | --- |
+| `local` | labels commented out | open |
+| `tailnet` | on | **closed** |
+| `both` | on | open |
+
+The bootstrap asks for it on the first run. Until it is set, `tailnet` is the
+default. Naming `--access` on a single command wins over the rule for that
+command only, and changes nothing saved.
+
 ## Access
 
 ```bash

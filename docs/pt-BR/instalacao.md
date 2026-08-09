@@ -58,6 +58,25 @@ que torna o backup restaurável.
 extrair, confere se o arquivo é daquele serviço, e pede o nome digitado pra
 confirmar.
 
+## A regra de acesso
+
+Escolhida uma vez, seguida por toda instalação e atualização:
+
+```bash
+qh --set-access tailnet     # local | tailnet | both
+qh                          # mostra a regra em vigor
+```
+
+| regra | tsdproxy | porta na LAN |
+| --- | --- | --- |
+| `local` | labels comentadas | aberta |
+| `tailnet` | ligado | **fechada** |
+| `both` | ligado | aberta |
+
+O bootstrap pergunta no primeiro uso. Enquanto não houver regra, o padrão é
+`tailnet`. Nomear o `--access` num comando vence a regra só naquele comando, e
+não muda nada do que está salvo.
+
 ## Acesso
 
 ```bash

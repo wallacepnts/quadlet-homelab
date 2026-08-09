@@ -179,6 +179,13 @@ PT = {
     'tsdproxy is running': 'tsdproxy rodando',
     '  pending: step': '  pendente: passo',
     '  nothing pending — you are on the tailnet.': '  nada pendente — você está na tailnet.',
+    'save the rule every install and update follows ': 'salva a regra que toda instalação e atualização segue ',
+    '(local, tailnet or both), and exit': '(local, tailnet ou both), e sai',
+    'rule saved:': 'regra salva:',
+    'every install and update follows it, unless --access says otherwise': 'toda instalação e atualização segue ela, a menos que o --access diga outra coisa',
+    '  rule:': '  regra:',
+    '  (default, never set)': '  (padrão, nunca definida)',
+    '  change it with:  qh --set-access <local|tailnet|both>': '  mudar com:  qh --set-access <local|tailnet|both>',
     "failed:": "falharam:",
 }
 
@@ -761,6 +768,29 @@ def service_units(s):
     return sorted(u.stem for u in s.units if u.suffix == ".container")
 
 
+ACCESS_MODES = ("local", "tailnet", "both")
+
+
+def access_file(home=None):
+    return (home or Path.home()) / ".config/quadlet-homelab/access"
+
+
+def saved_access(home=None):
+    """The mode chosen once and followed from then on, or None if never set."""
+    f = access_file(home)
+    if not f.exists():
+        return None
+    v = f.read_text().strip()
+    return v if v in ACCESS_MODES else None
+
+
+def save_access(mode, home=None):
+    f = access_file(home)
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text(mode + "\n")
+    return f
+
+
 def installed_access(path):
     """Which --access the unit on the host was installed with.
 
@@ -794,7 +824,7 @@ def plan_update(s, access="tailnet", href_local=False):
     steps.append((f"mkdir -p {dest}", lambda: dest.mkdir(parents=True, exist_ok=True)))
     for u in s.units:
         target = dest / u.name
-        modo = access or installed_access(target) or "tailnet"
+        modo = access or saved_access(s.home) or installed_access(target) or "tailnet"
         mark = "" if target.exists() else "  (changed)"
         steps.append((f"cp {u.relative_to(ROOT)} -> {target}  (--access {modo})",
                       lambda u=u, target=target, modo=modo:
@@ -1529,6 +1559,15 @@ def selftest():
         assert isinstance(feito, bool) and titulo and isinstance(cmds, list)
         assert feito == (not cmds), (feito, cmds)   # pendente sempre traz o comando
 
+    # the saved rule: command line beats it, it beats what the host has
+    with tempfile.TemporaryDirectory() as d:
+        h = Path(d)
+        assert saved_access(h) is None
+        save_access("local", h)
+        assert saved_access(h) == "local"
+        (h / ".config/quadlet-homelab/access").write_text("lixo\n")
+        assert saved_access(h) is None, "valor inválido não vale como regra"
+
     # an update keeps the mode it finds, unless --access says otherwise
     with tempfile.TemporaryDirectory() as d:
         src, alvo = APPS / "adguardhome" / "adguardhome.container", Path(d) / "a.container"
@@ -1713,7 +1752,8 @@ def run_one(a, ap, app, access, href_local):
             return 1
 
     tailnet = find_tailnet()
-    for problem in preflight(s, tailnet, access == "local"):
+    modo_efetivo = access or saved_access(s.home) or "tailnet"
+    for problem in preflight(s, tailnet, modo_efetivo == "local"):
         say(f"  !  {problem}")
     if a.update:
         verb, (steps, warnings) = "update", plan_update(s, access, href_local)
@@ -1730,7 +1770,8 @@ def run_one(a, ap, app, access, href_local):
         if a.ask_secrets and not interactive:
             ap.error("--ask-secrets needs a terminal and --apply")
         steps, warnings = plan_install(s, tailnet, force=a.reinstall,
-                                       interactive=interactive, access=access or "tailnet",
+                                       interactive=interactive,
+                                       access=access or saved_access(s.home) or "tailnet",
                                        href_local=href_local,
                                        ask_secrets=a.ask_secrets)
 
@@ -1803,7 +1844,10 @@ def main():
     ap.add_argument("--apply", action="store_true", help=loc("execute (without it, only show)"))
     ap.add_argument("--prefix", help=loc("use another home (to test without touching the real one)"))
     ap.add_argument("--selftest", action="store_true", help=loc("test the script's parser"))
-    ap.add_argument("--access", choices=("local", "tailnet", "both"), default=None,
+    ap.add_argument("--set-access", choices=ACCESS_MODES, metavar="MODE",
+                    help=loc("save the rule every install and update follows "
+                             "(local, tailnet or both), and exit"))
+    ap.add_argument("--access", choices=ACCESS_MODES, default=None,
                     help=loc("local: no tsdproxy, link to the LAN | tailnet: link via the "
                              "tailnet name (default) | both: on the tailnet, with a LAN link"))
     ap.add_argument("--href-local", action="store_true",
@@ -1837,13 +1881,23 @@ def main():
         selftest()
         return 0
 
+    if a.set_access:
+        f = save_access(a.set_access, Path(a.prefix) if a.prefix else None)
+        say(loc("rule saved:") + f" {a.set_access}  ({f})")
+        say(loc("every install and update follows it, unless --access says otherwise"))
+        return 0
+
     if a.all:
         a.app = sorted(x.name for x in APPS.iterdir() if x.is_dir())
 
     if not a.app:
         for p in sorted(x.name for x in APPS.iterdir() if x.is_dir()):
             say(" ", p)
-        say(loc("\n  to join a tailnet:  qh tailscale"))
+        regra = saved_access()
+        say(loc("\n  rule:") + f" --access {regra or 'tailnet'}"
+            + ("" if regra else loc("  (default, never set)")))
+        say(loc("  change it with:  qh --set-access <local|tailnet|both>"))
+        say(loc("  to join a tailnet:  qh tailscale"))
         return 0
 
     if a.purge and not a.remove:

@@ -48,6 +48,12 @@ pt*)
     M_C1="  qh                 # os serviços"
     M_C2="  qh memos           # o plano de um, sem fazer"
     M_C3="  qh memos --apply   # fazer"
+    M_ASK="Como os serviços devem ficar acessíveis?"
+    M_A1="  1) só na LAN         porta no host, sem tailnet"
+    M_A2="  2) só na tailnet     nome HTTPS próprio, porta fechada na LAN  [padrão]"
+    M_A3="  3) ambos             na tailnet e na LAN"
+    M_CHOICE="1, 2 ou 3 (Enter para o padrão):"
+    M_SAVED="regra salva:"
     ;;
 *)
     M_ROOT="do not run this as root — see the header of this script."
@@ -71,6 +77,12 @@ pt*)
     M_C1="  qh                 # the services"
     M_C2="  qh memos           # the plan for one, without doing it"
     M_C3="  qh memos --apply   # do it"
+    M_ASK="How should the services be reachable?"
+    M_A1="  1) LAN only          a port on the host, no tailnet"
+    M_A2="  2) tailnet only      its own HTTPS name, LAN port closed  [default]"
+    M_A3="  3) both              on the tailnet and on the LAN"
+    M_CHOICE="1, 2 or 3 (Enter for the default):"
+    M_SAVED="rule saved:"
     ;;
 esac
 
@@ -151,6 +163,28 @@ if [ "${NO_LINKS:-}" != 1 ]; then
            say "$M_NOPATH"
            say '  export PATH="$HOME/.local/bin:$PATH"' ;;
     esac
+fi
+
+# 5b. The rule every install and update follows. Asked once, changed whenever
+#     with `qh --set-access`. Read from /dev/tty because under `curl | bash`
+#     stdin is the script itself; with no terminal the default stands.
+ACCESS_FILE="$HOME/.config/quadlet-homelab/access"
+if [ ! -f "$ACCESS_FILE" ] && [ -r /dev/tty ]; then
+    printf '\n'
+    say "$M_ASK"
+    say "$M_A1"
+    say "$M_A2"
+    say "$M_A3"
+    printf '  %s ' "$M_CHOICE"
+    read -r escolha < /dev/tty || escolha=""
+    case "$escolha" in
+        1) modo=local ;;
+        3) modo=both ;;
+        *) modo=tailnet ;;
+    esac
+    mkdir -p "$(dirname "$ACCESS_FILE")"
+    printf '%s\n' "$modo" > "$ACCESS_FILE"
+    say "$M_SAVED $modo"
 fi
 
 # 6. Hand over. With an argument, show that service's plan — still a dry-run.
