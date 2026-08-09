@@ -1,78 +1,22 @@
-# Zerobyte — Podman Quadlet (rootless)
+# Zerobyte
 
-**[🇬🇧 Read in English](./README.md)**
+<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/zerobyte.png" width="64" height="64" alt="">
 
-Deploy do [Zerobyte](https://github.com/nicotsx/zerobyte) (automação de
-backup baseada em [Restic](https://restic.net)) via Podman Quadlet —
-agenda, monitora e gerencia backups encriptados de todos os outros
-serviços deste repositório, com interface web.
+**[🇺🇸 Read in English](./README.md)**
 
-## Arquitetura
+Automatiza backup (via Restic) dos dados de todos os outros serviços deste repositório.
 
-Container único. Monta como **fonte** (somente leitura) tudo que este
-repositório gerencia — `~/.config/containers/volumes/` e
-`~/.config/containers/secrets/` — e dois **destinos**: um diretório local
-neste host e um repositório remoto via rclone (qualquer um dos 40+
-provedores suportados).
-
-### Por que `SecurityLabelDisable=true`
-
-Cada serviço deste repo já usa `:Z` (rótulo SELinux **privado**, exclusivo
-daquele container) nos próprios volumes. Um container terceiro — o
-zerobyte — tentando ler através de vários diretórios com rótulos privados
-diferentes toma `Permission denied`, mesmo montando só como `:ro`. A
-saída é desligar a confinação SELinux só pro zerobyte
-(`--security-opt label=disable`). Trade-off consciente: ele só monta
-essas fontes como somente-leitura, mas fica sem a barreira extra do
-SELinux — aceitável aqui porque é exatamente o papel de uma ferramenta de
-backup (precisa enxergar tudo), e o container não é exposto fora da
-tailnet.
-
-### rclone é só destino, não fonte
-
-O Zerobyte usa rclone de dois jeitos possíveis: como **repositório**
-(onde os backups encriptados ficam guardados) ou como **volume de
-origem** (montar armazenamento na nuvem como se fosse um disco local, via
-FUSE). Só o primeiro modo é usado aqui — por isso **não** precisamos de
-`SYS_ADMIN`/`--device /dev/fuse` (exigidos só pro segundo modo).
-
-## Arquivos
-
-```
-zerobyte.container            # unit principal
-
-../any-sync-bundle/backup-webhook/
-├── any-sync-bundle-webhook.py       # recebe os webhooks pre/post-backup do Zerobyte
-└── any-sync-bundle-webhook.service  # roda o script acima (systemd comum, não Quadlet)
-```
-
-## Pré-requisitos
-
-- Podman rootless com systemd `--user` funcionando
-- `rclone` instalado no **host** (só pra rodar o assistente de config
-  interativo uma vez — o binário não entra no container)
-
-## Instalação
+## Instalar
 
 ```bash
-python3 install.py zerobyte            # dry-run: mostra o que vai fazer
-python3 install.py zerobyte --apply
+qh zerobyte            # mostra o plano
+qh zerobyte --apply
 ```
 
-Só na rede local, `--access local`; na tailnet e na LAN, `--access
-both`. Acrescentar `--href-local` faz o link do dashboard apontar pra LAN. O script cria os diretórios, grava o
-`.env`, gera os secrets, ajusta o dono dos volumes, sobe o serviço e
-imprime o endereço no fim — ver
-[Instalando e operando](../../docs/pt-BR/instalacao.md) no README
-raiz.
-
-Acessar via [tsdproxy](../tsdproxy/README.pt-BR.md) (tailnet) em
-`https://zerobyte.<your-tailnet>.ts.net`, ou local em
-`http://localhost:4096`.
+Abrir `http://<ip-do-host>:4096` ou `https://zerobyte.<your-tailnet>.ts.net`.
 
 <details>
-<summary><b>Instalação manual</b> (avançado) — os mesmos passos, um a um</summary>
-
+<summary><b>Instalação manual</b></summary>
 
 ```bash
 # 1. Baixar a unit (sem precisar clonar o repositório)
@@ -109,144 +53,63 @@ systemctl --user daemon-reload
 systemctl --user start zerobyte
 ```
 
-Acessar via [tsdproxy](../tsdproxy/README.pt-BR.md) (tailnet) em
-`https://zerobyte.<your-tailnet>.ts.net`, ou local em
-`http://localhost:4096`.
-
 </details>
 
-## Configurando os dois destinos (repositórios) pela interface
+## Arquivos
 
-Depois do primeiro acesso, criar dois repositórios na UI:
-
-- **Local**: caminho `/repositories/local` (é onde
-  `~/backups/zerobyte-local` está montado dentro do container)
-- **rclone**: escolher o remote configurado no passo 3 da instalação
-
-Cada repositório pede uma senha de encriptação Restic própria — **essa
-senha não fica em nenhum arquivo deste repositório, guardar em local
-seguro** (ex.: no próprio [vaultwarden](../vaultwarden/README.pt-BR.md) deste repo,
-ironia à parte). Sem ela, os snapshots existem mas não dá pra restaurar
-nada.
-
-## Criando os jobs de backup
-
-Fontes disponíveis dentro do container: `/sources/volumes` (espelha
-`~/.config/containers/volumes/`) e `/sources/secrets` (espelha
-`~/.config/containers/secrets/`). Um job por serviço, ou um job só
-cobrindo tudo — a granularidade é sua.
-
-**Atenção a quem tem Postgres**: o Zerobyte não tem hook de pré-backup
-(não roda comando nenhum antes de arquivar) — ele só copia o que
-encontrar no caminho configurado. Copiar os arquivos crus de um Postgres
-**enquanto o banco está rodando** é um jeito clássico de gerar um backup
-corrompido/não restaurável. Hoje isso vale pro
-[immich](../immich/README.pt-BR.md) (`/sources/volumes/immich/postgres`), o único
-serviço com Postgres neste repositório.
-
-Duas saídas, nenhuma delas automática:
-
-- **Backup a frio** — parar o stack antes do job rodar. É o que o
-  [README do immich](../immich/README.pt-BR.md#backup--recuperação) descreve, e
-  o que a seção do any-sync-bundle abaixo automatiza via webhook.
-- **Dump lógico** — um `pg_dump` num timer do systemd, excluindo
-  `immich/postgres` do job e incluindo o arquivo do dump no lugar. Os
-  dois horários não são sincronizados automaticamente: o timer tem que
-  rodar antes, e manter essa ordem é responsabilidade sua.
-
-  ```bash
-  podman exec immich-postgres pg_dump -U immich immich \
-    | gzip > ~/.config/containers/volumes/immich/pg-dump/immich.dump.gz
-  ```
-
-Este repositório não versiona um timer pronto pro dump — a rota
-recomendada aqui é o backup a frio, que não tem janela adivinhada.
-
-**any-sync-bundle** (modo AIO — badger storage do bundle + Mongo + Redis
-embutidos num único container) tem o mesmo tipo de risco, mas sem saída
-de `pg_dump`/`BGSAVE`: copiar os
-arquivos crus do Mongo/badger enquanto o processo está escrevendo é a
-receita clássica pra um backup corrompido/não restaurável. A solução aqui
-foi diferente — parar o container inteiro antes do Restic rodar e religar
-depois, em vez de gerar dumps. Um backup a frio completo, sem risco de
-corrupção (ver seção *Backup & Recuperação* do
-[README do any-sync-bundle](../any-sync-bundle/README.pt-BR.md)).
-
-Diferente do dump por timer (horário fixo, sem garantia de sincronismo
-com o job), aqui dá pra usar o
-[webhook de pre/post-backup do Zerobyte](https://zerobyte.app/docs/guides/backup-webhooks)
-de verdade: o pré-backup é bloqueante (o Restic só roda depois de um 2xx,
-e aborta se o webhook falhar/der timeout), então não existe janela
-adivinhada — o stack só some enquanto o backup está de fato rodando.
-
-```bash
-# 1. Token compartilhado (o mesmo header nos dois hooks do job)
-mkdir -p ~/.config/any-sync-bundle-webhook
-openssl rand -hex 32 | tr -d '\n' > ~/.config/any-sync-bundle-webhook/token
-chmod 600 ~/.config/any-sync-bundle-webhook/token
-
-# 2. Script + unit (stdlib só, sem dependência pra instalar; sem
-#    precisar clonar o repositório)
-mkdir -p ~/.local/bin
-wget -O ~/.local/bin/any-sync-bundle-webhook.py \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/any-sync-bundle/backup-webhook/any-sync-bundle-webhook.py
-chmod 700 ~/.local/bin/any-sync-bundle-webhook.py
-wget -P ~/.config/systemd/user/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/any-sync-bundle/backup-webhook/any-sync-bundle-webhook.service
-systemctl --user daemon-reload
-systemctl --user enable --now any-sync-bundle-webhook.service
-
-# 3. WEBHOOK_ALLOWED_ORIGINS=http://host.containers.internal:8765 já
-#    precisa estar em zerobyte.env (passo 5 da instalação acima) antes
-#    de reiniciar o zerobyte
-systemctl --user restart zerobyte
+```
+zerobyte.container
+.env.example
+install.ini
 ```
 
-Na UI do Zerobyte, seção **Advanced** do job do any-sync-bundle:
+## Atualizar
 
-| Hook | URL | Header |
-| --- | --- | --- |
-| Pre-backup | `http://host.containers.internal:8765/hooks/any-sync-bundle/pre-backup` | `X-Zerobyte-Hook-Secret: <conteúdo do token>` |
-| Post-backup | `http://host.containers.internal:8765/hooks/any-sync-bundle/post-backup` | `X-Zerobyte-Hook-Secret: <conteúdo do token>` |
+```bash
+qh zerobyte --update --apply
+```
 
-`host.containers.internal` é o hostname especial do Podman rootless (via
-pasta) pra alcançar o host de dentro do container — não precisa estar na
-mesma rede do zerobyte nem ter porta publicada.
+Fixado em `v0.41.0`. Nada atualiza sozinho — versão nova entra quando você
+roda o comando acima.
 
-**Trade-off consciente:** pra `host.containers.internal` alcançar o
-serviço, ele precisa escutar em `0.0.0.0` (não dá pra restringir a uma
-interface só — testado na prática, esse endereço especial do Podman não
-existe como IP real do lado do host, só via a NAT da rede). Isso deixa a
-porta 8765 tecnicamente alcançável pela LAN/tailnet também, não só pelo
-container — a única barreira é o token no header (`hmac.compare_digest`,
-comparação em tempo constante). Sem esse token, qualquer um que alcance a
-porta consegue parar o container. Se quiser uma camada a mais, restringir
-a porta 8765 no firewall do host pra só aceitar da sub-rede do Podman.
+## Backup
 
-O pós-backup dispara o `systemctl --user start` em background e responde
-na hora — o container usa `Notify=healthy` (o `start` só retorna depois
-do healthcheck passar), o que pode passar dos 60s padrão do
-`WEBHOOK_TIMEOUT`; como falha no pós-backup só vira warning no Zerobyte
-(não desfaz o backup que já rodou), preferível responder logo a arriscar
-estourar o timeout com o container ainda parado.
+```bash
+qh zerobyte --backup --apply --out ~/backups
+```
 
-## Auto-update
+Ele para o serviço, empacota os dados, o `.env` e os secrets, e sobe de novo.
+A frio de propósito: copiar banco vivo dá um arquivo que só falha na hora de
+restaurar.
 
-Sem `AutoUpdate=` — tag explícita (`v0.41.0`), bump manual (regra 9 do
-convenções). Imagem Alpine com `wget`, `HealthCmd` real configurado —
-daria pra habilitar auto-update de verdade se quiser, mas pra uma
-ferramenta que segura a senha de acesso a todos os seus backups, prefiro
-revisão manual.
+Pra restaurar, por cima dos dados atuais:
 
-## Comandos úteis
+```bash
+qh zerobyte --restore ~/backups/zerobyte-20260809-1200.tar.gz --apply
+```
+
+Ele pede que você digite `zerobyte` pra confirmar, porque os dados atuais são
+apagados antes de o arquivo ser extraído.
+
+## Remover
+
+```bash
+qh zerobyte --remove --apply           # para e tira, mantendo os dados
+qh zerobyte --remove --purge --apply   # e apaga volumes, secrets e .env
+```
+
+O `--purge` também pede o nome digitado. O nó da tailnet não é desregistrado
+por isso — isso é no admin do Tailscale.
+
+## Comandos
 
 ```bash
 systemctl --user status zerobyte
 podman logs -f zerobyte
-podman exec zerobyte sh -c "ls /sources/volumes"   # conferir o que está visível
 ```
 
 ## Créditos
 
-Deploy Quadlet baseado no [Zerobyte](https://github.com/nicotsx/zerobyte),
-de [nicotsx](https://github.com/nicotsx). Licença original: AGPL-3.0.
+[nicotsx/zerobyte](https://github.com/nicotsx/zerobyte) — AGPL-3.0.
+
+[Documentação oficial](https://zerobyte.app)

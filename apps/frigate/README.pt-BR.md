@@ -1,83 +1,22 @@
-# Frigate — Podman Quadlet (rootless)
+# Frigate
 
-**[🇬🇧 Read in English](./README.md)**
+<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/frigate.svg" width="64" height="64" alt="">
 
-Deploy do [Frigate](https://frigate.video) (NVR com detecção de objetos
-por IA em tempo real, a partir de câmeras IP) via Podman Quadlet, usando
-a imagem oficial `ghcr.io/blakeblackshear/frigate`.
+**[🇺🇸 Read in English](./README.md)**
 
-**Implantado sem câmera nenhuma configurada ainda** — sobe e fica
-saudável, mas não tem o que gravar/detectar até você adicionar pelo
-menos uma câmera no `config.yml` (ver seção própria abaixo).
+NVR com detecção de objetos por IA — CPU-only por padrão, sem câmera configurada ainda.
 
-## Arquitetura
-
-Container único. **CPU-only por decisão** — sem Coral nem GPU passados
-pro container por padrão (o próprio projeto desaconselha detecção só
-em CPU pra uso real, mas serve pra explorar/testar; ver "Ativar
-aceleração de hardware" abaixo pra ligar depois). Por isso **sem
-`--privileged`** — só é necessário quando algum dispositivo
-(Coral/GPU) é passado pro container, nenhum caso aqui.
-
-**Porta autenticada (`8971`) fala HTTPS internamente, não HTTP** —
-testado na prática: a própria imagem embute um nginx com certificado
-self-signed nessa porta; bater nela com HTTP puro devolve "400 The
-plain HTTP request was sent to HTTPS port". Por isso o `HealthCmd`
-usa `curl -k https://` (não `http://`) e o label do tsdproxy é
-`.../https` no lado interno, diferente do padrão `.../http` do resto
-deste repositório.
-
-**Caminho de gravação decidido por você**, via variável do
-`environment.d` ([regra 19](../../docs/pt-BR/convencoes.md)) — não um path fixo tipo
-`%h/.config/containers/volumes/frigate/media`, porque gravação de
-câmera cresce rápido e não necessariamente deve morar no mesmo disco
-dos outros serviços. Ver passo 3 da instalação.
-
-`/tmp/cache` (segmentos temporários de gravação) é `tmpfs`, não bind
-mount — evita desgaste de disco com escrita constante.
-
-## Arquivos
-
-```
-frigate.container       # unit principal
-```
-
-Sem `config.yml` versionado neste repositório. **Atenção**: sem nenhum
-config presente, a própria imagem **gera sozinha** um
-`config/config.yaml` (extensão `.yaml`, não `.yml`) no primeiro start,
-com uma câmera de exemplo (`name_of_your_camera`, apontando pra um IP
-fake `10.0.10.10`) — testado na prática, essa câmera fica tentando
-conectar e falhando em loop nos logs (`Connection timed out` a cada
-~10-20s) até ser removida/desabilitada. O passo 6 abaixo já troca esse
-arquivo por um limpo (`cameras: {}`) antes de configurar a primeira
-câmera de verdade.
-
-## Pré-requisitos
-
-- Podman rootless com systemd `--user` funcionando
-
-## Instalação
+## Instalar
 
 ```bash
-python3 install.py frigate            # dry-run: mostra o que vai fazer
-python3 install.py frigate --apply
+qh frigate            # mostra o plano
+qh frigate --apply
 ```
 
-Só na rede local, `--access local`; na tailnet e na LAN, `--access
-both`. Acrescentar `--href-local` faz o link do dashboard apontar pra LAN. O script cria os diretórios, grava o
-`.env`, gera os secrets, ajusta o dono dos volumes, sobe o serviço e
-imprime o endereço no fim — ver
-[Instalando e operando](../../docs/pt-BR/instalacao.md) no README
-raiz.
-
-Acessar `https://<ip-do-host>:8971` (aceitar o certificado self-signed
-no navegador) ou via [tsdproxy](../tsdproxy/README.pt-BR.md) em
-`https://frigate.<your-tailnet>.ts.net` (aí sim com certificado válido,
-o tsdproxy troca o self-signed pelo dele na borda da tailnet).
+Abrir `http://<ip-do-host>:8971` ou `https://frigate.<your-tailnet>.ts.net`.
 
 <details>
-<summary><b>Instalação manual</b> (avançado) — os mesmos passos, um a um</summary>
-
+<summary><b>Instalação manual</b></summary>
 
 ```bash
 # 1. Baixar as units (sem precisar clonar o repositório)
@@ -126,178 +65,61 @@ EOF
 systemctl --user restart frigate
 ```
 
-Acessar `https://<ip-do-host>:8971` (aceitar o certificado self-signed
-no navegador) ou via [tsdproxy](../tsdproxy/README.pt-BR.md) em
-`https://frigate.<your-tailnet>.ts.net` (aí sim com certificado válido,
-o tsdproxy troca o self-signed pelo dele na borda da tailnet).
-
 </details>
 
-## Login (usuário gerado automaticamente)
+## Arquivos
 
-**Sem conta padrão fixa** — a imagem cria um usuário `admin` com senha
-aleatória no primeiro start, só visível no log (já capturado no passo 6
-da instalação, se seguiu na ordem):
+```
+frigate.container
+```
+
+## Atualizar
 
 ```bash
-podman logs frigate 2>&1 | grep -A3 "Created a default user"
+qh frigate --update --apply
 ```
 
-Trocar a senha depois de logar em Configurações → Usuários.
+Fixado em `0.17.2`. Nada atualiza sozinho — versão nova entra quando você
+roda o comando acima.
 
-**Perdeu a senha** (reiniciou antes de capturar, ou já não aparece mais
-no log — só sai uma vez, na primeira vez que o banco de usuários está
-vazio)? Apagar o usuário do banco força a imagem a recriar um novo com
-senha nova no próximo start, mesmo mecanismo do primeiro boot — testado
-na prática:
+## Backup
 
 ```bash
-systemctl --user stop frigate
-podman unshare sqlite3 ~/.config/containers/volumes/frigate/config/frigate.db \
-  "DELETE FROM user WHERE username='admin';"
-systemctl --user start frigate
-until podman inspect frigate --format '{{.State.Health.Status}}' 2>/dev/null | grep -qE 'healthy|unhealthy'; do sleep 3; done
-podman logs frigate 2>&1 | grep -A3 "Created a default user"
+qh frigate --backup --apply --out ~/backups
 ```
 
-## Adicionar a primeira câmera
+Ele para o serviço, empacota os dados, o `.env` e os secrets, e sobe de novo.
+A frio de propósito: copiar banco vivo dá um arquivo que só falha na hora de
+restaurar.
 
-Editar `~/.config/containers/volumes/frigate/config/config.yaml`
-(criado no passo 6 da instalação — reparar na extensão `.yaml`, não
-`.yml`):
-
-```yaml
-mqtt:
-  enabled: False
-
-cameras:
-  frente:
-    ffmpeg:
-      inputs:
-        - path: rtsp://usuario:senha@ip-da-camera:554/stream
-          roles:
-            - detect
-            - record
-    detect:
-      width: 1280
-      height: 720
-    record:
-      enabled: True
-```
+Pra restaurar, por cima dos dados atuais:
 
 ```bash
-systemctl --user restart frigate
+qh frigate --restore ~/backups/frigate-20260809-1200.tar.gz --apply
 ```
 
-**Recalcular `--shm-size`** — o `128m` padrão deste deploy cobre só o
-overhead do Frigate sem câmera nenhuma. Fórmula oficial por câmera
-(resolução de detecção, não a de gravação):
-`(largura × altura × 1.5 × 20 + 270480) / 1048576` MB, mais uns 40MB de
-folga pra logs. Uma câmera 1280×720, por exemplo, fica em ~67MB — ajustar
-`PodmanArgs=--shm-size=` no `.container` somando isso ao que já tiver,
-depois `systemctl --user daemon-reload && systemctl --user restart
-frigate`.
+Ele pede que você digite `frigate` pra confirmar, porque os dados atuais são
+apagados antes de o arquivo ser extraído.
 
-**Portas de restream** (`8554` RTSP, `8555` WebRTC) não vêm publicadas
-por padrão — só relevantes se for usar o recurso de restream do
-go2rtc embutido (assistir a câmera direto sem passar pela UI). Adicionar
-`PublishPort=8554:8554` / `PublishPort=8555:8555/tcp` /
-`PublishPort=8555:8555/udp` no `.container` se precisar.
-
-## Ativar aceleração de hardware
-
-### Coral USB
-
-```ini
-AddDevice=/dev/bus/usb:/dev/bus/usb
-```
-
-```yaml
-detectors:
-  coral:
-    type: edgetpu
-    device: usb
-```
-
-### Coral PCIe/M.2
-
-```ini
-AddDevice=/dev/apex_0:/dev/apex_0
-```
-
-```yaml
-detectors:
-  coral:
-    type: edgetpu
-    device: pci
-```
-
-### Intel GPU (OpenVINO, `/dev/dri`)
-
-```ini
-AddDevice=/dev/dri/renderD128:/dev/dri/renderD128
-```
-
-```yaml
-detectors:
-  ov:
-    type: openvino
-    device: GPU
-```
-
-### NVIDIA GPU (TensorRT) — mesma GPU do Ollama deste host
-
-Precisa do **NVIDIA Container Toolkit** configurado pro Podman (gera a
-spec CDI) — mesmo pré-requisito e mesmos passos já documentados no
-[README do Ollama](../openwebui/README.pt-BR.md#ativar-gpu-nvidia). Depois:
-
-1. Trocar `Image=` pra `ghcr.io/blakeblackshear/frigate:0.17.2-tensorrt`
-   (tag própria pra NVIDIA, diferente da imagem padrão usada aqui).
-2. Adicionar `PodmanArgs=--gpus=all` (junto do `--shm-size=` já
-   existente).
-3. No `config.yml`:
-   ```yaml
-   detectors:
-     tensorrt:
-       type: tensorrt
-       device: 0
-   ```
+## Remover
 
 ```bash
-systemctl --user daemon-reload
-systemctl --user restart frigate
+qh frigate --remove --apply           # para e tira, mantendo os dados
+qh frigate --remove --purge --apply   # e apaga volumes, secrets e .env
 ```
 
-## Auto-update
+O `--purge` também pede o nome digitado. O nó da tailnet não é desregistrado
+por isso — isso é no admin do Tailscale.
 
-Sem `AutoUpdate=` — tag explícita (`0.17.2`), bump manual (regra 9 do
-convenções). A imagem tem `curl`/healthcheck real — daria pra habilitar
-`AutoUpdate=registry` com rollback funcional, mas gravações/config de
-câmera são dado real do usuário, revisão manual antes de atualizar.
-
-## Backup & Recuperação
-
-```bash
-systemctl --user stop frigate
-tar -czf frigate-config-backup-$(date +%Y%m%d-%H%M%S).tar.gz \
-  -C ~/.config/containers/volumes frigate
-systemctl --user start frigate
-```
-
-Só o `config/` — gravações (`$FRIGATE_MEDIA_DIR`) costumam ser grandes
-demais pra backup de rotina; fazer separado se precisar, ou aceitar que
-são descartáveis (o valor real geralmente é a detecção em tempo real,
-não o arquivo histórico).
-
-## Comandos úteis
+## Comandos
 
 ```bash
 systemctl --user status frigate
 podman logs -f frigate
-podman exec frigate curl -fsSk https://127.0.0.1:8971/
 ```
 
 ## Créditos
 
-Deploy Quadlet baseado no
-[Frigate](https://github.com/blakeblackshear/frigate) (MIT).
+[blakeblackshear/frigate](https://github.com/blakeblackshear/frigate) — MIT
+
+[Documentação oficial](https://frigate.video)

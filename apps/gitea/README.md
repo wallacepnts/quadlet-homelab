@@ -1,61 +1,22 @@
-# Gitea — Podman Quadlet (rootless)
+# Gitea
+
+<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/gitea.svg" width="64" height="64" alt="">
 
 **[🇧🇷 Leia em português](./README.pt-BR.md)**
 
-A [Gitea](https://gitea.com) (self-hosted Git forge) deploy via
-Podman Quadlet, baseado no [guia oficial de Docker](https://docs.gitea.com/installation/install-with-docker).
+A light but complete Git server — repositories, issues, pull requests and CI in a single interface.
 
-## This deploy's decisions
-
-- **Embedded SQLite**, not an external Postgres. Unlike
-  [immich](../immich/), this is personal/homelab use — SQLite is what Gitea
-  itself recommends for that scenario; Postgres only earns the extra
-  complexity (another container, more secrets) in production with several
-  concurrent users.
-- **No Git over SSH** — HTTP/HTTPS only. The container's port `22` (Gitea's
-  internal SSH) is not published; it simplifies the setup and avoids a
-  long-term
-  gerenciar mais uma porta exposta. Clone/push funcionam normalmente via
-  HTTPS with a username and password, or a token.
-
-## Architecture
-
-A single container, Alpine + s6-overlay. A single volume (`/data`) holds the
-SQLite database, the repositories, the configuration (`app.ini`) and the
-attachments.
-
-## Files
-
-```
-gitea.container   # main unit
-```
-
-## Prerequisites
-
-- Rootless Podman with systemd `--user` working
-
-## Installation
+## Install
 
 ```bash
-python3 install.py gitea            # dry-run: shows what it will do
-python3 install.py gitea --apply
+qh gitea            # shows the plan
+qh gitea --apply
 ```
 
-For the local network only, `--access local`; on the tailnet and the LAN,
-`--access both`. Adding `--href-local` points the dashboard link at the LAN.
-The script creates the directories, writes the `.env`, generates the secrets,
-fixes the volumes' ownership, starts the service and prints the address at the
-end — see [Installing and operating](../../docs/installing.md).
-
-Reach it through [tsdproxy](../tsdproxy/) (tailnet) at
-`https://gitea.<your-tailnet>.ts.net`, or locally at
-`http://localhost:3002` — the root redirects to the installation wizard the
-first time (like [owncloud](../owncloud/)); with `DB_TYPE`/`DOMAIN`/`ROOT_URL`
-already prefilled by the env, all that is left is creating the admin account.
+Open `http://<host-ip>:3002` or `https://gitea.<your-tailnet>.ts.net`.
 
 <details>
-<summary><b>Manual installation</b> (advanced) — the same steps, one at a time</summary>
-
+<summary><b>Manual install</b></summary>
 
 ```bash
 # 1. Download the unit (no need to clone the repository)
@@ -92,74 +53,63 @@ systemctl --user daemon-reload
 systemctl --user start gitea
 ```
 
-Reach it through [tsdproxy](../tsdproxy/) (tailnet) at
-`https://gitea.<your-tailnet>.ts.net`, or locally at
-`http://localhost:3002` — the root redirects to the installation wizard the
-first time (like [owncloud](../owncloud/)); with `DB_TYPE`/`DOMAIN`/`ROOT_URL`
-already prefilled by the env, all that is left is creating the admin account.
-
-**Local access only (no tsdproxy)?** Change `GITEA__server__DOMAIN` and
-`GITEA__server__ROOT_URL` in `gitea.env` to
-`localhost`/`http://localhost:3002/` before the first start — just like
-[karakeep](../karakeep/)'s `NEXTAUTH_URL`, `ROOT_URL` gets written into
-`app.ini` after the installation; changing it later means editing that file
-directly (see
-`~/.config/containers/volumes/gitea/data/gitea/conf/app.ini`).
-
 </details>
 
-## Enabling Git over SSH later, if you change your mind
-
-Add to the `.container`:
-
-```ini
-PublishPort=2222:22
-```
-
-E no `gitea.env`:
+## Files
 
 ```
-GITEA__server__SSH_DOMAIN=gitea.<your-tailnet>.ts.net
-GITEA__server__SSH_PORT=2222
+gitea.container
+.env.example
+install.ini
 ```
 
-`2222`, not `22` — the host's standard port stays free for a real sshd, if
-one is ever enabled (the same caution as the rest of this repo).
-
-## Auto-update
-
-No `AutoUpdate=` — an explicit tag (`1.27.1`), bumped by hand
-(rule 9 of the [conventions](../../docs/conventions.md)). An Alpine image with `wget` and a real `HealthCmd` configured — genuine
-auto-update could be enabled, but Gitea releases sometimes require a database
-migration on the way up (the same kind of caution as
-[immich](../immich/)); review by hand before changing version.
-
-## Backup & recovery
-
-A single volume, but with SQLite live — stopping the container first avoids
-copying the database mid-write (the same reasoning as the incident documented
-in [any-sync-bundle's README](../any-sync-bundle/README.md)):
+## Update
 
 ```bash
-systemctl --user stop gitea
-tar -czf gitea-backup-$(date +%Y%m%d-%H%M%S).tar.gz \
-  -C ~/.config/containers/volumes gitea
-systemctl --user start gitea
+qh gitea --update --apply
 ```
 
-The secrets (`~/.config/containers/secrets/gitea/`) need a separate backup
-too — without the original `SECRET_KEY`/`INTERNAL_TOKEN`, user passwords and
-access tokens stored in the restored database cannot be decrypted.
+Pinned to `1.27.1`. Nothing updates on its own — a new version is applied
+when you run the command above.
 
-## Useful commands
+## Backup
+
+```bash
+qh gitea --backup --apply --out ~/backups
+```
+
+It stops the service, packs the data, the `.env` and the secrets, and starts
+it again. Cold on purpose: copying a live database gives an archive that only
+fails when you restore it.
+
+To restore, over the current data:
+
+```bash
+qh gitea --restore ~/backups/gitea-20260809-1200.tar.gz --apply
+```
+
+It asks you to type `gitea` to confirm, because the current data is deleted
+before the archive is unpacked.
+
+## Remove
+
+```bash
+qh gitea --remove --apply           # stops it, keeps the data
+qh gitea --remove --purge --apply   # and deletes volumes, secrets and .env
+```
+
+`--purge` asks for the typed name too. The tailnet node is not deregistered by
+this — that is done in the Tailscale admin.
+
+## Commands
 
 ```bash
 systemctl --user status gitea
 podman logs -f gitea
-podman exec gitea gitea admin user list
 ```
 
 ## Credits
 
-Quadlet deploy based on [Gitea](https://github.com/go-gitea/gitea).
-Original licence: MIT.
+[go-gitea/gitea](https://github.com/go-gitea/gitea) — MIT
+
+[Official documentation](https://gitea.com)

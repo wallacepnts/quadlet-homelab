@@ -1,62 +1,22 @@
-# Invio — Podman Quadlet (rootless)
+# Invio
 
-**[🇬🇧 Read in English](./README.md)**
+<img src="https://cdn.simpleicons.org/invoiceninja" width="64" height="64" alt="">
 
-Deploy do [Invio](https://github.com/kittendevv/Invio) (emissão e controle
-de faturas) via Podman Quadlet, usando a imagem oficial
-`ghcr.io/kittendevv/invio`.
+**[🇺🇸 Read in English](./README.md)**
 
-*"Self-hosted invoicing without the bloat"* — cliente, item, fatura, PDF.
-Sem contabilidade, sem CRM, sem assinatura mensal.
+Emissão e controle de faturas self-hosted, com SQLite e sem depender de serviço externo.
 
-## Arquitetura
-
-Container único (SvelteKit + supervisord), **SQLite** em `/app/data`
-([regra 22](../../docs/pt-BR/convencoes.md)).
-
-Hardening medido: `DropCapability=ALL` passa. **`ReadOnly` foi recusado** —
-o supervisord da imagem grava `/app/supervisord.log`. Tentei contornar de
-duas formas e nenhuma serve: `Tmpfs=/app` mascara a aplicação inteira, e
-bind de um arquivo que não existe faz o Podman criar um diretório no
-lugar. Fica sem `ReadOnly` mesmo.
-
-## O `ORIGIN` não é decoração
-
-O SvelteKit valida a origem em todo `POST` como proteção de CSRF. Se o
-`ORIGIN` não for **exatamente** a URL pela qual você acessa, o app abre
-normalmente e depois recusa qualquer formulário — inclusive o login, sem
-mensagem que ajude. Trocar `<your-tailnet>` no `.env` antes de subir.
-
-## Arquivos
-
-```
-invio.container   # unit principal
-.env.example      # usuário admin, ORIGIN e caminho do banco
-install.ini       # receitas dos secrets
-```
-
-## Instalação
+## Instalar
 
 ```bash
-python3 install.py invio            # dry-run: mostra o que vai fazer
-python3 install.py invio --apply
+qh invio            # mostra o plano
+qh invio --apply
 ```
 
-Só na rede local, `--access local`; na tailnet e na LAN, `--access
-both`. Acrescentar `--href-local` faz o link do dashboard apontar pra LAN. O script cria os diretórios, grava o
-`.env`, gera os secrets, ajusta o dono dos volumes, sobe o serviço e
-imprime o endereço no fim — ver
-[Instalando e operando](../../docs/pt-BR/instalacao.md) no README
-raiz.
-
-Acessar `http://<ip-do-host>:8106` (ou via [tsdproxy](../tsdproxy/README.pt-BR.md) em
-`https://invio.<your-tailnet>.ts.net`). O usuário é o `ADMIN_USER` do
-`.env`; a senha está em
-`~/.config/containers/secrets/invio/admin-pass.txt`.
+Abrir `http://<ip-do-host>:8106` ou `https://invio.<your-tailnet>.ts.net`.
 
 <details>
-<summary><b>Instalação manual</b> (avançado) — os mesmos passos, um a um</summary>
-
+<summary><b>Instalação manual</b></summary>
 
 ```bash
 # 1. Baixar a unit (sem precisar clonar o repositório)
@@ -89,44 +49,67 @@ systemctl --user daemon-reload
 systemctl --user start invio
 ```
 
-Acessar `http://<ip-do-host>:8106` (ou via [tsdproxy](../tsdproxy/README.pt-BR.md) em
-`https://invio.<your-tailnet>.ts.net`). O usuário é o `ADMIN_USER` do
-`.env`; a senha está em
-`~/.config/containers/secrets/invio/admin-pass.txt`.
-
-Com o [`install.py`](../../install.py) os passos 2 a 5 saem de uma vez:
-
 ```bash
-python3 install.py invio --apply
+qh invio --apply
 ```
 
 </details>
 
-## Auto-update
+## Arquivos
 
-Sem `AutoUpdate=` — tag explícita (`v2.1.1`), bump manual (regra 9 do
-convenções). Fatura emitida é registro fiscal: backup antes de subir de
-versão. O repositório publica também `main`, `latest` e tags de PR
-(`pr-123`), daí o `wud.tag.include` restringindo a `vX.Y.Z`.
-
-## Backup & Recuperação
-
-```bash
-python3 install.py invio --backup --apply --out ~/backups
+```
+invio.container
+.env.example
+install.ini
 ```
 
-Leva o SQLite, os secrets e o `.env` — o suficiente pra restaurar. Trocar
-o `invio-jwt-secret` desloga todo mundo, então ele precisa vir junto.
+## Atualizar
 
-## Comandos úteis
+```bash
+qh invio --update --apply
+```
+
+Fixado em `v2.1.1`. Nada atualiza sozinho — versão nova entra quando você
+roda o comando acima.
+
+## Backup
+
+```bash
+qh invio --backup --apply --out ~/backups
+```
+
+Ele para o serviço, empacota os dados, o `.env` e os secrets, e sobe de novo.
+A frio de propósito: copiar banco vivo dá um arquivo que só falha na hora de
+restaurar.
+
+Pra restaurar, por cima dos dados atuais:
+
+```bash
+qh invio --restore ~/backups/invio-20260809-1200.tar.gz --apply
+```
+
+Ele pede que você digite `invio` pra confirmar, porque os dados atuais são
+apagados antes de o arquivo ser extraído.
+
+## Remover
+
+```bash
+qh invio --remove --apply           # para e tira, mantendo os dados
+qh invio --remove --purge --apply   # e apaga volumes, secrets e .env
+```
+
+O `--purge` também pede o nome digitado. O nó da tailnet não é desregistrado
+por isso — isso é no admin do Tailscale.
+
+## Comandos
 
 ```bash
 systemctl --user status invio
 podman logs -f invio
-cat ~/.config/containers/secrets/invio/admin-pass.txt
 ```
 
 ## Créditos
 
-Deploy Quadlet baseado no [Invio](https://github.com/kittendevv/Invio) de
-[kittendevv](https://github.com/kittendevv) (Unlicense).
+[kittendevv/Invio](https://github.com/kittendevv/Invio)
+
+[Documentação oficial](https://github.com/kittendevv/Invio#readme)

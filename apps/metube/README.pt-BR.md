@@ -1,63 +1,22 @@
-# MeTube — Podman Quadlet (rootless)
+# MeTube
 
-**[🇬🇧 Read in English](./README.md)**
+<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/metube.svg" width="64" height="64" alt="">
 
-Deploy do [MeTube](https://github.com/alexta69/metube) (interface web do
-`yt-dlp`) via Podman Quadlet, usando a imagem oficial
-`ghcr.io/alexta69/metube`.
+**[🇺🇸 Read in English](./README.md)**
 
-Cola a URL, escolhe formato e qualidade, o arquivo cai no disco. O
-[media-stack](../media-stack/README.pt-BR.md) cuida de filme e série pelos \*arr; isto
-aqui é pro vídeo avulso.
+Interface web do yt-dlp — cola a URL e o vídeo cai no disco.
 
-## Arquitetura
-
-Container único, Python + `yt-dlp`. **Sem banco**: o estado das filas
-fica em `.metube/` dentro do próprio volume de downloads.
-
-### A inversão da escada de hardening
-
-Vale registrar porque contraria a intuição ([convenções, regra 20](../../docs/pt-BR/convencoes.md)):
-`DropCapability=ALL` **sozinho é recusado** —
-
-```
-chown: changing ownership of '/app/ui/dist/metube/3rdpartylicenses.txt':
-Operation not permitted
-```
-
-— porque o entrypoint ajusta dono no start. Mas com **`User=1000` o
-entrypoint não tem o que ajustar** (o `PUID` da imagem já é 1000), o
-`chown` some, e o nível mais forte passa. Ou seja: o degrau mais alto
-funciona e o do meio não. A lição prática é não desistir no primeiro
-`chown` do log — às vezes subir um degrau resolve em vez de conceder a
-capability.
-
-## Arquivos
-
-```
-metube.container   # unit principal
-```
-
-## Instalação
+## Instalar
 
 ```bash
-python3 install.py metube            # dry-run: mostra o que vai fazer
-python3 install.py metube --apply
+qh metube            # mostra o plano
+qh metube --apply
 ```
 
-Só na rede local, `--access local`; na tailnet e na LAN, `--access
-both`. Acrescentar `--href-local` faz o link do dashboard apontar pra LAN. O script cria os diretórios, grava o
-`.env`, gera os secrets, ajusta o dono dos volumes, sobe o serviço e
-imprime o endereço no fim — ver
-[Instalando e operando](../../docs/pt-BR/instalacao.md) no README
-raiz.
-
-Acessar `http://<ip-do-host>:8100` (ou via [tsdproxy](../tsdproxy/README.pt-BR.md) em
-`https://metube.<your-tailnet>.ts.net`).
+Abrir `http://<ip-do-host>:8100` ou `https://metube.<your-tailnet>.ts.net`.
 
 <details>
-<summary><b>Instalação manual</b> (avançado) — os mesmos passos, um a um</summary>
-
+<summary><b>Instalação manual</b></summary>
 
 ```bash
 # 1. Baixar a unit (sem precisar clonar o repositório)
@@ -74,50 +33,61 @@ systemctl --user daemon-reload
 systemctl --user start metube
 ```
 
-Acessar `http://<ip-do-host>:8100` (ou via [tsdproxy](../tsdproxy/README.pt-BR.md) em
-`https://metube.<your-tailnet>.ts.net`).
-
 </details>
 
-## Segurança
+## Arquivos
 
-**Não tem autenticação.** Quem alcança a porta baixa o que quiser pro seu
-disco. Na tailnet isso é aceitável; não expor pra fora dela. Pra colocar
-login na frente, o caminho é o [Authentik](../authentik/README.pt-BR.md).
+```
+metube.container
+```
 
-## Baixando pro media-stack
+## Atualizar
 
-Pra que o [Jellyfin](../media-stack/README.pt-BR.md) enxergue o que o MeTube baixa, o
-caminho é apontar o volume de downloads pra dentro da raiz de dados
-compartilhada do media-stack em vez do diretório próprio — trocar a linha
-`Volume=` da unit e refazer o `chown`. O MeTube grava como uid 1000
-(100999 no host), então conferir se o Jellyfin consegue ler.
+```bash
+qh metube --update --apply
+```
 
-## Auto-update
+Fixado em `2026.08.04`. Nada atualiza sozinho — versão nova entra quando você
+roda o comando acima.
 
-Sem `AutoUpdate=` — tag explícita, bump manual ([regra 9](../../docs/pt-BR/convencoes.md)).
-**A tag é a data do build** (`2026.08.04`), não semver, daí o
-`wud.tag.include=^[0-9]{4}.[0-9]{2}.[0-9]{2}$`.
+## Backup
 
-Vale um comentário: o `yt-dlp` embutido quebra quando o YouTube muda,
-e o conserto vem numa imagem nova. É o serviço deste repositório com o
-melhor argumento pra atualizar com frequência.
+```bash
+qh metube --backup --apply --out ~/backups
+```
 
-## Backup & Recuperação
+Ele para o serviço, empacota os dados, o `.env` e os secrets, e sobe de novo.
+A frio de propósito: copiar banco vivo dá um arquivo que só falha na hora de
+restaurar.
 
-Nada pra fazer além de copiar os vídeos, se quiser: não há banco nem
-configuração fora do volume de downloads.
+Pra restaurar, por cima dos dados atuais:
 
-## Comandos úteis
+```bash
+qh metube --restore ~/backups/metube-20260809-1200.tar.gz --apply
+```
+
+Ele pede que você digite `metube` pra confirmar, porque os dados atuais são
+apagados antes de o arquivo ser extraído.
+
+## Remover
+
+```bash
+qh metube --remove --apply           # para e tira, mantendo os dados
+qh metube --remove --purge --apply   # e apaga volumes, secrets e .env
+```
+
+O `--purge` também pede o nome digitado. O nó da tailnet não é desregistrado
+por isso — isso é no admin do Tailscale.
+
+## Comandos
 
 ```bash
 systemctl --user status metube
 podman logs -f metube
-podman exec metube yt-dlp --version
 ```
 
 ## Créditos
 
-Deploy Quadlet baseado no [MeTube](https://github.com/alexta69/metube)
-de [alexta69](https://github.com/alexta69) (AGPL-3.0), que embrulha o
-[yt-dlp](https://github.com/yt-dlp/yt-dlp).
+[alexta69/metube](https://github.com/alexta69/metube) — AGPL-3.0
+
+[Documentação oficial](https://github.com/alexta69/metube#readme)

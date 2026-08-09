@@ -240,300 +240,45 @@ inspect` after setting it, see
 
 ### 20. Hardening (`ReadOnly`/`DropCapability`): test the app, not the container
 
-`ReadOnly=true` + `DropCapability=ALL` are cheap and worth it on any service
-that accepts them — but which ones accept is only discovered by testing. The
-measured state of this repository's services:
+Apply without testing:
 
-| Container | `ReadOnly` | Capabilities |
-| --- | --- | --- |
-| `actual` | yes | **none** + `User=1000` |
-| `adguardhome` | yes | 1 (`net_bind_service`) |
-| `any-sync-bundle` | no | 5 (`chown`, `dac_override`, `fowner`, `setgid`, `setuid`) |
-| `audiobookshelf` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
-| `authentik-postgres` | no | 5 (`chown`, `dac_override`, `fowner`, `setgid`, `setuid`) |
-| `authentik-worker` | no | podman default + `User=0` |
-| `authentik` | yes | **none** + `User=1000` |
-| `beszel-agent` | no | podman default |
-| `beszel` | yes | **none** |
-| `calibre-web-automated` | yes | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
-| `cookcli` | yes | **none** |
-| `copyparty` | yes | **none** + `User=1000` |
-| `donetick` | yes | **none** + `User=1000` |
-| `freshrss` | yes | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
-| `frigate` | no | podman default |
-| `ghost` | yes | **none** + `User=1000` |
-| `gitea` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
-| `home-assistant` | yes | **none** |
-| `homebox` | yes | **none** + `User=1000` |
-| `homepage` | yes | **none** |
-| `immich-machine-learning` | yes | **none** |
-| `immich-postgres` | no | **none** + `User=999` |
-| `immich-redis` | no | podman default |
-| `immich` | yes | **none** |
-| `invio` | no | **none** |
-| `karakeep-chrome` | yes | **none** |
-| `karakeep-meilisearch` | yes | **none** |
-| `karakeep` | yes | **none** |
-| `lubelogger` | no | **none** |
-| `mdrop` | yes | **none** |
-| `media-stack-bazarr` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
-| `media-stack-deluge` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
-| `media-stack-dispatcharr` | no | podman default |
-| `media-stack-downtify` | no | podman default |
-| `media-stack-gluetun` | no | podman default |
-| `media-stack-jellyfin` | no | podman default |
-| `media-stack-lidarr` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
-| `media-stack-prowlarr` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
-| `media-stack-radarr` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
-| `media-stack-sabnzbd` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
-| `media-stack-seerr` | yes | **none** |
-| `media-stack-sonarr` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
-| `memos` | yes | **none** + `User=1000` |
-| `metube` | yes | **none** + `User=1000` |
-| `monica` | no | podman default |
-| `n8n` | no | **none** |
-| `netbootxyz` | no | 6 (`chown`, `dac_override`, `fowner`, `net_bind_service`, `setgid`, `setuid`) |
-| `nginx` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
-| `node-red` | no | **none** |
-| `ntfy` | yes | **none** + `User=1000` |
-| `omni-tools` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
-| `openwebui-ollama` | no | **none** |
-| `openwebui` | no | **none** |
-| `owncloud` | no | 6 (`chown`, `dac_override`, `fowner`, `net_bind_service`, `setgid`, `setuid`) |
-| `owntracks-frontend` | no | podman default |
-| `owntracks-mosquitto` | no | podman default |
-| `owntracks-recorder` | no | podman default |
-| `paperless-ngx-broker` | yes | **none** + `User=999` |
-| `paperless-ngx-gotenberg` | yes | **none** |
-| `paperless-ngx-tika` | yes | **none** |
-| `paperless-ngx` | yes | **none** |
-| `radicale` | yes | podman default |
-| `stirling-pdf` | no | 5 (`chown`, `dac_override`, `fowner`, `setgid`, `setuid`) |
-| `syncthing` | yes | **none** + `User=1000` |
-| `traccar` | yes | **none** + `User=1000` |
-| `tsdproxy` | no | **none** |
-| `uptime-kuma` | yes | **none** + `User=1000` |
-| `vaultwarden` | yes | 1 (`net_bind_service`) |
-| `vaultzap` | yes | **none** |
-| `wger` | yes | **none** |
-| `wud` | yes | **none** |
-| `zerobyte` | yes | **none** |
-| `zigbee2mqtt-mosquitto` | yes | **none** + `User=1883` |
-| `zigbee2mqtt` | yes | **none** |
-
-The table is generated from the units themselves — it is the measured state of
-every container, not a summary. `podman default` means `DropCapability=ALL` was
-refused and Podman's 11 defaults remain.
-
-**How each row was measured** — the table says *what* is set, not how far it
-was verified:
-
-- **Exercised for real** (the app answered over HTTP, the database was written,
-  a file was converted) — most of the single-container services.
-- **Measured with the image in isolation** (empty volumes, no real env): the
-  strongest level that still came up, but it does NOT exercise the app —
-  `audiobookshelf`, `beszel`, `calibre-web-automated`, `freshrss`, `gitea`, `immich-machine-learning`, `lubelogger`, `n8n`, `nginx`, `node-red`, `openwebui-ollama`, `openwebui`, `paperless-ngx`. Confirm for real when installing.
-- **Not measured**: `owntracks-frontend` (it does not come up in isolation — it
-  exits without a reachable recorder, so the ladder cannot tell a hardening
-  refusal from a missing dependency; with ReadOnly it fails at "can't create
-  /etc/nginx/nginx.conf") and `beszel-agent` (it exists to read the host, so
-  testing it in isolation says nothing — measure it with beszel up and the
-  metrics still arriving).
-- **Measured only up to a point**: `zigbee2mqtt` reaches the coordinator's
-  opening with no permission error, but there is no Zigbee coordinator on this
-  machine; `home-assistant` was measured on a clean installation — enabling an
-  integration that talks straight to hardware (Bluetooth, Zigbee over USB,
-  mDNS) means measuring again.
-
-Cases the table cannot show:
-
-- `authentik-postgres` does **not** accept `User=999`, unlike immich's
-  Postgres: its entrypoint insists on adjusting the owner and permissions of
-  `/var/lib/postgresql/data` and `/var/run/postgresql`, and with only 3
-  capabilities it still fails at "chmod: /var/run/postgresql".
-- `paperless-ngx-broker` is the opposite: `DropCapability=ALL` alone is refused
-  ("setpriv: setresuid failed") because Redis's entrypoint switches user, but
-  with `User=999` it takes the full package.
-- `karakeep-chrome` has the **largest attack surface** here — it opens any URL
-  you save and runs with `--no-sandbox`, so Chrome's own internal sandbox is
-  off and the container's hardening is the only remaining layer. Stateless, so
-  ReadOnly costs nothing.
-
-Three things the table hides, from the last nine measurements:
-
-- **A file-mounted `Secret=` does not coexist with `ReadOnly=true`.** Podman
-  does not create the mountpoint in `/run/secrets` with a read-only root, and
-  not even a `Tmpfs=/run` fixes it — the creation happens before the tmpfs
-  takes effect. This is what blocks tsdproxy. On
-  [vaultzap](../apps/vaultzap/) the way out was switching the secret to
-  `type=env`.
-- **Measuring with a proxy instead of the app misleads.** any-sync-bundle
-  "passed" a first measurement that counted keywords in the log: the AIO
-  mode's Mongo came up, printed its boot lines and died right after with `exit
-  status 14` — and the service sat `failed` on the host until I reverted it.
-  With `Notify=healthy` as the judge, it refuses `ReadOnly` **and**
-  `DropCapability=ALL` on its own.
-- **The highest rung can pass where the middle one fails.** Ghost repeated
-  metube's inversion: `DropCapability=ALL` alone dies at `failed switching to
-  'node'`, but with `User=` the entrypoint has nothing to switch to and
-  everything works.
-
-### Before granting a capability, test the rung above
-
-The four capabilities most often requested here — `CHOWN`, `SETUID`, `SETGID`
-and `NET_BIND_SERVICE` — almost always appear together, and for the same
-reason: the image's entrypoint does its setup as root and then becomes the
-application's user. **With `User=`, it has nothing to adjust and nobody to
-switch to**, and the need disappears.
-
-A sweep across the 14 services that asked for that kit, testing `User=1000` +
-`DropCapability=ALL`:
-
-| Passes (went to zero capabilities) | Refuses, and where the entrypoint writes |
-| --- | --- |
-| memos, syncthing | nginx, omni-tools → `/etc/nginx/conf.d/default.conf` |
-| | netbootxyz → `/var/lib/nginx/logs` |
-| | owncloud → `/var/www/owncloud/custom` |
-| | stirling-pdf → `/tmp/stirling-pdf` |
-| | freshrss → `/etc/localtime` |
-| | gitea, calibre-web-automated → the s6-overlay lock |
-| | audiobookshelf, any-sync-bundle → an exception at start |
-
-**The rule that comes out of it:** `User=` works when the entrypoint only
-writes to the mounted volumes. When it writes to `/etc`, `/var/lib` or a `/tmp`
-of its own — or when the image uses s6-overlay, which insists on being root —
-there is no way around it, and the kit really is the minimum.
-
-A fourth observation, from **zigbee2mqtt**: it is about method. `podman diff`
-after a start showed the app only writes to the `/app/data` bind, which
-answers "does ReadOnly fit?" without exercising anything. Worth doing before
-moving on to the expensive test.
-
-Another, more general one: when the image's entrypoint switches user
-(`gosu`/`usermod`/`setpriv`), **turning that mechanism off** is sometimes
-cheaper than granting the three capabilities it asks for — as long as running
-as uid 0 inside the container is acceptable (under rootless that is your own
-uid on the host, not real root).
-
-**The trap: "the container came up" is not the test.** The case that taught
-this here was a PHP+nginx service that used to be in the repository: with
-`CHOWN,SETUID,SETGID,NET_BIND_SERVICE` it goes `running` and nginx answers —
-but php-fpm dies silently and every page becomes a 502. It only surfaced once
-the test started genuinely exercising the app:
-
-```bash
-podman run -d --name t --cap-drop=ALL --cap-add=... <image>
-sleep 14
-podman exec t curl -sf -o /dev/null -w "%{http_code}" http://127.0.0.1:80/
+```ini
+PidsLimit=256
+NoNewPrivileges=true
 ```
 
-`DAC_OVERRIDE`+`FOWNER` were what was missing. Without exercising the app, the
-hardening would have gone into the repository breaking the service.
+Then test, in this order, stopping at the first one the app refuses:
 
-**An error at `exec` = a capability recorded in the binary.** If the container
-dies with `exec /path/to/binary: operation not permitted` — failing *to
-execute*, not during execution — the cause is not the program requesting the
-capability at runtime: it is the **file** carrying a *file capability*. Linux
-refuses to execute a binary with a capability that is not in the bounding set.
-That was adguardhome's case, whose binary has `cap_net_bind_service=eip`
-(confirmed with `getcap`). Giving the capability back fixes it; hunting for
-the request in the code does not.
+1. `DropCapability=ALL` — the log names what is missing (`chown: Operation not
+   permitted` → `AddCapability=CHOWN`). A port below 1024 inside the container
+   needs `NET_BIND_SERVICE`.
+2. `ReadOnly=true` + `Tmpfs=/tmp:size=64M` — breaks when the entrypoint
+   rewrites config at start, or when init needs `/run`.
+3. `User=<non-zero uid>` — the highest impact and the most likely to break.
+   Requires `podman unshare chown -R <uid>:<uid> <volume>`, and does not work
+   on images that `chown`/`usermod` at start.
 
-**Patterns that repeat:**
+**A running container is not the test.** Exercise the app:
 
-- **A port <1024 inside the container** requires `NET_BIND_SERVICE` — this
-  holds under rootless too, and it is the case for any image serving on the
-  internal port 80 (vaultwarden, nginx). **Before granting it, see whether the
-  app lets you change the port**: ntfy listens on 80 by default, and
-  `NTFY_LISTEN_HTTP=:2586` made the need disappear — zero capabilities instead
-  of one. The same question applies to the entrypoint's `gosu`/`usermod` and
-  to `setpriv`: turning the mechanism off is sometimes cheaper than satisfying
-  what it asks for.
-- **An image that does a `chown`/`usermod` in its entrypoint**
-  (LinuxServer.io and the like) needs `CHOWN`+`SETUID`+`SETGID` at minimum —
-  **or `User=`**. metube showed the ladder is not monotonic:
-  `DropCapability=ALL` on its own is refused (`chown: ... Operation not
-  permitted`), but with `User=1000` the entrypoint has nothing to adjust (the
-  image's `PUID` is already 1000), the `chown` disappears, and the **highest**
-  rung passes. Do not give up at the first `chown` in the log: test the next
-  rung before granting the capability.
-- **`ReadOnly` breaks** when the entrypoint rewrites config at start (nginx is
-  the classic case) or when the app writes outside the volumes. `Tmpfs=/tmp`
-  covers most `/tmp` cases.
+```bash
+podman run -d --name t --read-only --tmpfs /tmp --cap-drop=ALL <image> ...
+sleep 14
+podman exec t curl -sf -o /dev/null -w "%{http_code}" http://127.0.0.1:<port>/
+podman rm -f t
+```
 
-**Careful when testing with `systemctl restart` in sequence**: 5 failures in a
-row hit systemd's rate limit (`start-limit-hit`) and from then on *any* start
-fails, including the good configuration's — which gives the impression that
-the hardening broke something that in fact works. Run `systemctl --user
-reset-failed <app>` before each attempt.
+Size the `Tmpfs`: without `size=` the kernel gives half the RAM. 64M is enough
+for anything that only passes through `/tmp`; measure with
+`podman exec <app> df -h /tmp` under real use before raising it.
 
-**`UserNS=` is not hardening.** Under rootless the user namespace always
-exists already; `keep-id` only decides which uid appears on the volumes' files
-(rule 17). Adding it where the image does an internal `usermod` **breaks** it
-— use it only where the image runs with a fixed uid and does not adjust
-ownership itself (immich, node-red, jellyfin, seerr).
+A file-mounted `Secret=` does not coexist with `ReadOnly=true` — use
+`type=env`.
 
-**`User=` is** — and it is the highest-impact one, because it is the only one
-that changes who the process is **outside** the container. Measured here: uid
-0 inside maps to **your** uid (1000) on the host, so an escape reaches your
-home, your SSH keys and the Podman socket. A uid != 0 lands in the subuid
-range (`100999`), which owns nothing:
+`UserNS=` is not hardening. It only decides who owns bind-mounted files.
 
-| config | uid on the host |
-| --- | --- |
-| default | 1000 (you) |
-| `UserNS=keep-id` | 1000 (you) |
-| `User=1000` | **100999** |
-
-The cost: the volume needs the same owner — `podman unshare chown -R 1000:1000
-<volume>` (the uid as seen from *inside* the namespace, not the host's 100999)
-— and touching it then requires `podman unshare` (rule 17). That is why it is
-**not** worth it where the folder is an exchange point with you:
-[vaultzap](../apps/vaultzap/)'s `inbox` would become unusable in daily use,
-which is exactly why it uses `keep-id`.
-
-**It only works on an image that does no setup as root.** Tested: uptime-kuma
-accepts it (it runs as `100999` today); karakeep does not — the s6-overlay
-asks for `setgid`, then `chown`, then more, and every capability given back
-cancels the gain. A capability requested in a cascade is a sign to stop, not
-to push on. Since `ReadOnly` and `User=` also exclude each other on some
-images, and an escape is the worse scenario, `User=` wins when you can only
-have one.
-
-**`PidsLimit=`** — it works here (the `pids` controller is the only delegated
-one on this host, see rule 19) and it contains a fork bomb: a compromised
-process does not exhaust the host's process table. Size it by real idle usage,
-which is *threads*, not processes — `cat /sys/fs/cgroup/.../pids.current`, not
-`podman top`. The difference is large: a typical Node service here shows 6
-processes and 65 threads. 4x headroom is enough.
-
-**`Tmpfs=/tmp` without `size=` uses half the RAM** — the kernel's default.
-Measured here: `df -h /tmp` inside the container shows a `7.8G` limit on a
-16GB host, per container. With several services, a `/tmp` that fills up
-through a bug or abuse turns into an OOM for the whole host. Always size it:
-`Tmpfs=/tmp:size=64M`. Anything that only passes through `/tmp` (wud,
-homepage, vaultwarden — 0 at idle) is comfortable at 64M; anything that
-processes files needs more (karakeep archives whole pages, 256M; vaultzap
-extracts `.zip` files, 128M). A special case: Chrome with
-`--disable-dev-shm-usage` starts using `/tmp` in place of `/dev/shm`, and 64M
-there is the classic cause of a rendering crash — `karakeep-chrome` sits at
-512M.
-
-**A `:ro` volume where the app only reads** — the cheapest of all, and the most
-forgotten. homepage was mounting `config/` and `icons/` as `rw` with no need;
-with `:ro` it comes up just the same and loses the ability to rewrite its own
-configuration if it is compromised.
-
-**What is not worth it here:** `Memory=` (the `memory` controller is not
-delegated on this host — the same reason radicale has no RAM limit),
-`SeccompProfile=` (Podman's default profile already covers the dangerous
-syscalls; a custom one breaks easily for marginal gain) and `Mask=` (the
-runtime already masks `/proc/kcore` and the like).
-
-Where hardening matters least, regardless of all of this: whoever mounts the
-Podman socket (homepage, wud, tsdproxy). Compromise those and you create a new,
-privileged container — the current container's capabilities do not enter into
-it. Closing that calls for a read-only socket proxy, not container hardening.
+**Testing through systemd**: run `systemctl --user reset-failed <app>` before
+each attempt. Five failures in a row hit the rate limit, and then every start
+fails — including the one that works.
 
 ### 21. Not everything becomes a Quadlet: software that needs to *be* the host on the network uses `transactional-update`
 

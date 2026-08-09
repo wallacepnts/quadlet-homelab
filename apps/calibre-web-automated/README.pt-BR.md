@@ -1,70 +1,22 @@
-# Calibre-Web-Automated — Podman Quadlet (rootless)
+# Calibre-Web-Automated
 
-**[🇬🇧 Read in English](./README.md)**
+<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/calibre-web.svg" width="64" height="64" alt="">
 
-Deploy do [Calibre-Web-Automated](https://github.com/crocodilestick/Calibre-Web-Automated)
-(biblioteca de ebooks self-hosted — leitura web + conversão/metadados
-automáticos via Calibre) via Podman Quadlet, usando a imagem oficial do
-projeto.
+**[🇺🇸 Read in English](./README.md)**
 
-## Arquitetura
+Biblioteca de ebooks com conversão, metadados e capas automáticas via Calibre, com leitura direto no navegador.
 
-Container único, imagem baseada em `linuxserver/baseimage-ubuntu` — usa
-`PUID`/`PGID` (usermod interno, precisa rodar como root de verdade dentro
-do próprio namespace do container), **não** `UserNS=keep-id`: mesmo
-mecanismo dos containers LinuxServer.io do [media-stack](../media-stack/README.pt-BR.md),
-misturar os dois quebra a imagem.
-
-Três volumes:
-- `/config` — configuração da aplicação + banco (`metadata.db`)
-- `/cwa-book-ingest` — pasta de **entrada**, não de armazenamento: tudo
-  que cai aqui é processado e importado pra biblioteca automaticamente,
-  depois **removido** dessa pasta
-- `/calibre-library` — a biblioteca de verdade; se estiver vazia no
-  primeiro start, a imagem cria uma nova ali
-
-Ficou de fora da raiz de mídia compartilhada do [media-stack](../media-stack/README.pt-BR.md)
-de propósito — lá a raiz única existe porque Sonarr/Radarr/Lidarr
-**movem** arquivo de `downloads/` pra `media/` (precisa ser o mesmo
-filesystem, ver motivo na seção própria daquele README); aqui não tem
-indexer/torrent alimentando `/cwa-book-ingest` automaticamente, é um drop
-manual — não existe o mesmo problema de mount cruzado.
-
-## Arquivos
-
-```
-calibre-web-automated.container   # unit principal
-```
-
-## Pré-requisitos
-
-- Podman rootless com systemd `--user` funcionando
-- Se você já tem uma biblioteca Calibre existente: parar a instância
-  antiga antes, copiar a pasta pra dentro de `volumes/.../library` (ver
-  Instalação)
-
-## Instalação
+## Instalar
 
 ```bash
-python3 install.py calibre-web-automated            # dry-run: mostra o que vai fazer
-python3 install.py calibre-web-automated --apply
+qh calibre-web-automated            # mostra o plano
+qh calibre-web-automated --apply
 ```
 
-Só na rede local, `--access local`; na tailnet e na LAN, `--access
-both`. Acrescentar `--href-local` faz o link do dashboard apontar pra LAN. O script cria os diretórios, grava o
-`.env`, gera os secrets, ajusta o dono dos volumes, sobe o serviço e
-imprime o endereço no fim — ver
-[Instalando e operando](../../docs/pt-BR/instalacao.md) no README
-raiz.
-
-Acessar via [tsdproxy](../tsdproxy/README.pt-BR.md) (tailnet) em
-`https://calibre-web.<your-tailnet>.ts.net`, ou local em
-`http://localhost:8105`. Usuário/senha padrão no primeiro acesso:
-`admin`/`admin123` — trocar logo em Configurações.
+Abrir `http://<ip-do-host>:8105` ou `https://calibre-web.<your-tailnet>.ts.net`.
 
 <details>
-<summary><b>Instalação manual</b> (avançado) — os mesmos passos, um a um</summary>
-
+<summary><b>Instalação manual</b></summary>
 
 ```bash
 # 1. Baixar a unit (sem precisar clonar o repositório)
@@ -88,44 +40,54 @@ systemctl --user daemon-reload
 systemctl --user start calibre-web-automated
 ```
 
-Acessar via [tsdproxy](../tsdproxy/README.pt-BR.md) (tailnet) em
-`https://calibre-web.<your-tailnet>.ts.net`, ou local em
-`http://localhost:8105`. Usuário/senha padrão no primeiro acesso:
-`admin`/`admin123` — trocar logo em Configurações.
-
-**Migrando de um Calibre-Web "normal"**: parar a instância antiga, copiar
-a pasta de config dela pra dentro de `volumes/calibre-web-automated/config/`
-antes do primeiro start daqui — carrega usuários/config existentes.
-
-**Plugins do Calibre** (opcional, WIP segundo o projeto): montar um quarto
-volume `.../plugins:/config/.config/calibre/plugins:Z` e copiar
-`customize.py.json` pra dentro de `config/.config/calibre/` — não incluído
-por padrão nesta unit por ser um caso de uso avançado.
-
 </details>
 
-## Auto-update
+## Arquivos
 
-Sem `AutoUpdate=` — tag explícita (`v4.0.6`), bump manual (regra 9 do
-convenções). A imagem tem `curl`/healthcheck real (daria pra habilitar
-com rollback de verdade), mas a biblioteca inteira (banco `metadata.db` +
-arquivos) é dado real do usuário — prefiro revisão manual antes de trocar
-de versão, mesmo raciocínio do vaultwarden.
-
-## Backup & Recuperação
-
-```bash
-systemctl --user stop calibre-web-automated
-tar -czf calibre-web-automated-backup-$(date +%Y%m%d-%H%M%S).tar.gz \
-  -C ~/.config/containers/volumes calibre-web-automated
-systemctl --user start calibre-web-automated
+```
+calibre-web-automated.container
+.env.example
 ```
 
-`config/` (banco + preferências) é o que importa de verdade; `library/`
-costuma ser o maior em espaço — considerar backups separados se a
-biblioteca for grande.
+## Atualizar
 
-## Comandos úteis
+```bash
+qh calibre-web-automated --update --apply
+```
+
+Fixado em `v4.0.6`. Nada atualiza sozinho — versão nova entra quando você
+roda o comando acima.
+
+## Backup
+
+```bash
+qh calibre-web-automated --backup --apply --out ~/backups
+```
+
+Ele para o serviço, empacota os dados, o `.env` e os secrets, e sobe de novo.
+A frio de propósito: copiar banco vivo dá um arquivo que só falha na hora de
+restaurar.
+
+Pra restaurar, por cima dos dados atuais:
+
+```bash
+qh calibre-web-automated --restore ~/backups/calibre-web-automated-20260809-1200.tar.gz --apply
+```
+
+Ele pede que você digite `calibre-web-automated` pra confirmar, porque os dados atuais são
+apagados antes de o arquivo ser extraído.
+
+## Remover
+
+```bash
+qh calibre-web-automated --remove --apply           # para e tira, mantendo os dados
+qh calibre-web-automated --remove --purge --apply   # e apaga volumes, secrets e .env
+```
+
+O `--purge` também pede o nome digitado. O nó da tailnet não é desregistrado
+por isso — isso é no admin do Tailscale.
+
+## Comandos
 
 ```bash
 systemctl --user status calibre-web-automated
@@ -134,6 +96,6 @@ podman logs -f calibre-web-automated
 
 ## Créditos
 
-Deploy Quadlet usando a imagem oficial
-[crocodilestick/Calibre-Web-Automated](https://github.com/crocodilestick/Calibre-Web-Automated)
-(GPL-3.0).
+[crocodilestick/Calibre-Web-Automated](https://github.com/crocodilestick/Calibre-Web-Automated) — GPL-3.0
+
+[Documentação oficial](https://github.com/crocodilestick/Calibre-Web-Automated)

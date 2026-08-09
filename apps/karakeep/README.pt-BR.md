@@ -1,68 +1,22 @@
-# Karakeep — Podman Quadlet (rootless)
+# Karakeep
 
-**[🇬🇧 Read in English](./README.md)**
+<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/karakeep.svg" width="64" height="64" alt="">
 
-Deploy do [Karakeep](https://karakeep.app) (gerenciador de bookmarks —
-antigo Hoarder, renomeado pelo projeto) via Podman Quadlet, migrado do
-`docker-compose.yml`
-[oficial](https://github.com/karakeep-app/karakeep/blob/main/docker/docker-compose.yml).
+**[🇺🇸 Read in English](./README.md)**
 
-## Arquitetura
+Gerenciador de bookmarks com busca full-text e arquivamento automático do conteúdo de cada página salva.
 
-Três containers na rede `karakeep-net.network`:
-
-- `karakeep-chrome` — Chrome headless (`alpine-chrome`), usado pelo
-  crawler pra renderizar página e tirar screenshot/arquivar o conteúdo
-  de cada link salvo. Sem volume — stateless, cada restart é uma sessão
-  nova.
-- `karakeep-meilisearch` — busca full-text sobre os bookmarks salvos
-- `karakeep` — a aplicação, expõe `3000` (mapeado pra `8092` no host)
-
-Banco **SQLite embutido** em `/data` (não precisa de Postgres — diferente
-do [immich](../immich/README.pt-BR.md), que é o outro app deste repositório com
-Meilisearch e worker separados).
-
-`karakeep` só sobe depois que chrome e meilisearch reportam `healthy`
-(`Requires=`/`After=` no `[Unit]`, mesmo padrão do
-[paperless-ngx](../paperless-ngx/README.pt-BR.md)/[immich](../immich/README.pt-BR.md)).
-
-## Arquivos
-
-```
-karakeep-net.network            # rede dedicada
-karakeep-chrome.container       # Chrome headless (crawler)
-karakeep-meilisearch.container  # busca full-text
-karakeep.container              # aplicação
-```
-
-## Pré-requisitos
-
-- Podman rootless com systemd `--user` funcionando
-- `openssl` (pra gerar os segredos)
-
-## Instalação
+## Instalar
 
 ```bash
-python3 install.py karakeep            # dry-run: mostra o que vai fazer
-python3 install.py karakeep --apply
+qh karakeep            # mostra o plano
+qh karakeep --apply
 ```
 
-Só na rede local, `--access local`; na tailnet e na LAN, `--access
-both`. Acrescentar `--href-local` faz o link do dashboard apontar pra LAN. O script cria os diretórios, grava o
-`.env`, gera os secrets, ajusta o dono dos volumes, sobe o serviço e
-imprime o endereço no fim — ver
-[Instalando e operando](../../docs/pt-BR/instalacao.md) no README
-raiz.
-
-Acessar via [tsdproxy](../tsdproxy/README.pt-BR.md) (tailnet) em
-`https://karakeep.<your-tailnet>.ts.net` — é o padrão deste setup. Pra
-acesso só local em vez disso, usar `http://localhost:8092` **e** trocar o
-`NEXTAUTH_URL` em `karakeep.env` pra bater (regra do NextAuth: uma URL
-canônica só, e é ela que vale nos cookies e nos redirecionamentos).
+Abrir `http://<ip-do-host>:8092` ou `https://karakeep.<your-tailnet>.ts.net`.
 
 <details>
-<summary><b>Instalação manual</b> (avançado) — os mesmos passos, um a um</summary>
-
+<summary><b>Instalação manual</b></summary>
 
 ```bash
 # 1. Baixar as units pra uma subpasta dedicada (sem precisar clonar o
@@ -100,84 +54,73 @@ systemctl --user daemon-reload
 systemctl --user start karakeep
 ```
 
-Acessar via [tsdproxy](../tsdproxy/README.pt-BR.md) (tailnet) em
-`https://karakeep.<your-tailnet>.ts.net` — é o padrão deste setup. Pra
-acesso só local em vez disso, usar `http://localhost:8092` **e** trocar o
-`NEXTAUTH_URL` em `karakeep.env` pra bater (regra do NextAuth: uma URL
-canônica só, e é ela que vale nos cookies e nos redirecionamentos).
-
-Criar a primeira conta pela própria UI (sem usuário/senha padrão).
-Depois, considerar `DISABLE_SIGNUPS=true` no `.env` (instância pessoal,
-sem motivo pra deixar cadastro aberto).
-
 </details>
 
-## Sincronizar bookmarks do navegador (Floccus)
+## Arquivos
 
-O [Floccus](https://floccus.org) (extensão de navegador — Chrome,
-Firefox, Edge, Brave, Vivaldi, Opera) sincroniza os bookmarks nativos do
-navegador com um backend próprio, com suporte nativo ao Karakeep desde a
-versão 5.6. Sincronização é bidirecional: salvar um link no navegador
-manda ele pro Karakeep, e salvar/editar pela UI do Karakeep reflete de
-volta nos bookmarks do navegador (e nos outros navegadores que
-sincronizam com a mesma conta).
-
-1. Gerar uma API key no Karakeep: ícone de usuário (canto superior
-   direito) → **User Settings** → **API Keys** → **New API Key** → dar um
-   nome → **Create**. A chave só aparece uma vez nesse momento
-   (formato `ak2_<id>_<segredo>`) — copiar antes de fechar.
-2. Instalar o Floccus no navegador e, no assistente de configuração,
-   escolher **Karakeep** como tipo de conta — preencher a URL do servidor
-   (`https://karakeep.<your-tailnet>.ts.net`) e a API key do passo 1.
-3. Escolher quais pastas de bookmark sincronizar (o Floccus permite
-   restringir a uma subpasta em vez do navegador inteiro).
-
-## `Notify=healthy` com imagem que já tem HEALTHCHECK embutido
-
-Mesma pegadinha do paperless-ngx: a imagem oficial do
-Karakeep já vem com `HEALTHCHECK` no Dockerfile
-(`wget --spider http://127.0.0.1:3000/api/health`), mas isso não basta
-pro Quadlet — `Notify=healthy` exige `HealthCmd=` declarado
-explicitamente no `.container` também, repetindo o mesmo comando (regra
-14 das convenções).
-
-## Auto-update
-
-Nenhum dos três containers tem `AutoUpdate=` — tags explícitas, bump
-manual ([regra 9](../../docs/pt-BR/convencoes.md)). O `docker-compose.yml` oficial usa
-`${KARAKEEP_VERSION:-release}` (tag flutuante, sempre a última release
-estável) — trocado aqui por uma versão exata (`0.33.1`) de propósito,
-mesmo padrão do resto do repositório. Meilisearch e Chrome nas versões
-recomendadas pelo compose oficial — trocar sem checar compatibilidade
-pode quebrar a busca ou o crawler.
-
-## Backup & Recuperação
-
-O que importa de verdade é `data/` (SQLite embutido + assets/screenshots
-arquivados). `meilisearch/` é um índice de busca — recriável do zero
-reindexando, mas mais rápido restaurar do que reindexar tudo de novo se
-a biblioteca for grande.
-
-```bash
-systemctl --user stop karakeep karakeep-chrome karakeep-meilisearch
-tar -czf karakeep-backup-$(date +%Y%m%d-%H%M%S).tar.gz \
-  -C ~/.config/containers/volumes karakeep
-systemctl --user start karakeep
+```
+karakeep-chrome.container
+karakeep-meilisearch.container
+karakeep.container
+karakeep-net.network
+.env.example
+install.ini
 ```
 
-Os segredos (`~/.config/containers/secrets/karakeep/`) também precisam
-de backup separado — sem o `NEXTAUTH_SECRET`, sessões existentes
-invalidam ao restaurar num host novo.
+Units da stack:
 
-## Comandos úteis
+- `karakeep-chrome`
+- `karakeep-meilisearch`
+- `karakeep`
+- `karakeep-n`
+
+## Atualizar
 
 ```bash
-systemctl --user status karakeep karakeep-chrome karakeep-meilisearch
+qh karakeep --update --apply
+```
+
+Fixado em `0.33.1`, `124`, `v1.41.0`. Nada atualiza sozinho — versão nova entra quando você
+roda o comando acima.
+
+## Backup
+
+```bash
+qh karakeep --backup --apply --out ~/backups
+```
+
+Ele para o serviço, empacota os dados, o `.env` e os secrets, e sobe de novo.
+A frio de propósito: copiar banco vivo dá um arquivo que só falha na hora de
+restaurar.
+
+Pra restaurar, por cima dos dados atuais:
+
+```bash
+qh karakeep --restore ~/backups/karakeep-20260809-1200.tar.gz --apply
+```
+
+Ele pede que você digite `karakeep` pra confirmar, porque os dados atuais são
+apagados antes de o arquivo ser extraído.
+
+## Remover
+
+```bash
+qh karakeep --remove --apply           # para e tira, mantendo os dados
+qh karakeep --remove --purge --apply   # e apaga volumes, secrets e .env
+```
+
+O `--purge` também pede o nome digitado. O nó da tailnet não é desregistrado
+por isso — isso é no admin do Tailscale.
+
+## Comandos
+
+```bash
+systemctl --user status karakeep
 podman logs -f karakeep
-podman exec karakeep-chrome wget -qO- http://127.0.0.1:9222/json/version
 ```
 
 ## Créditos
 
-Deploy Quadlet baseado no [Karakeep](https://github.com/karakeep-app/karakeep)
-(antigo Hoarder). Licença original: AGPL-3.0.
+[karakeep-app/karakeep](https://github.com/karakeep-app/karakeep) — AGPL-3.0.
+
+[Documentação oficial](https://karakeep.app)

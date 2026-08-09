@@ -1,52 +1,22 @@
-# Vaultwarden — Podman Quadlet (rootless)
+# Vaultwarden
 
-**[🇬🇧 Read in English](./README.md)**
+<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/vaultwarden.svg" width="64" height="64" alt="">
 
-Deploy do [Vaultwarden](https://github.com/dani-garcia/vaultwarden)
-(implementação alternativa, em Rust, do servidor Bitwarden) via Podman
-Quadlet. Cofre de senhas self-hosted — compatível com os apps oficiais do
-Bitwarden (basta trocar o "server URL" nas configurações do app).
+**[🇺🇸 Read in English](./README.md)**
 
-## Arquitetura
+Cofre de senhas compatível com o protocolo do Bitwarden, leve o bastante pra rodar em qualquer lugar.
 
-Container único, SQLite embutido (`/data/db.sqlite3`) — sem serviço de
-banco separado, ao contrário do [immich](../immich/README.pt-BR.md). Expõe `80`
-internamente (mapeado pra `8082` no host).
-
-## Arquivos
-
-```
-vaultwarden.container   # unit principal
-```
-
-## Pré-requisitos
-
-- Podman rootless com systemd `--user` funcionando
-- `python3` com o pacote `argon2-cffi` (`pip3 install --user argon2-cffi`)
-  — só pra gerar o `ADMIN_TOKEN` com hash seguro no passo de instalação
-
-## Instalação
+## Instalar
 
 ```bash
-python3 install.py vaultwarden            # dry-run: mostra o que vai fazer
-python3 install.py vaultwarden --apply
+qh vaultwarden            # mostra o plano
+qh vaultwarden --apply
 ```
 
-Só na rede local, `--access local`; na tailnet e na LAN, `--access
-both`. Acrescentar `--href-local` faz o link do dashboard apontar pra LAN. O script cria os diretórios, grava o
-`.env`, gera os secrets, ajusta o dono dos volumes, sobe o serviço e
-imprime o endereço no fim — ver
-[Instalando e operando](../../docs/pt-BR/instalacao.md) no README
-raiz.
-
-Acessar via [tsdproxy](../tsdproxy/README.pt-BR.md) (tailnet) em
-`https://vaultwarden.<your-tailnet>.ts.net`, ou local em
-`http://localhost:8082`. Criar a primeira conta, depois seguir a seção
-Segurança abaixo.
+Abrir `http://<ip-do-host>:8082` ou `https://vaultwarden.<your-tailnet>.ts.net`.
 
 <details>
-<summary><b>Instalação manual</b> (avançado) — os mesmos passos, um a um</summary>
-
+<summary><b>Instalação manual</b></summary>
 
 ```bash
 # 1. Baixar a unit (sem precisar clonar o repositório)
@@ -99,66 +69,63 @@ systemctl --user daemon-reload
 systemctl --user start vaultwarden
 ```
 
-Acessar via [tsdproxy](../tsdproxy/README.pt-BR.md) (tailnet) em
-`https://vaultwarden.<your-tailnet>.ts.net`, ou local em
-`http://localhost:8082`. Criar a primeira conta, depois seguir a seção
-Segurança abaixo.
-
-**O valor impresso em "Token admin"** (a string crua, não o hash) é a
-senha do painel `/admin` — guardar em local seguro (ex.: no próprio
-Vaultwarden depois de criado, ironicamente, ou em outro gerenciador). O
-que fica salvo em `admin-token-hash.txt` é só o hash Argon2id — não dá
-pra recuperar a senha original a partir dele.
-
 </details>
 
-## Segurança
+## Arquivos
 
-- **Desabilitar cadastro depois da primeira conta**: `SIGNUPS_ALLOWED=false`
-  em `vaultwarden.env`, `systemctl --user restart vaultwarden`.
-  Sem isso, qualquer um que alcançar a URL consegue criar conta própria.
-- **`ADMIN_TOKEN` como hash, não texto puro** — já é o padrão deste setup
-  (ver passo 3). Um `ADMIN_TOKEN` em texto puro no arquivo de secret, se
-  vazar, dá acesso total ao painel admin (todos os usuários, organizações,
-  configuração do servidor). O hash Argon2id não é reversível.
-- **Nunca publicar o painel `/admin` fora da tailnet** — só o app cliente
-  (login normal) precisa ser alcançável de fora; o admin é coisa sua.
-
-## Auto-update
-
-Sem `AutoUpdate=` — tag explícita (`1.37.1-alpine`), bump manual (regra 9
-das convenções). A imagem tem `wget`/`curl` (Alpine), então dá pra ligar
-auto-update com rollback de verdade se decidir habilitar — mas pra um
-cofre de senhas, atualização manual revisada antes é o padrão recomendado
-aqui.
-
-## Backup & Recuperação
-
-Tudo fica em `volumes/vaultwarden/data/` (SQLite + anexos + ícones em
-cache). É o dado mais sensível deste repositório inteiro — parar antes de
-copiar:
-
-```bash
-systemctl --user stop vaultwarden
-tar -czf vaultwarden-backup-$(date +%Y%m%d-%H%M%S).tar.gz \
-  -C ~/.config/containers/volumes vaultwarden
-systemctl --user start vaultwarden
+```
+vaultwarden.container
+.env.example
+install.ini
 ```
 
-O `admin-token-raw.txt` (a senha do painel admin) também precisa de
-backup separado — não tem como recuperar se perder, só resetar criando um
-`ADMIN_TOKEN` novo.
+## Atualizar
 
-## Comandos úteis
+```bash
+qh vaultwarden --update --apply
+```
+
+Fixado em `1.37.1-alpine`. Nada atualiza sozinho — versão nova entra quando você
+roda o comando acima.
+
+## Backup
+
+```bash
+qh vaultwarden --backup --apply --out ~/backups
+```
+
+Ele para o serviço, empacota os dados, o `.env` e os secrets, e sobe de novo.
+A frio de propósito: copiar banco vivo dá um arquivo que só falha na hora de
+restaurar.
+
+Pra restaurar, por cima dos dados atuais:
+
+```bash
+qh vaultwarden --restore ~/backups/vaultwarden-20260809-1200.tar.gz --apply
+```
+
+Ele pede que você digite `vaultwarden` pra confirmar, porque os dados atuais são
+apagados antes de o arquivo ser extraído.
+
+## Remover
+
+```bash
+qh vaultwarden --remove --apply           # para e tira, mantendo os dados
+qh vaultwarden --remove --purge --apply   # e apaga volumes, secrets e .env
+```
+
+O `--purge` também pede o nome digitado. O nó da tailnet não é desregistrado
+por isso — isso é no admin do Tailscale.
+
+## Comandos
 
 ```bash
 systemctl --user status vaultwarden
 podman logs -f vaultwarden
-curl http://127.0.0.1:8082/alive
 ```
 
 ## Créditos
 
-Deploy Quadlet baseado no [Vaultwarden](https://github.com/dani-garcia/vaultwarden),
-de [Daniel García (@dani-garcia)](https://github.com/dani-garcia).
-Licença original: AGPL-3.0.
+[dani-garcia/vaultwarden](https://github.com/dani-garcia/vaultwarden) — AGPL-3.0.
+
+[Documentação oficial](https://github.com/dani-garcia/vaultwarden/wiki)

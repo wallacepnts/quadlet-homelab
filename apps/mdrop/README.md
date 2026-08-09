@@ -1,84 +1,22 @@
-# mdrop — Podman Quadlet (rootless)
+# mdrop
+
+<img src="https://cdn.simpleicons.org/markdown" width="64" height="64" alt="">
 
 **[🇧🇷 Leia em português](./README.pt-BR.md)**
 
-Deploy do [mdrop](https://github.com/samapriya/mdrop) (interface web para
-o [MarkItDown](https://github.com/microsoft/markitdown) da Microsoft) via
-Podman Quadlet, usando a imagem oficial `docker.io/samapriya/mdrop`.
+Converts PDF, Office, image and audio to Markdown over the web, stateless and without leaving the machine.
 
-Arrasta o arquivo, recebe Markdown. Converte PDF, Word, Excel,
-PowerPoint, images (with OCR) and audio (with transcription).
-
-## Why this and not markitdown directly
-
-[markitdown](https://github.com/microsoft/markitdown) cannot be deployed as a
-service in this repository, for three reasons:
-
-- Microsoft **publishes no image** — upstream tells you to build
-  localmente, o que quebra o modelo daqui (unit baixada por `wget`
-  referenciando imagem publicada e pinada);
-- the `ENTRYPOINT` is `markitdown`: it is a **CLI**, not a server;
-- the server variant (`markitdown-mcp`) is documented by the
-  upstream como local-use-only, com *"DO NOT bind the server to other
-  interfaces"* — because `convert_to_markdown(uri)` accepts `file:` (reading
-  an arbitrary file from inside the container) and `http:` (SSRF from the
-  sua rede).
-
-mdrop solves all three: it publishes an image, it is a genuine HTTP server,
-and the interface only accepts an **upload**, not an arbitrary URI.
-
-## Architecture
-
-A single container (FastAPI/uvicorn). **No volume, no database, no
-session.** The conversion workspace is a `Tmpfs` — the file you send stays in
-RAM and
-nunca toca o disco do host. Confirmado com `podman inspect`: o container
-it has no mount at all.
-
-The practical consequence: **there is no backup to take**, and reinstalling
-is the
-"restore".
-
-### Pinado por digest
-
-Upstream publishes only `latest` and `main`, with no versioned tag and no
-GitHub release. Since rule 9 asks for a fixed version, the unit pins by
-**digest** —
-mesmo tratamento que o Postgres e o valkey do [immich](../immich/)
-get. That is also why there is no `wud.watch`: there is no tag to compare.
-
-Pra atualizar, conferir o projeto e trocar o digest:
+## Install
 
 ```bash
-podman pull docker.io/samapriya/mdrop:latest
-podman image inspect docker.io/samapriya/mdrop:latest --format '{{index .RepoDigests 0}}'
+qh mdrop            # shows the plan
+qh mdrop --apply
 ```
 
-## Files
-
-```
-mdrop.container   # main unit
-```
-
-## Installation
-
-```bash
-python3 install.py mdrop            # dry-run: shows what it will do
-python3 install.py mdrop --apply
-```
-
-For the local network only, `--access local`; on the tailnet and the LAN,
-`--access both`. Adding `--href-local` points the dashboard link at the LAN.
-The script creates the directories, writes the `.env`, generates the secrets,
-fixes the volumes' ownership, starts the service and prints the address at the
-end — see [Installing and operating](../../docs/installing.md).
-
-Open `http://<host-ip>:8292` (ou via [tsdproxy](../tsdproxy/) em
-`https://mdrop.<your-tailnet>.ts.net`).
+Open `http://<host-ip>:8292` or `https://mdrop.<your-tailnet>.ts.net`.
 
 <details>
-<summary><b>Manual installation</b> (advanced) — the same steps, one at a time</summary>
-
+<summary><b>Manual install</b></summary>
 
 ```bash
 # 1. Download the unit (no need to clone the repository)
@@ -91,52 +29,61 @@ systemctl --user daemon-reload
 systemctl --user start mdrop
 ```
 
-Open `http://<host-ip>:8292` (ou via [tsdproxy](../tsdproxy/) em
-`https://mdrop.<your-tailnet>.ts.net`).
-
 </details>
 
-## Security
+## Files
 
-**There is no authentication** — the project's own README says so and
-recommends a VPN or an authenticating proxy in front. Here the tailnet plays
-the VPN's part; to require a login, the route is
-[Authentik](../authentik/).
+```
+mdrop.container
+```
 
-The design helps: nothing is written, nothing is logged beyond the file's
-name and size, and there is no arbitrary URI — upload only. Even so, what you
-convert passes through the process, so the same care as
-[stirling-pdf](../stirling-pdf/) applies: the whole point is not sending a
-document
-pra site de terceiro que ele existe.
+## Update
 
-### O tamanho do `/tmp/mdrop`
+```bash
+qh mdrop --update --apply
+```
 
-`1G` in RAM, like the official compose. It is a ceiling, not a reservation —
-it only occupies what the file being converted uses. Lower it if you only
-convert small documents, or if the machine is tight on memory;
-[rule 20](../../docs/conventions.md) explains why a `Tmpfs` without `size=` is
-dangerous.
+Pinned to `692d8f63593667d78ef67d3b79b9e68ce22c8244ace30036fac0fd24cd529ca4`. Nothing updates on its own — a new version is applied
+when you run the command above.
 
-## Auto-update
+## Backup
 
-Sem `AutoUpdate=` e sem `wud.watch` — ver "Pinado por digest" acima.
+```bash
+qh mdrop --backup --apply --out ~/backups
+```
 
-## Backup & recovery
+It stops the service, packs the data, the `.env` and the secrets, and starts
+it again. Cold on purpose: copying a live database gives an archive that only
+fails when you restore it.
 
-None. There is no state.
+To restore, over the current data:
 
-## Useful commands
+```bash
+qh mdrop --restore ~/backups/mdrop-20260809-1200.tar.gz --apply
+```
+
+It asks you to type `mdrop` to confirm, because the current data is deleted
+before the archive is unpacked.
+
+## Remove
+
+```bash
+qh mdrop --remove --apply           # stops it, keeps the data
+qh mdrop --remove --purge --apply   # and deletes volumes, secrets and .env
+```
+
+`--purge` asks for the typed name too. The tailnet node is not deregistered by
+this — that is done in the Tailscale admin.
+
+## Commands
 
 ```bash
 systemctl --user status mdrop
 podman logs -f mdrop
-# converter pela linha de comando
-curl -F "file=@documento.pdf" http://127.0.0.1:8292/convert
 ```
 
 ## Credits
 
-Quadlet deploy based on [mdrop](https://github.com/samapriya/mdrop) de
-[samapriya](https://github.com/samapriya) (MIT), que embrulha o
-[MarkItDown](https://github.com/microsoft/markitdown) da Microsoft.
+[samapriya/mdrop](https://github.com/samapriya/mdrop) — MIT
+
+[Official documentation](https://mdrop.remotelab.dev)

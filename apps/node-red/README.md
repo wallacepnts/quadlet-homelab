@@ -1,71 +1,22 @@
-# Node-RED — Podman Quadlet (rootless)
+# Node-RED
+
+<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/node-red.svg" width="64" height="64" alt="">
 
 **[🇧🇷 Leia em português](./README.pt-BR.md)**
 
-A [Node-RED](https://nodered.org) (flow automation through a visual node
-editor — it connects APIs, devices and services without programming from
-scratch) deploy via Podman Quadlet, using the official
-[`nodered/node-red`](https://hub.docker.com/r/nodered/node-red)
-image (the minimal variant).
+Flow automation through a visual node editor.
 
-## Architecture
-
-A single container, running with a **fixed `node-red` uid (1000) and no
-internal usermod** — tested in practice: without `UserNS=keep-id` it hangs
-right at start with `EACCES: permission denied` while trying to copy the
-default `settings.js` into the volume. The same case as
-[Immich](../immich/) (an image with a fixed uid and no chown of its own needs
-`UserNS=keep-id`; most of the other images here do an internal usermod and so
-do not).
-
-A single volume (`/data`) — it holds the flows, the config (`settings.js`,
-copied automatically from the image on the first start), the node_modules of
-extra nodes installed through the palette, and the credential encryption key.
-
-**The credential key is generated and saved automatically** — on the first
-start, Node-RED creates a random `_credentialSecret` and writes it to
-`data/.config.runtime.json`, tested in practice. Since `data/` is persisted,
-that key survives an ordinary restart (unlike
-[Monica](../monica/)/[Authentik](../authentik/), which need a secret of their
-own to prevent this) — no extra manual step is needed, but you can pin your
-own via `credentialSecret` in `settings.js` if you prefer to control it
-explicitly.
-
-**No authentication of its own by default** — the same trust model already
-used by [WUD](../wud/)/[Homepage](../homepage/) here: protected only by being
-on the tailnet, not by a login. `adminAuth` can be enabled in `settings.js`
-later if you want.
-
-## Files
-
-```
-node-red.container       # main unit
-```
-
-## Prerequisites
-
-- Rootless Podman with systemd `--user` working
-
-## Installation
+## Install
 
 ```bash
-python3 install.py node-red            # dry-run: shows what it will do
-python3 install.py node-red --apply
+qh node-red            # shows the plan
+qh node-red --apply
 ```
 
-For the local network only, `--access local`; on the tailnet and the LAN,
-`--access both`. Adding `--href-local` points the dashboard link at the LAN.
-The script creates the directories, writes the `.env`, generates the secrets,
-fixes the volumes' ownership, starts the service and prints the address at the
-end — see [Installing and operating](../../docs/installing.md).
-
-Open `http://<host-ip>:1880` (or through [tsdproxy](../tsdproxy/) at
-`https://node-red.<your-tailnet>.ts.net`) — it opens straight into the editor,
-with no login screen (see "No authentication of its own" above).
+Open `http://<host-ip>:1880` or `https://node-red.<your-tailnet>.ts.net`.
 
 <details>
-<summary><b>Manual installation</b> (advanced) — the same steps, one at a time</summary>
-
+<summary><b>Manual install</b></summary>
 
 ```bash
 # 1. Download the units (no need to clone the repository)
@@ -86,43 +37,63 @@ systemctl --user daemon-reload
 systemctl --user start node-red
 ```
 
-Open `http://<host-ip>:1880` (ou via [tsdproxy](../tsdproxy/) em
-`https://node-red.<your-tailnet>.ts.net`) — abre direto no editor, sem
-with no login screen (see "No authentication of its own" above).
-
 </details>
 
-## Auto-update
+## Files
 
-No `AutoUpdate=` — an explicit tag (`5.0.4-minimal`), bumped by hand
-([rule 9](../../docs/conventions.md)). The image has `wget`/`curl` and a real
-healthcheck — `AutoUpdate=registry` could be enabled with working rollback,
-but flows and credentials are the user's real data, so review by hand before
-updating (palette nodes installed manually may also not be compatible with
-every new version).
-
-## Backup & recovery
-
-```bash
-systemctl --user stop node-red
-tar -czf node-red-backup-$(date +%Y%m%d-%H%M%S).tar.gz \
-  -C ~/.config/containers/volumes node-red
-systemctl --user start node-red
+```
+node-red.container
+.env.example
+install.ini
 ```
 
-`data/.config.runtime.json` (the credential key) has to be in that backup —
-without it, credentials saved in flows that use authenticated nodes (APIs,
-databases and so on) become unreadable.
+## Update
 
-## Useful commands
+```bash
+qh node-red --update --apply
+```
+
+Pinned to `5.0.4-minimal`. Nothing updates on its own — a new version is applied
+when you run the command above.
+
+## Backup
+
+```bash
+qh node-red --backup --apply --out ~/backups
+```
+
+It stops the service, packs the data, the `.env` and the secrets, and starts
+it again. Cold on purpose: copying a live database gives an archive that only
+fails when you restore it.
+
+To restore, over the current data:
+
+```bash
+qh node-red --restore ~/backups/node-red-20260809-1200.tar.gz --apply
+```
+
+It asks you to type `node-red` to confirm, because the current data is deleted
+before the archive is unpacked.
+
+## Remove
+
+```bash
+qh node-red --remove --apply           # stops it, keeps the data
+qh node-red --remove --purge --apply   # and deletes volumes, secrets and .env
+```
+
+`--purge` asks for the typed name too. The tailnet node is not deregistered by
+this — that is done in the Tailscale admin.
+
+## Commands
 
 ```bash
 systemctl --user status node-red
 podman logs -f node-red
-podman exec node-red wget -qO- http://127.0.0.1:1880/
 ```
 
 ## Credits
 
-Quadlet deploy based on
-[Node-RED](https://github.com/node-red/node-red) (Apache-2.0).
+[node-red/node-red](https://github.com/node-red/node-red) — Apache-2.0
+
+[Official documentation](http://nodered.org)

@@ -1,70 +1,22 @@
-# FreshRSS — Podman Quadlet (rootless)
+# FreshRSS
+
+<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/freshrss.svg" width="64" height="64" alt="">
 
 **[🇧🇷 Leia em português](./README.pt-BR.md)**
 
-Deploy do [FreshRSS](https://freshrss.org) (agregador de feeds RSS/Atom
-self-hosted, lightweight, with a Google Reader/Fever-compatible API for
-mobile apps) via Podman Quadlet, using the official
-[`freshrss/freshrss`](https://github.com/FreshRSS/FreshRSS/blob/edge/Docker/README.md)
-(variante Alpine).
+A self-hosted RSS/Atom feed aggregator, with a compatible API for mobile apps.
 
-**The image is pulled from GHCR, not Docker Hub** — `docker.io/freshrss/freshrss`
-returned an authentication error in practice (`unauthorized:
-incorrect username or password`, mesmo anônimo/sem login configurado —
-it looks like a registry-side problem, not this host's); `ghcr.io/freshrss/freshrss`
-funcionou normal, mesma imagem/tag, publicada pelo mesmo projeto.
-
-## Architecture
-
-A single container, running as root internally (no `PUID`/`PGID`, no
-`UserNS=keep-id` — the image manages permissions its own way).
-Banco **SQLite embutido** no volume de dados, sem container de banco
-separate — enough for personal use (the project itself documents
-Postgres/MySQL as an alternative only for larger installations, outside the
-escopo deste deploy).
-
-**No automatic installation through env vars** — the image supports
-`FRESHRSS_INSTALL`/`FRESHRSS_USER` pra criar o admin sem tocar no
-navegador, mas isso significa embutir a senha em texto puro num
-`EnvironmentFile=` (against [rule 2](../../docs/conventions.md) — secrets are
-imperative). Instead, the admin account is created through the web wizard on
-first access — the same pattern already used for
-[ownCloud](../owncloud/)/[Immich](../immich/)/[Audiobookshelf](../audiobookshelf/).
-
-The healthcheck uses the image's own `cli/health.php` (no output, just an
-exit code) — no need for `wget`/`curl` against an HTTP endpoint.
-
-## Files
-
-```
-freshrss.container      # main unit
-```
-
-## Prerequisites
-
-- Rootless Podman with systemd `--user` working
-
-## Installation
+## Install
 
 ```bash
-python3 install.py freshrss            # dry-run: shows what it will do
-python3 install.py freshrss --apply
+qh freshrss            # shows the plan
+qh freshrss --apply
 ```
 
-For the local network only, `--access local`; on the tailnet and the LAN,
-`--access both`. Adding `--href-local` points the dashboard link at the LAN.
-The script creates the directories, writes the `.env`, generates the secrets,
-fixes the volumes' ownership, starts the service and prints the address at the
-end — see [Installing and operating](../../docs/installing.md).
-
-Open `http://<host-ip>:8104` (ou via [tsdproxy](../tsdproxy/) em
-`https://freshrss.<your-tailnet>.ts.net`) e completar o assistente de
-installation wizard on first access — choose **SQLite** as the database (it
-is already selected by default) and create the admin account there.
+Open `http://<host-ip>:8104` or `https://freshrss.<your-tailnet>.ts.net`.
 
 <details>
-<summary><b>Manual installation</b> (advanced) — the same steps, one at a time</summary>
-
+<summary><b>Manual install</b></summary>
 
 ```bash
 # 1. Download the units (no need to clone the repository)
@@ -85,41 +37,62 @@ systemctl --user daemon-reload
 systemctl --user start freshrss
 ```
 
-Open `http://<host-ip>:8104` (ou via [tsdproxy](../tsdproxy/) em
-`https://freshrss.<your-tailnet>.ts.net`) e completar o assistente de
-installation wizard on first access — choose **SQLite** as the database (it
-is already selected by default) and create the admin account there.
-
 </details>
 
-## Auto-update
+## Files
 
-No `AutoUpdate=` — an explicit tag (`1.29.1-alpine`), bumped by hand
-([rule 9](../../docs/conventions.md)). The image has a real healthcheck
-(`cli/health.php`) — `AutoUpdate=registry` could be enabled with working
-rollback, but saved feeds and articles are the user's real data, the same
-reasoning as [Radicale](../radicale/)/[vaultwarden](../vaultwarden/) — review
-by hand before updating.
-
-## Backup & recovery
-
-```bash
-systemctl --user stop freshrss
-tar -czf freshrss-backup-$(date +%Y%m%d-%H%M%S).tar.gz \
-  -C ~/.config/containers/volumes freshrss
-systemctl --user start freshrss
+```
+freshrss.container
+.env.example
 ```
 
-## Useful commands
+## Update
+
+```bash
+qh freshrss --update --apply
+```
+
+Pinned to `1.29.1-alpine`. Nothing updates on its own — a new version is applied
+when you run the command above.
+
+## Backup
+
+```bash
+qh freshrss --backup --apply --out ~/backups
+```
+
+It stops the service, packs the data, the `.env` and the secrets, and starts
+it again. Cold on purpose: copying a live database gives an archive that only
+fails when you restore it.
+
+To restore, over the current data:
+
+```bash
+qh freshrss --restore ~/backups/freshrss-20260809-1200.tar.gz --apply
+```
+
+It asks you to type `freshrss` to confirm, because the current data is deleted
+before the archive is unpacked.
+
+## Remove
+
+```bash
+qh freshrss --remove --apply           # stops it, keeps the data
+qh freshrss --remove --purge --apply   # and deletes volumes, secrets and .env
+```
+
+`--purge` asks for the typed name too. The tailnet node is not deregistered by
+this — that is done in the Tailscale admin.
+
+## Commands
 
 ```bash
 systemctl --user status freshrss
 podman logs -f freshrss
-podman exec freshrss php cli/health.php
-podman exec --user www-data freshrss php cli/actualize-feeds.php   # force a manual refresh
 ```
 
 ## Credits
 
-Quadlet deploy based on [FreshRSS](https://github.com/FreshRSS/FreshRSS)
-(AGPL-3.0).
+[FreshRSS/FreshRSS](https://github.com/FreshRSS/FreshRSS) — AGPL-3.0
+
+[Official documentation](https://freshrss.org)

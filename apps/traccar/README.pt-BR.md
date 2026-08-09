@@ -1,68 +1,22 @@
-# Traccar — Podman Quadlet (rootless)
+# Traccar
 
-**[🇬🇧 Read in English](./README.md)**
+<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/traccar.svg" width="64" height="64" alt="">
 
-Deploy do [Traccar](https://github.com/traccar/traccar) (plataforma de
-rastreamento de GPS) via Podman Quadlet, usando a imagem oficial
-`docker.io/traccar/traccar`.
+**[🇺🇸 Read in English](./README.md)**
 
-Mapa ao vivo, histórico de trajeto, geocercas, relatórios e alertas —
-com o app oficial no celular ou com rastreador dedicado. Convive com o
-[OwnTracks](../owntracks/README.pt-BR.md), que é mais simples e MQTT-nativo; o Traccar
-tem a parte de relatório e geocerca que o OwnTracks não tem.
+Rastreamento de GPS — mapa ao vivo, histórico, geocercas e relatórios, com app no celular.
 
-## Arquitetura
-
-Container único, JVM, **banco H2 embutido** em `data/` — é o default do
-Traccar, sem serviço de banco separado ([regra 22](../../docs/pt-BR/convencoes.md)).
-
-Aceita o nível mais forte de hardening do repositório (`ReadOnly=true`,
-`DropCapability=ALL`, `User=1000`), com um detalhe que só apareceu
-testando: **`podman diff` mostra que o Traccar cria `/opt/traccar/override`
-no start**, e sem um `Tmpfs=` ali o `ReadOnly` derruba o serviço. É onde
-ficam sobrescritas do frontend, conteúdo descartável.
-
-### Portas
-
-| Porta host | Pra quê |
-| --- | --- |
-| `8099` | interface web (8082 dentro do container) |
-| `5056` | protocolo OsmAnd, TCP e UDP (5055 dentro) |
-
-A 5055 do host já é do [seerr](../media-stack/README.pt-BR.md), então o protocolo sai na
-**5056**. No app Traccar Client, informar a porta 5056 junto do endereço.
-
-O Traccar fala ~150 protocolos, cada um numa porta entre 5000 e 5150. A
-imagem oficial manda publicar a faixa inteira; aqui publica-se só a do
-OsmAnd, que é o que o app oficial usa. Rastreador dedicado de outra marca
-precisa da porta correspondente adicionada na unit.
-
-## Arquivos
-
-```
-traccar.container      # unit principal
-traccar.xml.example    # config — banco H2 e porta do protocolo
-```
-
-## Instalação
+## Instalar
 
 ```bash
-python3 install.py traccar            # dry-run: mostra o que vai fazer
-python3 install.py traccar --apply
+qh traccar            # mostra o plano
+qh traccar --apply
 ```
 
-Só na rede local, `--access local`; na tailnet e na LAN, `--access
-both`. Acrescentar `--href-local` faz o link do dashboard apontar pra LAN. O script cria os diretórios, grava o
-`.env`, gera os secrets, ajusta o dono dos volumes, sobe o serviço e
-imprime o endereço no fim — ver
-[Instalando e operando](../../docs/pt-BR/instalacao.md) no README
-raiz.
-
-
+Abrir `http://<ip-do-host>:5056` ou `https://traccar.<your-tailnet>.ts.net`.
 
 <details>
-<summary><b>Instalação manual</b> (avançado) — os mesmos passos, um a um</summary>
-
+<summary><b>Instalação manual</b></summary>
 
 ```bash
 # 1. Baixar a unit (sem precisar clonar o repositório)
@@ -87,74 +41,60 @@ systemctl --user start traccar
 
 </details>
 
-## Criando o primeiro usuário
+## Arquivos
 
-**O Traccar não tem mais admin padrão.** Versões antigas criavam
-`admin`/`admin`; as atuais não criam ninguém, e o primeiro usuário
-cadastrado vira administrador.
-
-E há uma armadilha: **`web.registration` não é chave de configuração do
-Traccar.** Ela circula por aí em tutoriais, mas o Traccar ignora — a
-única chave com esse nome no `Keys.java` é `openid.allowRegistration`. O
-flag de cadastro mora **no banco**, na linha da tabela `tc_servers`, e
-nasce desligado. Mexer no XML depois do primeiro start não muda nada.
-
-Isso é seguro por padrão, e o bootstrap funciona assim (testado):
-
-```bash
-# Com ZERO usuários, o POST é liberado e o primeiro vira admin
-curl -X POST http://127.0.0.1:8099/api/users \
-  -H 'Content-Type: application/json' \
-  -d '{"name":"Seu Nome","email":"voce@exemplo.com","password":"SUA-SENHA"}'
+```
+traccar.container
+traccar.xml.example
 ```
 
-A partir do segundo, a mesma chamada responde `SecurityException:
-Registration disabled`. Pra liberar cadastro de propósito, é na própria
-interface, logado como admin: Configurações → Servidor → Registro.
-
-Acessar `http://<ip-do-host>:8099` (ou via [tsdproxy](../tsdproxy/README.pt-BR.md) em
-`https://traccar.<your-tailnet>.ts.net`).
-
-## Ligando o celular
-
-App **Traccar Client** (Android/iOS):
-
-| Campo | Valor |
-| --- | --- |
-| Endereço | `<ip-do-host>` ou o nome da tailnet |
-| Porta | `5056` |
-| Identificador | o mesmo que você cadastrar como "identificador" do dispositivo na web |
-
-Cadastrar o dispositivo na interface web primeiro (botão `+` na lista de
-dispositivos), usando exatamente o identificador do app.
-
-## Auto-update
-
-Sem `AutoUpdate=` — tag explícita (`6.14.5`), bump manual (regra 9 do
-convenções). Histórico de posição é dado real e o H2 migra de schema
-entre versões: backup antes.
-
-## Backup & Recuperação
+## Atualizar
 
 ```bash
-systemctl --user stop traccar
-tar -czf traccar-backup-$(date +%Y%m%d-%H%M%S).tar.gz \
-  -C ~/.config/containers/volumes traccar
-systemctl --user start traccar
+qh traccar --update --apply
 ```
 
-`data/database.mv.db` é o banco inteiro (usuários, dispositivos,
-posições). `logs/` é descartável.
+Fixado em `6.14.5`. Nada atualiza sozinho — versão nova entra quando você
+roda o comando acima.
 
-## Comandos úteis
+## Backup
+
+```bash
+qh traccar --backup --apply --out ~/backups
+```
+
+Ele para o serviço, empacota os dados, o `.env` e os secrets, e sobe de novo.
+A frio de propósito: copiar banco vivo dá um arquivo que só falha na hora de
+restaurar.
+
+Pra restaurar, por cima dos dados atuais:
+
+```bash
+qh traccar --restore ~/backups/traccar-20260809-1200.tar.gz --apply
+```
+
+Ele pede que você digite `traccar` pra confirmar, porque os dados atuais são
+apagados antes de o arquivo ser extraído.
+
+## Remover
+
+```bash
+qh traccar --remove --apply           # para e tira, mantendo os dados
+qh traccar --remove --purge --apply   # e apaga volumes, secrets e .env
+```
+
+O `--purge` também pede o nome digitado. O nó da tailnet não é desregistrado
+por isso — isso é no admin do Tailscale.
+
+## Comandos
 
 ```bash
 systemctl --user status traccar
 podman logs -f traccar
-curl -s http://127.0.0.1:8099/api/server | python3 -m json.tool
 ```
 
 ## Créditos
 
-Deploy Quadlet baseado no [Traccar](https://github.com/traccar/traccar)
-de [Anton Tananaev](https://github.com/tananaev) (Apache-2.0).
+[traccar/traccar](https://github.com/traccar/traccar) — Apache-2.0
+
+[Documentação oficial](https://www.traccar.org)

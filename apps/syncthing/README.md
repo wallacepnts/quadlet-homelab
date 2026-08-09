@@ -1,60 +1,22 @@
-# Syncthing — Podman Quadlet (rootless)
+# Syncthing
+
+<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/syncthing.svg" width="64" height="64" alt="">
 
 **[🇧🇷 Leia em português](./README.pt-BR.md)**
 
-A [Syncthing](https://syncthing.net) (P2P file sync
-P2P entre dispositivos, sem servidor central/nuvem de terceiros) via
-Podman Quadlet, seguindo o
-[guia oficial de Docker](https://github.com/syncthing/syncthing/blob/main/README-Docker.md).
+P2P file sync between devices, with no central server.
 
-## Architecture
-
-A single container. PUID/PGID (the LSIO-like default, with no
-`UserNS=keep-id` — the image adjusts the volume's owner on the first start). A
-single volume (`/var/syncthing`) holds the config, the keys and — by default —
-the synced folders themselves (`Sync/` inside it); additional folders from
-outside can be pointed at later through the UI.
-
-**A bridge network, not `host`**: the official guide recommends
-`network_mode: host` so LAN peer discovery works over broadcast — the same
-trade-off already
-feita pro [Home Assistant](../home-assistant/)/Jellyfin (no
-[media-stack](../media-stack/)): it loses automatic LAN discovery and keeps
-this repository's default network isolation. **Global** discovery (over the
-internet, via Syncthing's own discovery server) keeps working normally; a
-direct connection to a LAN peer still works if you configure the address by
-hand on the remote device, it just is not automatic.
-
-## Files
-
-```
-syncthing.container   # main unit
-```
-
-## Prerequisites
-
-- Rootless Podman with systemd `--user` working
-
-## Installation
+## Install
 
 ```bash
-python3 install.py syncthing            # dry-run: shows what it will do
-python3 install.py syncthing --apply
+qh syncthing            # shows the plan
+qh syncthing --apply
 ```
 
-For the local network only, `--access local`; on the tailnet and the LAN,
-`--access both`. Adding `--href-local` points the dashboard link at the LAN.
-The script creates the directories, writes the `.env`, generates the secrets,
-fixes the volumes' ownership, starts the service and prints the address at the
-end — see [Installing and operating](../../docs/installing.md).
-
-Reach it through [tsdproxy](../tsdproxy/) (tailnet) at
-`https://syncthing.<your-tailnet>.ts.net`, ou local em
-`http://localhost:8384`.
+Open `http://<host-ip>:8384` or `https://syncthing.<your-tailnet>.ts.net`.
 
 <details>
-<summary><b>Manual installation</b> (advanced) — the same steps, one at a time</summary>
-
+<summary><b>Manual install</b></summary>
 
 ```bash
 # 1. Download the unit (no need to clone the repository)
@@ -79,54 +41,62 @@ systemctl --user daemon-reload
 systemctl --user start syncthing
 ```
 
-Reach it through [tsdproxy](../tsdproxy/) (tailnet) at
-`https://syncthing.<your-tailnet>.ts.net`, ou local em
-`http://localhost:8384`.
-
 </details>
 
-## Protecting the GUI (mandatory, right on first access)
+## Files
 
-**The official image has no environment variable to preconfigure the GUI's
-username and password** (an open request since
-[syncthing/syncthing#8791](https://github.com/syncthing/syncthing/issues/8791),
-with no timeline) — Syncthing comes up with **no authentication at all** by
-default, listening on `0.0.0.0`. Configure it straight in the UI as soon as
-you first open it: **Actions → Settings → GUI**, fill in the username and
-password, save (it restarts itself). Until you do, anyone who reaches port
-8384 (the whole tailnet, not just you) has full access
-— inclusive pra adicionar pastas/dispositivos.
-
-## Auto-update
-
-No `AutoUpdate=` — an explicit tag (`2.1.3`), bumped by hand
-(rule 9 of the [conventions](../../docs/conventions.md)). A imagem tem `curl`/healthcheck real (daria pra habilitar
-with genuine rollback), but the synced files are the user's real data —
-review by hand before updating, the same reasoning as
-[ownCloud](../owncloud/).
-
-## Backup & recovery
-
-```bash
-systemctl --user stop syncthing
-tar -czf syncthing-backup-$(date +%Y%m%d-%H%M%S).tar.gz \
-  -C ~/.config/containers/volumes syncthing
-systemctl --user start syncthing
+```
+syncthing.container
+.env.example
 ```
 
-`data/` includes both Syncthing's own config and keys and whatever synced
-folders live inside it (`data/Sync/` by default) — if you point at folders
-outside the volume through the UI, back those up separately.
+## Update
 
-## Useful commands
+```bash
+qh syncthing --update --apply
+```
+
+Pinned to `2.1.3`. Nothing updates on its own — a new version is applied
+when you run the command above.
+
+## Backup
+
+```bash
+qh syncthing --backup --apply --out ~/backups
+```
+
+It stops the service, packs the data, the `.env` and the secrets, and starts
+it again. Cold on purpose: copying a live database gives an archive that only
+fails when you restore it.
+
+To restore, over the current data:
+
+```bash
+qh syncthing --restore ~/backups/syncthing-20260809-1200.tar.gz --apply
+```
+
+It asks you to type `syncthing` to confirm, because the current data is deleted
+before the archive is unpacked.
+
+## Remove
+
+```bash
+qh syncthing --remove --apply           # stops it, keeps the data
+qh syncthing --remove --purge --apply   # and deletes volumes, secrets and .env
+```
+
+`--purge` asks for the typed name too. The tailnet node is not deregistered by
+this — that is done in the Tailscale admin.
+
+## Commands
 
 ```bash
 systemctl --user status syncthing
 podman logs -f syncthing
-podman exec syncthing curl -fkLsS -m 2 127.0.0.1:8384/rest/noauth/health
 ```
 
 ## Credits
 
-Quadlet deploy based on [Syncthing](https://github.com/syncthing/syncthing).
-Original licence: MPL-2.0.
+[syncthing/syncthing](https://github.com/syncthing/syncthing) — MPL-2.0.
+
+[Official documentation](https://syncthing.net/)

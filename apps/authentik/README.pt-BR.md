@@ -1,98 +1,22 @@
-# Authentik — Podman Quadlet (rootless)
+# Authentik
 
-**[🇬🇧 Read in English](./README.md)**
+<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/authentik.svg" width="64" height="64" alt="">
 
-Deploy do [Authentik](https://goauthentik.io) (servidor de identidade —
-SSO, MFA, OIDC/SAML) via Podman Quadlet, seguindo o
-[`compose.yml`](https://docs.goauthentik.io/compose.yml) oficial.
+**[🇺🇸 Read in English](./README.md)**
 
-**Implantado só pra teste/exploração** — ver "Limitação importante"
-abaixo antes de esperar que ele proteja outros apps deste repositório
-sozinho.
+Servidor de identidade.
 
-## Limitação importante: sem forward-auth automático aqui
-
-O uso mais comum do Authentik é na frente de outros apps, exigindo login
-antes de liberar acesso (SSO — um login só, protege tudo atrás do
-proxy). Isso normalmente depende do proxy da frente saber conversar com
-o Authentik (**forward-auth**, mesmo mecanismo do Authelia) — o
-[tsdproxy](../tsdproxy/README.pt-BR.md) (proxy usado neste repositório) **não suporta
-isso**, testado/pesquisado antes de decidir implantar.
-
-O Authentik tem uma saída que o Authelia não tem: **outposts em "Proxy
-Mode"** — um container extra por app protegido, que funciona como
-reverse proxy completo (recebe a requisição, confere login, só então
-repassa pro app de verdade) — nesse modo, dá pra apontar o tsdproxy pro
-outpost em vez de apontar direto pro app, sem precisar de forward-auth
-em lugar nenhum. **Não implantado ainda** — fica documentado aqui como
-o próximo passo, app por app, se/quando fizer sentido usar de verdade
-(cada app protegido = mais um outpost container).
-
-Por enquanto, este deploy é só o **core** (portal + admin) — dá pra
-explorar a interface, criar usuários/grupos, configurar provedores
-OIDC/SAML, sem nenhum outro serviço deste repositório depender dele.
-
-## Arquitetura
-
-Três containers na rede `authentik-net.network`:
-
-- `authentik-postgres` — banco (Postgres puro, **sem opção SQLite** —
-  diferente da maioria dos apps deste repositório, é exigência do
-  próprio Authentik).
-- `authentik` — o server (porta `9000` HTTP / `9443` HTTPS, só a `9000`
-  publicada — TLS já é feito pelo tsdproxy na borda da tailnet).
-- `authentik-worker` — tarefas em segundo plano (envio de e-mail,
-  outposts, outras tarefas assíncronas) — roda como **root dentro do
-  container** (`User=0`, igual ao compose oficial) e tem acesso ao
-  socket do Podman, necessário só quando outposts entrarem em uso.
-
-`authentik`/`authentik-worker` sobem só depois que o Postgres reporta
-`healthy` (`Requires=`/`After=`, mesmo padrão do
-[karakeep](../karakeep/README.pt-BR.md)/[immich](../immich/README.pt-BR.md)).
-
-**Sem `AUTHENTIK_REDIS__*`** — versões recentes do Authentik não exigem
-mais Redis (confirmado no `compose.yml` oficial atual, que só tem
-`postgresql`+`server`+`worker`) — arquitetura mais enxuta do que guias
-antigos sugerem.
-
-## Arquivos
-
-```
-authentik-net.network         # rede dedicada
-authentik-postgres.container  # banco
-authentik.container            # server (portal + admin)
-authentik-worker.container     # tarefas em segundo plano
-```
-
-## Pré-requisitos
-
-- Podman rootless com systemd `--user` funcionando
-- `podman.socket` habilitado (só pro worker — `systemctl --user enable
-  --now podman.socket` se ainda não estiver, mesmo pré-requisito do
-  [tsdproxy](../tsdproxy/README.pt-BR.md)/[Beszel](../beszel/README.pt-BR.md))
-
-## Instalação
+## Instalar
 
 ```bash
-python3 install.py authentik            # dry-run: mostra o que vai fazer
-python3 install.py authentik --apply
+qh authentik            # mostra o plano
+qh authentik --apply
 ```
 
-Só na rede local, `--access local`; na tailnet e na LAN, `--access
-both`. Acrescentar `--href-local` faz o link do dashboard apontar pra LAN. O script cria os diretórios, grava o
-`.env`, gera os secrets, ajusta o dono dos volumes, sobe o serviço e
-imprime o endereço no fim — ver
-[Instalando e operando](../../docs/pt-BR/instalacao.md) no README
-raiz.
-
-Acessar `http://<ip-do-host>:9000` (ou via [tsdproxy](../tsdproxy/README.pt-BR.md) em
-`https://authentik.<your-tailnet>.ts.net`) — redireciona pra `/setup` no
-primeiro acesso, cria a conta de admin ali (chamada de `akadmin` por
-padrão).
+Abrir `http://<ip-do-host>:9000` ou `https://authentik.<your-tailnet>.ts.net`.
 
 <details>
-<summary><b>Instalação manual</b> (avançado) — os mesmos passos, um a um</summary>
-
+<summary><b>Instalação manual</b></summary>
 
 ```bash
 # 1. Baixar as units (sem precisar clonar o repositório)
@@ -130,45 +54,72 @@ systemctl --user start authentik
 systemctl --user start authentik-worker
 ```
 
-Acessar `http://<ip-do-host>:9000` (ou via [tsdproxy](../tsdproxy/README.pt-BR.md) em
-`https://authentik.<your-tailnet>.ts.net`) — redireciona pra `/setup` no
-primeiro acesso, cria a conta de admin ali (chamada de `akadmin` por
-padrão).
-
 </details>
 
-## Auto-update
+## Arquivos
 
-Sem `AutoUpdate=` nos três — tags explícitas (`2026.5.6`), bump manual
-([regra 9](../../docs/pt-BR/convencoes.md)). Sem `HealthCmd` no Postgres/worker seguindo o
-padrão de dependência interna do resto do repositório; o `authentik`
-(server) tem `HealthCmd` real (`/-/health/live/`) — daria pra habilitar
-rollback funcional nele, mas usuários/grupos/config são dado real,
-revisão manual antes de atualizar.
-
-## Backup & Recuperação
-
-```bash
-systemctl --user stop authentik authentik-worker authentik-postgres
-tar -czf authentik-backup-$(date +%Y%m%d-%H%M%S).tar.gz \
-  -C ~/.config/containers/volumes authentik
-systemctl --user start authentik-postgres authentik authentik-worker
+```
+authentik-postgres.container
+authentik-worker.container
+authentik.container
+authentik-net.network
+install.ini
 ```
 
-`~/.config/containers/secrets/authentik/` (senha do Postgres + chave de
-assinatura) também precisa de backup separado — sem a `secret-key`,
-sessões/tokens existentes ficam inválidos mesmo restaurando o banco.
+Units da stack:
 
-## Comandos úteis
+- `authentik-postgres`
+- `authentik-worker`
+- `authentik`
+- `authentik-n`
+
+## Atualizar
 
 ```bash
-systemctl --user status authentik-postgres authentik authentik-worker
+qh authentik --update --apply
+```
+
+Fixado em `16-alpine`, `2026.5.6`. Nada atualiza sozinho — versão nova entra quando você
+roda o comando acima.
+
+## Backup
+
+```bash
+qh authentik --backup --apply --out ~/backups
+```
+
+Ele para o serviço, empacota os dados, o `.env` e os secrets, e sobe de novo.
+A frio de propósito: copiar banco vivo dá um arquivo que só falha na hora de
+restaurar.
+
+Pra restaurar, por cima dos dados atuais:
+
+```bash
+qh authentik --restore ~/backups/authentik-20260809-1200.tar.gz --apply
+```
+
+Ele pede que você digite `authentik` pra confirmar, porque os dados atuais são
+apagados antes de o arquivo ser extraído.
+
+## Remover
+
+```bash
+qh authentik --remove --apply           # para e tira, mantendo os dados
+qh authentik --remove --purge --apply   # e apaga volumes, secrets e .env
+```
+
+O `--purge` também pede o nome digitado. O nó da tailnet não é desregistrado
+por isso — isso é no admin do Tailscale.
+
+## Comandos
+
+```bash
+systemctl --user status authentik
 podman logs -f authentik
-podman logs -f authentik-worker
-podman exec authentik curl -fsS http://127.0.0.1:9000/-/health/live/
 ```
 
 ## Créditos
 
-Deploy Quadlet baseado no [Authentik](https://github.com/goauthentik/authentik)
-(MIT, com módulos enterprise sob licença própria).
+[goauthentik/authentik](https://github.com/goauthentik/authentik) — MIT
+
+[Documentação oficial](https://goauthentik.io)

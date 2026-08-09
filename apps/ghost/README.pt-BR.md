@@ -1,83 +1,22 @@
-# Ghost — Podman Quadlet (rootless)
+# Ghost
 
-**[🇬🇧 Read in English](./README.md)**
+<img src="https://cdn.simpleicons.org/ghost" width="64" height="64" alt="">
 
-Deploy do [Ghost](https://ghost.org) (plataforma de blog/newsletter
-self-hosted) via Podman Quadlet, usando a imagem oficial
-[`ghost`](https://hub.docker.com/_/ghost) (variante Alpine).
+**[🇺🇸 Read in English](./README.md)**
 
-## SQLite em modo development — decisão consciente
+Blog/newsletter self-hosted.
 
-O Ghost **só suporta SQLite oficialmente em modo `development`**
-(`NODE_ENV=development`) — produção de verdade, pelo próprio projeto,
-exige MySQL. Mesmo trade-off já aceito pro [ownCloud](../owncloud/README.pt-BR.md)
-neste repositório: um container só, mais simples, fora do que o
-projeto recomenda oficialmente, mas funcional pra uso pessoal/baixo
-volume. Se precisar do caminho "oficial" depois, trocar pra MySQL é só
-adicionar um container de banco e trocar as três variáveis
-`database__*` (ver [documentação oficial](https://docs.ghost.org/install/docker)).
-
-## Arquitetura
-
-Container único, roda como root internamente (sem `PUID`/`PGID`, sem
-`UserNS=keep-id` — a própria imagem ajusta permissão sozinha, mesmo
-padrão de vários outros apps deste repositório). Um volume só
-(`/var/lib/ghost/content`) — guarda o banco SQLite, imagens/temas
-enviados, e configuração.
-
-Healthcheck usa o endpoint de site da própria API admin do Ghost
-(`/ghost/api/admin/site/`, sem autenticação, leve) — testado na
-prática, mais barato que buscar a home inteira.
-
-**Ruído esperado no log**: o Ghost tenta calcular o tamanho do próprio
-favicon buscando a `url` configurada — se essa URL não resolver de
-volta pro próprio container (comum atrás de proxy/tailnet, testado na
-prática), aparece um erro `ECONNREFUSED`/`IMAGE_SIZE_URL` no log.
-Cosmético, não impede o site de funcionar.
-
-**Sem acesso local por IP:porta depois de configurar a `url`** —
-testado na prática: assim que `url` aponta pro domínio real
-(tsdproxy/tailnet), o Ghost passa a redirecionar (301) **qualquer**
-requisição que não bata com essa URL, inclusive
-`http://<ip-do-host>:9094` direto — não é bug, é o comportamento
-esperado da própria aplicação (ela trata `url` como canônica).
-Acessar sempre pela URL configurada (`https://ghost.<your-tailnet>.ts.net`),
-não pelo IP do host.
-
-## Arquivos
-
-```
-ghost.container       # unit principal
-```
-
-## Pré-requisitos
-
-- Podman rootless com systemd `--user` funcionando
-
-## Instalação
+## Instalar
 
 ```bash
-python3 install.py ghost            # dry-run: mostra o que vai fazer
-python3 install.py ghost --apply
+qh ghost            # mostra o plano
+qh ghost --apply
 ```
 
-Só na rede local, `--access local`; na tailnet e na LAN, `--access
-both`. Acrescentar `--href-local` faz o link do dashboard apontar pra LAN. O script cria os diretórios, grava o
-`.env`, gera os secrets, ajusta o dono dos volumes, sobe o serviço e
-imprime o endereço no fim — ver
-[Instalando e operando](../../docs/pt-BR/instalacao.md) no README
-raiz.
-
-Acessar via [tsdproxy](../tsdproxy/README.pt-BR.md) em
-`https://ghost.<your-tailnet>.ts.net/ghost/` e criar a conta admin no
-assistente de instalação do primeiro acesso. **Só funciona pela URL
-configurada no passo 3** — acesso local por `http://<ip-do-host>:9094`
-direto é redirecionado pra essa URL assim que `url` aponta pro domínio
-real (ver "Sem acesso local..." acima).
+Abrir `http://<ip-do-host>:9094` ou `https://ghost.<your-tailnet>.ts.net`.
 
 <details>
-<summary><b>Instalação manual</b> (avançado) — os mesmos passos, um a um</summary>
-
+<summary><b>Instalação manual</b></summary>
 
 ```bash
 # 1. Baixar as units (sem precisar clonar o repositório)
@@ -100,42 +39,63 @@ systemctl --user daemon-reload
 systemctl --user start ghost
 ```
 
-Acessar via [tsdproxy](../tsdproxy/README.pt-BR.md) em
-`https://ghost.<your-tailnet>.ts.net/ghost/` e criar a conta admin no
-assistente de instalação do primeiro acesso. **Só funciona pela URL
-configurada no passo 3** — acesso local por `http://<ip-do-host>:9094`
-direto é redirecionado pra essa URL assim que `url` aponta pro domínio
-real (ver "Sem acesso local..." acima).
-
 </details>
 
-## Auto-update
+## Arquivos
 
-Sem `AutoUpdate=` — tag explícita (`6.56.0-alpine`), bump manual (regra
-9 das convenções). A imagem tem `wget`/healthcheck real — daria pra
-habilitar `AutoUpdate=registry` com rollback funcional, mas
-posts/config são dado real do usuário, revisão manual antes de
-atualizar. Migrações de schema entre versões maiores do Ghost também
-não são raras — checar o changelog antes de trocar de tag.
-
-## Backup & Recuperação
-
-```bash
-systemctl --user stop ghost
-tar -czf ghost-backup-$(date +%Y%m%d-%H%M%S).tar.gz \
-  -C ~/.config/containers/volumes ghost
-systemctl --user start ghost
+```
+ghost.container
+.env.example
+install.ini
 ```
 
-## Comandos úteis
+## Atualizar
+
+```bash
+qh ghost --update --apply
+```
+
+Fixado em `6.56.0-alpine`. Nada atualiza sozinho — versão nova entra quando você
+roda o comando acima.
+
+## Backup
+
+```bash
+qh ghost --backup --apply --out ~/backups
+```
+
+Ele para o serviço, empacota os dados, o `.env` e os secrets, e sobe de novo.
+A frio de propósito: copiar banco vivo dá um arquivo que só falha na hora de
+restaurar.
+
+Pra restaurar, por cima dos dados atuais:
+
+```bash
+qh ghost --restore ~/backups/ghost-20260809-1200.tar.gz --apply
+```
+
+Ele pede que você digite `ghost` pra confirmar, porque os dados atuais são
+apagados antes de o arquivo ser extraído.
+
+## Remover
+
+```bash
+qh ghost --remove --apply           # para e tira, mantendo os dados
+qh ghost --remove --purge --apply   # e apaga volumes, secrets e .env
+```
+
+O `--purge` também pede o nome digitado. O nó da tailnet não é desregistrado
+por isso — isso é no admin do Tailscale.
+
+## Comandos
 
 ```bash
 systemctl --user status ghost
 podman logs -f ghost
-podman exec ghost wget -qO- http://127.0.0.1:2368/ghost/api/admin/site/
 ```
 
 ## Créditos
 
-Deploy Quadlet baseado no [Ghost](https://github.com/TryGhost/Ghost)
-(MIT).
+[TryGhost/Ghost](https://github.com/TryGhost/Ghost) — MIT
+
+[Documentação oficial](https://ghost.org)

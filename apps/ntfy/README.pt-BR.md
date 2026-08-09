@@ -1,90 +1,22 @@
-# ntfy — Podman Quadlet (rootless)
+# ntfy
 
-**[🇬🇧 Read in English](./README.md)**
+<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/ntfy.svg" width="64" height="64" alt="">
 
-Deploy do [ntfy](https://github.com/binwiederhier/ntfy) (servidor de
-notificações push) via Podman Quadlet, usando a imagem oficial
-`docker.io/binwiederhier/ntfy`.
+**[🇺🇸 Read in English](./README.md)**
 
-## Por que ele existe aqui
+Servidor de notificações push — destino dos alertas do uptime-kuma, wud e zerobyte, com app no celular.
 
-Este repositório tem três serviços cujo trabalho é *avisar de alguma
-coisa* — [uptime-kuma](../uptime-kuma/README.pt-BR.md) (serviço caiu), [wud](../wud/README.pt-BR.md)
-(imagem nova disponível) e [zerobyte](../zerobyte/README.pt-BR.md) (backup falhou) — e
-até agora nenhum tinha pra onde mandar o alerta. Os três suportam ntfy
-nativamente. Ver "Ligando os alertas" abaixo.
-
-Do lado do celular, o app do ntfy assina os tópicos e recebe push sem
-depender de servidor de terceiro (nem FCM, se você usar a build do
-F-Droid).
-
-## Arquitetura
-
-Container único, Go, SQLite embutido. Dois volumes:
-
-| Volume | Pra quê |
-| --- | --- |
-| `/var/cache/ntfy` | cache de mensagens (`cache.db`) e anexos |
-| `/var/lib/ntfy` | banco de usuários e permissões (`user.db`) |
-
-**É o serviço mais endurecido do repositório**, junto com
-[uptime-kuma](../uptime-kuma/README.pt-BR.md) e [homebox](../homebox/README.pt-BR.md): `ReadOnly=true`,
-`DropCapability=ALL` e `User=1000`.
-
-### O truque que evitou uma capability
-
-Por padrão o ntfy escuta na **porta 80 dentro do container**, e porta
-<1024 exige `NET_BIND_SERVICE` — é exatamente o caso do
-[vaultwarden](../vaultwarden/README.pt-BR.md), que precisa dessa capability por isso.
-Aqui, `NTFY_LISTEN_HTTP=:2586` move o listener pra uma porta alta e a
-necessidade some: o container roda com **zero** capabilities.
-
-Vale como método geral ([convenções, regra 20](../../docs/pt-BR/convencoes.md)): antes de conceder uma
-capability, ver se dá pra remover a necessidade dela.
-
-## Segurança: o servidor nasce aberto
-
-Sem configuração, **qualquer um que alcance a porta publica e assina
-qualquer tópico**. Um servidor de notificação aberto é um relay de spam
-esperando pra acontecer.
-
-A unit já vem com `NTFY_AUTH_DEFAULT_ACCESS=deny-all`, testado na
-prática: requisição anônima leva `403`, e só usuário criado com
-`ntfy user add` passa. Os usuários são **imperativos**, como os
-`podman secret` deste repositório — não versionar, criar no passo 4 da
-instalação.
-
-## Arquivos
-
-```
-ntfy.container   # unit principal
-.env.example     # URL canônica, retenção e limites de anexo
-```
-
-## Pré-requisitos
-
-- Podman rootless com systemd `--user` funcionando
-
-## Instalação
+## Instalar
 
 ```bash
-python3 install.py ntfy            # dry-run: mostra o que vai fazer
-python3 install.py ntfy --apply
+qh ntfy            # mostra o plano
+qh ntfy --apply
 ```
 
-Só na rede local, `--access local`; na tailnet e na LAN, `--access
-both`. Acrescentar `--href-local` faz o link do dashboard apontar pra LAN. O script cria os diretórios, grava o
-`.env`, gera os secrets, ajusta o dono dos volumes, sobe o serviço e
-imprime o endereço no fim — ver
-[Instalando e operando](../../docs/pt-BR/instalacao.md) no README
-raiz.
-
-Acessar `http://<ip-do-host>:8098` (ou via [tsdproxy](../tsdproxy/README.pt-BR.md) em
-`https://ntfy.<your-tailnet>.ts.net`).
+Abrir `http://<ip-do-host>:8098` ou `https://ntfy.<your-tailnet>.ts.net`.
 
 <details>
-<summary><b>Instalação manual</b> (avançado) — os mesmos passos, um a um</summary>
-
+<summary><b>Instalação manual</b></summary>
 
 ```bash
 # 1. Baixar a unit (sem precisar clonar o repositório)
@@ -114,94 +46,62 @@ podman exec -e NTFY_PASSWORD ntfy ntfy user add --role=admin admin
 unset NTFY_PASSWORD
 ```
 
-Acessar `http://<ip-do-host>:8098` (ou via [tsdproxy](../tsdproxy/README.pt-BR.md) em
-`https://ntfy.<your-tailnet>.ts.net`).
-
-**`NTFY_BASE_URL` importa.** O ntfy grava links de anexo e de web push
-com base nela; apontar pro IP:porta faz os links não abrirem de fora do
-host. Usar o endereço da tailnet.
-
 </details>
 
-## Testando
+## Arquivos
 
-```bash
-# deve dar 403 — servidor fechado, como esperado
-curl -s -o /dev/null -w '%{http_code}\n' -d teste http://127.0.0.1:8098/alertas
-
-# com credencial, publica e lê de volta
-curl -u admin:<senha> -d "funcionou" http://127.0.0.1:8098/alertas
-curl -u admin:<senha> 'http://127.0.0.1:8098/alertas/json?poll=1'
+```
+ntfy.container
+.env.example
 ```
 
-## Ligando os alertas dos outros serviços
-
-Um usuário separado por serviço, com acesso só ao tópico dele, é melhor
-que reusar o admin — se um vazar, o estrago é um tópico.
+## Atualizar
 
 ```bash
-read -rs NTFY_PASSWORD && export NTFY_PASSWORD
-podman exec -e NTFY_PASSWORD ntfy ntfy user add alertas
-unset NTFY_PASSWORD
-podman exec ntfy ntfy access alertas 'uptime-kuma' write-only
-podman exec ntfy ntfy access alertas 'wud' write-only
-podman exec ntfy ntfy access alertas 'backup' write-only
-# e leitura pra você, no celular
-podman exec ntfy ntfy access admin '*' read-write
+qh ntfy --update --apply
 ```
 
-Um detalhe de endereço vale pros três: em rootless, os containers deste
-repositório não compartilham rede bridge, então **não** se resolvem pelo
-nome do container. O endereço que funciona de dentro de qualquer um deles
-é o da tailnet (`https://ntfy.<your-tailnet>.ts.net`, via
-[tsdproxy](../tsdproxy/README.pt-BR.md), com TLS de verdade) — confirmado resolvendo de
-dentro do uptime-kuma. `http://<ip-do-host>:8098` também serve, em texto
-claro.
+Fixado em `v2.27.0`. Nada atualiza sozinho — versão nova entra quando você
+roda o comando acima.
 
-- **[uptime-kuma](../uptime-kuma/README.pt-BR.md)** — Configurações → Notificações →
-  novo, tipo `ntfy`. Servidor `https://ntfy.<your-tailnet>.ts.net`,
-  tópico `uptime-kuma`, usuário/senha acima.
-- **[wud](../wud/README.pt-BR.md)** — trigger nativo, por variável de ambiente no
-  `wud.env`:
-  ```bash
-  WUD_TRIGGER_NTFY_ALERTAS_URL=https://ntfy.<your-tailnet>.ts.net
-  WUD_TRIGGER_NTFY_ALERTAS_TOPIC=wud
-  WUD_TRIGGER_NTFY_ALERTAS_AUTH_USER=alertas
-  WUD_TRIGGER_NTFY_ALERTAS_AUTH_PASSWORD=<senha>
-  ```
-- **[zerobyte](../zerobyte/README.pt-BR.md)** — nas notificações do job, webhook
-  `POST` pra `https://ntfy.<your-tailnet>.ts.net/backup` com header
-  `Authorization: Basic <base64 de alertas:senha>`.
-
-## Auto-update
-
-Sem `AutoUpdate=` — tag explícita (`v2.27.0`), bump manual (regra 9 do
-convenções). O `wud.tag.include` restringe a `vX.Y.Z`.
-
-## Backup & Recuperação
+## Backup
 
 ```bash
-systemctl --user stop ntfy
-tar -czf ntfy-backup-$(date +%Y%m%d-%H%M%S).tar.gz \
-  -C ~/.config/containers/volumes ntfy
-systemctl --user start ntfy
+qh ntfy --backup --apply --out ~/backups
 ```
 
-Só `lib/user.db` importa de verdade (usuários e permissões) — o cache de
-mensagens é descartável por definição.
+Ele para o serviço, empacota os dados, o `.env` e os secrets, e sobe de novo.
+A frio de propósito: copiar banco vivo dá um arquivo que só falha na hora de
+restaurar.
 
-## Comandos úteis
+Pra restaurar, por cima dos dados atuais:
+
+```bash
+qh ntfy --restore ~/backups/ntfy-20260809-1200.tar.gz --apply
+```
+
+Ele pede que você digite `ntfy` pra confirmar, porque os dados atuais são
+apagados antes de o arquivo ser extraído.
+
+## Remover
+
+```bash
+qh ntfy --remove --apply           # para e tira, mantendo os dados
+qh ntfy --remove --purge --apply   # e apaga volumes, secrets e .env
+```
+
+O `--purge` também pede o nome digitado. O nó da tailnet não é desregistrado
+por isso — isso é no admin do Tailscale.
+
+## Comandos
 
 ```bash
 systemctl --user status ntfy
 podman logs -f ntfy
-podman exec ntfy ntfy user list
-podman exec ntfy ntfy access
-curl -s http://127.0.0.1:8098/v1/health
 ```
 
 ## Créditos
 
-Deploy Quadlet baseado no [ntfy](https://github.com/binwiederhier/ntfy)
-de [binwiederhier](https://github.com/binwiederhier)
-(Apache-2.0/GPL-2.0).
+[binwiederhier/ntfy](https://github.com/binwiederhier/ntfy) — Apache-2.0
+
+[Documentação oficial](https://ntfy.sh)

@@ -1,56 +1,22 @@
-# LubeLogger — Podman Quadlet (rootless)
+# LubeLogger
 
-**[🇬🇧 Read in English](./README.md)**
+<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/lubelogger.png" width="64" height="64" alt="">
 
-Deploy do [LubeLogger](https://lubelogger.com) (controle de manutenção
-veicular self-hosted) via Podman Quadlet, migrado do `docker-compose.yml`
-oficial.
+**[🇺🇸 Read in English](./README.md)**
 
-## Arquitetura
+Registro de manutenção veicular — trocas de óleo, revisões, gastos e lembretes, por veículo.
 
-Container único, banco embutido por padrão (sem Postgres — dá pra
-configurar via `POSTGRES_CONNECTION` se quiser, não usado aqui). Expõe
-`8080` internamente (mapeado pra `8083` no host — `8080`/`8082` já usados
-por [tsdproxy](../tsdproxy/README.pt-BR.md)/[vaultwarden](../vaultwarden/README.pt-BR.md) neste
-repositório).
-
-Dois volumes, como no compose oficial:
-- `/App/data` — dados da aplicação
-- `/root/.aspnet/DataProtection-Keys` — chaves de criptografia do
-  ASP.NET (cookies/sessão); perder isso invalida sessões ativas, não é
-  destrutivo pros dados, mas evita regenerar sem necessidade
-
-## Arquivos
-
-```
-lubelogger.container   # unit principal
-```
-
-## Pré-requisitos
-
-- Podman rootless com systemd `--user` funcionando
-
-## Instalação
+## Instalar
 
 ```bash
-python3 install.py lubelogger            # dry-run: mostra o que vai fazer
-python3 install.py lubelogger --apply
+qh lubelogger            # mostra o plano
+qh lubelogger --apply
 ```
 
-Só na rede local, `--access local`; na tailnet e na LAN, `--access
-both`. Acrescentar `--href-local` faz o link do dashboard apontar pra LAN. O script cria os diretórios, grava o
-`.env`, gera os secrets, ajusta o dono dos volumes, sobe o serviço e
-imprime o endereço no fim — ver
-[Instalando e operando](../../docs/pt-BR/instalacao.md) no README
-raiz.
-
-Acessar via [tsdproxy](../tsdproxy/README.pt-BR.md) (tailnet) em
-`https://lubelogger.<your-tailnet>.ts.net`, ou local em
-`http://localhost:8083`.
+Abrir `http://<ip-do-host>:8083` ou `https://lubelogger.<your-tailnet>.ts.net`.
 
 <details>
-<summary><b>Instalação manual</b> (avançado) — os mesmos passos, um a um</summary>
-
+<summary><b>Instalação manual</b></summary>
 
 ```bash
 # 1. Baixar a unit (sem precisar clonar o repositório)
@@ -72,51 +38,55 @@ systemctl --user daemon-reload
 systemctl --user start lubelogger
 ```
 
-Acessar via [tsdproxy](../tsdproxy/README.pt-BR.md) (tailnet) em
-`https://lubelogger.<your-tailnet>.ts.net`, ou local em
-`http://localhost:8083`.
-
 </details>
 
-## Segurança — habilitar autenticação é manual, e não é automático
+## Arquivos
 
-**Por padrão, o LubeLogger não exige login nenhum** — qualquer um que
-alcançar a URL tem acesso total de leitura/escrita, sem senha. A própria
-documentação confirma: "LubeLogger does not require authentication by
-default".
-
-Existe uma forma de pré-configurar isso via env vars
-(`EnableAuth`/`UserNameHash`/`UserPasswordHash`, hash SHA256 do usuário e
-senha), mas a própria doc marca esse método como não mais recomendado, e
-SHA256 sem salt/iterações é um hash fraco pra senha — **não usei essa
-abordagem aqui**. O caminho oficial e mais seguro é pela própria interface:
-
-1. Acessar a instância pela primeira vez
-2. Ir em **Settings → Enable Authentication**
-3. Definir usuário e senha do Root/Super User na hora
-
-**Fazer isso imediatamente após o primeiro start**, antes de cadastrar
-qualquer dado real — mesmo estando só na tailnet (não exposto à internet
-pública), "só" significa "qualquer dispositivo com acesso a essa tailnet",
-o que ainda é mais exposição do que zero autenticação merece.
-
-## Auto-update
-
-Sem `AutoUpdate=` — tag explícita (`v1.7.0`), bump manual (regra 9 do
-convenções). A imagem é Ubuntu mas não tem `curl`/`wget` — o `HealthCmd`
-usa uma checagem TCP crua via bash (regra 13, `/dev/tcp` em vez de um
-cliente HTTP).
-
-## Backup & Recuperação
-
-```bash
-systemctl --user stop lubelogger
-tar -czf lubelogger-backup-$(date +%Y%m%d-%H%M%S).tar.gz \
-  -C ~/.config/containers/volumes lubelogger
-systemctl --user start lubelogger
+```
+lubelogger.container
+.env.example
+install.ini
 ```
 
-## Comandos úteis
+## Atualizar
+
+```bash
+qh lubelogger --update --apply
+```
+
+Fixado em `v1.7.0`. Nada atualiza sozinho — versão nova entra quando você
+roda o comando acima.
+
+## Backup
+
+```bash
+qh lubelogger --backup --apply --out ~/backups
+```
+
+Ele para o serviço, empacota os dados, o `.env` e os secrets, e sobe de novo.
+A frio de propósito: copiar banco vivo dá um arquivo que só falha na hora de
+restaurar.
+
+Pra restaurar, por cima dos dados atuais:
+
+```bash
+qh lubelogger --restore ~/backups/lubelogger-20260809-1200.tar.gz --apply
+```
+
+Ele pede que você digite `lubelogger` pra confirmar, porque os dados atuais são
+apagados antes de o arquivo ser extraído.
+
+## Remover
+
+```bash
+qh lubelogger --remove --apply           # para e tira, mantendo os dados
+qh lubelogger --remove --purge --apply   # e apaga volumes, secrets e .env
+```
+
+O `--purge` também pede o nome digitado. O nó da tailnet não é desregistrado
+por isso — isso é no admin do Tailscale.
+
+## Comandos
 
 ```bash
 systemctl --user status lubelogger
@@ -125,5 +95,6 @@ podman logs -f lubelogger
 
 ## Créditos
 
-Deploy Quadlet baseado no [LubeLogger](https://github.com/hargata/lubelog).
-Licença original: MIT.
+[hargata/lubelog](https://github.com/hargata/lubelog) — MIT
+
+[Documentação oficial](https://lubelogger.com)

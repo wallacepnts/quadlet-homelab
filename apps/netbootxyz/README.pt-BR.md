@@ -1,86 +1,22 @@
-# netboot.xyz — Podman Quadlet (rootless)
+# netboot.xyz
 
-**[🇬🇧 Read in English](./README.md)**
+<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/netbootxyz.svg" width="64" height="64" alt="">
 
-Deploy do [netboot.xyz](https://netboot.xyz/) (menu de boot pela rede — PXE
-— pra instalar/testar distros e ferramentas sem precisar de pendrive) via
-Podman Quadlet, usando a imagem oficial
-[netbootxyz/docker-netbootxyz](https://github.com/netbootxyz/docker-netbootxyz).
+**[🇺🇸 Read in English](./README.md)**
 
-## Arquitetura
+Menu de boot pela rede (PXE) pra instalar ou testar distros e ferramentas sem gravar pendrive.
 
-Container único (Alpine + nginx + Node.js + dnsmasq/TFTP), três serviços
-internos:
-
-- **TFTP** (`69/udp`) — serve os bootloaders (`netboot.xyz.kpxe`/`.efi`) pro
-  firmware PXE dos clientes.
-- **nginx** (`80` interno, `NGINX_PORT`) — serve os assets baixados
-  (kernels, initrds, ISOs) que o menu carrega depois do boot inicial.
-- **Web app** (`3000` interno, `WEB_APP_PORT`) — UI de configuração do
-  menu/assets.
-
-Volumes:
-- `/config` — configuração persistente do menu
-- `/assets` — cache de assets baixados (kernels, initrds) — opcional, sem
-  ele os assets são baixados de novo a cada boot
-
-**Importante**: TFTP/nginx são pra clientes de PXE na **LAN**, antes de
-terem sistema operacional — não são nós Tailscale, então não fazem parte
-da tailnet. O [tsdproxy](../tsdproxy/README.pt-BR.md) aqui só publica a UI web de
-configuração (porta 3000); as portas 69 e 8089 precisam estar acessíveis
-direto no IP da LAN do host.
-
-## Arquivos
-
-```
-netbootxyz.container   # unit principal
-```
-
-## Pré-requisitos
-
-- Podman rootless com systemd `--user` funcionando
-- **Porta 69/UDP é privilegiada (<1024)** — rootless não consegue publicar
-  sem ajustar o piso de portas não-privilegiadas do kernel:
-  ```bash
-  sudo sysctl -w net.ipv4.ip_unprivileged_port_start=69
-  ```
-  Testado na prática: sem isso, `podman run -p 69:69/udp` falha com
-  `pasta failed ... Listen failed for HOST UDP port */69: Permission
-  denied`. Pra persistir entre reboots:
-  ```bash
-  echo 'net.ipv4.ip_unprivileged_port_start=69' | sudo tee /etc/sysctl.d/99-netbootxyz-tftp.conf
-  ```
-- **DHCP externo já configurado** — este container **não** provê DHCP,
-  só TFTP/HTTP. O servidor DHCP da rede (roteador, pfSense, dnsmasq
-  próprio etc.) precisa apontar os clientes de PXE pra este host:
-  - Option 66 (`next-server`): IP deste host na LAN
-  - Option 67 (`filename`): `netboot.xyz.kpxe` (BIOS) ou
-    `netboot.xyz.efi` (UEFI) — o próprio painel web mostra o valor exato
-  - Sem esse passo, os clientes nunca chegam a fazer a requisição TFTP —
-    não tem log de erro no container, o pedido simplesmente nunca chega.
-- Porta 69/UDP e 8089/TCP liberadas no firewall do host **pra LAN**, não
-  só pra tailnet ([regra 10](../../docs/pt-BR/convencoes.md) — `PublishPort=` não abre
-  firewall sozinho).
-
-## Instalação
+## Instalar
 
 ```bash
-python3 install.py netbootxyz            # dry-run: mostra o que vai fazer
-python3 install.py netbootxyz --apply
+qh netbootxyz            # mostra o plano
+qh netbootxyz --apply
 ```
 
-Só na rede local, `--access local`; na tailnet e na LAN, `--access
-both`. Acrescentar `--href-local` faz o link do dashboard apontar pra LAN. O script cria os diretórios, grava o
-`.env`, gera os secrets, ajusta o dono dos volumes, sobe o serviço e
-imprime o endereço no fim — ver
-[Instalando e operando](../../docs/pt-BR/instalacao.md) no README
-raiz.
-
-
+Abrir `http://<ip-do-host>:69` ou `https://netbootxyz.<your-tailnet>.ts.net`.
 
 <details>
-<summary><b>Instalação manual</b> (avançado) — os mesmos passos, um a um</summary>
-
+<summary><b>Instalação manual</b></summary>
 
 ```bash
 # 1. Baixar a unit (sem precisar clonar o repositório)
@@ -101,56 +37,55 @@ systemctl --user daemon-reload
 systemctl --user start netbootxyz
 ```
 
-UI de configuração via [tsdproxy](../tsdproxy/README.pt-BR.md) (tailnet) em
-`https://netbootxyz.<your-tailnet>.ts.net`, ou local em
-`http://localhost:8088`. Os assets ficam em `http://<ip-da-lan>:8089/`
-(usado internamente pelo menu, não precisa acessar direto).
-
-Depois de configurar o DHCP (ver Pré-requisitos), um cliente de PXE na
-mesma LAN já cai no menu do netboot.xyz ao dar boot.
-
 </details>
 
-## Auto-update
+## Arquivos
 
-Sem `AutoUpdate=` — tag explícita (`0.7.6-nbxyz23`), bump manual (regra 9
-das convenções). A imagem tem `curl`/healthcheck real (daria pra habilitar
-com rollback de verdade), mas o próprio boot loader/menu (`/config`) é
-sensível a mudanças de versão do webapp — prefiro conferir o changelog
-antes de trocar de tag. `wud.watch=true` fica ligado só pra visibilidade
-passiva (ver [wud](../wud/README.pt-BR.md)).
-
-Vale notar: `MENU_VERSION` (se definido) e o conteúdo de `/assets` são
-atualizados independente da tag da imagem — o menu builder do
-netboot.xyz busca a versão mais recente do menu a cada start por padrão,
-isso não é controlado pelo `AutoUpdate=` do Podman.
-
-**`wud.tag.transform` necessário**: bug conhecido do WUD com sufixo
-numérico de build ([getwud/wud#566](https://github.com/getwud/wud/issues/566)) —
-`0.7.6-nbxyz9` é lexicamente "maior" que `0.7.6-nbxyz23` na comparação
-semver de prerelease (compara como string, não como número), gerando
-falso positivo de atualização apontando pra uma versão mais **antiga**.
-Zero-pad no sufixo de um dígito só, deixando tags de 2+ dígitos
-intocadas (testado — confirmado via `podman inspect` que o `$` sobrevive
-sem duplicar, só o `$1` de grupo de captura precisa de `$$`, regra 7 do
-convenções):
-```ini
-Label=wud.tag.transform="nbxyz([0-9])$ => nbxyz0$$1"
+```
+netbootxyz.container
+.env.example
+install.ini
 ```
 
-## Backup & Recuperação
+## Atualizar
 
 ```bash
-systemctl --user stop netbootxyz
-tar -czf netbootxyz-backup-$(date +%Y%m%d-%H%M%S).tar.gz \
-  -C ~/.config/containers/volumes netbootxyz
-systemctl --user start netbootxyz
+qh netbootxyz --update --apply
 ```
 
-`/assets` é só cache (recriável baixando de novo) — dá pra excluir do
-backup se quiser algo menor, mantendo só `/config`.
+Fixado em `0.7.6-nbxyz23`. Nada atualiza sozinho — versão nova entra quando você
+roda o comando acima.
 
-## Comandos úteis
+## Backup
+
+```bash
+qh netbootxyz --backup --apply --out ~/backups
+```
+
+Ele para o serviço, empacota os dados, o `.env` e os secrets, e sobe de novo.
+A frio de propósito: copiar banco vivo dá um arquivo que só falha na hora de
+restaurar.
+
+Pra restaurar, por cima dos dados atuais:
+
+```bash
+qh netbootxyz --restore ~/backups/netbootxyz-20260809-1200.tar.gz --apply
+```
+
+Ele pede que você digite `netbootxyz` pra confirmar, porque os dados atuais são
+apagados antes de o arquivo ser extraído.
+
+## Remover
+
+```bash
+qh netbootxyz --remove --apply           # para e tira, mantendo os dados
+qh netbootxyz --remove --purge --apply   # e apaga volumes, secrets e .env
+```
+
+O `--purge` também pede o nome digitado. O nó da tailnet não é desregistrado
+por isso — isso é no admin do Tailscale.
+
+## Comandos
 
 ```bash
 systemctl --user status netbootxyz
@@ -159,6 +94,6 @@ podman logs -f netbootxyz
 
 ## Créditos
 
-Deploy Quadlet usando a imagem oficial
-[netbootxyz/docker-netbootxyz](https://github.com/netbootxyz/docker-netbootxyz)
-(MIT), do projeto [netboot.xyz](https://netboot.xyz/).
+[netbootxyz/docker-netbootxyz](https://github.com/netbootxyz/docker-netbootxyz) — MIT
+
+[Documentação oficial](https://netboot.xyz/docs/docker)

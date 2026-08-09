@@ -1,63 +1,22 @@
-# WUD (What's Up Docker) — Podman Quadlet (rootless)
+# WUD (What's Up Docker)
 
-**[🇬🇧 Read in English](./README.md)**
+<img src="https://cdn.jsdelivr.net/gh/getwud/wud@main/ui/public/img/icons/android-chrome-512x512.png" width="64" height="64" alt="">
 
-Deploy do [What's Up Docker](https://getwud.github.io/wud/) via Podman
-Quadlet — observa as imagens de todos os containers do host e avisa
-quando existe uma versão mais nova, **sem aplicar nada sozinho**.
+**[🇺🇸 Read in English](./README.md)**
 
-## Por que isso, já que existe `podman-auto-update`?
+Monitora as atualizações de imagem disponíveis pros containers, sem aplicar nada sozinho — só avisa.
 
-São coisas diferentes. `AutoUpdate=registry` só funciona em tags
-**flutuantes** (`:latest`, `:2`) e só sabe comparar o digest da mesma
-tag — não existe pra tags fixas. A maioria dos serviços deste repo fica
-de propósito em tag fixa + bump manual (ver seção "Serviços neste
-repositório" e [regra 9](../../docs/pt-BR/convencoes.md)) — o WUD cobre exatamente esse
-ponto cego: ele detecta que existe uma tag `v2.15.1` mesmo quando o
-container está pinado em `v2.9.3`, e só avisa. Decidir se/quando
-atualizar continua manual.
-
-## Arquitetura
-
-Container único. Lê o socket do Podman (via `podman.socket`, mesmo
-mecanismo já usado pelo [tsdproxy](../tsdproxy/README.pt-BR.md) e pela
-[Homepage](../homepage/README.pt-BR.md)) só pra listar containers/imagens — acesso
-**somente leitura** (`:ro`). Guarda histórico/config em `/store`
-(volume próprio, precisa persistir entre restarts).
-
-## Arquivos
-
-```
-wud.container   # unit principal
-```
-
-## Pré-requisitos
-
-- Podman rootless com systemd `--user` funcionando
-- `podman.socket` habilitado (já necessário se
-  [tsdproxy](../tsdproxy/README.pt-BR.md)/[homepage](../homepage/README.pt-BR.md) estiverem
-  instalados — mesmo socket, reaproveitado)
-
-## Instalação
+## Instalar
 
 ```bash
-python3 install.py wud            # dry-run: mostra o que vai fazer
-python3 install.py wud --apply
+qh wud            # mostra o plano
+qh wud --apply
 ```
 
-Só na rede local, `--access local`; na tailnet e na LAN, `--access
-both`. Acrescentar `--href-local` faz o link do dashboard apontar pra LAN. O script cria os diretórios, grava o
-`.env`, gera os secrets, ajusta o dono dos volumes, sobe o serviço e
-imprime o endereço no fim — ver
-[Instalando e operando](../../docs/pt-BR/instalacao.md) no README
-raiz.
-
-Acessar em `http://localhost:8085` ou, via tailnet,
-`https://wud.<your-tailnet>.ts.net`.
+Abrir `http://<ip-do-host>:8085` ou `https://wud.<your-tailnet>.ts.net`.
 
 <details>
-<summary><b>Instalação manual</b> (avançado) — os mesmos passos, um a um</summary>
-
+<summary><b>Instalação manual</b></summary>
 
 ```bash
 # 1. Baixar a unit (sem precisar clonar o repositório)
@@ -83,68 +42,54 @@ systemctl --user daemon-reload
 systemctl --user start wud
 ```
 
-Acessar em `http://localhost:8085` ou, via tailnet,
-`https://wud.<your-tailnet>.ts.net`.
-
 </details>
 
-## Autenticação
-
-Sem `WUD_AUTH_BASIC_*` configurado, o próprio WUD loga um aviso
-("Anonymous authentication is enabled") e libera acesso sem senha —
-mesmo modelo de confiança que a Homepage já usa aqui (sem auth própria,
-protegida só por estar na tailnet). Se quiser trocar por autenticação
-básica, ver a [documentação de auth do WUD](https://getwud.github.io/wud/#/configuration/authentications/basic).
-
-## Tags não-semver não são observadas
-
-Containers em tag flutuante não-semver (ex.: `:latest`) aparecem no log
-como "not a semver and digest watching is disabled" — o WUD não sabe
-dizer se há atualização nesse caso a menos que `wud.watch.digest=true`
-seja setado como label no container observado (compara digest em vez de
-versão). Não é necessário pros serviços deste repo, que ficam quase
-todos em tag fixa semver — é só um caso a se ter em mente se algum
-serviço novo usar `:latest`.
-
-## Filtrando quais containers observar (`wud.watch`)
-
-Por padrão o WUD observa tudo. Pra restringir só ao que interessa (ex.:
-os serviços que ficam de propósito sem `AutoUpdate=` — ver tabela no
-convenções), inverter o padrão no `wud.env`:
+## Arquivos
 
 ```
-WUD_WATCHER_LOCAL_WATCHBYDEFAULT=false
+wud.container
+.env.example
 ```
 
-E marcar cada container desejado com `Label=wud.watch=true` no
-`.container` correspondente (não aqui — no serviço observado).
+## Atualizar
 
-## `wud.tag.include`/`wud.tag.transform`: nada de `\` no valor
-
-Tags com sufixo de variante (ex.: `0.10.1-nginx-php8.2` do
-[vaultwarden](../vaultwarden/README.pt-BR.md)) enganam o parser semver do WUD — ele trata o
-sufixo como "prerelease" e uma tag sem sufixo (`0.10.1`, variante
-diferente da mesma imagem) aparece como "mais nova". A correção é
-restringir os candidatos com `wud.tag.include` (regex), mas o parser do
-próprio **Quadlet** não aceita barra invertida em `Label=`
-(`quadlet-generator: unsupported escape char` no journal — a linha
-inteira é descartada em silêncio, sem erro visível em `systemctl cat`
-nem em `podman inspect`). Escrever a regex sem `\d`/`\.` — usar `[0-9]`
-no lugar de `\d`, e deixar o `.` sem escapar (casa qualquer caractere
-ali, inofensivo pra esse tipo de filtro):
-
-```ini
-Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+-nginx-php[0-9.]+$
+```bash
+qh wud --update --apply
 ```
 
-## Auto-update
+Fixado em `8.3.1`. Nada atualiza sozinho — versão nova entra quando você
+roda o comando acima.
 
-Sem `AutoUpdate=` — tag explícita (`8.3.1`), bump manual (regra 9 do
-convenções). Ironia à parte (é a própria ferramenta de observar
-atualizações), o padrão deste repositório é o mesmo pra tudo: revisão
-manual antes de trocar de versão.
+## Backup
 
-## Comandos úteis
+```bash
+qh wud --backup --apply --out ~/backups
+```
+
+Ele para o serviço, empacota os dados, o `.env` e os secrets, e sobe de novo.
+A frio de propósito: copiar banco vivo dá um arquivo que só falha na hora de
+restaurar.
+
+Pra restaurar, por cima dos dados atuais:
+
+```bash
+qh wud --restore ~/backups/wud-20260809-1200.tar.gz --apply
+```
+
+Ele pede que você digite `wud` pra confirmar, porque os dados atuais são
+apagados antes de o arquivo ser extraído.
+
+## Remover
+
+```bash
+qh wud --remove --apply           # para e tira, mantendo os dados
+qh wud --remove --purge --apply   # e apaga volumes, secrets e .env
+```
+
+O `--purge` também pede o nome digitado. O nó da tailnet não é desregistrado
+por isso — isso é no admin do Tailscale.
+
+## Comandos
 
 ```bash
 systemctl --user status wud
@@ -153,5 +98,6 @@ podman logs -f wud
 
 ## Créditos
 
-Deploy Quadlet baseado no [What's Up Docker](https://github.com/getwud/wud),
-de [fmartinou](https://github.com/fmartinou). Licença original: MIT.
+[getwud/wud](https://github.com/getwud/wud) — MIT
+
+[Documentação oficial](https://getwud.github.io/wud/)

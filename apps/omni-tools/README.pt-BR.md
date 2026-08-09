@@ -1,67 +1,22 @@
-# Omni Tools — Podman Quadlet (rootless)
+# Omni Tools
 
-**[🇬🇧 Read in English](./README.md)**
+<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/omni-tools.png" width="64" height="64" alt="">
 
-Deploy do [Omni Tools](https://github.com/iib0011/omni-tools) (caixa de
-ferramentas offline) via Podman Quadlet, usando a imagem oficial
-`docker.io/iib0011/omni-tools`.
+**[🇺🇸 Read in English](./README.md)**
 
-Conversores, geradores, calculadoras, manipulação de imagem, JSON, texto,
-data, hash. Substitui aqueles sites de utilitário onde você cola dado —
-às vezes dado sensível — num servidor de terceiro.
+Conversores, geradores e calculadoras que rodam no navegador — nada é enviado ao servidor.
 
-## Arquitetura
-
-Container único, nginx servindo um app estático. **Sem volume e sem
-banco, de propósito**: tudo roda no navegador, o servidor só entrega os
-arquivos. Nada do que você converte passa pelo servidor — é o ponto do
-projeto, e é o que faz o backup deste serviço ser "nenhum".
-
-### Hardening: herda os limites do nginx
-
-Testado na prática, e o resultado é o mesmo do [nginx](../nginx/README.pt-BR.md) deste
-repositório:
-
-- `DropCapability=ALL` sozinho é recusado — `chown("/var/cache/nginx/client_temp", 101) failed (1: Operation not permitted)`
-- `ReadOnly=true` é recusado — `10-listen-on-ipv6-by-default.sh: can not modify /etc/nginx/conf.d/default.conf`
-
-O entrypoint da imagem nginx reescreve config no start; é o caso clássico
-citado na [regra 20](../../docs/pt-BR/convencoes.md). O kit de 4 capabilities
-(`CHOWN`, `SETUID`, `SETGID`, `NET_BIND_SERVICE`) é o mínimo que sobe.
-
-### A tag está no Docker Hub, não no ghcr
-
-O `ghcr.io/iib0011/omni-tools` publica **só `latest`** — a listagem de
-tags do ghcr devolve uma entrada. As versões numeradas (`0.6.0`, `0.5.0`…)
-estão no Docker Hub, que é de onde esta unit puxa, pra poder pinar como
-manda a regra 9.
-
-## Arquivos
-
-```
-omni-tools.container   # unit principal
-```
-
-## Instalação
+## Instalar
 
 ```bash
-python3 install.py omni-tools            # dry-run: mostra o que vai fazer
-python3 install.py omni-tools --apply
+qh omni-tools            # mostra o plano
+qh omni-tools --apply
 ```
 
-Só na rede local, `--access local`; na tailnet e na LAN, `--access
-both`. Acrescentar `--href-local` faz o link do dashboard apontar pra LAN. O script cria os diretórios, grava o
-`.env`, gera os secrets, ajusta o dono dos volumes, sobe o serviço e
-imprime o endereço no fim — ver
-[Instalando e operando](../../docs/pt-BR/instalacao.md) no README
-raiz.
-
-Acessar `http://<ip-do-host>:8101` (ou via [tsdproxy](../tsdproxy/README.pt-BR.md) em
-`https://omni-tools.<your-tailnet>.ts.net`).
+Abrir `http://<ip-do-host>:8101` ou `https://omni-tools.<your-tailnet>.ts.net`.
 
 <details>
-<summary><b>Instalação manual</b> (avançado) — os mesmos passos, um a um</summary>
-
+<summary><b>Instalação manual</b></summary>
 
 ```bash
 # 1. Baixar a unit (sem precisar clonar o repositório)
@@ -74,30 +29,53 @@ systemctl --user daemon-reload
 systemctl --user start omni-tools
 ```
 
-Acessar `http://<ip-do-host>:8101` (ou via [tsdproxy](../tsdproxy/README.pt-BR.md) em
-`https://omni-tools.<your-tailnet>.ts.net`).
-
 </details>
 
-## Por que ele e não o IT-Tools
+## Arquivos
 
-O [IT-Tools](https://github.com/CorentinTh/it-tools) é o projeto mais
-conhecido dessa categoria, mas está parado: última release em outubro de
-2024. O Omni Tools é a alternativa mantida, com a mesma proposta.
+```
+omni-tools.container
+```
 
-## Auto-update
+## Atualizar
 
-Sem `AutoUpdate=` — tag explícita (`0.6.0`), bump manual (regra 9 do
-convenções). Este é dos poucos onde ligar auto-update seria defensável:
-não tem estado, não tem migração de banco, e o healthcheck HTTP cobre o
-rollback. Ainda assim fica manual, por consistência (convenções, "Por
-que a maioria está desligado").
+```bash
+qh omni-tools --update --apply
+```
 
-## Backup & Recuperação
+Fixado em `0.6.0`. Nada atualiza sozinho — versão nova entra quando você
+roda o comando acima.
 
-Nenhum. Não há estado — reinstalar é o "restore".
+## Backup
 
-## Comandos úteis
+```bash
+qh omni-tools --backup --apply --out ~/backups
+```
+
+Ele para o serviço, empacota os dados, o `.env` e os secrets, e sobe de novo.
+A frio de propósito: copiar banco vivo dá um arquivo que só falha na hora de
+restaurar.
+
+Pra restaurar, por cima dos dados atuais:
+
+```bash
+qh omni-tools --restore ~/backups/omni-tools-20260809-1200.tar.gz --apply
+```
+
+Ele pede que você digite `omni-tools` pra confirmar, porque os dados atuais são
+apagados antes de o arquivo ser extraído.
+
+## Remover
+
+```bash
+qh omni-tools --remove --apply           # para e tira, mantendo os dados
+qh omni-tools --remove --purge --apply   # e apaga volumes, secrets e .env
+```
+
+O `--purge` também pede o nome digitado. O nó da tailnet não é desregistrado
+por isso — isso é no admin do Tailscale.
+
+## Comandos
 
 ```bash
 systemctl --user status omni-tools
@@ -106,6 +84,6 @@ podman logs -f omni-tools
 
 ## Créditos
 
-Deploy Quadlet baseado no
-[Omni Tools](https://github.com/iib0011/omni-tools) de
-[iib0011](https://github.com/iib0011) (MIT).
+[iib0011/omni-tools](https://github.com/iib0011/omni-tools) — MIT
+
+[Documentação oficial](https://omnitools.app)

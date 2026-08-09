@@ -1,63 +1,22 @@
-# nginx — Podman Quadlet (rootless)
+# nginx
 
-**[🇬🇧 Read in English](./README.md)**
+<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/nginx.svg" width="64" height="64" alt="">
 
-Deploy do [nginx](https://nginx.org) como servidor de arquivos estáticos
-via Podman Quadlet, usando a imagem oficial
-[`nginx`](https://hub.docker.com/_/nginx) (variante Alpine).
+**[🇺🇸 Read in English](./README.md)**
 
-## Arquitetura
+Servidor de arquivos estáticos.
 
-Container único. Dois bind mounts, ambos `:ro` de propósito (o nginx só
-lê, quem edita é você direto no host):
-
-- `html/` → `/usr/share/nginx/html` — o conteúdo estático em si (o que
-  fica montado aqui é o que é servido).
-- `conf.d/` → `/etc/nginx/conf.d` — server blocks. **Não pode ficar
-  vazio**: montar um diretório vazio por cima de `/etc/nginx/conf.d`
-  apaga o `default.conf` embutido da imagem — sem nenhum `server {
-  listen 80; }`, o nginx sobe mas não escuta em porta nenhuma
-  (`wget: can't connect to remote host` no healthcheck, testado na
-  prática). Por isso este repositório versiona uma cópia do
-  `default.conf` original da imagem em `conf.d/` — baixado no passo 2 da
-  instalação; editar esse arquivo (ou adicionar outros `.conf` do lado)
-  pra customizar rotas.
-
-## Arquivos
-
-```
-nginx.container         # unit principal
-
-conf.d/
-└── default.conf        # cópia do default.conf original da imagem
-```
-
-Sem `.env.example` — nada aqui depende de variável de ambiente.
-
-## Pré-requisitos
-
-- Podman rootless com systemd `--user` funcionando
-
-## Instalação
+## Instalar
 
 ```bash
-python3 install.py nginx            # dry-run: mostra o que vai fazer
-python3 install.py nginx --apply
+qh nginx            # mostra o plano
+qh nginx --apply
 ```
 
-Só na rede local, `--access local`; na tailnet e na LAN, `--access
-both`. Acrescentar `--href-local` faz o link do dashboard apontar pra LAN. O script cria os diretórios, grava o
-`.env`, gera os secrets, ajusta o dono dos volumes, sobe o serviço e
-imprime o endereço no fim — ver
-[Instalando e operando](../../docs/pt-BR/instalacao.md) no README
-raiz.
-
-Acessar em `http://<ip-do-host>:8103`, ou via [tsdproxy](../tsdproxy/README.pt-BR.md)
-(tailnet) em `https://nginx.<your-tailnet>.ts.net`.
+Abrir `http://<ip-do-host>:8103` ou `https://nginx.<your-tailnet>.ts.net`.
 
 <details>
-<summary><b>Instalação manual</b> (avançado) — os mesmos passos, um a um</summary>
-
+<summary><b>Instalação manual</b></summary>
 
 ```bash
 # 1. Baixar as units (sem precisar clonar o repositório)
@@ -76,37 +35,62 @@ systemctl --user daemon-reload
 systemctl --user start nginx
 ```
 
-Acessar em `http://<ip-do-host>:8103`, ou via [tsdproxy](../tsdproxy/README.pt-BR.md)
-(tailnet) em `https://nginx.<your-tailnet>.ts.net`.
-
 </details>
 
-## Auto-update
+## Arquivos
 
-Sem `AutoUpdate=` — tag explícita (`1.30.4-alpine`, atual `stable`),
-bump manual ([regra 9](../../docs/pt-BR/convencoes.md)). A imagem tem `wget`/healthcheck
-real — daria pra habilitar `AutoUpdate=registry` com rollback de
-verdade, mas mantido manual por padrão como o resto do repositório.
-
-## Backup & Recuperação
-
-```bash
-tar -czf nginx-backup-$(date +%Y%m%d-%H%M%S).tar.gz \
-  -C ~/.config/containers/volumes nginx
+```
+nginx.container
+install.ini
 ```
 
-Sem precisar parar o container (leitura só, sem estado próprio além do
-conteúdo estático).
+## Atualizar
 
-## Comandos úteis
+```bash
+qh nginx --update --apply
+```
+
+Fixado em `1.30.4-alpine`. Nada atualiza sozinho — versão nova entra quando você
+roda o comando acima.
+
+## Backup
+
+```bash
+qh nginx --backup --apply --out ~/backups
+```
+
+Ele para o serviço, empacota os dados, o `.env` e os secrets, e sobe de novo.
+A frio de propósito: copiar banco vivo dá um arquivo que só falha na hora de
+restaurar.
+
+Pra restaurar, por cima dos dados atuais:
+
+```bash
+qh nginx --restore ~/backups/nginx-20260809-1200.tar.gz --apply
+```
+
+Ele pede que você digite `nginx` pra confirmar, porque os dados atuais são
+apagados antes de o arquivo ser extraído.
+
+## Remover
+
+```bash
+qh nginx --remove --apply           # para e tira, mantendo os dados
+qh nginx --remove --purge --apply   # e apaga volumes, secrets e .env
+```
+
+O `--purge` também pede o nome digitado. O nó da tailnet não é desregistrado
+por isso — isso é no admin do Tailscale.
+
+## Comandos
 
 ```bash
 systemctl --user status nginx
 podman logs -f nginx
-podman exec nginx wget -qO- http://127.0.0.1:80/
 ```
 
 ## Créditos
 
-Deploy Quadlet usando a imagem oficial [nginx](https://hub.docker.com/_/nginx)
-(BSD-2-Clause).
+[](https://hub.docker.com/_/nginx) — BSD-2-Clause
+
+[Documentação oficial](https://nginx.org/en/docs/)

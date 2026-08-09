@@ -1,80 +1,22 @@
-# HomeBox — Podman Quadlet (rootless)
+# HomeBox
+
+<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/homebox.svg" width="64" height="64" alt="">
 
 **[🇧🇷 Leia em português](./README.pt-BR.md)**
 
-A [HomeBox](https://github.com/sysadminsmedia/homebox) (home inventory)
-deploy via Podman Quadlet, using the official
-`ghcr.io/sysadminsmedia/homebox`.
+A home inventory — what you own, where it is, the receipt, the manual and the warranty, with search and labels.
 
-A catalogue of what you own: where it is, what it cost, when you bought it,
-the receipt
-fiscal e manual anexados, garantia com data de vencimento. Complementa o
-[LubeLogger](../lubelogger/), which does the same for vehicles.
-
-## Architecture
-
-A single container, Go, with **embedded SQLite** — the image already ships
-`HBOX_DATABASE_SQLITE_PATH` apontando pro `/data` (regra 22 do README
-conventions). A single volume holds both the database and the attachments.
-
-**It is the most hardened service in the repository**, alongside
-[uptime-kuma](../uptime-kuma/) e [ntfy](../ntfy/): `ReadOnly=true`,
-`DropCapability=ALL` e `User=1000` — testado exercitando o app, com a UI
-e o `/api/v1/status` respondendo 200 e o banco sendo criado no volume.
-
-### The mandatory secret
-
-Since 0.26 HomeBox **does not start** without `HBOX_AUTH_API_KEY_PEPPER` —
-the
-processo morre no start com:
-
-```
-panic: auth.api_key_pepper must be set to at least 32 bytes;
-generate with `openssl rand -base64 48`
-```
-
-Hence the `podman secret` in step 3. **Changing the value later invalidates
-every API key already issued** (it does not affect ordinary login), so it goes
-into the
-backup junto com o volume.
-
-### Sobre a tag da imagem
-
-The GitHub releases are `v0.26.2`, but **the image tag has no `v`**:
-`ghcr.io/sysadminsmedia/homebox:0.26.2`. Copying the number from the releases
-page straight into `Image=` gives `manifest unknown`.
-
-## Files
-
-```
-homebox.container   # main unit
-.env.example        # cadastro, moeda, limite de upload
-```
-
-## Prerequisites
-
-- Rootless Podman with systemd `--user` working
-- `podman secret` ([regra 2](../../docs/conventions.md))
-
-## Installation
+## Install
 
 ```bash
-python3 install.py homebox            # dry-run: shows what it will do
-python3 install.py homebox --apply
+qh homebox            # shows the plan
+qh homebox --apply
 ```
 
-For the local network only, `--access local`; on the tailnet and the LAN,
-`--access both`. Adding `--href-local` points the dashboard link at the LAN.
-The script creates the directories, writes the `.env`, generates the secrets,
-fixes the volumes' ownership, starts the service and prints the address at the
-end — see [Installing and operating](../../docs/installing.md).
-
-Open `http://<host-ip>:3100` (ou via [tsdproxy](../tsdproxy/) em
-`https://homebox.<your-tailnet>.ts.net`) e criar a conta.
+Open `http://<host-ip>:3100` or `https://homebox.<your-tailnet>.ts.net`.
 
 <details>
-<summary><b>Manual installation</b> (advanced) — the same steps, one at a time</summary>
-
+<summary><b>Manual install</b></summary>
 
 ```bash
 # 1. Download the unit (no need to clone the repository)
@@ -109,9 +51,6 @@ systemctl --user daemon-reload
 systemctl --user start homebox
 ```
 
-Open `http://<host-ip>:3100` (ou via [tsdproxy](../tsdproxy/) em
-`https://homebox.<your-tailnet>.ts.net`) e criar a conta.
-
 ```bash
 # 6. Fechar o cadastro depois de criar a sua conta
 sed -i 's/^HBOX_OPTIONS_ALLOW_REGISTRATION=true/HBOX_OPTIONS_ALLOW_REGISTRATION=false/' \
@@ -123,51 +62,61 @@ curl -s http://127.0.0.1:3100/api/v1/status | grep -o '"allowRegistration":[a-z]
 
 </details>
 
-## Configuration
+## Files
 
-The `.env.example` already carries two choices made by this repository:
-
-- **`HBOX_OPTIONS_CHECK_GITHUB_RELEASE=false`** — o HomeBox consulta a
-  GitHub API on its own to announce new versions. Here that job belongs to
-  [wud](../wud/), so it is one fewer outbound connection.
-- **`HBOX_WEB_MAX_UPLOAD_SIZE=50`** — the default is 10 MB, and a scanned
-  receipt or a PDF manual goes past that easily.
-
-Fora isso, `HBOX_OPTIONS_CURRENCIES=BRL` define a moeda dos valores.
-
-## Auto-update
-
-No `AutoUpdate=` — an explicit tag (`0.26.2`), bumped by hand
-(rule 9 of the [conventions](../../docs/conventions.md)). The inventory is your real data, and schema migrations between HomeBox
-versions are not rare: read the release notes and take a backup first.
-
-## Backup & recovery
-
-```bash
-systemctl --user stop homebox
-tar -czf homebox-backup-$(date +%Y%m%d-%H%M%S).tar.gz \
-  -C ~/.config/containers/volumes homebox
-systemctl --user start homebox
+```
+homebox.container
+.env.example
+install.ini
 ```
 
-O secret (`~/.config/containers/secrets/homebox/`) precisa de backup
-separado — sem o mesmo pepper, as API keys emitidas param de valer.
+## Update
 
-When restoring on another machine, redo step 2's `podman unshare chown`
-after extracting: tar preserves the old uid, which may not be the same mapping
-on the destination.
+```bash
+qh homebox --update --apply
+```
 
-## Useful commands
+Pinned to `0.26.2`. Nothing updates on its own — a new version is applied
+when you run the command above.
+
+## Backup
+
+```bash
+qh homebox --backup --apply --out ~/backups
+```
+
+It stops the service, packs the data, the `.env` and the secrets, and starts
+it again. Cold on purpose: copying a live database gives an archive that only
+fails when you restore it.
+
+To restore, over the current data:
+
+```bash
+qh homebox --restore ~/backups/homebox-20260809-1200.tar.gz --apply
+```
+
+It asks you to type `homebox` to confirm, because the current data is deleted
+before the archive is unpacked.
+
+## Remove
+
+```bash
+qh homebox --remove --apply           # stops it, keeps the data
+qh homebox --remove --purge --apply   # and deletes volumes, secrets and .env
+```
+
+`--purge` asks for the typed name too. The tailnet node is not deregistered by
+this — that is done in the Tailscale admin.
+
+## Commands
 
 ```bash
 systemctl --user status homebox
 podman logs -f homebox
-curl -s http://127.0.0.1:3100/api/v1/status
 ```
 
 ## Credits
 
-Quadlet deploy based on
-[HomeBox](https://github.com/sysadminsmedia/homebox) da
-[Sysadmins Media](https://github.com/sysadminsmedia) (AGPL-3.0), fork
-mantido do projeto original de [hay-kot](https://github.com/hay-kot).
+[sysadminsmedia/homebox](https://github.com/sysadminsmedia/homebox) — AGPL-3.0
+
+[Official documentation](https://homebox.software)

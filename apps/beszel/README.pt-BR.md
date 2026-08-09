@@ -1,80 +1,22 @@
-# Beszel — Podman Quadlet (rootless)
+# Beszel
 
-**[🇬🇧 Read in English](./README.md)**
+<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/beszel.svg" width="64" height="64" alt="">
 
-Deploy do [Beszel](https://beszel.dev) (dashboard leve de monitoramento
-de recursos — CPU, RAM, disco, rede, containers — com histórico e
-alertas) via Podman Quadlet, seguindo o
-[guia oficial](https://www.beszel.dev/guide/getting-started) e a
-variante ["same-system"](https://github.com/henrygd/beszel/tree/main/supplemental/docker/same-system)
-(hub e agent monitorando o mesmo host).
+**[🇺🇸 Read in English](./README.md)**
 
-## Arquitetura
+Dashboard leve de monitoramento de recursos (CPU/RAM/disco/rede/containers) deste host.
 
-Arquitetura hub + agent, dois containers:
-
-- **`beszel`** (hub) — painel web + banco de dados (SQLite/PocketBase),
-  porta `8090`, rede bridge própria (`beszel-net`).
-- **`beszel-agent`** — coleta as métricas deste host e reporta pro hub.
-  **Rede `host`, não bridge** (foge do padrão deste repositório de
-  propósito): o agent reporta o tráfego real das interfaces do host;
-  numa rede bridge isolada, só enxergaria o veth interno do próprio
-  container — números inúteis pra monitoramento de rede.
-
-**Hub e agent no mesmo host conectam via socket Unix compartilhado**
-(`beszel_socket`, bind mount comum aos dois), não por TCP com token
-exposto na rede — mais simples e mais seguro que a variante
-multi-host padrão (usada quando o agent roda em *outra* máquina, fora do
-escopo deste repositório).
-
-**Monitoramento de containers**: o agent lê o socket do Podman
-(`%t/podman/podman.sock`, exposto como `/var/run/docker.sock` — API
-compatível com Docker) pra listar/monitorar os outros containers deste
-host, mesmo mecanismo do [tsdproxy](../tsdproxy/README.pt-BR.md).
-
-**Imagens sem shell** (binário estático só, `/beszel`/`/agent`) —
-`HealthCmd` usa `CMD`, não `CMD-SHELL` (testado na prática: `CMD-SHELL`
-falha por não achar `/bin/sh`); os próprios binários têm um subcomando
-`health` feito pra isso.
-
-## Arquivos
-
-```
-beszel-net.network       # rede do hub
-beszel.container          # hub — painel + banco
-beszel-agent.container    # agent — coleta métricas deste host
-```
-
-## Pré-requisitos
-
-- Podman rootless com systemd `--user` funcionando
-- `podman.socket` habilitado (mesmo pré-requisito do
-  [tsdproxy](../tsdproxy/README.pt-BR.md) — `systemctl --user enable --now podman.socket`
-  se ainda não estiver)
-- `ssh-keygen` no host (só pro passo 5 abaixo, pra ler a chave pública do
-  hub direto do arquivo, sem precisar copiar pela UI)
-
-## Instalação
+## Instalar
 
 ```bash
-python3 install.py beszel            # dry-run: mostra o que vai fazer
-python3 install.py beszel --apply
+qh beszel            # mostra o plano
+qh beszel --apply
 ```
 
-Só na rede local, `--access local`; na tailnet e na LAN, `--access
-both`. Acrescentar `--href-local` faz o link do dashboard apontar pra LAN. O script cria os diretórios, grava o
-`.env`, gera os secrets, ajusta o dono dos volumes, sobe o serviço e
-imprime o endereço no fim — ver
-[Instalando e operando](../../docs/pt-BR/instalacao.md) no README
-raiz.
-
-Acessar `http://<ip-do-host>:8090` (ou via [tsdproxy](../tsdproxy/README.pt-BR.md) em
-`https://beszel.<your-tailnet>.ts.net`) e criar a conta de admin no
-primeiro acesso.
+Abrir `http://<ip-do-host>:8090` ou `https://beszel.<your-tailnet>.ts.net`.
 
 <details>
-<summary><b>Instalação manual</b> (avançado) — os mesmos passos, um a um</summary>
-
+<summary><b>Instalação manual</b></summary>
 
 ```bash
 # 1. Baixar as units (sem precisar clonar o repositório)
@@ -99,10 +41,6 @@ wget -O ~/.config/containers/env/beszel.env \
 systemctl --user start beszel
 ```
 
-Acessar `http://<ip-do-host>:8090` (ou via [tsdproxy](../tsdproxy/README.pt-BR.md) em
-`https://beszel.<your-tailnet>.ts.net`) e criar a conta de admin no
-primeiro acesso.
-
 ```bash
 # 5. KEY — chave pública do hub, a mesma pra qualquer agent deste hub;
 #    lida direto do arquivo (sem precisar copiar pela UI)
@@ -125,51 +63,71 @@ systemctl --user daemon-reload
 systemctl --user start beszel-agent
 ```
 
-O sistema aparece no painel do hub como "online" assim que o agent
-conectar pelo socket compartilhado.
-
 </details>
 
-## Monitorar discos/partições extras
+## Arquivos
 
-Bind mount adicional em `/extra-filesystems/<nome>` no
-`beszel-agent.container`:
-
-```ini
-Volume=/mnt/disco1:/extra-filesystems/disco1:ro
+```
+beszel-agent.container
+beszel.container
+beszel-net.network
+.env.example
+install.ini
 ```
 
-## Auto-update
+Units da stack:
 
-Sem `AutoUpdate=` nos dois — tags explícitas (`0.18.7`), bump manual
-([regra 9](../../docs/pt-BR/convencoes.md)). Ambas as imagens têm healthcheck real
-(`/beszel health`/`/agent health`, testados na prática) — daria pra
-habilitar `AutoUpdate=registry` com rollback funcional, mas mantido
-manual como padrão do repositório.
+- `beszel-agent`
+- `beszel`
+- `beszel-n`
 
-## Backup & Recuperação
+## Atualizar
 
 ```bash
-systemctl --user stop beszel-agent beszel
-tar -czf beszel-backup-$(date +%Y%m%d-%H%M%S).tar.gz \
-  -C ~/.config/containers/volumes beszel
-systemctl --user start beszel beszel-agent
+qh beszel --update --apply
 ```
 
-`hub-data/id_ed25519` está incluído no backup — restaurar preserva a
-mesma KEY, os agents continuam autenticando sem reconfigurar.
+Fixado em `0.18.7`. Nada atualiza sozinho — versão nova entra quando você
+roda o comando acima.
 
-## Comandos úteis
+## Backup
 
 ```bash
-systemctl --user status beszel beszel-agent
+qh beszel --backup --apply --out ~/backups
+```
+
+Ele para o serviço, empacota os dados, o `.env` e os secrets, e sobe de novo.
+A frio de propósito: copiar banco vivo dá um arquivo que só falha na hora de
+restaurar.
+
+Pra restaurar, por cima dos dados atuais:
+
+```bash
+qh beszel --restore ~/backups/beszel-20260809-1200.tar.gz --apply
+```
+
+Ele pede que você digite `beszel` pra confirmar, porque os dados atuais são
+apagados antes de o arquivo ser extraído.
+
+## Remover
+
+```bash
+qh beszel --remove --apply           # para e tira, mantendo os dados
+qh beszel --remove --purge --apply   # e apaga volumes, secrets e .env
+```
+
+O `--purge` também pede o nome digitado. O nó da tailnet não é desregistrado
+por isso — isso é no admin do Tailscale.
+
+## Comandos
+
+```bash
+systemctl --user status beszel
 podman logs -f beszel
-podman logs -f beszel-agent
-podman exec beszel /beszel health --url http://localhost:8090
-podman exec beszel-agent /agent health
 ```
 
 ## Créditos
 
-Deploy Quadlet baseado no [Beszel](https://github.com/henrygd/beszel)
-(MIT).
+[henrygd/beszel](https://github.com/henrygd/beszel) — MIT
+
+[Documentação oficial](https://beszel.dev)

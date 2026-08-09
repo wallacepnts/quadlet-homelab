@@ -1,60 +1,22 @@
-# Uptime Kuma — Podman Quadlet (rootless)
+# Uptime Kuma
 
-**[🇬🇧 Read in English](./README.md)**
+<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/uptime-kuma.svg" width="64" height="64" alt="">
 
-Deploy do [Uptime Kuma](https://github.com/louislam/uptime-kuma) (monitor
-de disponibilidade self-hosted) via Podman Quadlet, usando a imagem
-oficial `docker.io/louislam/uptime-kuma`.
+**[🇺🇸 Read in English](./README.md)**
 
-## Arquitetura
+Monitor de disponibilidade dos outros serviços e da tailnet, com histórico e notificação.
 
-Container único (Node + SQLite embutido) — um volume só (`/app/data`),
-guarda banco, uploads e configuração.
-
-**É o serviço mais endurecido do repositório**: aceitou o nível máximo
-testado — `ReadOnly=true`, `DropCapability=ALL` (zero capabilities) e
-`User=1000`, ou seja, o processo roda como não-root **dentro** do
-container e cai num uid de subuid (100999) **no host**, fora do seu
-próprio usuário. É o único desta faixa junto com beszel, paperless-ngx e
-immich-machine-learning.
-
-Consequência prática: o volume precisa pertencer a esse uid mapeado, e
-isso se faz com `podman unshare chown` (passo 2 da instalação) — um
-`chown` normal no host não serve, porque o número 1000 dentro do
-namespace não é o 1000 de fora.
-
-## Arquivos
-
-```
-uptime-kuma.container   # unit principal
-```
-
-## Pré-requisitos
-
-- Podman rootless com systemd `--user` funcionando
-
-## Instalação
+## Instalar
 
 ```bash
-python3 install.py uptime-kuma            # dry-run: mostra o que vai fazer
-python3 install.py uptime-kuma --apply
+qh uptime-kuma            # mostra o plano
+qh uptime-kuma --apply
 ```
 
-Só na rede local, `--access local`; na tailnet e na LAN, `--access
-both`. Acrescentar `--href-local` faz o link do dashboard apontar pra LAN. O script cria os diretórios, grava o
-`.env`, gera os secrets, ajusta o dono dos volumes, sobe o serviço e
-imprime o endereço no fim — ver
-[Instalando e operando](../../docs/pt-BR/instalacao.md) no README
-raiz.
-
-Acessar `http://<ip-do-host>:3005` (ou via [tsdproxy](../tsdproxy/README.pt-BR.md) em
-`https://uptime-kuma.<your-tailnet>.ts.net`) — a primeira tela cria a
-conta de administrador. **Criar antes de expor**, a instalação fica
-aberta até isso.
+Abrir `http://<ip-do-host>:3005` ou `https://uptime-kuma.<your-tailnet>.ts.net`.
 
 <details>
-<summary><b>Instalação manual</b> (avançado) — os mesmos passos, um a um</summary>
-
+<summary><b>Instalação manual</b></summary>
 
 ```bash
 # 1. Baixar as units (sem precisar clonar o repositório)
@@ -73,59 +35,61 @@ systemctl --user daemon-reload
 systemctl --user start uptime-kuma
 ```
 
-Acessar `http://<ip-do-host>:3005` (ou via [tsdproxy](../tsdproxy/README.pt-BR.md) em
-`https://uptime-kuma.<your-tailnet>.ts.net`) — a primeira tela cria a
-conta de administrador. **Criar antes de expor**, a instalação fica
-aberta até isso.
-
 </details>
 
-## Monitorando os serviços deste repositório
+## Arquivos
 
-Cada serviço aqui já publica uma porta no host e tem healthcheck próprio.
-Dois jeitos de apontar o monitor:
-
-- **HTTP(s)** em `http://<ip-do-host>:<porta>` — usa a porta publicada da
-  tabela do [convenções](../../docs/pt-BR/convencoes.md). Funciona pra tudo que serve
-  HTTP, e é o que dá tempo de resposta real.
-- **HTTP(s)** na URL da tailnet (`https://<app>.<your-tailnet>.ts.net`) —
-  testa o caminho completo, incluindo o [tsdproxy](../tsdproxy/README.pt-BR.md). Só
-  funciona se o host do Uptime Kuma estiver na mesma tailnet (aqui está,
-  é a mesma máquina).
-
-Monitorar pela porta local detecta "o container caiu"; monitorar pela
-URL da tailnet detecta também "o tsdproxy caiu" — vale ter os dois nos
-serviços que importam.
-
-## Auto-update
-
-Sem `AutoUpdate=` — tag explícita (`2.5.0`), bump manual (regra 9 do
-convenções). Aqui há um motivo extra: um monitor que se atualiza sozinho
-e quebra é exatamente o que não avisa que quebrou.
-
-## Backup & Recuperação
-
-```bash
-systemctl --user stop uptime-kuma
-tar -czf uptime-kuma-backup-$(date +%Y%m%d-%H%M%S).tar.gz \
-  -C ~/.config/containers/volumes uptime-kuma
-systemctl --user start uptime-kuma
+```
+uptime-kuma.container
 ```
 
-Restaurando em outra máquina, refazer o `podman unshare chown` do passo 2
-depois de extrair — o tar preserva o uid antigo, que pode não ser o
-mesmo mapeamento no destino.
+## Atualizar
 
-## Comandos úteis
+```bash
+qh uptime-kuma --update --apply
+```
+
+Fixado em `2.5.0`. Nada atualiza sozinho — versão nova entra quando você
+roda o comando acima.
+
+## Backup
+
+```bash
+qh uptime-kuma --backup --apply --out ~/backups
+```
+
+Ele para o serviço, empacota os dados, o `.env` e os secrets, e sobe de novo.
+A frio de propósito: copiar banco vivo dá um arquivo que só falha na hora de
+restaurar.
+
+Pra restaurar, por cima dos dados atuais:
+
+```bash
+qh uptime-kuma --restore ~/backups/uptime-kuma-20260809-1200.tar.gz --apply
+```
+
+Ele pede que você digite `uptime-kuma` pra confirmar, porque os dados atuais são
+apagados antes de o arquivo ser extraído.
+
+## Remover
+
+```bash
+qh uptime-kuma --remove --apply           # para e tira, mantendo os dados
+qh uptime-kuma --remove --purge --apply   # e apaga volumes, secrets e .env
+```
+
+O `--purge` também pede o nome digitado. O nó da tailnet não é desregistrado
+por isso — isso é no admin do Tailscale.
+
+## Comandos
 
 ```bash
 systemctl --user status uptime-kuma
 podman logs -f uptime-kuma
-podman exec uptime-kuma extra/healthcheck && echo OK
 ```
 
 ## Créditos
 
-Deploy Quadlet baseado no
-[Uptime Kuma](https://github.com/louislam/uptime-kuma) de
-[louislam](https://github.com/louislam) (MIT).
+[louislam/uptime-kuma](https://github.com/louislam/uptime-kuma) — MIT
+
+[Documentação oficial](https://uptime.kuma.pet)

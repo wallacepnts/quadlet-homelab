@@ -1,60 +1,22 @@
-# ownCloud — Podman Quadlet (rootless)
+# ownCloud
+
+<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/owncloud.svg" width="64" height="64" alt="">
 
 **[🇧🇷 Leia em português](./README.pt-BR.md)**
 
-A deploy of [ownCloud](https://owncloud.com) Server (file sync and
-compartilhamento de arquivos self-hosted) via Podman Quadlet, seguindo o
-[official Docker installation guide](https://doc.owncloud.com/server/latest/admin_manual/installation/docker/index.html).
+File sync and sharing on a cloud of your own.
 
-## SQLite — for evaluation, not production
-
-Running on **SQLite** on purpose (an explicit request) — no
-`OWNCLOUD_DB_TYPE`/`OWNCLOUD_DB_*` variable is set in the `.container`, and
-SQLite is what the image uses by default in that case. The ownCloud project
-itself **does not support SQLite in production**. Switch to MySQL/MariaDB or
-Postgres later if usage justifies it (the same container pattern
-extra usado no [immich](../immich/)).
-
-## Architecture
-
-A single container, with no Redis (the official production compose includes
-Redis for caching and locking — dropped here because SQLite is already the
-"evaluation" mode, and bringing in just one piece of the production stack
-makes no sense). It exposes `8080`
-(mapeado pra `8094` no host).
-
-## Files
-
-```
-owncloud.container   # main unit
-```
-
-## Prerequisites
-
-- Rootless Podman with systemd `--user` working
-- `openssl` (to generate the secret)
-
-## Installation
+## Install
 
 ```bash
-python3 install.py owncloud            # dry-run: shows what it will do
-python3 install.py owncloud --apply
+qh owncloud            # shows the plan
+qh owncloud --apply
 ```
 
-For the local network only, `--access local`; on the tailnet and the LAN,
-`--access both`. Adding `--href-local` points the dashboard link at the LAN.
-The script creates the directories, writes the `.env`, generates the secrets,
-fixes the volumes' ownership, starts the service and prints the address at the
-end — see [Installing and operating](../../docs/installing.md).
-
-Reach it through [tsdproxy](../tsdproxy/) (tailnet) at
-`https://owncloud.<your-tailnet>.ts.net`, ou local em
-`http://localhost:8094`. Login com `OWNCLOUD_ADMIN_USERNAME` (default
-`admin`) e a senha gerada no passo 3.
+Open `http://<host-ip>:8094` or `https://owncloud.<your-tailnet>.ts.net`.
 
 <details>
-<summary><b>Manual installation</b> (advanced) — the same steps, one at a time</summary>
-
+<summary><b>Manual install</b></summary>
 
 ```bash
 # 1. Download the unit (no need to clone the repository)
@@ -83,49 +45,63 @@ systemctl --user daemon-reload
 systemctl --user start owncloud
 ```
 
-Reach it through [tsdproxy](../tsdproxy/) (tailnet) at
-`https://owncloud.<your-tailnet>.ts.net`, ou local em
-`http://localhost:8094`. Login com `OWNCLOUD_ADMIN_USERNAME` (default
-`admin`) e a senha gerada no passo 3.
-
 </details>
 
-## Troubleshooting
+## Files
 
-**A CSRF/trusted-proxy error when reaching it over the tailnet** — the app
-thinks it is on plain HTTP, but tsdproxy terminates TLS in front of it. The
-`.env.example` already ships `OWNCLOUD_OVERWRITE_PROTOCOL=https` to avoid that
-from the outset — if it still happens, check `OWNCLOUD_TRUSTED_DOMAINS` (it
-has to include the exact hostname used in the browser).
-
-## Auto-update
-
-No `AutoUpdate=` — an explicit tag (`11.0.0-20260802`), bumped by hand
-([rule 9](../../docs/conventions.md)). Synced files are the user's real data —
-review by hand before updating, the same reasoning as immich. All the more
-relevant here running on SQLite (a mode not officially supported in
-production).
-
-## Backup & recovery
-
-```bash
-systemctl --user stop owncloud
-tar -czf owncloud-backup-$(date +%Y%m%d-%H%M%S).tar.gz \
-  -C ~/.config/containers/volumes owncloud
-systemctl --user start owncloud
+```
+owncloud.container
+.env.example
+install.ini
 ```
 
-## Useful commands
+## Update
+
+```bash
+qh owncloud --update --apply
+```
+
+Pinned to `11.0.0-20260802`. Nothing updates on its own — a new version is applied
+when you run the command above.
+
+## Backup
+
+```bash
+qh owncloud --backup --apply --out ~/backups
+```
+
+It stops the service, packs the data, the `.env` and the secrets, and starts
+it again. Cold on purpose: copying a live database gives an archive that only
+fails when you restore it.
+
+To restore, over the current data:
+
+```bash
+qh owncloud --restore ~/backups/owncloud-20260809-1200.tar.gz --apply
+```
+
+It asks you to type `owncloud` to confirm, because the current data is deleted
+before the archive is unpacked.
+
+## Remove
+
+```bash
+qh owncloud --remove --apply           # stops it, keeps the data
+qh owncloud --remove --purge --apply   # and deletes volumes, secrets and .env
+```
+
+`--purge` asks for the typed name too. The tailnet node is not deregistered by
+this — that is done in the Tailscale admin.
+
+## Commands
 
 ```bash
 systemctl --user status owncloud
 podman logs -f owncloud
-podman exec owncloud /usr/bin/healthcheck
 ```
 
 ## Credits
 
-Quadlet deploy based on [ownCloud](https://github.com/owncloud/core)
-Server, usando a imagem oficial
-[owncloud/server](https://github.com/owncloud-docker/server).
-Original licence: AGPL-3.0.
+[owncloud/core](https://github.com/owncloud/core) — AGPL-3.0.
+
+[Official documentation](https://owncloud.com)

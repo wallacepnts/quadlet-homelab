@@ -1,58 +1,22 @@
-# Donetick — Podman Quadlet (rootless)
+# Donetick
+
+<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/donetick.svg" width="64" height="64" alt="">
 
 **[🇧🇷 Leia em português](./README.pt-BR.md)**
 
-A [Donetick](https://github.com/donetick/donetick) (recurring household
-chores) deploy via Podman Quadlet, using the official
-`docker.io/donetick/donetick` image.
+Recurring household chores — who does them, how often, and when they are due.
 
-Built for the kind of task that **comes back**: change the filter, clean the
-water tank, pay the road tax. Every task has an assignee, a recurrence and a
-history of who did it. It does not replace a project manager — it is the
-fridge-door list.
-
-## Architecture
-
-A single container, Go, with **embedded SQLite**. It takes this
-repository's strongest hardening level (`ReadOnly=true`,
-`DropCapability=ALL`, `User=1000`), tested by exercising the app.
-
-Two volumes: `/config` (the `selfhosted.yaml`) and `/donetick-data` (the
-database).
-
-### The config is not versioned
-
-`selfhosted.yaml` holds the **JWT secret** — whoever has that value can forge
-any user's session. That is why it lives in the volume, like a `podman
-secret`, and the repository only ships the `.example` with the field marked
-for replacement.
-
-## Files
-
-```
-donetick.container         # main unit
-selfhosted.yaml.example    # config — banco, JWT, CORS
-```
-
-## Installation
+## Install
 
 ```bash
-python3 install.py donetick            # dry-run: shows what it will do
-python3 install.py donetick --apply
+qh donetick            # shows the plan
+qh donetick --apply
 ```
 
-For the local network only, `--access local`; on the tailnet and the LAN,
-`--access both`. Adding `--href-local` points the dashboard link at the LAN.
-The script creates the directories, writes the `.env`, generates the secrets,
-fixes the volumes' ownership, starts the service and prints the address at the
-end — see [Installing and operating](../../docs/installing.md).
-
-Open `http://<host-ip>:2021` (ou via [tsdproxy](../tsdproxy/) em
-`https://donetick.<your-tailnet>.ts.net`) e criar a conta.
+Open `http://<host-ip>:2021` or `https://donetick.<your-tailnet>.ts.net`.
 
 <details>
-<summary><b>Manual installation</b> (advanced) — the same steps, one at a time</summary>
-
+<summary><b>Manual install</b></summary>
 
 ```bash
 # 1. Download the unit (no need to clone the repository)
@@ -79,11 +43,6 @@ systemctl --user daemon-reload
 systemctl --user start donetick
 ```
 
-Open `http://<host-ip>:2021` (ou via [tsdproxy](../tsdproxy/) em
-`https://donetick.<your-tailnet>.ts.net`) e criar a conta.
-
-**Depois de criar a sua conta**, fechar o cadastro:
-
 ```bash
 sed -i 's/^is_user_creation_disabled: false/is_user_creation_disabled: true/' \
   ~/.config/containers/volumes/donetick/config/selfhosted.yaml
@@ -92,41 +51,53 @@ systemctl --user restart donetick
 
 </details>
 
-## The phone app
+## Files
 
-Donetick has an Android app. It requires the server's URL to be in
-`server.cors_allow_origins` **and** in `server.public_host` — both already
-point at the tailnet domain in the `.example`, alongside the
-`capacitor://localhost` origins the app uses internally.
-
-## Notifications
-
-`selfhosted.yaml` has fields for Telegram and Pushover. This repository uses
-[ntfy](../ntfy/) for the rest of its alerts; Donetick does not speak ntfy
-natively yet, so it is either Telegram/Pushover or a webhook via
-[n8n](../n8n/).
-
-## Auto-update
-
-No `AutoUpdate=` — an explicit tag (`v0.1.76`), bumped by hand
-(rule 9 of the [conventions](../../docs/conventions.md)). Upstream publishes **betas alongside the stable releases** (there was a
-`v0.1.77-beta.3` next to `v0.1.76` when this was written), hence the
-`wud.tag.include=^v[0-9]+.[0-9]+.[0-9]+$` in the unit. A `0.x` project: read
-the changelog before bumping.
-
-## Backup & recovery
-
-```bash
-systemctl --user stop donetick
-tar -czf donetick-backup-$(date +%Y%m%d-%H%M%S).tar.gz \
-  -C ~/.config/containers/volumes donetick
-systemctl --user start donetick
+```
+donetick.container
+selfhosted.yaml.example
+install.ini
 ```
 
-`config/` goes into the backup too — without the same JWT secret, every
-session drops.
+## Update
 
-## Useful commands
+```bash
+qh donetick --update --apply
+```
+
+Pinned to `v0.1.76`. Nothing updates on its own — a new version is applied
+when you run the command above.
+
+## Backup
+
+```bash
+qh donetick --backup --apply --out ~/backups
+```
+
+It stops the service, packs the data, the `.env` and the secrets, and starts
+it again. Cold on purpose: copying a live database gives an archive that only
+fails when you restore it.
+
+To restore, over the current data:
+
+```bash
+qh donetick --restore ~/backups/donetick-20260809-1200.tar.gz --apply
+```
+
+It asks you to type `donetick` to confirm, because the current data is deleted
+before the archive is unpacked.
+
+## Remove
+
+```bash
+qh donetick --remove --apply           # stops it, keeps the data
+qh donetick --remove --purge --apply   # and deletes volumes, secrets and .env
+```
+
+`--purge` asks for the typed name too. The tailnet node is not deregistered by
+this — that is done in the Tailscale admin.
+
+## Commands
 
 ```bash
 systemctl --user status donetick
@@ -135,5 +106,6 @@ podman logs -f donetick
 
 ## Credits
 
-Quadlet deploy based on [Donetick](https://github.com/donetick/donetick)
-(AGPL-3.0).
+[donetick/donetick](https://github.com/donetick/donetick) — AGPL-3.0
+
+[Official documentation](https://donetick.com)

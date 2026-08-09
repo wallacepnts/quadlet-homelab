@@ -1,76 +1,22 @@
-# Stirling-PDF — Podman Quadlet (rootless)
+# Stirling-PDF
+
+<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/stirling-pdf.svg" width="64" height="64" alt="">
 
 **[🇧🇷 Leia em português](./README.pt-BR.md)**
 
-Deploy do [Stirling-PDF](https://github.com/Stirling-Tools/Stirling-PDF)
-(juntar, dividir, converter, OCR, assinar e comprimir PDF, tudo local)
-via Podman Quadlet, usando a imagem oficial
-`docker.io/stirlingtools/stirling-pdf`.
+Local PDF manipulation — merge, split, convert, OCR and sign, in place of the "online PDF" sites.
 
-## Architecture
-
-A single container (Spring Boot + LibreOffice + Tesseract embedded). Three
-volumes:
-
-| Volume | What for |
-| --- | --- |
-| `/configs` | settings.yml, the user database, session keys |
-| `/usr/share/tessdata` | extra OCR languages (downloaded by you) |
-| `/logs` | the application's log |
-
-Nothing leaves the machine — that is the project's point: it replaces the
-"online PDF" sites where you upload your document to a third party.
-
-### Sobre a variante da imagem
-
-Upstream publishes three: the default, `-fat` (everything preinstalled,
-~4 GB) and `-ultra-lite` (basic operations only, with no OCR or Office
-conversion). This repository uses **the default one**, and the
-`wud.tag.include` in the unit exists
-justamente pra impedir que o [wud](../wud/) sinalize uma tag `-fat` como
-an "update" to the one we use.
-
-### Sobre as capabilities
-
-This is the service that needed the most capabilities in the repository:
-five. The entrypoint runs `setpriv` to switch user and does a `chown` on
-`/pipeline` e `/configs` no start, e o kit usual do repo
-(`CHOWN,SETUID,SETGID`) is not enough — without `DAC_OVERRIDE` and `FOWNER`
-the
-imagem morre com `setpriv: setresuid failed: Operation not permitted`.
-`ReadOnly=true` was refused for the same reason. This is measured, not
-copied (see CLAUDE.md, "Hardening a new service").
-
-## Files
-
-```
-stirling-pdf.container   # main unit
-.env.example             # configuration variables
-```
-
-## Prerequisites
-
-- Rootless Podman with systemd `--user` working
-
-## Installation
+## Install
 
 ```bash
-python3 install.py stirling-pdf            # dry-run: shows what it will do
-python3 install.py stirling-pdf --apply
+qh stirling-pdf            # shows the plan
+qh stirling-pdf --apply
 ```
 
-For the local network only, `--access local`; on the tailnet and the LAN,
-`--access both`. Adding `--href-local` points the dashboard link at the LAN.
-The script creates the directories, writes the `.env`, generates the secrets,
-fixes the volumes' ownership, starts the service and prints the address at the
-end — see [Installing and operating](../../docs/installing.md).
-
-Open `http://<host-ip>:8095` (ou via [tsdproxy](../tsdproxy/) em
-`https://stirling-pdf.<your-tailnet>.ts.net`).
+Open `http://<host-ip>:8095` or `https://stirling-pdf.<your-tailnet>.ts.net`.
 
 <details>
-<summary><b>Manual installation</b> (advanced) — the same steps, one at a time</summary>
-
+<summary><b>Manual install</b></summary>
 
 ```bash
 # 1. Download the units (no need to clone the repository)
@@ -91,56 +37,63 @@ systemctl --user daemon-reload
 systemctl --user start stirling-pdf
 ```
 
-Open `http://<host-ip>:8095` (or through [tsdproxy](../tsdproxy/) at
-`https://stirling-pdf.<your-tailnet>.ts.net`).
-
-**First login:** `admin` / `stirling`. The `.env.example` already ships
-`SECURITY_ENABLE_LOGIN=true`, so the UI is not left open — **change the
-password on first access** (Settings → Account).
-
 </details>
 
-## OCR in another language
+## Files
 
-The default image ships English. For OCR in Portuguese (or any other
-language), download Tesseract's training data into the `tessdata` volume:
-
-```bash
-wget -P ~/.config/containers/volumes/stirling-pdf/tessdata/ \
-  https://github.com/tesseract-ocr/tessdata/raw/main/por.traineddata
-systemctl --user restart stirling-pdf
+```
+stirling-pdf.container
+.env.example
+install.ini
 ```
 
-O idioma aparece na lista da ferramenta de OCR depois do restart.
-
-## Auto-update
-
-No `AutoUpdate=` — an explicit tag (`2.14.3`), bumped by hand
-(rule 9 of the [conventions](../../docs/conventions.md)). O `wud.tag.include` restringe o aviso do [wud](../wud/) a
-`X.Y.Z` puro, filtrando as variantes `-fat`/`-ultra-lite`.
-
-## Backup & recovery
+## Update
 
 ```bash
-systemctl --user stop stirling-pdf
-tar -czf stirling-pdf-backup-$(date +%Y%m%d-%H%M%S).tar.gz \
-  -C ~/.config/containers/volumes stirling-pdf
-systemctl --user start stirling-pdf
+qh stirling-pdf --update --apply
 ```
 
-A deliberately small backup: the processed PDFs are not kept on the server,
-the result goes straight to the browser's download.
+Pinned to `2.14.3`. Nothing updates on its own — a new version is applied
+when you run the command above.
 
-## Useful commands
+## Backup
+
+```bash
+qh stirling-pdf --backup --apply --out ~/backups
+```
+
+It stops the service, packs the data, the `.env` and the secrets, and starts
+it again. Cold on purpose: copying a live database gives an archive that only
+fails when you restore it.
+
+To restore, over the current data:
+
+```bash
+qh stirling-pdf --restore ~/backups/stirling-pdf-20260809-1200.tar.gz --apply
+```
+
+It asks you to type `stirling-pdf` to confirm, because the current data is deleted
+before the archive is unpacked.
+
+## Remove
+
+```bash
+qh stirling-pdf --remove --apply           # stops it, keeps the data
+qh stirling-pdf --remove --purge --apply   # and deletes volumes, secrets and .env
+```
+
+`--purge` asks for the typed name too. The tailnet node is not deregistered by
+this — that is done in the Tailscale admin.
+
+## Commands
 
 ```bash
 systemctl --user status stirling-pdf
 podman logs -f stirling-pdf
-curl -s http://127.0.0.1:8095/api/v1/info/status   # {"version":"...","status":"UP"}
 ```
 
 ## Credits
 
-Quadlet deploy based on
-[Stirling-PDF](https://github.com/Stirling-Tools/Stirling-PDF) da
-[Stirling-Tools](https://github.com/Stirling-Tools) (MIT).
+[Stirling-Tools/Stirling-PDF](https://github.com/Stirling-Tools/Stirling-PDF) — MIT
+
+[Official documentation](https://stirling.com)
