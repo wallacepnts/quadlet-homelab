@@ -29,8 +29,8 @@ import sys
 import time
 from pathlib import Path
 
-import qhlang
-from qhlang import translator
+import qhui
+from qhui import translator, red, yellow, green, dim, bold
 
 ROOT = Path(__file__).resolve().parent
 APPS = ROOT / "apps"
@@ -229,6 +229,8 @@ PT = {
     ' reinstalls': ' reinstalações',
     ' removes': ' remoções',
     ' backups': ' backups',
+    'done.': 'pronto.',
+    'Check with:': 'Confira com:',
     "failed:": "falharam:",
 }
 
@@ -308,7 +310,7 @@ def show_tailscale():
     steps = tailscale_steps()
     say("")
     for i, (done, titulo, cmds) in enumerate(steps, 1):
-        say(f"  {'✓' if done else ' '} {i}. {titulo}")
+        say(f"  {green('✓') if done else yellow('·')} {i}. {titulo}")
         for c in cmds:
             say(f"       {c}")
     pend = [i for i, (d, _, _) in enumerate(steps, 1) if not d]
@@ -1629,6 +1631,18 @@ def selftest():
     assert run_read(["false"]) is None
     assert run_read(["comando-que-nao-existe-xyz"]) is None
 
+    # colour never reaches a pipe, and never changes the text itself
+    import qhui as _ui
+    antes_cor = _ui.COLOR
+    try:
+        _ui.COLOR = False
+        assert _ui.red("x") == "x" and _ui.green("y") == "y"
+        _ui.COLOR = True
+        assert _ui.red("x") == "\033[31mx\033[0m"
+        assert len("x") == 1                       # o texto não muda, só o entorno
+    finally:
+        _ui.COLOR = antes_cor
+
     # the summary classifies the steps it already prints; a step that no rule
     # matches would vanish from it silently
     assert classificar("mkdir -p /x") == "directories"
@@ -1672,17 +1686,17 @@ def selftest():
             assert not any(l.startswith("#") for l in dns), (modo, dns)
 
     # the language layer: longest phrase wins, and a path is never mangled
-    antes = qhlang.PTBR
+    antes = qhui.PTBR
     try:
-        qhlang.PTBR = True
+        qhui.PTBR = True
         assert loc("act on ALL the services in apps/") == "age sobre TODOS os serviços de apps/"
         assert loc("the services") == "os serviços"
         # um caminho que contém uma palavra traduzível continua intacto
         assert loc("mkdir -p /home/x/install/data") == "mkdir -p /home/x/install/data"
-        qhlang.PTBR = False
+        qhui.PTBR = False
         assert loc("act on ALL the services in apps/") == "act on ALL the services in apps/"
     finally:
-        qhlang.PTBR = antes
+        qhui.PTBR = antes
 
     # what the already-installed guard gates on, in both layouts
     with tempfile.TemporaryDirectory() as d:
@@ -1830,8 +1844,15 @@ def show_status():
         say(loc("nothing installed yet."))
         return 0
     say(f"  {'service':<26} {'unit':<10} {'container':<10} repo")
+    def coluna(v, largura, bons=(), ruins=()):
+        """Colour, then pad by the visible text: an escape code has width 0, so
+        padding the coloured string collapses every column after it."""
+        cor = green if v in bons else red if v in ruins else dim
+        return cor(v) + " " * max(0, largura - len(v))
     for n, e, c, dv in linhas:
-        say(f"  {n:<26} {e:<10} {c:<10} {dv}")
+        say(f"  {n:<26} {coluna(e, 10, ('active',), ('failed',))}"
+            f" {coluna(c, 10, ('healthy', 'up'), ('unhealthy', 'down'))}"
+            f" {yellow(dv) if dv == 'changed' else dim(dv)}")
     say("")
     say(loc("  installed:") + f" {len(linhas)}  "
         + loc("needing attention:") + f" {problemas}  "
@@ -1892,7 +1913,7 @@ def show_summary(feitos, verbos):
                        for r, n in sorted(feitos.items(), key=lambda kv: -kv[1]))
     porverbo = ", ".join(f"{n} {loc(v if n == 1 else v + 's')}"
                          for v, n in sorted(verbos.items()))
-    say(loc("done:") + f" {porverbo}")
+    say(green(loc("done:")) + f" {porverbo}")
     say(f"  {resumo}")
 
 
@@ -1955,7 +1976,7 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
         if here:
             # "1 of 6" is the case worth seeing: a stack where only some units
             # are on the host refuses too, and --reinstall is what completes it.
-            say(f"{app}: already installed — {len(here)} of {len(s.units)} "
+            say(f"{app}: {yellow(loc('already installed —'))} {len(here)} of {len(s.units)} "
                   f"unit(s) in {here[0].parent}")
             say("  --update     re-copies the units and restarts, keeping data, "
                   "env and secrets")
@@ -2008,7 +2029,7 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
     for desc, _ in steps:
         say(f"  {'->' if a.apply else '  '} {desc}")
     for w in warnings:
-        say(f"  !  {w}")
+        say(f"  {yellow('!')}  {w}")
 
     if not a.apply:
         if not (a.remove or a.backup or a.restore):
@@ -2037,7 +2058,7 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
             if rotulo:
                 feitos[rotulo] = feitos.get(rotulo, 0) + 1
         except subprocess.CalledProcessError as e:
-            say(f"\nFAILED at: {desc}\n{(e.stderr or '').strip()}", file=sys.stderr)
+            say(f"\n{red('FAILED at:')} {desc}\n{(e.stderr or '').strip()}", file=sys.stderr)
             return 1
     unit = (s.main_unit() or Path(app)).stem
     if a.restore:
@@ -2047,7 +2068,8 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
     elif a.remove:
         say(f"\n{app} removed.")
     else:
-        say(f"\n{app}: done. Check with:  systemctl --user status {unit}")
+        say(f"\n{app}: {green(loc('done.'))} " + loc("Check with:")
+            + f"  systemctl --user status {unit}")
         show_addresses(s, tailnet, modo_efetivo)
         # Not on an update: it changes no credential, and `qh --all --update`
         # would spill every password in the terminal at once. `qh <app>` still

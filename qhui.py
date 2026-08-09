@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Language detection and phrase translation, shared by the three tools.
+"""Language and colour for the terminal, shared by the three tools.
 
 It lives in one file because the three have to agree: `qh` speaking Portuguese
 while `qh-check` answers in English is worse than either alone.
@@ -12,6 +12,7 @@ No dependencies: stdlib only.
 """
 
 import os
+import sys
 
 # QH_LANG wins, so a single run can be forced either way without touching the
 # locale; otherwise the environment decides.
@@ -38,3 +39,23 @@ def translator(phrases):
         return s
 
     return loc
+
+
+# Colour only when a person is looking: piped into a file or a grep, the escape
+# codes are noise that breaks the very matching the pipe was for. NO_COLOR is
+# the convention every tool that does this respects.
+COLOR = sys.stdout.isatty() and not os.environ.get("NO_COLOR")
+
+
+def _c(code):
+    def pinta(s):
+        return f"\033[{code}m{s}\033[0m" if COLOR else s
+    return pinta
+
+
+red = _c("31")
+green = _c("32")
+yellow = _c("33")
+blue = _c("34")
+dim = _c("2")
+bold = _c("1")

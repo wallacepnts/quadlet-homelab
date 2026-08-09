@@ -18,7 +18,7 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-from qhlang import translator
+from qhui import translator, red, yellow, green, dim
 
 PT = {
     "services,": "serviços,",
@@ -382,15 +382,16 @@ def main():
     check_tailnet()
 
     conts = sum(len(list(p.glob("*.container"))) for p in folders)
-    print(loc(f"{len(folders)} services, {conts} containers, "
-              f"{len(uses)} published ports\n"))
+    print(dim(loc(f"{len(folders)} services, {conts} containers, "
+                  f"{len(uses)} published ports")) + "\n")
 
-    for label, items in (("ERROR", errors), ("warn ", warnings)):
+    for label, cor, items in (("ERROR", red, errors), ("warn ", yellow, warnings)):
         for i in items:
-            print(loc(f"  {label}  {i}"))
+            print(f"  {cor(label)}  {loc(i)}")
     if errors or warnings:
         print()
-    print(loc(f"{len(errors)} error(s), {len(warnings)} warning(s)"))
+    placar = loc(f"{len(errors)} error(s), {len(warnings)} warning(s)")
+    print(red(placar) if errors else yellow(placar) if warnings else green(placar))
     return 1 if errors else 0
 
 

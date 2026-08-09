@@ -30,7 +30,7 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from qhlang import translator
+from qhui import translator, red, yellow, green, dim
 
 PT = {
     "OUTDATED (": "DESATUALIZADOS (",
@@ -482,21 +482,21 @@ def main():
                or "no published release" in l[4]]
     pendente = [l for l in rows if l[4] == "released, not published yet"]
 
-    def table(label, ls):
+    def table(label, ls, cor=yellow):
         if not ls:
             return
-        print(loc(f"\n{label}"))
+        print("\n" + cor(loc(label)))
         for unit, _, here, there, _ in sorted(ls):
             print(f"  {unit:<28} {here:<24} -> {there}")
 
-    table(f"OUTDATED ({len(behind)}):", behind)
+    table(f"OUTDATED ({len(behind)}):", behind, red)
     table(f"released, image not published yet ({len(pendente)}):", pendente)
     table(f"floating tag, moved since your pull ({len(movidas)}):", movidas)
     # What could not be compared stays out of the way: it is a property of the
     # image's naming, not something to act on. --all brings it back.
     if a.all:
         table(f"cannot compare ({len(unclear)}):", unclear)
-        table("up to date:", [l for l in rows if l[4] == "up to date"])
+        table("up to date:", [l for l in rows if l[4] == "up to date"], green)
 
     floating = sum(1 for l in rows if l[4] == "floating tag")
     print(loc(f"\n{len(rows)} images: {len(behind)} outdated, "
