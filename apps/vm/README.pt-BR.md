@@ -45,29 +45,26 @@ systemctl --user start vm-qemu
 ## Arquivos
 
 ```
-vm-chromeos.container
-vm-macos.container
-vm-qemu.container
-vm-windows-arm.container
-vm-windows.container
-vm-zima.container
-vm-chromeos.env.example
-vm-macos.env.example
-vm-qemu.env.example
-vm-windows-arm.env.example
-vm-windows.env.example
-vm-zima.env.example
-install.ini
+vm-<nome>.container       uma unit por VM, seis delas
+vm-<nome>.env.example     RAM, núcleos e disco, um por VM
+install.ini               as senhas, e quais sistemas a instalação oferece
+docs/                     uma página por VM
 ```
 
-Units da stack:
+Discos em `~/.config/containers/volumes/vm/<nome>/`. As portas de cada VM estão
+na página dela.
 
-- `vm-chromeos`
-- `vm-macos`
-- `vm-qemu`
-- `vm-windows-arm`
-- `vm-windows`
-- `vm-zima`
+| | VM | Para que serve | Versão |
+| --- | --- | --- | --- |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/windows-11.png" width="28" height="28" alt=""> | [Windows](./docs/pt-BR/windows.md) | VM de Windows no navegador, com RDP para um desktop de verdade | `6.04` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/windows-11.png" width="28" height="28" alt=""> | [Windows on ARM](./docs/pt-BR/windows-arm.md) | O mesmo, para host ARM64. Compartilha as portas — só uma das duas roda | `6.04` |
+| <img src="https://cdn.simpleicons.org/macos/888888" width="28" height="28" alt=""> | [macOS](./docs/pt-BR/macos.md) | VM de macOS, do Big Sur ao Sequoia | `3.09` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/qemu.svg" width="28" height="28" alt=""> | [QEMU](./docs/pt-BR/qemu.md) | Qualquer um de vinte e três sistemas, escolhido na instalação | `7.44` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/chrome.svg" width="28" height="28" alt=""> | [ChromeOS](./docs/pt-BR/chromeos.md) | ChromeOS Flex com a GPU do host | `1.02` |
+| <img src="https://cdn.jsdelivr.net/gh/dockur/zima@master/assets/20241126-153324.png" width="28" height="28" alt=""> | [ZimaOS](./docs/pt-BR/zima.md) | A interface de NAS derivada do CasaOS, sem o hardware | `1.7.0` |
+
+Cada página acima diz o que a VM pede no primeiro boot. Elas são independentes:
+instalar a pasta traz as seis, e você sobe a que quiser.
 
 ## Atualizar
 

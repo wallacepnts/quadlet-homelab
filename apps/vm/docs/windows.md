@@ -1,0 +1,38 @@
+# Windows
+
+<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/windows-11.png" width="64" height="64" alt="">
+
+**[🇧🇷 Leia em português](./pt-BR/windows.md)**
+
+[< VMs](../README.md)
+
+A Windows VM you open in the browser. Nothing is installed on the host.
+
+Web viewer on **8006**, RDP on **3389**. Unit `vm-windows`.
+
+The install asks which Windows to put in — nineteen options, from Windows 11 Pro down to XP, ReactOS and the trimmed Tiny11 builds. The image is downloaded from Microsoft's own servers on the first boot and takes a while; the browser viewer shows the whole installation.
+
+Changing `VERSION` afterwards does nothing: the disk is already written. To switch, remove the volume and start over.
+
+The account inside Windows is `Docker`, and its password is a generated secret — the install prints it. It is what RDP on 3389 asks for; the browser viewer asks for nothing.
+
+`vm-windows-arm` publishes the same ports on purpose. They are alternatives — one for an x86 host, one for ARM — and only one runs at a time.
+
+All of these need `/dev/kvm` on the host — without hardware virtualisation
+the VM either refuses to start or crawls. `RAM_SIZE` is reserved for the whole
+life of the VM, so leave the host enough to breathe; `DISK_SIZE` is a ceiling
+and grows on demand.
+
+## Commands
+
+```bash
+systemctl --user status vm-windows
+podman logs -f vm-windows
+qh vm-windows --update --apply
+```
+
+## Credits
+
+[Windows](https://github.com/dockur/windows) — MIT
+
+[Official documentation](https://github.com/dockur/windows#readme)

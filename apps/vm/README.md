@@ -45,29 +45,27 @@ systemctl --user start vm-qemu
 ## Files
 
 ```
-vm-chromeos.container
-vm-macos.container
-vm-qemu.container
-vm-windows-arm.container
-vm-windows.container
-vm-zima.container
-vm-chromeos.env.example
-vm-macos.env.example
-vm-qemu.env.example
-vm-windows-arm.env.example
-vm-windows.env.example
-vm-zima.env.example
-install.ini
+vm-<name>.container       one unit per VM, six of them
+vm-<name>.env.example     RAM, cores and disk, one per VM
+install.ini               the passwords, and which OS the install offers
+docs/                     a page per VM
 ```
 
-Units in this stack:
+Disks in `~/.config/containers/volumes/vm/<name>/`. Each VM's ports are on its
+own page.
 
-- `vm-chromeos`
-- `vm-macos`
-- `vm-qemu`
-- `vm-windows-arm`
-- `vm-windows`
-- `vm-zima`
+| | VM | What it does | Version |
+| --- | --- | --- | --- |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/windows-11.png" width="28" height="28" alt=""> | [Windows](./docs/windows.md) | A Windows VM in the browser, with RDP for a real desktop | `6.04` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/windows-11.png" width="28" height="28" alt=""> | [Windows on ARM](./docs/windows-arm.md) | The same, for an ARM64 host. Shares the ports — only one of the two runs | `6.04` |
+| <img src="https://cdn.simpleicons.org/macos/888888" width="28" height="28" alt=""> | [macOS](./docs/macos.md) | A macOS VM, from Big Sur to Sequoia | `3.09` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/qemu.svg" width="28" height="28" alt=""> | [QEMU](./docs/qemu.md) | Any of twenty-three systems, chosen at install time | `7.44` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/chrome.svg" width="28" height="28" alt=""> | [ChromeOS](./docs/chromeos.md) | ChromeOS Flex with the host's GPU | `1.02` |
+| <img src="https://cdn.jsdelivr.net/gh/dockur/zima@master/assets/20241126-153324.png" width="28" height="28" alt=""> | [ZimaOS](./docs/zima.md) | The CasaOS-derived NAS interface, without the hardware | `1.7.0` |
+
+Every page above says what its VM asks for on the first boot. They are
+independent: installing the folder brings all six, and you start the one you
+want.
 
 ## Update
 

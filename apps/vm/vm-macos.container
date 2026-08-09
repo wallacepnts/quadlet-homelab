@@ -33,7 +33,7 @@ Label=tsdproxy.dash.icon=sh/apple
 
 Label=homepage.group="Virtual Machines"
 Label=homepage.name=macOS
-Label=homepage.icon=https://cdn.simpleicons.org/macos/000000
+Label=homepage.icon=https://cdn.simpleicons.org/macos/888888
 Label=homepage.href=https://macos.${TAILNET}.ts.net
 Label=homepage.description="A macOS VM reachable in the browser, with VNC on 5900"
 
