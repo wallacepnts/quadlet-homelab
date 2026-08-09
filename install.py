@@ -901,8 +901,14 @@ def plan_update(s, access="tailnet", href_local=False):
     steps.extend(pull_steps(s))
     steps.append(("systemctl --user daemon-reload",
                   lambda: run(["systemctl", "--user", "daemon-reload"])))
+    # Every unit, not just the main one. A sidecar nothing declares as a
+    # dependency — beszel's agent, authentik's worker, immich's ML — would be
+    # copied and then never started, sitting installed with an empty journal
+    # until the next login. Restarting the main one alone hid three of them.
     main = s.main_unit()
-    targets = [main.stem] if main else service_units(s)
+    outros = [u.stem for u in s.units if u.suffix == ".container"
+              and (not main or u.stem != main.stem)]
+    targets = ([main.stem] if main else []) + sorted(outros)
     paths = {u.stem: u for u in s.units if u.suffix == ".container"}
     for unit in targets:
         path = paths.get(unit)
