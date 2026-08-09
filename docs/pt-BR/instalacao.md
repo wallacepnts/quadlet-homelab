@@ -3,7 +3,7 @@
 Tudo pelo `qh`. Todo modo é **dry-run por padrão**; `--apply` executa.
 
 ```bash
-qh --list
+qh                                    # os serviços
 qh traccar                            # mostra o que faria
 qh traccar --apply
 qh traccar --update --apply           # recopia as units, reinicia, mantém dados

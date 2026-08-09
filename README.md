@@ -19,7 +19,7 @@ started.
 Then:
 
 ```bash
-qh --list            # the services
+qh                   # the services
 qh memos             # the plan for one, without doing it
 qh memos --apply     # do it
 ```

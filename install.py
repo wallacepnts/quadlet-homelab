@@ -11,7 +11,6 @@ What can NOT be derived lives in `apps/<app>/install.ini` — today only each
 secret's recipe and the destination of a config file that lands inside a
 directory volume.
 
-    python3 install.py --list
     python3 install.py traccar             # dry-run: only shows what it would do
     python3 install.py traccar --apply
     python3 install.py traccar --apply --prefix /tmp/test   # sandbox
@@ -158,6 +157,7 @@ PT = {
     'name (implied by --access local)': '(implícito no --access local)',
     'local: no tsdproxy, link to the LAN | tailnet: link via the ': 'local: sem tsdproxy, link pra LAN | tailnet: link pelo nome da ',
     'tailnet name (default) | both: on the tailnet, with a LAN link': 'tailnet (padrão) | both: na tailnet, com link da LAN',
+    "(run it with no arguments to see the list)": "(rode sem argumentos para ver a lista)",
     "failed:": "falharam:",
 }
 
@@ -1657,7 +1657,6 @@ def main():
                              "(`media-stack-jellyfin`, `toolbx-ubuntu`)"))
     ap.add_argument("--apply", action="store_true", help=loc("execute (without it, only show)"))
     ap.add_argument("--prefix", help=loc("use another home (to test without touching the real one)"))
-    ap.add_argument("--list", action="store_true", help=loc("list the services"))
     ap.add_argument("--selftest", action="store_true", help=loc("test the script's parser"))
     ap.add_argument("--access", choices=("local", "tailnet", "both"), default="tailnet",
                     help=loc("local: no tsdproxy, link to the LAN | tailnet: link via the "
@@ -1696,7 +1695,7 @@ def main():
     if a.all:
         a.app = sorted(x.name for x in APPS.iterdir() if x.is_dir())
 
-    if a.list or not a.app:
+    if not a.app:
         for p in sorted(x.name for x in APPS.iterdir() if x.is_dir()):
             say(" ", p)
         say("\n  (tailscale is not here: it is not a Quadlet, see "
@@ -1711,7 +1710,7 @@ def main():
                if x not in NOT_QUADLET and find_app(x) == (None, None)]
     if unknown:
         ap.error("not found in apps/: " + ", ".join(unknown)
-                 + "  (`--list` shows what is available)")
+                 + "  (run it with no arguments to see the list)")
 
     # A single unit out of a stack is an install/update concept only. The data
     # actions work on the folder's volume roots — `volume_roots()` collapses

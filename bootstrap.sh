@@ -45,7 +45,7 @@ pt*)
     M_PLAN="o plano de" ; M_PLAN2="(nada foi feito ainda):"
     M_TORUN="para executar:"
     M_NEXT="a seguir:"
-    M_C1="  qh --list          # os serviços"
+    M_C1="  qh                 # os serviços"
     M_C2="  qh memos           # o plano de um, sem fazer"
     M_C3="  qh memos --apply   # fazer"
     ;;
@@ -68,7 +68,7 @@ pt*)
     M_PLAN="the plan for" ; M_PLAN2="(nothing is done yet):"
     M_TORUN="to run it:"
     M_NEXT="next:"
-    M_C1="  qh --list          # the services"
+    M_C1="  qh                 # the services"
     M_C2="  qh memos           # the plan for one, without doing it"
     M_C3="  qh memos --apply   # do it"
     ;;

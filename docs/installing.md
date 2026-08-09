@@ -4,7 +4,7 @@ Everything through `qh`. Every mode is **dry-run by default**; `--apply`
 executes.
 
 ```bash
-qh --list
+qh                                    # the services
 qh traccar                            # shows what it would do
 qh traccar --apply
 qh traccar --update --apply           # re-copies the units, restarts, keeps data

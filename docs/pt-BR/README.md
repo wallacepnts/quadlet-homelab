@@ -19,7 +19,7 @@ serviço.
 Depois:
 
 ```bash
-qh --list            # os serviços
+qh                   # os serviços
 qh memos             # o plano de um, sem fazer
 qh memos --apply     # fazer
 ```
