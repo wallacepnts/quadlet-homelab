@@ -186,7 +186,6 @@ journal, sem erro visível em `systemctl cat` nem em `podman inspect`
 tivesse sido escrita). Não tem escape que resolva — nem `\\` nem aspas
 em volta do valor. Reescrever sem barra invertida: `[0-9]` no lugar de
 `\d`, `.` sem escapar (aceitável em regex de filtro, não crítica).
-Caso real em [`wud/`](../../apps/wud/README.pt-BR.md#wudtagincludewudtagtransform-nada-de--no-valor).
 
 ### 19. Uma variável só, pra várias units: `~/.config/environment.d/*.conf`
 
@@ -240,7 +239,7 @@ Mantém o repo publicável sem expor o nome da tailnet, e sobrevive a
 arquivo, que o próximo download sobrescreve. **Variável não definida
 expande pra string vazia, em silêncio** (`https://meu-app..ts.net`) —
 conferir com `podman inspect` depois de definir, ver
-[homepage](../../apps/homepage/README.pt-BR.md#marcando-um-serviço-pra-aparecer-no-dashboard).
+homepage.
 
 ### 20. Hardening (`ReadOnly`/`DropCapability`): testar o app, não o container
 

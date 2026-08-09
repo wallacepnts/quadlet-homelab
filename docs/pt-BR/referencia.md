@@ -1,123 +1,79 @@
 # Referência
 
-Onde cada arquivo mora e como um `.container` é montado, linha a linha.
-
-## Estrutura padrão
+## No host
 
 ```
 ~/.config/containers/
 ├── systemd/
-│   ├── <app-simples>.container        # 1 arquivo quadlet só: solto (regra abaixo)
-│   └── <app-com-varios>/              # 2+ arquivos quadlet: subpasta
+│   ├── <app>.container         # um arquivo quadlet: solto
+│   └── <app>/                  # dois ou mais: subpasta própria
 │       ├── <app>-net.network
 │       └── <app>.container
-├── secrets/
-│   └── <app>/
-│       └── *.txt          # arquivos-fonte dos secrets — nunca versionar
-├── env/
-│   └── <app>.env
-└── volumes/
-    └── <app>/
-        ├── config/
-        └── data/
+├── secrets/<app>/*.txt         # os arquivos de origem dos secrets — nunca versionados
+├── env/<app>.env
+└── volumes/<app>/{config,data}
 ```
 
-```bash
-mkdir -p ~/.config/containers/{systemd,secrets,env,volumes}
-```
+Solto ou em subpasta se decide por quantos arquivos Quadlet o serviço tem, não
+por quantos containers.
 
-No **repositório**, cada serviço tem uma pasta dentro de `apps/`, e os
-arquivos `.container`/`.network` ficam na raiz dela (ex.:
-`apps/memos/memos.container`):
+## No repositório
 
 ```
-quadlet-homelab/
-├── apps/
-│   ├── memos/
-│   │   ├── memos.container
-│   │   └── README.md
-│   └── immich/
-│       ├── immich.container
-│       ├── immich-postgres.container
-│       ├── immich-net.network
-│       └── README.md
-├── _template/       # ponto de partida pra serviço novo
-├── README.md        # este arquivo — as regras
-└── LICENSE
+apps/<app>/
+├── <app>.container
+├── <app>-net.network       # só pra stack que conversa entre si
+├── .env.example
+├── install.ini             # receitas de secret, login, nome no upstream
+├── README.md
+└── README.pt-BR.md
 ```
 
-O `apps/` é só organização do repositório: **não** tem efeito nenhum no
-host, onde o layout continua sendo o de cima.
-
-**Solto vs. subpasta em `systemd/`** — o critério é a quantidade de
-arquivos Quadlet (`.container`/`.network`) do serviço:
-
-- **Um arquivo só** (`<app>.container`, sem `.network` nem outro
-  container) — fica solto direto em `~/.config/containers/systemd/`.
-  Maioria dos serviços deste repositório (ex.: memos, vaultwarden,
-  tsdproxy, gitea).
-- **Dois ou mais arquivos** (`.network` + `.container`, ou múltiplos
-  `.container` de uma stack) — ganham subpasta dedicada,
-  `~/.config/containers/systemd/<app>/`, só pra agrupar os arquivos
-  relacionados (o Quadlet nomeia a unit pelo *basename* de qualquer
-  jeito, regra 1 — a subpasta é só organização, não muda nome de unit
-  nem comportamento). Ex.: adguardhome, audiobookshelf, beszel,
-  immich, karakeep, media-stack, nginx, openwebui,
-  owntracks, paperless-ngx.
-
-Cada README de serviço já traz os comandos `wget`/`mkdir` certos pro seu
-caso — só seguir o que está lá.
-
-## Anatomia de referência
-
-### `<app>-net.network`
+## Anatomia de um `.container`
 
 ```ini
 [Unit]
-Description=Rede do <app>
-
-[Network]
-NetworkName=<app>-net
-```
-
-### `<app>.container`
-
-```ini
-[Unit]
-Description=<App>
-After=<outra-dependencia>.service
-Requires=<outra-dependencia>.service
+Description=<app>
 
 [Container]
-Image=<registry>/<imagem>:<tag-explícita>
+Image=<registry>/<imagem>:<tag>
 ContainerName=<app>
-Network=<app>-net.network
-PublishPort=8080:80
+PublishPort=<host>:<container>
 
 Volume=%h/.config/containers/volumes/<app>/data:/data:Z
 EnvironmentFile=%h/.config/containers/env/<app>.env
-Secret=<app>-senha,target=/run/secrets/senha
+Secret=<app>-<nome>,type=env,target=<VAR>
 
-# Só se a imagem tiver shell/utilitários — ver regra 9
-HealthCmd=CMD-SHELL <comando>
-HealthInterval=5s
-HealthTimeout=5s
-HealthRetries=12
+NoNewPrivileges=true
+PidsLimit=256
+DropCapability=ALL
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+
+HealthCmd=CMD-SHELL curl -fsS -o /dev/null http://127.0.0.1:<porta>/ || exit 1
+HealthInterval=30s
+HealthStartPeriod=20s
 Notify=healthy
+
+Label=tsdproxy.enable=true
+Label=tsdproxy.name=<app>
+Label=tsdproxy.port.web=443/https:<porta>/http
+Label=homepage.group=Self-Hosted
+Label=homepage.name=<App>
+Label=homepage.icon=<url>
+Label=homepage.href=https://<app>.${TAILNET}.ts.net
+Label=homepage.description="<uma linha>"
 
 [Service]
 Restart=always
-TimeoutStartSec=120
 
 [Install]
 WantedBy=default.target
 ```
 
-`:Z` no volume relabela SELinux como privado do container (`:z` minúsculo
-= compartilhado entre containers) — só relevante em distros com SELinux
-enforcing (Fedora, RHEL, openSUSE Tumbleweed/MicroOS); inofensivo/no-op
-nas demais.
+O `%h` é a home do usuário, expandida pelo systemd. O `${TAILNET}` vem do
+`~/.config/environment.d/tailnet.conf` e continua literal no `systemctl cat` —
+quem mostra o valor resolvido é o `podman inspect`.
 
-`%h` resolve pra `$HOME`; `%t` resolve pra `$XDG_RUNTIME_DIR` (útil pra
-sockets como `%t/podman/podman.sock`).
-
+Um `Network=` ou um `Volume=` apontando pra outro Quadlet já injeta
+`Requires=`/`After=`; não declarar de novo.

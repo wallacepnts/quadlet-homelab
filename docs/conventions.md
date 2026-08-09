@@ -182,8 +182,7 @@ error in `systemctl cat` or in `podman inspect` (the label simply does not
 exist on the container, as if the line had never been written). No escaping
 helps — neither `\\` nor quoting the value. Rewrite it without the backslash:
 `[0-9]` in place of `\d`, and an unescaped `.` (acceptable in a filter regex,
-which is not critical). Real case in
-[`wud/`](../apps/wud/#wudtagincludewudtagtransform-no-backslash-in-the-value).
+which is not critical).
 
 ### 19. One variable, several units: `~/.config/environment.d/*.conf`
 
@@ -236,7 +235,7 @@ survives a `wget` of an updated unit — unlike editing the value directly in
 the file, which the next download overwrites. **An undefined variable expands
 to an empty string, silently** (`https://my-app..ts.net`) — check with `podman
 inspect` after setting it, see
-[homepage](../apps/homepage/#marking-a-service-to-appear-on-the-dashboard).
+homepage.
 
 ### 20. Hardening (`ReadOnly`/`DropCapability`): test the app, not the container
 
