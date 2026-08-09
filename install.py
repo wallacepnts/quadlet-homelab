@@ -870,7 +870,11 @@ def plan_update(s, access="tailnet", href_local=False):
     steps, warnings = [], []
     dest = s.unit_dest
     if not s.installed():
-        warnings.append("does not look installed — use the normal install")
+        # No steps on purpose: copying the unit without creating the volumes
+        # leaves a service systemd keeps restarting until it hits the start
+        # limit, and `--all --update` would do that to every service you never
+        # installed.
+        return [], ["does not look installed — use the normal install"]
     steps.append((f"mkdir -p {dest}", lambda: dest.mkdir(parents=True, exist_ok=True)))
     for u in s.units:
         target = dest / u.name
@@ -1642,6 +1646,12 @@ def selftest():
         assert len("x") == 1                       # o texto não muda, só o entorno
     finally:
         _ui.COLOR = antes_cor
+
+    # --update on a service that is not installed does nothing: copying the
+    # unit without its volumes leaves systemd restarting it to the start limit
+    with tempfile.TemporaryDirectory() as d:
+        passos, avisos = plan_update(Service("freshrss", d))
+        assert passos == [] and avisos, (passos, avisos)
 
     # the summary classifies the steps it already prints; a step that no rule
     # matches would vanish from it silently
