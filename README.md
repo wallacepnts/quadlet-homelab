@@ -27,6 +27,26 @@ qh memos --apply     # do it
 Every service is reachable at `http://<host-ip>:<port>` with nothing else set
 up — no domain, no certificate, no router change.
 
+## Requirements
+
+- **Podman 5.0 or newer.** This is the real floor: `Notify=healthy` arrived
+  there, and 80 of the 88 units use it. On 4.x the start returns before the app
+  is ready, and the install reports a success it cannot know about.
+- **systemd with a user session** and cgroups v2.
+- **SELinux**, if your distribution has it. The units carry `:Z` on 125 volume
+  lines; where SELinux is absent those are ignored and nothing breaks, but the
+  per-container isolation they ask for is not there either.
+- `/dev/kvm`, only for the six VM services.
+
+```bash
+podman --version
+```
+
+Distributions that ship Podman 5.x work as they are: Fedora and its atomic
+variants, openSUSE Tumbleweed and MicroOS, Arch, Debian 13, Ubuntu 25.04 and
+newer, RHEL 9.5 and its rebuilds. Debian 12 and Ubuntu LTS up to 24.04 ship
+4.x and are not enough.
+
 ## Services
 
 | Logo | Application | Version | Description |

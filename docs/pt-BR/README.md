@@ -27,6 +27,26 @@ qh memos --apply     # fazer
 Todo serviço fica acessível em `http://<ip-do-host>:<porta>` sem mais nada
 configurado — sem domínio, sem certificado, sem mexer no roteador.
 
+## Requisitos
+
+- **Podman 5.0 ou mais novo.** É a régua de verdade: o `Notify=healthy` chegou
+  nessa versão, e 80 das 88 units usam. No 4.x o start volta antes de o app
+  estar pronto, e a instalação relata um sucesso que ela não tem como saber.
+- **systemd com sessão de usuário** e cgroups v2.
+- **SELinux**, se a sua distribuição tiver. As units trazem `:Z` em 125 linhas
+  de volume; onde não há SELinux elas são ignoradas e nada quebra, mas o
+  isolamento por container que elas pedem também não existe.
+- `/dev/kvm`, só para os seis serviços de VM.
+
+```bash
+podman --version
+```
+
+Distribuições que empacotam Podman 5.x funcionam como estão: Fedora e suas
+variantes atômicas, openSUSE Tumbleweed e MicroOS, Arch, Debian 13, Ubuntu
+25.04 em diante, RHEL 9.5 e recompilações. Debian 12 e Ubuntu LTS até 24.04
+trazem 4.x e não bastam.
+
 ## Serviços
 
 | Logo | Aplicativo | Versão | Descrição |

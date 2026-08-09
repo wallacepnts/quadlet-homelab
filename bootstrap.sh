@@ -39,6 +39,16 @@ if [ ${#missing[@]} -gt 0 ]; then
 fi
 say "git, python3, podman: ok"
 
+# 1b. Podman 5.0 is the real floor: `Notify=healthy` arrived there, and 80 of
+#     the 88 units use it. On 4.x the start returns before the app is ready and
+#     the install reports success it cannot know about.
+pv=$(podman --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+' | head -1)
+if [ -n "$pv" ] && [ "${pv%%.*}" -lt 5 ]; then
+    say "podman $pv is too old — 5.0 or newer is required (Notify=healthy)."
+    fail "upgrade podman, or use a distribution that ships 5.x."
+fi
+say "podman ${pv:-?}: ok"
+
 # 2. `systemd --user` has to be live, or every `systemctl --user` below is a
 #    confusing failure later instead of a clear one now.
 systemctl --user show-environment >/dev/null 2>&1 \
