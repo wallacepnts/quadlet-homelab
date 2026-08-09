@@ -142,8 +142,14 @@ cd "$DEST"
 #    future shell starts is doing more than it was asked to. If PATH needs the
 #    line, you get told, and you add it. Set NO_LINKS=1 to skip this entirely.
 link() {
-    local target="$DEST/$1" name=$2 dest="$HOME/.local/bin/$2"
-    if [ -e "$dest" ] && [ "$(readlink -f "$dest" 2>/dev/null)" != "$(readlink -f "$target")" ]; then
+    local target="$DEST/$1" name=$2 dest="$HOME/.local/bin/$2" atual
+    if [ -e "$dest" ]; then
+        atual=$(readlink -f "$dest" 2>/dev/null)
+        [ "$atual" = "$(readlink -f "$target")" ] && return   # já é este, nada a dizer
+        # Another checkout of the same repository is not a conflict: the command
+        # works, it just runs a different copy. Saying so on every run trains
+        # people to skim past the line that does matter.
+        [ "$(basename "$atual")" = "$1" ] && return
         say "$name$M_TAKEN"
         return
     fi
