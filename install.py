@@ -89,6 +89,9 @@ PT = {
     "already installed —": "já instalado —",
     'tsdproxy does NOT deregister the tailnet node — remove it in the Tailscale admin': 'o tsdproxy NÃO desregistra o nó da tailnet — isso é no admin do Tailscale',
     'steps': 'passos',
+    'This OVERWRITES the current data, with no way back.': 'Isso SOBRESCREVE os dados atuais, sem volta.',
+    'This DELETES the data listed above, with no way back.': 'Isso APAGA os dados listados acima, sem volta.',
+    'cancelled.': 'cancelado.',
     "unit(s) in": "unit(s) em",
     "  --update     re-copies the units and restarts, keeping data, env and secrets":
         "  --update     recopia as units e reinicia, mantendo dados, env e secrets",
@@ -2151,7 +2154,8 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
         say("\nThis OVERWRITES the current data, with no way back."
               if a.restore else "\nThis DELETES the data listed above, with no way back.")
         try:
-            if input(f"type `{app}` to confirm: ").strip() != app:
+            # loc() by hand: input() does not go through say()
+            if input(loc(f"type `{app}` to confirm: ")).strip() != app:
                 say("cancelled.")
                 return 1
         except (EOFError, KeyboardInterrupt):
