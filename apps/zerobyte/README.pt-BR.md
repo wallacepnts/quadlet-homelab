@@ -67,20 +67,26 @@ install.ini
 
 ## Gancho de backup
 
-O Restic copiando um banco enquanto ele é escrito gera um arquivo que só se
-revela quebrado na hora de restaurar. O gancho é o que torna a cópia agendada
-fria: o Zerobyte chama antes de o Restic rodar e de novo depois, e ele para e
-religa a unit em volta da cópia.
+O Restic copiando um banco enquanto ele é escrito gera um arquivo que só
+quebra na hora de restaurar. O gancho é o que torna a cópia agendada segura: o
+Zerobyte chama antes e depois de cada job. Roda no python do host — uma unit
+não consegue parar a si mesma de dentro do container que está sendo parado — e
+não precisa de nada instalado.
 
-Roda no python do host, não num container, porque uma unit não consegue parar
-a si mesma de dentro do container que está sendo parado. Só stdlib, então não
-há nada a instalar para ele.
+| Modo | O que faz | Indisponibilidade |
+| --- | --- | --- |
+| `sqlite` | Copia cada banco pela API de backup online do SQLite para `<volume>/.dbbackup/`, que o Restic já cobre | **nenhuma** |
+| `stop` | Para a unit antes da cópia e religa depois. É o padrão | a cópia inteira |
 
-O `qh zerobyte --apply` coloca os dois arquivos no lugar. Faltam três passos:
+Prefira `sqlite`: parar não é nem suficiente para ele, porque o Restic ainda lê
+o `.db` e o `-wal` como dois arquivos. Use `stop` para o que não tem dump
+online, como o Mongo embutido do any-sync-bundle. Arquivo comum — foto,
+documento, mídia — não precisa de nenhum dos dois.
+
+O `qh zerobyte --apply` instala. Faltam três passos:
 
 ```bash
-# 1. Quais units ele pode parar. O que não estiver na lista recebe 404 — um
-#    endpoint que para serviço pelo nome é negação de serviço com API bonita.
+# 1. Sobre quais units ele pode agir, e como. O que não estiver na lista recebe 404.
 systemctl --user edit --full zerobyte-backup-hook.service
 #    Environment=ZEROBYTE_HOOK_UNITS=vaultwarden:sqlite,any-sync-bundle:stop
 
@@ -94,63 +100,21 @@ systemctl --user enable --now zerobyte-backup-hook.service
 curl -s http://127.0.0.1:8765/healthz     # {"ok": true}
 ```
 
-### Modos
-
-Parar não é a melhor resposta para tudo, e para SQLite não é nem suficiente:
-com a unit parada, o Restic ainda lê o `.db` e o `-wal` dele como dois
-arquivos separados. O modo vai depois do nome da unit:
-
-| Modo | O que faz | Indisponibilidade |
-| --- | --- | --- |
-| `sqlite` | Copia cada banco pela API de backup online do próprio SQLite para `<volume>/.dbbackup/`, que o Restic já cobre | **nenhuma** |
-| `stop` | Para a unit antes da cópia e religa depois. É o padrão | a cópia inteira |
-
-```
-Environment=ZEROBYTE_HOOK_UNITS=vaultwarden:sqlite,karakeep:sqlite,any-sync-bundle:stop
-```
-
-O `sqlite` é o preferível onde couber: o `Connection.backup()` lê dentro de uma
-transação e recomeça se um escritor entrar no meio, então a cópia é um banco
-num instante do tempo e não um arquivo rasgado — e vem sem as páginas livres,
-em geral menor que o original.
-
-Use `stop` para o que não tem dump online: o any-sync-bundle carrega um Mongo
-embutido, e não há como ler isso de fora com consistência.
-
-Arquivo comum — foto, documento, mídia — não precisa de nenhum dos dois. O
-Restic copia um arquivo sendo escrito no máximo pela metade, e a execução
-seguinte pega inteiro. Parar o Immich por uma hora para copiar biblioteca de
-foto não compra nada.
-
-O `:sqlite` procura `*.db`, `*.sqlite` e `*.sqlite3` dentro de
-`~/.config/containers/volumes/<unit>`; um terceiro campo troca esse caminho.
-Um `.db` que não for SQLite é reportado na resposta e não derruba o resto.
-
-Depois, em cada job de backup, aponte o Zerobyte para as duas URLs daquela
-unit e cole o mesmo token como segredo:
+Depois aponte cada job para estas duas URLs, com o mesmo token como segredo. O
+`WEBHOOK_ALLOWED_ORIGINS` no `.env` já nomeia o endereço — sem ele o Zerobyte
+se recusa a salvar a URL.
 
 ```
 http://host.containers.internal:8765/hooks/<unit>/pre-backup
 http://host.containers.internal:8765/hooks/<unit>/post-backup
 ```
 
-O `WEBHOOK_ALLOWED_ORIGINS` no `.env` deste serviço já nomeia esse endereço —
-sem ele o Zerobyte se recusa a salvar a URL.
-
-**Quais units precisam**: as que guardam banco de dados. Num host em uso, isto
-encontra:
+Quais units precisam — as que guardam banco de dados:
 
 ```bash
-podman unshare find ~/.config/containers/volumes -maxdepth 4 \
-  \( -name "*.db" -o -name "*.sqlite*" -o -name "PG_VERSION" \) \
-  | cut -d/ -f7 | sort -u
+find ~/.config/containers/volumes -maxdepth 4 \
+  \( -name "*.db" -o -name "*.sqlite*" -o -name "PG_VERSION" \) | cut -d/ -f7 | sort -u
 ```
-
-O gancho de pré-backup só responde 2xx depois que a unit parou de verdade, e é
-isso que faz o Zerobyte esperar em vez de copiar um banco em uso. O de
-pós-backup responde na hora e sobe a unit em segundo plano: serviço com
-`Notify=healthy` pode demorar mais que o tempo limite do Zerobyte, e um start
-lento seria reportado como backup falho que na verdade deu certo.
 
 ## Atualizar
 

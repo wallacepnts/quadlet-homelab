@@ -67,20 +67,26 @@ install.ini
 
 ## Backup hook
 
-Restic copying a database while it is being written to produces an archive
-that only reveals itself as broken when you restore it. The hook is what makes
-the scheduled copy cold: Zerobyte calls it before Restic runs and again
-afterwards, and it stops and starts the unit around the copy.
+Restic copying a database while it is being written produces an archive that
+only breaks when you restore it. The hook is what makes the scheduled copy
+safe: Zerobyte calls it before and after each job. It runs on the host's
+python — a unit cannot stop itself from inside the container being stopped —
+and needs nothing installed.
 
-It runs on the host's python, not in a container, because a unit cannot stop
-itself from inside the container being stopped. Stdlib only, so there is
-nothing to install for it.
+| Mode | What it does | Downtime |
+| --- | --- | --- |
+| `sqlite` | Copies each database with SQLite's online backup API into `<volume>/.dbbackup/`, which Restic already covers | **none** |
+| `stop` | Stops the unit before the copy and starts it after. The default | the whole copy |
 
-`qh zerobyte --apply` puts both files in place. Three steps are left:
+Prefer `sqlite`: stopping is not even sufficient for it, since Restic still
+reads the `.db` and its `-wal` as two files. Use `stop` for what has no online
+dump, like any-sync-bundle's embedded Mongo. Plain files — photos, documents,
+media — need neither.
+
+`qh zerobyte --apply` installs it. Three steps are left:
 
 ```bash
-# 1. Which units it may stop. Anything not listed gets a 404 — an endpoint
-#    that stops services by name is a denial of service with a nice API.
+# 1. Which units it may act on, and how. Anything unlisted gets a 404.
 systemctl --user edit --full zerobyte-backup-hook.service
 #    Environment=ZEROBYTE_HOOK_UNITS=vaultwarden:sqlite,any-sync-bundle:stop
 
@@ -94,63 +100,21 @@ systemctl --user enable --now zerobyte-backup-hook.service
 curl -s http://127.0.0.1:8765/healthz     # {"ok": true}
 ```
 
-### Modes
-
-Stopping is not the best answer for everything, and for SQLite it is not even
-a sufficient one: with the unit stopped, Restic still reads the `.db` and its
-`-wal` as two separate files. The mode goes after the unit name:
-
-| Mode | What it does | Downtime |
-| --- | --- | --- |
-| `sqlite` | Copies each database with SQLite's own online backup API into `<volume>/.dbbackup/`, which Restic already covers | **none** |
-| `stop` | Stops the unit before the copy and starts it after. The default | the whole copy |
-
-```
-Environment=ZEROBYTE_HOOK_UNITS=vaultwarden:sqlite,karakeep:sqlite,any-sync-bundle:stop
-```
-
-`sqlite` is the one to prefer wherever it applies: `Connection.backup()` reads
-inside a transaction and restarts if a writer gets in the way, so the copy is
-a point-in-time database rather than a torn file — and it arrives without the
-free pages, usually smaller than the original.
-
-Use `stop` for what has no online dump: any-sync-bundle carries an embedded
-Mongo, and there is no reading that consistently from outside.
-
-Plain files — photos, documents, media — need neither. Restic copies a file
-being written at worst half-way, and the next run picks it up whole. Stopping
-Immich for an hour to copy a photo library buys nothing.
-
-`:sqlite` looks for `*.db`, `*.sqlite` and `*.sqlite3` under
-`~/.config/containers/volumes/<unit>`; a third field overrides that path. A
-`.db` that turns out not to be SQLite is reported in the response and does not
-sink the rest.
-
-Then, per backup job, point Zerobyte at the two URLs for that unit and paste
-the same token as the secret:
+Then point each backup job at these two URLs, with the same token as the
+secret. `WEBHOOK_ALLOWED_ORIGINS` in the `.env` already names the address —
+without it Zerobyte refuses to save the URL.
 
 ```
 http://host.containers.internal:8765/hooks/<unit>/pre-backup
 http://host.containers.internal:8765/hooks/<unit>/post-backup
 ```
 
-`WEBHOOK_ALLOWED_ORIGINS` in this service's `.env` already names that address
-— without it Zerobyte refuses to save the URL.
-
-**Which units need it**: the ones holding a database. On a running host, this
-finds them:
+Which units need it — the ones holding a database:
 
 ```bash
-podman unshare find ~/.config/containers/volumes -maxdepth 4 \
-  \( -name "*.db" -o -name "*.sqlite*" -o -name "PG_VERSION" \) \
-  | cut -d/ -f7 | sort -u
+find ~/.config/containers/volumes -maxdepth 4 \
+  \( -name "*.db" -o -name "*.sqlite*" -o -name "PG_VERSION" \) | cut -d/ -f7 | sort -u
 ```
-
-The pre-backup hook only answers 2xx once the unit has really stopped, which
-is what makes Zerobyte wait instead of copying a live database. The post-backup
-one answers immediately and starts the unit in the background: a service with
-`Notify=healthy` can take longer to come up than Zerobyte's timeout allows, and
-a slow start would be reported as a failed backup that in fact succeeded.
 
 ## Update
 
