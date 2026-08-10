@@ -85,15 +85,45 @@ openssl rand -hex 32 > ~/.config/zerobyte-backup-hook/token
 chmod 600 ~/.config/zerobyte-backup-hook/token
 
 systemctl --user enable --now zerobyte-backup-hook.service
-curl -s http://127.0.0.1:8765/healthz     # {"ok": true}
+curl -s http://127.0.0.1:8766/healthz     # {"ok": true}
+# Porta ocupada? O ZEROBYTE_HOOK_PORT muda; o WEBHOOK_ALLOWED_ORIGINS tem que acompanhar.
 ```
 
 Aponte cada job para estas, com aquele token como segredo:
 
 ```
-http://host.containers.internal:8765/hooks/<unit>/pre-backup
-http://host.containers.internal:8765/hooks/<unit>/post-backup
+http://host.containers.internal:8766/hooks/<unit>/pre-backup
+http://host.containers.internal:8766/hooks/<unit>/post-backup
 ```
+
+### Criando os jobs
+
+Um job por pasta dentro de `volumes/`, cada um com o modo de gancho que o dado
+dele pede. O `zerobyte-jobs.py` descobre isso e cria pela API:
+
+```bash
+# Uma chave de API em Settings -> API keys, salva onde o script procura
+mkdir -p ~/.config/zerobyte
+printf '%s' 'A_CHAVE' > ~/.config/zerobyte/api-key && chmod 600 ~/.config/zerobyte/api-key
+
+zerobyte-jobs.py --url https://zerobyte.<your-tailnet>.ts.net            # mostra o plano
+zerobyte-jobs.py --url https://zerobyte.<your-tailnet>.ts.net --apply
+```
+
+Ele escolhe o modo olhando: arquivo SQLite vira `sqlite`, marca de Postgres ou
+Mongo vira `stop`, o resto não precisa de gancho. Diretório que ele não
+consegue ler conta como `stop` — ali está o dado de um container com uid
+mapeado, e chutar `none` faria backup de banco em uso.
+
+Duas coisas ele não faz, e avisa em vez de fazer:
+
+- **`stop` sem unit com aquele nome.** O `media-stack` é o caso: doze units
+  dividem um diretório e uma delas carrega um Postgres, então nenhuma chamada
+  única de gancho está certa. Esse job é declarado à mão.
+- **Adivinhar a sua allowlist.** Ele imprime o `ZEROBYTE_HOOK_UNITS` que os
+  jobs exigem; job cujo gancho não estiver lá recebe 404 e falha.
+
+Rodar de novo não muda nada — os jobs são casados pelo nome.
 
 ## Atualizar
 

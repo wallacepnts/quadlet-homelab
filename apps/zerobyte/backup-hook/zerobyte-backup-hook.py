@@ -19,7 +19,7 @@ import subprocess
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-PORT = int(os.environ.get("ZEROBYTE_HOOK_PORT", "8765"))
+PORT = int(os.environ.get("ZEROBYTE_HOOK_PORT", "8766"))
 TOKEN_PATH = os.environ.get(
     "ZEROBYTE_HOOK_TOKEN_FILE",
     os.path.expanduser("~/.config/zerobyte-backup-hook/token"),

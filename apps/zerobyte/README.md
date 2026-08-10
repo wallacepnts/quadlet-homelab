@@ -85,15 +85,45 @@ openssl rand -hex 32 > ~/.config/zerobyte-backup-hook/token
 chmod 600 ~/.config/zerobyte-backup-hook/token
 
 systemctl --user enable --now zerobyte-backup-hook.service
-curl -s http://127.0.0.1:8765/healthz     # {"ok": true}
+curl -s http://127.0.0.1:8766/healthz     # {"ok": true}
+# Port taken? ZEROBYTE_HOOK_PORT moves it; WEBHOOK_ALLOWED_ORIGINS must agree.
 ```
 
 Point each job at these, with that token as the secret:
 
 ```
-http://host.containers.internal:8765/hooks/<unit>/pre-backup
-http://host.containers.internal:8765/hooks/<unit>/post-backup
+http://host.containers.internal:8766/hooks/<unit>/pre-backup
+http://host.containers.internal:8766/hooks/<unit>/post-backup
 ```
+
+### Creating the jobs
+
+One job per folder under `volumes/`, each with the hook mode its data needs.
+`zerobyte-jobs.py` works that out and creates them through the API:
+
+```bash
+# An API key from Settings -> API keys, saved where the script looks
+mkdir -p ~/.config/zerobyte
+printf '%s' 'THE_KEY' > ~/.config/zerobyte/api-key && chmod 600 ~/.config/zerobyte/api-key
+
+zerobyte-jobs.py --url https://zerobyte.<your-tailnet>.ts.net            # shows the plan
+zerobyte-jobs.py --url https://zerobyte.<your-tailnet>.ts.net --apply
+```
+
+It picks the mode by looking: SQLite files mean `sqlite`, a Postgres or Mongo
+fingerprint means `stop`, anything else needs no hook. A directory it cannot
+read counts as `stop` — that is a container's data owned by a mapped uid, and
+guessing `none` there would back up a live database.
+
+Two things it will not do, and says so instead:
+
+- **`stop` with no unit of that name.** `media-stack` is the case: twelve units
+  share one directory and one of them carries a Postgres, so no single hook
+  call is right. Declare that job by hand.
+- **Guess your allowlist.** It prints the `ZEROBYTE_HOOK_UNITS` the jobs
+  require; a job whose hook is missing from it gets a 404 and fails.
+
+Running it again changes nothing — jobs are matched by name.
 
 ## Update
 
