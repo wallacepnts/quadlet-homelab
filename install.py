@@ -1395,6 +1395,7 @@ DESCRICOES = {
     "Movie and TV requests (integrates with Sonarr/Radarr/Jellyfin)": "Pedidos de filmes e séries (integra com Sonarr/Radarr/Jellyfin)",
     "Movie automation": "Automação de filmes",
     "Music automation": "Automação de músicas",
+    "A throwaway browser others can watch and share control of": "Um navegador descartável que outros podem ver e controlar junto",
     "Network PXE boot server": "Servidor de boot PXE pela rede",
     "Network-wide ad and tracker blocking over DNS": "Bloqueio de anúncios e rastreadores por DNS, para a rede toda",
     "NVR with AI object detection": "NVR com detecção de objetos por IA",
