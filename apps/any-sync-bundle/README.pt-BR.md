@@ -56,37 +56,18 @@ any-sync-bundle.container   unit
 
 ## Conectando o app do Anytype
 
-O primeiro start escreve o `client-config.yml` no volume de dados. É esse
-arquivo que aponta um cliente Anytype para este servidor em vez da nuvem da
-empresa:
+O primeiro start escreve o `client-config.yml` no volume de dados — é ele que
+aponta um cliente Anytype para cá em vez da nuvem da empresa. Importe no app
+seguindo as [instruções do
+Anytype](https://doc.anytype.io/anytype-docs/advanced/data-and-security/self-hosting/self-hosted#how-to-switch-to-a-self-hosted-network).
 
 ```bash
 cat ~/.config/containers/volumes/any-sync-bundle/data/client-config.yml
 ```
 
-Importe no app seguindo as [instruções do próprio
-Anytype](https://doc.anytype.io/anytype-docs/advanced/data-and-security/self-hosting/self-hosted#how-to-switch-to-a-self-hosted-network).
-
-Ele é regerado a cada start e não guarda chave nenhuma, então não precisa de
-backup — o `bundle-config.yml`, ao lado, é o oposto: carrega as chaves
-privadas, e perdê-lo é perder a rede.
-
-## Comparado ao stack oficial
-
-O [compose do anyproto](https://github.com/anyproto/any-sync-dockercompose)
-sobe onze containers: MongoDB, Redis, MinIO e um job de bucket, o coordinator,
-o filenode, três sync nodes, o consensus node e uma ferramenta de netcheck.
-Este bundle é o mesmo protocolo num container só, com Mongo e Redis embutidos
-e duas portas abertas em vez de uma dúzia.
-
-O que o oficial tem e este não: três sync nodes, para um nó cair sem a rede
-parar, e o MinIO para os arquivos. Nenhum dos dois compra nada num host só —
-três réplicas de um serviço no mesmo disco continuam sendo um disco.
-
-Os arquivos vão para o BadgerDB embutido por padrão, limitado pelo disco. Se
-isso um dia for o gargalo, o bundle fala S3 — basta `ANY_SYNC_BUNDLE_INIT_S3_ENDPOINT`,
-`_S3_BUCKET`, `_S3_REGION` e `_S3_FORCE_PATH_STYLE` no `.env`, e os arquivos
-saem sem os outros dez containers entrarem.
+Ele é regerado a cada start, então não precisa de backup. O
+`bundle-config.yml`, ao lado, é o oposto: carrega as chaves privadas, e
+perdê-lo é perder a rede.
 
 ## Atualizar
 

@@ -56,38 +56,18 @@ any-sync-bundle.container   unit
 
 ## Connecting the Anytype app
 
-The first start writes `client-config.yml` into the data volume. That file is
-what points an Anytype client at this server instead of the company's cloud:
+The first start writes `client-config.yml` into the data volume — that is what
+points an Anytype client here instead of at the company's cloud. Import it in
+the app, following [Anytype's
+instructions](https://doc.anytype.io/anytype-docs/advanced/data-and-security/self-hosting/self-hosted#how-to-switch-to-a-self-hosted-network).
 
 ```bash
 cat ~/.config/containers/volumes/any-sync-bundle/data/client-config.yml
 ```
 
-Import it in the app, following [Anytype's own
-instructions](https://doc.anytype.io/anytype-docs/advanced/data-and-security/self-hosting/self-hosted#how-to-switch-to-a-self-hosted-network).
-
-It is regenerated on every start and holds no key, so it does not need backing
-up — `bundle-config.yml`, next to it, is the opposite: it carries the private
-keys and losing it means losing the network.
-
-## Compared to the official stack
-
-[anyproto's compose](https://github.com/anyproto/any-sync-dockercompose) runs
-eleven containers: MongoDB, Redis, MinIO and a bucket job, the coordinator,
-the filenode, three sync nodes, the consensus node and a netcheck tool. This
-bundle is the same protocol in one container, with Mongo and Redis embedded
-and two ports open instead of a dozen.
-
-What the official stack has that this does not: three sync nodes, so a node
-can fail without the network stopping, and MinIO for the files. Neither buys
-anything on a single host — three replicas of a service on one disk is one
-disk.
-
-Files go to the embedded BadgerDB by default, which is limited by the disk. If
-that ever becomes the constraint, the bundle speaks S3 — set
-`ANY_SYNC_BUNDLE_INIT_S3_ENDPOINT`, `_S3_BUCKET`, `_S3_REGION` and
-`_S3_FORCE_PATH_STYLE` in the `.env`, and the files move out without the other
-ten containers coming in.
+It is regenerated on every start, so it needs no backup. `bundle-config.yml`,
+next to it, is the opposite: it carries the private keys, and losing it means
+losing the network.
 
 ## Update
 
