@@ -1,0 +1,18 @@
+# Prometheus scrapes; it is not scraped. Every target below is something that
+# already speaks the exposition format on its own.
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+scrape_configs:
+  # Itself. Useful on day one, and the check that the config is being read.
+  - job_name: prometheus
+    static_configs:
+      - targets: ["127.0.0.1:9090"]
+
+  # Add your own below. Reachable by container name, because everything here
+  # shares tsdproxy-net:
+  #
+  # - job_name: node
+  #   static_configs:
+  #     - targets: ["node-exporter:9100"]

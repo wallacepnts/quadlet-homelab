@@ -1408,6 +1408,7 @@ DESCRICOES = {
     "Personal CRM — relationships, contacts, reminders": "CRM pessoal — relacionamentos, contatos, lembretes",
     "Photo and video backup and organisation, with face recognition and smart search": "Backup e organização de fotos e vídeos, com reconhecimento facial e busca inteligente",
     "Plain-text recipes (CookLang) — versionable in git, with no database": "Receitas em texto puro (CookLang) — versionáveis em git, sem banco de dados",
+    "Collects metrics on a schedule and keeps the history": "Coleta métricas em intervalo e guarda o histórico",
     "Proxmox VE web interface, for trying it without dedicating a machine": "Interface web do Proxmox VE, para experimentar sem dedicar uma máquina",
     "Publishes containers on the tailnet automatically": "Publica containers na tailnet automaticamente",
     "Push notification server — where the uptime-kuma, wud and zerobyte alerts go": "Servidor de notificações push — para onde vão os alertas do uptime-kuma, do wud e do zerobyte",

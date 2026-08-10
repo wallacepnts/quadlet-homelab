@@ -1,0 +1,47 @@
+[Unit]
+Description=Prometheus (metrics collection)
+
+[Container]
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+NoNewPrivileges=true
+User=65534
+PidsLimit=256
+
+Image=docker.io/prom/prometheus:v3.13.2
+ContainerName=prometheus
+Network=tsdproxy-net.network
+PublishPort=9090:9090
+
+Volume=%h/.config/containers/volumes/prometheus/config/prometheus.yml:/etc/prometheus/prometheus.yml:ro,Z
+Volume=%h/.config/containers/volumes/prometheus/data:/prometheus:Z
+
+HealthCmd=CMD-SHELL wget -q --spider http://127.0.0.1:9090/-/healthy || exit 1
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=20s
+Notify=healthy
+
+Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
+Label=tsdproxy.name=prometheus
+Label=tsdproxy.port.web=443/https:9090/http
+Label=tsdproxy.dash.icon=sh/prometheus
+
+Label=homepage.group=Monitoring
+Label=homepage.name=Prometheus
+Label=homepage.icon=prometheus.svg
+Label=homepage.href=https://prometheus.${TAILNET}.ts.net
+Label=homepage.description="Collects metrics on a schedule and keeps the history"
+
+Label=wud.watch=true
+Label=wud.tag.include=^v[0-9]+.[0-9]+.[0-9]+$
+
+[Service]
+Restart=always
+TimeoutStartSec=90
+
+[Install]
+WantedBy=default.target

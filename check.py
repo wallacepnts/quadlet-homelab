@@ -312,6 +312,33 @@ def check_tailnet():
                                  f"public; use ${{TAILNET}} or <your-tailnet>")
 
 
+def check_counts(folders):
+    """The counts the READMEs open with, against what the folder actually holds.
+
+    They are prose, so nothing breaks when they drift — the number just quietly
+    becomes a lie, and the next person to add a service does not think to look.
+    Both languages carry the same two claims, so both are checked.
+    """
+    conts = sorted(ROOT.glob("apps/*/*.container"))
+    notify = [u for u in conts if "Notify=healthy" in u.read_text()]
+    esperado = {
+        "README.md": [
+            (rf"{len(folders)} self-hosted services", "the service count"),
+            (rf"{len(notify)} of the {len(conts)} units use it", "the Notify=healthy count"),
+        ],
+        "docs/pt-BR/README.md": [
+            (rf"{len(folders)} serviços self-hosted", "the service count"),
+            (rf"{len(notify)} das {len(conts)} units usam", "the Notify=healthy count"),
+        ],
+    }
+    for arquivo, checagens in esperado.items():
+        texto = (ROOT / arquivo).read_text()
+        for frase, oque in checagens:
+            if frase not in texto:
+                error("counts", f"{arquivo}: {oque} is stale — it should read "
+                                f"\u201c{frase}\u201d")
+
+
 def check_table(folders):
     readme = (ROOT / "README.md").read_text()
     rows = {}
@@ -397,6 +424,7 @@ def main():
     check_units(folders)
     uses = check_ports(folders)
     check_manifest(folders)
+    check_counts(folders)
     check_table(folders)
     check_tailnet()
 
