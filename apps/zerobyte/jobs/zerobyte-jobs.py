@@ -30,6 +30,21 @@ import sys
 import urllib.error
 import urllib.request
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent.parent.parent))
+
+def raizes_do_repositorio():
+    """The volume folder names this repository's apps actually use.
+
+    Not the app names: actual-budget writes to volumes/actual, and twelve
+    media-stack units share volumes/media-stack. `Service.volume_roots()`
+    already answers this, so it is imported rather than guessed.
+    """
+    from install import APPS, Service
+    return {pathlib.Path(r).name
+            for d in APPS.iterdir() if d.is_dir()
+            for r in Service(d.name).volume_roots()}
+
+
 VOLUMES = pathlib.Path.home() / ".config/containers/volumes"
 UNITS = pathlib.Path.home() / ".config/containers/systemd"
 APPS = pathlib.Path(__file__).resolve().parent.parent.parent  # apps/
@@ -125,8 +140,16 @@ def main():
     jobs = {b["name"] for b in api(a.url, key, "backups")}
 
     pastas = sorted(p for p in VOLUMES.iterdir() if p.is_dir()) if VOLUMES.is_dir() else []
-    allowlist = []
+    conhecidas = raizes_do_repositorio()
+    allowlist, alheias = [], []
     for pasta in pastas:
+        # Only this repository's services. A folder from somewhere else has no
+        # install.ini to declare its mode and no unit this script can reason
+        # about — the mode would be a guess, and a wrong guess here is a backup
+        # that does not restore.
+        if pasta.name not in conhecidas:
+            alheias.append(pasta.name)
+            continue
         nome, m = pasta.name, modo(pasta)
         if m != "none":
             allowlist.append(f"{nome}:{m}")
@@ -162,6 +185,8 @@ def main():
             corpo["backupWebhooks"] = ganchos(nome, a.hook_port, token)
         api(a.url, key, "backups", "POST", corpo)
 
+    if alheias:
+        print(f"\nfora deste repositório, não tocadas: {', '.join(alheias)}")
     if allowlist:
         # A job whose hook is not in the allowlist gets a 404 on pre-backup,
         # and Zerobyte treats that as a failed backup. Printing the line beats
