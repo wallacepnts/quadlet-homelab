@@ -1388,6 +1388,7 @@ DESCRICOES = {
     "Indexer manager": "Gerenciador de indexadores",
     "Invoicing and invoice tracking, with no external service": "Emissão e acompanhamento de faturas, sem serviço externo",
     "IPTV manager (streams, EPG, VOD)": "Gerenciador de IPTV (streams, EPG, VOD)",
+    "Karaoke party server — phones queue songs, one screen plays": "Servidor de karaokê — os celulares enfileiram, uma tela reproduz",
     "Local LLM server, Open WebUI's backend": "Servidor de LLM local, backend do Open WebUI",
     "Music server with the Subsonic API, for any phone client": "Servidor de música com a API Subsonic, para qualquer cliente de celular",
     "Game library for emulation, played in the browser or a client": "Biblioteca de jogos para emulação, jogada no navegador ou por um cliente",

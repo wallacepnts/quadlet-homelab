@@ -1,0 +1,48 @@
+[Unit]
+Description=Karaoke Eternal (karaoke party server)
+
+[Container]
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+NoNewPrivileges=true
+User=1000
+PidsLimit=256
+
+Image=docker.io/radrootllc/karaoke-eternal:2.0.2
+ContainerName=karaoke-eternal
+Network=tsdproxy-net.network
+PublishPort=8017:8080
+
+Volume=%h/.config/containers/volumes/karaoke-eternal/config:/config:Z
+Volume=%h/.config/containers/volumes/karaoke-eternal/media:/mnt/karaoke:Z
+EnvironmentFile=%h/.config/containers/env/karaoke-eternal.env
+
+HealthCmd=CMD-SHELL wget -q --spider http://127.0.0.1:8080/ || exit 1
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=20s
+Notify=healthy
+
+Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
+Label=tsdproxy.name=karaoke
+Label=tsdproxy.port.web=443/https:8080/http
+Label=tsdproxy.dash.icon=mdi/microphone-variant
+
+Label=homepage.group=Media
+Label=homepage.name="Karaoke Eternal"
+Label=homepage.icon=https://api.iconify.design/mdi/microphone-variant.svg?color=%23888888
+Label=homepage.href=https://karaoke.${TAILNET}.ts.net
+Label=homepage.description="Karaoke party server — phones queue songs, one screen plays"
+
+Label=wud.watch=true
+Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+$
+
+[Service]
+Restart=always
+TimeoutStartSec=90
+
+[Install]
+WantedBy=default.target
