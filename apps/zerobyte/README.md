@@ -67,53 +67,32 @@ install.ini
 
 ## Backup hook
 
-Restic copying a database while it is being written produces an archive that
-only breaks when you restore it. The hook is what makes the scheduled copy
-safe: Zerobyte calls it before and after each job. It runs on the host's
-python — a unit cannot stop itself from inside the container being stopped —
-and needs nothing installed.
+Zerobyte calls it before and after each job, so Restic never copies a database
+mid-write.
 
 | Mode | What it does | Downtime |
 | --- | --- | --- |
-| `sqlite` | Copies each database with SQLite's online backup API into `<volume>/.dbbackup/`, which Restic already covers | **none** |
-| `stop` | Stops the unit before the copy and starts it after. The default | the whole copy |
-
-Prefer `sqlite`: stopping is not even sufficient for it, since Restic still
-reads the `.db` and its `-wal` as two files. Use `stop` for what has no online
-dump, like any-sync-bundle's embedded Mongo. Plain files — photos, documents,
-media — need neither.
-
-`qh zerobyte --apply` installs it. Three steps are left:
+| `sqlite` | Copies the databases with SQLite's online backup API into `<volume>/.dbbackup/` | **none** |
+| `stop` | Stops the unit before the copy, starts it after. The default | the whole copy |
 
 ```bash
-# 1. Which units it may act on, and how. Anything unlisted gets a 404.
+# Which units it may act on, and how. Anything unlisted gets a 404.
 systemctl --user edit --full zerobyte-backup-hook.service
 #    Environment=ZEROBYTE_HOOK_UNITS=vaultwarden:sqlite,any-sync-bundle:stop
 
-# 2. The token Zerobyte sends in the X-Zerobyte-Hook-Secret header
 mkdir -p ~/.config/zerobyte-backup-hook
 openssl rand -hex 32 > ~/.config/zerobyte-backup-hook/token
 chmod 600 ~/.config/zerobyte-backup-hook/token
 
-# 3. Start it
 systemctl --user enable --now zerobyte-backup-hook.service
 curl -s http://127.0.0.1:8765/healthz     # {"ok": true}
 ```
 
-Then point each backup job at these two URLs, with the same token as the
-secret. `WEBHOOK_ALLOWED_ORIGINS` in the `.env` already names the address —
-without it Zerobyte refuses to save the URL.
+Point each job at these, with that token as the secret:
 
 ```
 http://host.containers.internal:8765/hooks/<unit>/pre-backup
 http://host.containers.internal:8765/hooks/<unit>/post-backup
-```
-
-Which units need it — the ones holding a database:
-
-```bash
-find ~/.config/containers/volumes -maxdepth 4 \
-  \( -name "*.db" -o -name "*.sqlite*" -o -name "PG_VERSION" \) | cut -d/ -f7 | sort -u
 ```
 
 ## Update

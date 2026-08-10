@@ -67,53 +67,32 @@ install.ini
 
 ## Gancho de backup
 
-O Restic copiando um banco enquanto ele é escrito gera um arquivo que só
-quebra na hora de restaurar. O gancho é o que torna a cópia agendada segura: o
-Zerobyte chama antes e depois de cada job. Roda no python do host — uma unit
-não consegue parar a si mesma de dentro do container que está sendo parado — e
-não precisa de nada instalado.
+O Zerobyte chama antes e depois de cada job, para o Restic nunca copiar um
+banco no meio de uma escrita.
 
 | Modo | O que faz | Indisponibilidade |
 | --- | --- | --- |
-| `sqlite` | Copia cada banco pela API de backup online do SQLite para `<volume>/.dbbackup/`, que o Restic já cobre | **nenhuma** |
-| `stop` | Para a unit antes da cópia e religa depois. É o padrão | a cópia inteira |
-
-Prefira `sqlite`: parar não é nem suficiente para ele, porque o Restic ainda lê
-o `.db` e o `-wal` como dois arquivos. Use `stop` para o que não tem dump
-online, como o Mongo embutido do any-sync-bundle. Arquivo comum — foto,
-documento, mídia — não precisa de nenhum dos dois.
-
-O `qh zerobyte --apply` instala. Faltam três passos:
+| `sqlite` | Copia os bancos pela API de backup online do SQLite para `<volume>/.dbbackup/` | **nenhuma** |
+| `stop` | Para a unit antes da cópia, religa depois. É o padrão | a cópia inteira |
 
 ```bash
-# 1. Sobre quais units ele pode agir, e como. O que não estiver na lista recebe 404.
+# Sobre quais units ele pode agir, e como. O que não estiver na lista recebe 404.
 systemctl --user edit --full zerobyte-backup-hook.service
 #    Environment=ZEROBYTE_HOOK_UNITS=vaultwarden:sqlite,any-sync-bundle:stop
 
-# 2. O token que o Zerobyte manda no cabeçalho X-Zerobyte-Hook-Secret
 mkdir -p ~/.config/zerobyte-backup-hook
 openssl rand -hex 32 > ~/.config/zerobyte-backup-hook/token
 chmod 600 ~/.config/zerobyte-backup-hook/token
 
-# 3. Subir
 systemctl --user enable --now zerobyte-backup-hook.service
 curl -s http://127.0.0.1:8765/healthz     # {"ok": true}
 ```
 
-Depois aponte cada job para estas duas URLs, com o mesmo token como segredo. O
-`WEBHOOK_ALLOWED_ORIGINS` no `.env` já nomeia o endereço — sem ele o Zerobyte
-se recusa a salvar a URL.
+Aponte cada job para estas, com aquele token como segredo:
 
 ```
 http://host.containers.internal:8765/hooks/<unit>/pre-backup
 http://host.containers.internal:8765/hooks/<unit>/post-backup
-```
-
-Quais units precisam — as que guardam banco de dados:
-
-```bash
-find ~/.config/containers/volumes -maxdepth 4 \
-  \( -name "*.db" -o -name "*.sqlite*" -o -name "PG_VERSION" \) | cut -d/ -f7 | sort -u
 ```
 
 ## Atualizar
