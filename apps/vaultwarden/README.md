@@ -1,6 +1,6 @@
 # Vaultwarden
 
-<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/vaultwarden.svg" width="64" height="64" alt="">
+<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/vaultwarden.png" width="64" height="64" alt="">
 
 **[🇧🇷 Leia em português](./README.pt-BR.md)**
 

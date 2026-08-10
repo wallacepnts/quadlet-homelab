@@ -1,6 +1,6 @@
 # Frigate
 
-<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/frigate.svg" width="64" height="64" alt="">
+<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/frigate.png" width="64" height="64" alt="">
 
 **[🇺🇸 Read in English](./README.md)**
 
