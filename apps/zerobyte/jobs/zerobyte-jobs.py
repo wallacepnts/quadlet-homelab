@@ -46,6 +46,7 @@ def raizes_do_repositorio():
 
 
 VOLUMES = pathlib.Path.home() / ".config/containers/volumes"
+SECRETS = pathlib.Path.home() / ".config/containers/secrets"
 UNITS = pathlib.Path.home() / ".config/containers/systemd"
 APPS = pathlib.Path(__file__).resolve().parent.parent.parent  # apps/
 CHAVE = pathlib.Path.home() / ".config/zerobyte/api-key"
@@ -184,6 +185,24 @@ def main():
         if m != "none":
             corpo["backupWebhooks"] = ganchos(nome, a.hook_port, token)
         api(a.url, key, "backups", "POST", corpo)
+
+    # The secrets, as one job. Restoring a data volume without them gives a
+    # service that starts and does not work: vaultwarden's admin token no
+    # longer matches, excalidash's JWT_SECRET logs everyone out. They are 72 KB
+    # and they change almost never, so there is no reason to split them per app.
+    if SECRETS.is_dir() and "secrets" not in jobs:
+        print(f"  {'secrets':24} volume /sources/secrets  |  modo none")
+        if a.apply:
+            if "secrets" not in volumes:
+                api(a.url, key, "volumes", "POST",
+                    {"name": "secrets",
+                     "config": {"backend": "directory", "path": "/sources/secrets"}})
+                volumes = {v["name"]: v["shortId"] for v in api(a.url, key, "volumes")}
+            api(a.url, key, "backups", "POST",
+                {"name": "secrets", "volumeId": volumes["secrets"], "repositoryId": repo,
+                 "enabled": True, "cronExpression": a.cron})
+    elif "secrets" in jobs:
+        print(f"  {'secrets':24} job já existe")
 
     if alheias:
         print(f"\nfora deste repositório, não tocadas: {', '.join(alheias)}")

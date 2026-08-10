@@ -129,6 +129,16 @@ alone: it has no `install.ini` to declare a mode and no unit to reason about,
 so the mode would be a guess. Jobs for those are yours to create, and their
 `ZEROBYTE_HOOK_UNITS` entries yours to keep.
 
+A `secrets` job is created too, over `~/.config/containers/secrets`. Restoring
+a data volume without them gives a service that starts and does not work:
+vaultwarden's admin token no longer matches, excalidash's `JWT_SECRET` logs
+everyone out.
+
+**Keep the repository's own password somewhere else.** Restic encrypts the
+repository with it, and that password is itself a file under `secrets/` — which
+now lives *inside* the thing it unlocks. In a total loss that copy is
+unreachable, so put it where the backup is not: a password manager, or paper.
+
 Running it again changes nothing — jobs are matched by name.
 
 ## Update
