@@ -50,8 +50,8 @@ podman logs any-sync-bundle --tail 20   # procurar "AnySync Bundle is ready!"
 ## Arquivos
 
 ```
-any-sync-bundle.container
-.env.example
+any-sync-bundle.container   unit
+.env.example                ambiente
 ```
 
 ## Atualizar
@@ -72,6 +72,10 @@ qh any-sync-bundle --backup --apply --out ~/backups
 Ele para o serviço, empacota os dados, o `.env` e os secrets, e sobe de novo.
 A frio de propósito: copiar banco vivo dá um arquivo que só falha na hora de
 restaurar.
+
+Para a cópia agendada, o Zerobyte também precisa encontrar este serviço
+parado — o [gancho de backup](../zerobyte/README.pt-BR.md#gancho-de-backup)
+faz isso, com `any-sync-bundle` na allowlist.
 
 Pra restaurar, por cima dos dados atuais:
 

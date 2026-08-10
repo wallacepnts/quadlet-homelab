@@ -58,10 +58,67 @@ systemctl --user start zerobyte
 ## Arquivos
 
 ```
-zerobyte.container
+zerobyte.container   unit
+backup-hook/         o gancho, para ~/.local/bin e systemd/user
+install.ini
 .env.example
 install.ini
 ```
+
+## Gancho de backup
+
+O Restic copiando um banco enquanto ele é escrito gera um arquivo que só se
+revela quebrado na hora de restaurar. O gancho é o que torna a cópia agendada
+fria: o Zerobyte chama antes de o Restic rodar e de novo depois, e ele para e
+religa a unit em volta da cópia.
+
+Roda no python do host, não num container, porque uma unit não consegue parar
+a si mesma de dentro do container que está sendo parado. Só stdlib, então não
+há nada a instalar para ele.
+
+O `qh zerobyte --apply` coloca os dois arquivos no lugar. Faltam três passos:
+
+```bash
+# 1. Quais units ele pode parar. O que não estiver na lista recebe 404 — um
+#    endpoint que para serviço pelo nome é negação de serviço com API bonita.
+systemctl --user edit --full zerobyte-backup-hook.service
+#    Environment=ZEROBYTE_HOOK_UNITS=any-sync-bundle,vaultwarden,karakeep
+
+# 2. O token que o Zerobyte manda no cabeçalho X-Zerobyte-Hook-Secret
+mkdir -p ~/.config/zerobyte-backup-hook
+openssl rand -hex 32 > ~/.config/zerobyte-backup-hook/token
+chmod 600 ~/.config/zerobyte-backup-hook/token
+
+# 3. Subir
+systemctl --user enable --now zerobyte-backup-hook.service
+curl -s http://127.0.0.1:8765/healthz     # {"ok": true}
+```
+
+Depois, em cada job de backup, aponte o Zerobyte para as duas URLs daquela
+unit e cole o mesmo token como segredo:
+
+```
+http://host.containers.internal:8765/hooks/<unit>/pre-backup
+http://host.containers.internal:8765/hooks/<unit>/post-backup
+```
+
+O `WEBHOOK_ALLOWED_ORIGINS` no `.env` deste serviço já nomeia esse endereço —
+sem ele o Zerobyte se recusa a salvar a URL.
+
+**Quais units precisam**: as que guardam banco de dados. Num host em uso, isto
+encontra:
+
+```bash
+podman unshare find ~/.config/containers/volumes -maxdepth 4 \
+  \( -name "*.db" -o -name "*.sqlite*" -o -name "PG_VERSION" \) \
+  | cut -d/ -f7 | sort -u
+```
+
+O gancho de pré-backup só responde 2xx depois que a unit parou de verdade, e é
+isso que faz o Zerobyte esperar em vez de copiar um banco em uso. O de
+pós-backup responde na hora e sobe a unit em segundo plano: serviço com
+`Notify=healthy` pode demorar mais que o tempo limite do Zerobyte, e um start
+lento seria reportado como backup falho que na verdade deu certo.
 
 ## Atualizar
 

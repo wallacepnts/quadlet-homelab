@@ -58,10 +58,67 @@ systemctl --user start zerobyte
 ## Files
 
 ```
-zerobyte.container
+zerobyte.container   unit
+backup-hook/         the hook, into ~/.local/bin and systemd/user
+install.ini
 .env.example
 install.ini
 ```
+
+## Backup hook
+
+Restic copying a database while it is being written to produces an archive
+that only reveals itself as broken when you restore it. The hook is what makes
+the scheduled copy cold: Zerobyte calls it before Restic runs and again
+afterwards, and it stops and starts the unit around the copy.
+
+It runs on the host's python, not in a container, because a unit cannot stop
+itself from inside the container being stopped. Stdlib only, so there is
+nothing to install for it.
+
+`qh zerobyte --apply` puts both files in place. Three steps are left:
+
+```bash
+# 1. Which units it may stop. Anything not listed gets a 404 — an endpoint
+#    that stops services by name is a denial of service with a nice API.
+systemctl --user edit --full zerobyte-backup-hook.service
+#    Environment=ZEROBYTE_HOOK_UNITS=any-sync-bundle,vaultwarden,karakeep
+
+# 2. The token Zerobyte sends in the X-Zerobyte-Hook-Secret header
+mkdir -p ~/.config/zerobyte-backup-hook
+openssl rand -hex 32 > ~/.config/zerobyte-backup-hook/token
+chmod 600 ~/.config/zerobyte-backup-hook/token
+
+# 3. Start it
+systemctl --user enable --now zerobyte-backup-hook.service
+curl -s http://127.0.0.1:8765/healthz     # {"ok": true}
+```
+
+Then, per backup job, point Zerobyte at the two URLs for that unit and paste
+the same token as the secret:
+
+```
+http://host.containers.internal:8765/hooks/<unit>/pre-backup
+http://host.containers.internal:8765/hooks/<unit>/post-backup
+```
+
+`WEBHOOK_ALLOWED_ORIGINS` in this service's `.env` already names that address
+— without it Zerobyte refuses to save the URL.
+
+**Which units need it**: the ones holding a database. On a running host, this
+finds them:
+
+```bash
+podman unshare find ~/.config/containers/volumes -maxdepth 4 \
+  \( -name "*.db" -o -name "*.sqlite*" -o -name "PG_VERSION" \) \
+  | cut -d/ -f7 | sort -u
+```
+
+The pre-backup hook only answers 2xx once the unit has really stopped, which
+is what makes Zerobyte wait instead of copying a live database. The post-backup
+one answers immediately and starts the unit in the background: a service with
+`Notify=healthy` can take longer to come up than Zerobyte's timeout allows, and
+a slow start would be reported as a failed backup that in fact succeeded.
 
 ## Update
 

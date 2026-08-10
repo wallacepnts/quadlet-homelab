@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
-"""Receives Zerobyte's pre/post-backup webhooks for any-sync-bundle.
+"""Receives Zerobyte's pre/post-backup hooks and stops the unit around the copy.
 
-It stops the container (AIO mode — embedded Mongo/Redis, a single systemd
-unit) before Restic runs and brings it back afterwards — see
-any-sync-bundle/README.md and zerobyte/README.md. Stdlib only on purpose (no
-dependencies to install for a script that runs straight on the host, outside
-a container).
+Restic copying a database while it is being written to produces an archive
+that only reveals itself as broken when you restore it. This stops the unit
+before Restic runs and starts it again afterwards, which is what makes the
+copy cold.
+
+The unit comes from the URL and must be in ALLOWED — an open endpoint that
+stops anything by name is a denial of service with a nice API. Stdlib only on
+purpose: it runs on the host's python, because a unit cannot stop itself from
+inside the container being stopped.
 """
 import hmac
 import json
@@ -14,14 +18,16 @@ import subprocess
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-PORT = int(os.environ.get("ANY_SYNC_BUNDLE_WEBHOOK_PORT", "8765"))
+PORT = int(os.environ.get("ZEROBYTE_HOOK_PORT", "8765"))
 TOKEN_PATH = os.environ.get(
-    "ANY_SYNC_BUNDLE_WEBHOOK_TOKEN_FILE",
-    os.path.expanduser("~/.config/any-sync-bundle-webhook/token"),
+    "ZEROBYTE_HOOK_TOKEN_FILE",
+    os.path.expanduser("~/.config/zerobyte-backup-hook/token"),
 )
 SECRET_HEADER = "X-Zerobyte-Hook-Secret"
 
-UNIT = "any-sync-bundle.service"
+# Comma-separated unit names, without the .service suffix. Empty means the
+# hook answers 404 to everything: nothing is stopped by default.
+ALLOWED = {u.strip() for u in os.environ.get("ZEROBYTE_HOOK_UNITS", "").split(",") if u.strip()}
 
 
 def load_token() -> str:
@@ -39,7 +45,7 @@ def systemctl(*args: str, timeout: int) -> subprocess.CompletedProcess:
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "any-sync-bundle-webhook/1"
+    server_version = "zerobyte-backup-hook/1"
 
     def _send_json(self, status: int, body: dict) -> None:
         payload = json.dumps(body).encode()
@@ -72,25 +78,33 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:
         self._read_body()
 
-        if self.path not in ("/hooks/any-sync-bundle/pre-backup", "/hooks/any-sync-bundle/post-backup"):
+        # /hooks/<unit>/pre-backup — the unit is checked against the allowlist
+        # BEFORE the token, so an unknown name looks the same to a caller with
+        # a valid token as to one without: 404 either way.
+        parts = self.path.strip("/").split("/")
+        if len(parts) != 3 or parts[0] != "hooks" or parts[2] not in ("pre-backup", "post-backup"):
             self._send_json(404, {"error": "not found"})
+            return
+        unit = parts[1]
+        if unit not in ALLOWED:
+            self._send_json(404, {"error": "unknown unit", "unit": unit})
             return
 
         if not self._authorized():
             self._send_json(401, {"error": "unauthorized"})
             return
 
-        if self.path == "/hooks/any-sync-bundle/pre-backup":
-            self._handle_pre()
+        if parts[2] == "pre-backup":
+            self._handle_pre(f"{unit}.service")
         else:
-            self._handle_post()
+            self._handle_post(f"{unit}.service")
 
-    def _handle_pre(self) -> None:
+    def _handle_pre(self, unit: str) -> None:
         # Blocking on purpose: Zerobyte only runs Restic after a 2xx here,
         # so the response MUST wait for the stop to really finish
         # (systemctl --user stop already blocks until it has stopped).
         try:
-            result = systemctl("stop", UNIT, timeout=45)
+            result = systemctl("stop", unit, timeout=45)
         except subprocess.TimeoutExpired:
             self._send_json(500, {"error": "timeout stopping units"})
             return
@@ -98,9 +112,9 @@ class Handler(BaseHTTPRequestHandler):
             print(f"stop failed: {result.stderr}", file=sys.stderr)
             self._send_json(500, {"error": "stop failed", "detail": result.stderr})
             return
-        self._send_json(200, {"ok": True, "action": "stopped"})
+        self._send_json(200, {"ok": True, "action": "stopped", "unit": unit})
 
-    def _handle_post(self) -> None:
+    def _handle_post(self, unit: str) -> None:
         # Non-blocking on purpose: the container uses Notify=healthy, so
         # "systemctl start" only returns once the healthcheck passes — which
         # can exceed Zerobyte's default 60s WEBHOOK_TIMEOUT. A failure here
@@ -109,11 +123,11 @@ class Handler(BaseHTTPRequestHandler):
         # let the restart happen in the background than to risk the webhook
         # blowing the timeout with the container still stopped.
         subprocess.Popen(
-            ["systemctl", "--user", "start", UNIT],
+            ["systemctl", "--user", "start", unit],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
-        self._send_json(200, {"ok": True, "action": "start triggered"})
+        self._send_json(200, {"ok": True, "action": "start triggered", "unit": unit})
 
     def log_message(self, fmt: str, *args) -> None:
         sys.stderr.write("%s - %s\n" % (self.address_string(), fmt % args))
@@ -122,7 +136,7 @@ class Handler(BaseHTTPRequestHandler):
 def main() -> None:
     load_token()  # fail early if the token is missing or unreadable
     server = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
-    print(f"any-sync-bundle webhook listening on 0.0.0.0:{PORT}")
+    print(f"zerobyte backup hook on 0.0.0.0:{PORT} for: {', '.join(sorted(ALLOWED)) or '(nothing)'}")
     server.serve_forever()
 
 

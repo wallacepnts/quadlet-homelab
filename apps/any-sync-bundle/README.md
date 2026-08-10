@@ -50,8 +50,8 @@ podman logs any-sync-bundle --tail 20   # look for "AnySync Bundle is ready!"
 ## Files
 
 ```
-any-sync-bundle.container
-.env.example
+any-sync-bundle.container   unit
+.env.example                environment
 ```
 
 ## Update
@@ -72,6 +72,10 @@ qh any-sync-bundle --backup --apply --out ~/backups
 It stops the service, packs the data, the `.env` and the secrets, and starts
 it again. Cold on purpose: copying a live database gives an archive that only
 fails when you restore it.
+
+For the scheduled copy, Zerobyte has to find this service stopped too — its
+[backup hook](../zerobyte/README.md#backup-hook) does that, with
+`any-sync-bundle` in the allowlist.
 
 To restore, over the current data:
 
