@@ -129,15 +129,21 @@ paz: não tem `install.ini` declarando modo nem unit sobre a qual raciocinar,
 então o modo seria chute. Os jobs desses são seus para criar, e as entradas
 deles no `ZEROBYTE_HOOK_UNITS` são suas para manter.
 
-Um job `secrets` também é criado, sobre o `~/.config/containers/secrets`.
-Restaurar um volume de dados sem eles dá um serviço que sobe e não funciona: o
-token de administrador do vaultwarden deixa de bater, o `JWT_SECRET` do
-excalidash desloga todo mundo.
+Cada app que tem segredos ganha um segundo job, `<app>-secrets`, sobre o
+`~/.config/containers/secrets/<app>`. Restaurar um volume de dados sem eles dá
+um serviço que sobe e não funciona: o token de administrador do vaultwarden
+deixa de bater, o `JWT_SECRET` do excalidash desloga todo mundo.
+
+São job separado porque um job do Zerobyte cobre um diretório — o
+`includePaths` filtra dentro dele, não alcança fora. A alternativa, copiar os
+segredos para dentro do volume do app, é o que não se deve fazer: alguns apps
+servem esse volume, então viraria exposição em vez de backup.
 
 **Guarde a senha do repositório em outro lugar.** O Restic cifra o repositório
-com ela, e essa senha é ela própria um arquivo dentro de `secrets/` — que agora
-mora *dentro* do que ela destranca. Numa perda total essa cópia é inalcançável,
-então deixe-a onde o backup não está: num gerenciador de senhas, ou no papel.
+com ela, e essa senha é ela própria um arquivo em `secrets/zerobyte` — que
+agora mora *dentro* do que ela destranca. Numa perda total essa cópia é
+inalcançável, então deixe-a onde o backup não está: num gerenciador de senhas,
+ou no papel.
 
 Rodar de novo não muda nada — os jobs são casados pelo nome.
 
