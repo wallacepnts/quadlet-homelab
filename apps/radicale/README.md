@@ -95,6 +95,34 @@ journalctl --user -u radicale-birthday-sync.service -n 20
 The `birthdays` calendar is created on the first run, in each user's own
 collection. Delete a contact and its entry goes away on the next pass.
 
+## Holiday calendar
+
+Radicale can hold a subscription instead of a copy. In the web interface,
+create a collection, pick **Webcal** as the type and paste the feed in
+**Source**:
+
+```
+https://calendar.google.com/calendar/ical/pt.brazilian%23holiday%40group.v.calendar.google.com/public/basic.ics
+```
+
+That feed carries 2021 to 2031 in Portuguese, and it is the moving dates that
+make it worth subscribing to rather than typing: Carnaval 2026 comes out as 13
+to 18 February, Sexta-feira through the Cinzas, computed from Easter. Any
+static list gets that wrong two years later.
+
+Two things to know before relying on it:
+
+**The client downloads the feed, not the server.** Radicale stores and
+advertises the `source` property; it makes no HTTP request of its own. Apple
+Calendar, Thunderbird and DAVx5 (through ICSx5) understand subscribed
+calendars and fetch it. A client that does not will show the collection empty.
+
+**National holidays only.** State and municipal ones — often the days that
+actually change your week in Brazil — are not in it.
+
+Nothing to install: this is upstream Radicale's own feature, and there is no
+script or timer behind it.
+
 ## Update
 
 ```bash
