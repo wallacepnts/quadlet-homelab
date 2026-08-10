@@ -1,5 +1,6 @@
 [Unit]
 Description=Beszel Hub (monitoring dashboard)
+Wants=beszel-agent.service
 
 [Container]
 ReadOnly=true

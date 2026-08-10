@@ -165,6 +165,24 @@ def check_units(folders):
         for f in conts:
             check_container(f, folder)
 
+        # A stack's sidecar that nothing pulls up sits installed and never
+        # starts: `systemctl start <app>` walks Requires=/Wants=, and a unit
+        # outside that walk only comes up at the next login, with an empty
+        # journal in the meantime. Three of them hid that way. Only real stacks
+        # are checked — a folder of independent services (media-stack, vm,
+        # toolbx) has no main unit to hang them from.
+        principal = main_unit(folder)
+        if nets and principal and len(conts) > 1:
+            juntos = " ".join(c.read_text() for c in conts)
+            for c in conts:
+                if c.stem == principal.stem:
+                    continue
+                puxado = re.search(rf"(Requires|Wants|After)=[^\n]*\b{re.escape(c.stem)}"
+                                   rf"\.service", juntos)
+                if not puxado and f"Network={c.stem}.container" not in juntos:
+                    warn("sidecar", f"apps/{folder.name}/{c.name} is pulled up by nothing "
+                                    f"— add Wants={c.stem}.service to {principal.name}")
+
     # The basename becomes the unit name across the whole host, even across
     # subfolders: two files with the same name in different folders really collide.
     for name, where in seen.items():

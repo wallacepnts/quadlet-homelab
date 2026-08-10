@@ -2,6 +2,7 @@
 Description=Authentik (identity server / SSO)
 After=authentik-postgres.service
 Requires=authentik-postgres.service
+Wants=authentik-worker.service
 
 [Container]
 ReadOnly=true

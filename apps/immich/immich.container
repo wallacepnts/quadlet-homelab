@@ -2,6 +2,7 @@
 Description=Immich
 After=immich-redis.service immich-postgres.service
 Requires=immich-redis.service immich-postgres.service
+Wants=immich-machine-learning.service
 
 [Container]
 PidsLimit=256
