@@ -14,6 +14,7 @@ inside the container being stopped.
 import hmac
 import json
 import os
+import sqlite3
 import subprocess
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -25,9 +26,40 @@ TOKEN_PATH = os.environ.get(
 )
 SECRET_HEADER = "X-Zerobyte-Hook-Secret"
 
-# Comma-separated unit names, without the .service suffix. Empty means the
-# hook answers 404 to everything: nothing is stopped by default.
-ALLOWED = {u.strip() for u in os.environ.get("ZEROBYTE_HOOK_UNITS", "").split(",") if u.strip()}
+# `unit[:mode[:dir]]`, comma-separated, unit without the .service suffix.
+# Empty means the hook answers 404 to everything: it acts on nothing by
+# default. Modes:
+#
+#   stop     stop the unit before Restic and start it after (the default)
+#   sqlite   copy each database with SQLite's online backup API and leave the
+#            unit running — consistent without any downtime, which `stop` does
+#            NOT give you on its own: Restic still reads the .db and its -wal
+#            as two separate files.
+#
+# `dir` overrides where the databases are looked for; it defaults to
+# ~/.config/containers/volumes/<unit>.
+VOLUMES = os.path.expanduser("~/.config/containers/volumes")
+COPY_DIR = ".dbbackup"          # inside the volume, so Restic already covers it
+
+
+def _parse_units(raw: str) -> dict:
+    out = {}
+    for entry in raw.split(","):
+        entry = entry.strip()
+        if not entry:
+            continue
+        parts = entry.split(":")
+        unit = parts[0].strip()
+        mode = parts[1].strip() if len(parts) > 1 and parts[1].strip() else "stop"
+        path = parts[2].strip() if len(parts) > 2 else os.path.join(VOLUMES, unit)
+        if mode not in ("stop", "sqlite"):
+            print(f"unknown mode {mode!r} for {unit}, using stop", file=sys.stderr)
+            mode = "stop"
+        out[unit] = (mode, path)
+    return out
+
+
+ALLOWED = _parse_units(os.environ.get("ZEROBYTE_HOOK_UNITS", ""))
 
 
 def load_token() -> str:
@@ -94,10 +126,55 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(401, {"error": "unauthorized"})
             return
 
+        mode, folder = ALLOWED[unit]
         if parts[2] == "pre-backup":
+            if mode == "sqlite":
+                feitos, erros = self._sqlite_copies(folder)
+                for e in erros:
+                    print(f"sqlite backup: {e}", file=sys.stderr)
+                self._send_json(200, {"ok": True, "action": "sqlite copied",
+                                      "unit": unit, "databases": feitos,
+                                      "errors": erros})
+                return
             self._handle_pre(f"{unit}.service")
         else:
+            if mode == "sqlite":
+                self._send_json(200, {"ok": True, "action": "nothing to undo", "unit": unit})
+                return
             self._handle_post(f"{unit}.service")
+
+    def _sqlite_copies(self, folder: str) -> tuple[int, list]:
+        """A consistent copy of every database under `folder`, into COPY_DIR.
+
+        `Connection.backup()` is SQLite's own online backup: it reads inside a
+        transaction and restarts the copy if a writer gets in the way, so the
+        result is a point-in-time database and not a torn file. The copy also
+        arrives without the free pages, which is why it is usually smaller than
+        the original.
+        """
+        destino = os.path.join(folder, COPY_DIR)
+        os.makedirs(destino, exist_ok=True)
+        feitos, erros = 0, []
+        for raiz, dirs, arquivos in os.walk(folder):
+            if COPY_DIR in dirs:
+                dirs.remove(COPY_DIR)          # never copy the copies
+            for nome in arquivos:
+                if not nome.endswith((".db", ".sqlite", ".sqlite3")):
+                    continue
+                origem = os.path.join(raiz, nome)
+                alvo = os.path.join(destino, os.path.relpath(origem, folder).replace(os.sep, "_"))
+                try:
+                    src = sqlite3.connect(f"file:{origem}?mode=ro", uri=True)
+                    dst = sqlite3.connect(alvo)
+                    with dst:
+                        src.backup(dst)
+                    dst.close(); src.close()
+                    feitos += 1
+                except sqlite3.Error as e:
+                    # Not every .db is SQLite, and one unreadable file must not
+                    # sink the whole backup.
+                    erros.append(f"{origem}: {e}")
+        return feitos, erros
 
     def _handle_pre(self, unit: str) -> None:
         # Blocking on purpose: Zerobyte only runs Restic after a 2xx here,

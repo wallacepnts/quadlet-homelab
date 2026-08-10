@@ -1,11 +1,14 @@
 [Unit]
-Description=Stops a unit around Zerobyte's backup, on request
+Description=Prepares a unit for Zerobyte's backup, on request
 
 [Service]
 Type=simple
-# Which units this hook may stop. Without it nothing is allowed and every
-# request gets a 404 — the safe default for an endpoint that stops services.
-Environment=ZEROBYTE_HOOK_UNITS=any-sync-bundle
+# `unit[:mode]`, comma-separated. Empty allows nothing, which is the safe
+# default for an endpoint that acts on services by name.
+#   :sqlite  copy the databases with SQLite's online API, unit keeps running
+#   :stop    stop before the copy and start after (the default)
+# Use sqlite wherever it applies: it is consistent AND has no downtime.
+Environment=ZEROBYTE_HOOK_UNITS=
 ExecStart=/usr/bin/python3 %h/.local/bin/zerobyte-backup-hook.py
 Restart=always
 RestartSec=5

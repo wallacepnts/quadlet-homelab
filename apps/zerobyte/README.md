@@ -82,7 +82,7 @@ nothing to install for it.
 # 1. Which units it may stop. Anything not listed gets a 404 — an endpoint
 #    that stops services by name is a denial of service with a nice API.
 systemctl --user edit --full zerobyte-backup-hook.service
-#    Environment=ZEROBYTE_HOOK_UNITS=any-sync-bundle,vaultwarden,karakeep
+#    Environment=ZEROBYTE_HOOK_UNITS=vaultwarden:sqlite,any-sync-bundle:stop
 
 # 2. The token Zerobyte sends in the X-Zerobyte-Hook-Secret header
 mkdir -p ~/.config/zerobyte-backup-hook
@@ -93,6 +93,38 @@ chmod 600 ~/.config/zerobyte-backup-hook/token
 systemctl --user enable --now zerobyte-backup-hook.service
 curl -s http://127.0.0.1:8765/healthz     # {"ok": true}
 ```
+
+### Modes
+
+Stopping is not the best answer for everything, and for SQLite it is not even
+a sufficient one: with the unit stopped, Restic still reads the `.db` and its
+`-wal` as two separate files. The mode goes after the unit name:
+
+| Mode | What it does | Downtime |
+| --- | --- | --- |
+| `sqlite` | Copies each database with SQLite's own online backup API into `<volume>/.dbbackup/`, which Restic already covers | **none** |
+| `stop` | Stops the unit before the copy and starts it after. The default | the whole copy |
+
+```
+Environment=ZEROBYTE_HOOK_UNITS=vaultwarden:sqlite,karakeep:sqlite,any-sync-bundle:stop
+```
+
+`sqlite` is the one to prefer wherever it applies: `Connection.backup()` reads
+inside a transaction and restarts if a writer gets in the way, so the copy is
+a point-in-time database rather than a torn file — and it arrives without the
+free pages, usually smaller than the original.
+
+Use `stop` for what has no online dump: any-sync-bundle carries an embedded
+Mongo, and there is no reading that consistently from outside.
+
+Plain files — photos, documents, media — need neither. Restic copies a file
+being written at worst half-way, and the next run picks it up whole. Stopping
+Immich for an hour to copy a photo library buys nothing.
+
+`:sqlite` looks for `*.db`, `*.sqlite` and `*.sqlite3` under
+`~/.config/containers/volumes/<unit>`; a third field overrides that path. A
+`.db` that turns out not to be SQLite is reported in the response and does not
+sink the rest.
 
 Then, per backup job, point Zerobyte at the two URLs for that unit and paste
 the same token as the secret:

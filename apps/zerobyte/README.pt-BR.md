@@ -82,7 +82,7 @@ O `qh zerobyte --apply` coloca os dois arquivos no lugar. Faltam três passos:
 # 1. Quais units ele pode parar. O que não estiver na lista recebe 404 — um
 #    endpoint que para serviço pelo nome é negação de serviço com API bonita.
 systemctl --user edit --full zerobyte-backup-hook.service
-#    Environment=ZEROBYTE_HOOK_UNITS=any-sync-bundle,vaultwarden,karakeep
+#    Environment=ZEROBYTE_HOOK_UNITS=vaultwarden:sqlite,any-sync-bundle:stop
 
 # 2. O token que o Zerobyte manda no cabeçalho X-Zerobyte-Hook-Secret
 mkdir -p ~/.config/zerobyte-backup-hook
@@ -93,6 +93,38 @@ chmod 600 ~/.config/zerobyte-backup-hook/token
 systemctl --user enable --now zerobyte-backup-hook.service
 curl -s http://127.0.0.1:8765/healthz     # {"ok": true}
 ```
+
+### Modos
+
+Parar não é a melhor resposta para tudo, e para SQLite não é nem suficiente:
+com a unit parada, o Restic ainda lê o `.db` e o `-wal` dele como dois
+arquivos separados. O modo vai depois do nome da unit:
+
+| Modo | O que faz | Indisponibilidade |
+| --- | --- | --- |
+| `sqlite` | Copia cada banco pela API de backup online do próprio SQLite para `<volume>/.dbbackup/`, que o Restic já cobre | **nenhuma** |
+| `stop` | Para a unit antes da cópia e religa depois. É o padrão | a cópia inteira |
+
+```
+Environment=ZEROBYTE_HOOK_UNITS=vaultwarden:sqlite,karakeep:sqlite,any-sync-bundle:stop
+```
+
+O `sqlite` é o preferível onde couber: o `Connection.backup()` lê dentro de uma
+transação e recomeça se um escritor entrar no meio, então a cópia é um banco
+num instante do tempo e não um arquivo rasgado — e vem sem as páginas livres,
+em geral menor que o original.
+
+Use `stop` para o que não tem dump online: o any-sync-bundle carrega um Mongo
+embutido, e não há como ler isso de fora com consistência.
+
+Arquivo comum — foto, documento, mídia — não precisa de nenhum dos dois. O
+Restic copia um arquivo sendo escrito no máximo pela metade, e a execução
+seguinte pega inteiro. Parar o Immich por uma hora para copiar biblioteca de
+foto não compra nada.
+
+O `:sqlite` procura `*.db`, `*.sqlite` e `*.sqlite3` dentro de
+`~/.config/containers/volumes/<unit>`; um terceiro campo troca esse caminho.
+Um `.db` que não for SQLite é reportado na resposta e não derruba o resto.
 
 Depois, em cada job de backup, aponte o Zerobyte para as duas URLs daquela
 unit e cole o mesmo token como segredo:
