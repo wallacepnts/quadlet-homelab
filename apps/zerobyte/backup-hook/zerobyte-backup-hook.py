@@ -38,6 +38,10 @@ SECRET_HEADER = "X-Zerobyte-Hook-Secret"
 #
 # `dir` overrides where the databases are looked for; it defaults to
 # ~/.config/containers/volumes/<unit>.
+# Must exceed the unit's own TimeoutStopSec, or this gives up while systemd is
+# still legitimately stopping it and reports a failure that is not one.
+# any-sync-bundle asks for 120s, following upstream's stop_grace_period.
+STOP_TIMEOUT = int(os.environ.get("ZEROBYTE_HOOK_STOP_TIMEOUT", "150"))
 VOLUMES = os.path.expanduser("~/.config/containers/volumes")
 COPY_DIR = ".dbbackup"          # inside the volume, so Restic already covers it
 
@@ -181,7 +185,7 @@ class Handler(BaseHTTPRequestHandler):
         # so the response MUST wait for the stop to really finish
         # (systemctl --user stop already blocks until it has stopped).
         try:
-            result = systemctl("stop", unit, timeout=45)
+            result = systemctl("stop", unit, timeout=STOP_TIMEOUT)
         except subprocess.TimeoutExpired:
             self._send_json(500, {"error": "timeout stopping units"})
             return
