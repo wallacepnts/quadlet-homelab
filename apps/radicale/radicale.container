@@ -3,7 +3,7 @@ Description=Radicale (CalDAV/CardDAV)
 
 [Container]
 PidsLimit=256
-Image=docker.io/tomsquest/docker-radicale:3.7.6.0
+Image=docker.io/christf/docker-radicale-birthday:v0.26.0
 ContainerName=radicale
 Network=tsdproxy-net.network
 PublishPort=5232:5232

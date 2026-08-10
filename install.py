@@ -1741,6 +1741,7 @@ def pull_steps(s):
     return out
 
 
+
 def run(cmd):
     """A command that acts on the host (systemctl, podman).
 

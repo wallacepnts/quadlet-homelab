@@ -61,9 +61,39 @@ systemctl --user start radicale
 ## Files
 
 ```
-radicale.container
-.env.example
+radicale.container   unit
+.env.example         environment
+config/config        Radicale's own config, into the volume
+birthday-sync/       the timer and its service, into systemd/user
+install.ini
 ```
+
+## Birthday calendar
+
+A timer reads the birthdays out of your contacts and keeps a calendar named
+`birthdays` in sync with them, so a new contact shows up as a yearly event
+without you entering it twice.
+
+The script that does it comes inside the image — this is a rebuild of
+`tomsquest/docker-radicale` carrying it, because the script imports `vobject`
+and `dateutil` and the official image has neither. Installing them at run time
+is not possible either: this container is `ReadOnly=true`.
+
+The install puts the timer in place; enabling it is one command, once:
+
+```bash
+systemctl --user enable --now radicale-birthday-sync.timer
+```
+
+It runs 5 minutes after boot and every 30 minutes after that. Check it with:
+
+```bash
+systemctl --user list-timers radicale-birthday-sync.timer
+journalctl --user -u radicale-birthday-sync.service -n 20
+```
+
+The `birthdays` calendar is created on the first run, in each user's own
+collection. Delete a contact and its entry goes away on the next pass.
 
 ## Update
 
