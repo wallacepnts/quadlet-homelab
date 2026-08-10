@@ -123,6 +123,12 @@ Duas coisas ele não faz, e avisa em vez de fazer:
 - **Adivinhar a sua allowlist.** Ele imprime o `ZEROBYTE_HOOK_UNITS` que os
   jobs exigem; job cujo gancho não estiver lá recebe 404 e falha.
 
+Ele olha só as pastas dos serviços deste repositório. O que mais houver
+dentro de `volumes/` — algo que você instalou à mão — é listado e deixado em
+paz: não tem `install.ini` declarando modo nem unit sobre a qual raciocinar,
+então o modo seria chute. Os jobs desses são seus para criar, e as entradas
+deles no `ZEROBYTE_HOOK_UNITS` são suas para manter.
+
 Rodar de novo não muda nada — os jobs são casados pelo nome.
 
 ## Atualizar

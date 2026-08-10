@@ -123,6 +123,12 @@ Two things it will not do, and says so instead:
 - **Guess your allowlist.** It prints the `ZEROBYTE_HOOK_UNITS` the jobs
   require; a job whose hook is missing from it gets a 404 and fails.
 
+It only looks at folders belonging to this repository's services. Anything
+else under `volumes/` — something you installed by hand — is listed and left
+alone: it has no `install.ini` to declare a mode and no unit to reason about,
+so the mode would be a guess. Jobs for those are yours to create, and their
+`ZEROBYTE_HOOK_UNITS` entries yours to keep.
+
 Running it again changes nothing — jobs are matched by name.
 
 ## Update
