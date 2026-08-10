@@ -6,6 +6,8 @@
 
 Shells descartáveis de Arch, Fedora, RHEL e Ubuntu, nas imagens oficiais do Toolbx — um lugar pra instalar ferramenta avulsa que não é o host.
 
+São containers, não VMs: compartilham o kernel do host, e é por isso que sobem na hora. Quando precisar de uma de verdade, veja o [vm](../vm/README.pt-BR.md).
+
 ## Instalar
 
 ```bash

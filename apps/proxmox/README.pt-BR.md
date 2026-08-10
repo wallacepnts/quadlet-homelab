@@ -6,6 +6,8 @@
 
 O hypervisor Proxmox num container, pra experimentar sem dedicar uma máquina — roda privileged.
 
+É a interface, não um hypervisor com KVM por trás: para rodar um convidado de verdade aqui, veja o [vm](../vm/README.pt-BR.md).
+
 ## Instalar
 
 ```bash

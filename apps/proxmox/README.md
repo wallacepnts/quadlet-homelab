@@ -6,6 +6,8 @@
 
 The Proxmox hypervisor in a container, for trying it without dedicating a machine — runs privileged.
 
+It is the interface, not a hypervisor with KVM behind it: to actually run a guest here, see [vm](../vm).
+
 ## Install
 
 ```bash

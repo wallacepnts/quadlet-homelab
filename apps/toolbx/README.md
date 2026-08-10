@@ -6,6 +6,8 @@
 
 Disposable Arch, Fedora, RHEL and Ubuntu shells, on the official Toolbx images — somewhere to install a one-off tool that is not the host.
 
+These are containers, not VMs: they share the host's kernel, which is why they start instantly. When you need a real one, see [vm](../vm).
+
 ## Install
 
 ```bash

@@ -6,6 +6,8 @@
 
 Windows, macOS, ChromeOS Flex, ZimaOS and 23 Linux distros as VMs in containers, viewed in the browser — needs KVM on the host.
 
+For a shell to install one tool in, without the cost of a VM, see [toolbx](../toolbx). For Proxmox's own interface, [proxmox](../proxmox).
+
 ## Install
 
 ```bash
