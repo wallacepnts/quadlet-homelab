@@ -347,6 +347,18 @@ def check_table(folders):
         if m:
             rows[m.group(1)] = m.group(2).strip()
 
+    # A repeated row is invisible to the checks below — the dict keeps the last
+    # one and everything agrees. It only shows up as the same app listed twice
+    # in a 64-row table, which nobody reads top to bottom.
+    vistos = {}
+    for line in readme.splitlines():
+        m = re.match(r"^\|.*?\|\s*\[[^\]]+\]\(\./apps/([a-z0-9._-]+)\)", line)
+        if m:
+            vistos[m.group(1)] = vistos.get(m.group(1), 0) + 1
+    for nome, n in sorted(vistos.items()):
+        if n > 1:
+            error("table", f"apps/{nome} appears {n} times in the README table")
+
     names = {p.name for p in folders}
     for missing in sorted(names - rows.keys()):
         error("table", f"apps/{missing} has no row in the README version table")
