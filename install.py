@@ -1377,6 +1377,7 @@ DESCRICOES = {
     "Cloud file sync and sharing (SQLite evaluation)": "Sincronização e compartilhamento de arquivos na nuvem (avaliação em SQLite)",
     "Converts PDF, Office, image and audio to Markdown, without leaving the machine": "Converte PDF, Office, imagem e áudio para Markdown, sem sair da máquina",
     "CPU/RAM/disk/network and container monitoring for this host": "Monitoramento de CPU/RAM/disco/rede e containers deste host",
+    "Excalidraw drawings, organised and shared from one place": "Desenhos do Excalidraw, organizados e compartilhados de um lugar só",
     "File server with uploads from the browser, the phone or WebDAV": "Servidor de arquivos com upload pelo navegador, pelo celular ou por WebDAV",
     "Flow automation via a visual node editor": "Automação de fluxos por editor visual de nós",
     "GPS tracking — live map, history, geofences and reports": "Rastreamento GPS — mapa ao vivo, histórico, cercas e relatórios",
