@@ -93,12 +93,13 @@ Config in `~/.config/containers/volumes/media-stack/<app>/`, media under
 
 The stack is a chain: **Seerr** takes the request, the ***arr** apps look the
 title up through **Prowlarr**, hand the download to **SABnzbd** or **Deluge**,
-rename the file into the media root, and **Jellyfin** plays it. Each piece runs
+rename the file into the media root, and **Jellyfin** or **Navidrome** plays it. Each piece runs
 on its own and is useful without the rest.
 
 | | App | What it does | Version |
 | --- | --- | --- | --- |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/jellyfin.svg" width="28" height="28" alt=""> | [Jellyfin](./docs/jellyfin.md) | Plays the library — films, series, music — to a browser, a TV or a phone | `10.11.11` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/navidrome.svg" width="28" height="28" alt=""> | [Navidrome](./docs/navidrome.md) | Plays the music the chain brought in, through any Subsonic client | `0.63.2` |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/seerr.svg" width="28" height="28" alt=""> | [Seerr](./docs/seerr.md) | Where you ask for a title. Passes the request to Sonarr or Radarr | `v3.4.1` |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/prowlarr.svg" width="28" height="28" alt=""> | [Prowlarr](./docs/prowlarr.md) | Holds the indexer list and feeds it to the other *arr apps | `2.5.2` |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/sonarr.svg" width="28" height="28" alt=""> | [Sonarr](./docs/sonarr.md) | Series: watches for new episodes, downloads and files them | `4.0.19` |

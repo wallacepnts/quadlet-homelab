@@ -1387,6 +1387,7 @@ DESCRICOES = {
     "Invoicing and invoice tracking, with no external service": "Emissão e acompanhamento de faturas, sem serviço externo",
     "IPTV manager (streams, EPG, VOD)": "Gerenciador de IPTV (streams, EPG, VOD)",
     "Local LLM server, Open WebUI's backend": "Servidor de LLM local, backend do Open WebUI",
+    "Music server with the Subsonic API, for any phone client": "Servidor de música com a API Subsonic, para qualquer cliente de celular",
     "Movie and TV requests (integrates with Sonarr/Radarr/Jellyfin)": "Pedidos de filmes e séries (integra com Sonarr/Radarr/Jellyfin)",
     "Movie automation": "Automação de filmes",
     "Music automation": "Automação de músicas",

@@ -94,12 +94,13 @@ Config em `~/.config/containers/volumes/media-stack/<app>/`, mídia dentro do
 
 O stack é uma corrente: o **Seerr** recebe o pedido, os ***arr** procuram o
 título pelo **Prowlarr**, entregam o download ao **SABnzbd** ou ao **Deluge**,
-renomeiam o arquivo dentro da raiz de mídia, e o **Jellyfin** reproduz. Cada
+renomeiam o arquivo dentro da raiz de mídia, e o **Jellyfin** ou o **Navidrome** reproduz. Cada
 peça roda sozinha e serve sem as outras.
 
 | | App | Para que serve | Versão |
 | --- | --- | --- | --- |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/jellyfin.svg" width="28" height="28" alt=""> | [Jellyfin](./docs/pt-BR/jellyfin.md) | Reproduz a biblioteca — filmes, séries, música — no navegador, na TV ou no celular | `10.11.11` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/navidrome.svg" width="28" height="28" alt=""> | [Navidrome](./docs/pt-BR/navidrome.md) | Toca a música que a corrente trouxe, por qualquer cliente Subsonic | `0.63.2` |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/seerr.svg" width="28" height="28" alt=""> | [Seerr](./docs/pt-BR/seerr.md) | Onde você pede um título. Repassa o pedido ao Sonarr ou ao Radarr | `v3.4.1` |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/prowlarr.svg" width="28" height="28" alt=""> | [Prowlarr](./docs/pt-BR/prowlarr.md) | Guarda a lista de indexadores e alimenta os outros *arr | `2.5.2` |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/sonarr.svg" width="28" height="28" alt=""> | [Sonarr](./docs/pt-BR/sonarr.md) | Séries: acompanha episódios novos, baixa e arquiva | `4.0.19` |
