@@ -56,14 +56,26 @@ database.
 
 ## What to point it at
 
-Grafana on its own shows nothing. This repository ships no time-series
-database, so you supply the source:
+Grafana on its own shows nothing — it stores no metrics, so the first thing to
+do after signing in is add a source under Connections → Data sources.
 
-- **[Beszel](../beszel)** already collects CPU, RAM, disk and container
-  metrics for this host and draws them itself. If that is all you want,
-  Grafana adds a step rather than removing one.
-- A **Prometheus** or **InfluxDB** elsewhere on the network, added under
-  Connections → Data sources.
+**[Prometheus](../prometheus)** is in this repository and is the one to reach
+for. Its URL is the container name, because both join `tsdproxy-net`:
+
+```
+http://prometheus:9090
+```
+
+Note that it scrapes only itself out of the box, so a fresh Grafana on a fresh
+Prometheus draws one line about Prometheus. Adding targets is a Prometheus
+job, not a Grafana one.
+
+Other sources that make sense here:
+
+- **[Beszel](../beszel)** already collects CPU, RAM, disk and container metrics
+  for this host and draws them itself. If that is all you want, Grafana and
+  Prometheus add two services rather than removing one.
+- An **InfluxDB** elsewhere on the network.
 - **SQLite or Postgres** from another service, through the respective plugin,
   when the question is about the app's own data rather than the machine's.
 
