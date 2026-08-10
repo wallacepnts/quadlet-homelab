@@ -1380,6 +1380,7 @@ DESCRICOES = {
     "File server with uploads from the browser, the phone or WebDAV": "Servidor de arquivos com upload pelo navegador, pelo celular ou por WebDAV",
     "Flow automation via a visual node editor": "Automação de fluxos por editor visual de nós",
     "GPS tracking — live map, history, geofences and reports": "Rastreamento GPS — mapa ao vivo, histórico, cercas e relatórios",
+    "Habit tracking without goals — just the streak": "Acompanhamento de hábitos sem metas — só a sequência",
     "Home inventory — what you own, where it is, the receipt and the warranty": "Inventário doméstico — o que você tem, onde está, a nota e a garantia",
     "Identity server / SSO (the portal only — no forward-auth in this repository, see the README)": "Servidor de identidade / SSO (só o portal — sem forward-auth neste repositório, ver o README)",
     "Image update monitor (it never applies them itself)": "Monitor de atualização de imagens (nunca aplica nada sozinho)",
