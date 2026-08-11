@@ -2311,7 +2311,10 @@ def selftest():
             write_unit(src, alvo, modo, False)
             linhas = [l for l in alvo.read_text().splitlines() if "PublishPort" in l]
             web = [l for l in linhas if l.rstrip().endswith("3006:3000/tcp")]
-            dns = [l for l in linhas if "5335:53" in l]
+            # by the container port, not the host one: the host side is
+            # ${AGH_DNS_BIND} now, and the point of the test is that a port
+            # nobody proxies stays open in every mode.
+            dns = [l for l in linhas if l.rstrip().endswith((":53/tcp", ":53/udp"))]
             assert len(web) == 1 and len(dns) == 2, (modo, linhas)
             assert web[0].startswith("#") is escondida, (modo, web)
             assert not any(l.startswith("#") for l in dns), (modo, dns)

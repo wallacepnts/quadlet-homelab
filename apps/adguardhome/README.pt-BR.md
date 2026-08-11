@@ -86,6 +86,32 @@ systemctl --user status adguardhome
 podman logs -f adguardhome
 ```
 
+## Em que endereço o DNS escuta
+
+A unit fixa um endereço, vindo do `environment.d`:
+
+```bash
+echo 'AGH_DNS_BIND=100.x.y.z' > ~/.config/environment.d/adguardhome.conf
+systemctl --user set-environment AGH_DNS_BIND=100.x.y.z
+qh adguardhome --update --apply
+```
+
+Nunca `0.0.0.0`. Esse endereço inclui o gateway da rede dos containers, onde o
+`aardvark-dns` responde, e publicar por cima derruba a resolução de nomes entre
+todos os containers do host — medido aqui: `zerobyte → ntfy` e
+`caddy → headscale` falharam no instante em que aconteceu, e voltaram no
+instante em que o bind foi estreitado.
+
+A porta 53 também exige baixar o piso de portas não privilegiadas do host, que
+é um sysctl:
+
+```bash
+echo 'net.ipv4.ip_unprivileged_port_start=53' | sudo tee /etc/sysctl.d/50-unprivileged-ports.conf
+sudo sysctl --system
+```
+
+Sem ele, mantenha a unit numa porta alta, como `5335:53`.
+
 ## Créditos
 
 [AdguardTeam/AdGuardHome](https://github.com/AdguardTeam/AdGuardHome) — GPL-3.0

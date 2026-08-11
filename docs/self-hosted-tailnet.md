@@ -72,43 +72,71 @@ reaches each service by name with nothing published on the LAN.
 ## 4. AdGuard answers the names
 
 The first start only serves the setup wizard — the DNS server does not come up
-until it is configured. Through its API, from a container on the same network:
+until it is configured. Do it in the browser, at
+`https://adguardhome.<your-tailnet>.ts.net` or `http://<host-ip>:3006`, and
+keep two answers in mind: the admin interface has to stay on port **3000**, and
+the DNS server on **53**. Those are the ports the unit maps.
+
+Then one rewrite, under **Filters → DNS rewrites**, sends every name at the
+host:
+
+| Domain | Answer |
+| --- | --- |
+| `*.qh` | the host's tailnet address |
+| `qh` | the same |
+
+The wildcard is the point: a service added next month resolves without touching
+DNS again. Only Caddy needs a new route.
+
+### Which address it listens on
+
+Not `0.0.0.0`. That address includes the container network's own gateway, where
+`aardvark-dns` answers, and publishing over it takes down name resolution
+*between every container on the host* — measured here, and it broke
+`zerobyte → ntfy`, `caddy → headscale` and everything else at once.
+
+So the unit binds one address, and takes it from `environment.d` (rule 19 of
+the conventions), the same way `${TAILNET}` works:
 
 ```bash
-curl -X POST http://adguardhome:3000/control/install/configure \
-  -H 'Content-Type: application/json' \
-  -d '{"web":{"ip":"0.0.0.0","port":3000},"dns":{"ip":"0.0.0.0","port":53},
-       "username":"admin","password":"<yours>"}'
+echo 'AGH_DNS_BIND=100.x.y.z' > ~/.config/environment.d/adguardhome.conf
+systemctl --user set-environment AGH_DNS_BIND=100.x.y.z
+qh adguardhome --update --apply
 ```
 
-Then one rewrite sends every `.qh` name at the host:
+Binding port 53 at all needs the sysctl from the previous step. Without it,
+leave the unit on `5335` and use the `/etc/hosts` route below.
 
-```bash
-curl -u admin:<yours> -X POST http://adguardhome:3000/control/rewrite/add \
-  -H 'Content-Type: application/json' \
-  -d '{"domain":"*.qh","answer":"<host tailscale ip>"}'
-```
+### Handing the resolver to every device
+
+One setting in the Tailscale admin, and every device on the tailnet resolves
+`.qh` from then on — phones included:
+
+1. **DNS → Nameservers → Add nameserver → Custom**
+2. address: the host's tailnet address, the same one in `AGH_DNS_BIND`
+3. tick **Restrict to domain** and put `qh`
+
+Split DNS: only `.qh` goes to AdGuard, everything else keeps working as it did.
+This is what makes the setup usable from a phone, and it is the reason AdGuard
+binds a tailnet address rather than a LAN one.
 
 Check it:
 
 ```bash
-dig +short @127.0.0.1 -p 5335 headscale.qh
+dig +short @100.x.y.z karakeep.qh
 ```
 
-**The port is the catch.** Rootless Podman cannot bind 53, so AdGuard listens
-on **5335**, and Tailscale's DNS settings take an address without a port. Until
-that is solved, name resolution works for whoever points at `5335` explicitly —
-which is enough to test, and not enough for phones. Two ways out: lower the
-floor on the host once,
+### The one-machine shortcut
+
+Until the split DNS is set, `/etc/hosts` does the same job for one computer:
 
 ```bash
-echo 'net.ipv4.ip_unprivileged_port_start=53' | sudo tee /etc/sysctl.d/50-unprivileged-ports.conf
-sudo sysctl --system
+echo "100.x.y.z karakeep.qh homepage.qh" | sudo tee -a /etc/hosts
 ```
 
-and publish `53:53`, or skip AdGuard for names entirely and put them in
-headscale's own `dns.extra_records`, which its clients receive with no resolver
-in the middle.
+Delete it afterwards. A partial `/etc/hosts` beats DNS and wins, which gives
+the worst outcome: three services resolving, the rest not, for no visible
+reason.
 
 ## 5. Trust the certificate authority
 
