@@ -69,7 +69,7 @@ use `--reinstall`.
 ## Requisitos
 
 - **Podman 5.0 ou mais novo.** É a régua de verdade: o `Notify=healthy` chegou
-  nessa versão, e 94 das 103 units usam. No 4.x o start volta antes de o app
+  nessa versão, e 95 das 103 units usam. No 4.x o start volta antes de o app
   estar pronto, e a instalação relata um sucesso que ela não tem como saber.
 - **systemd com sessão de usuário** e cgroups v2.
 - **SELinux**, se a sua distribuição tiver. As units trazem `:Z` em 125 linhas

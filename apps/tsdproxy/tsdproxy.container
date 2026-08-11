@@ -20,6 +20,13 @@ Volume=%h/.config/containers/volumes/tsdproxy/config:/config:Z
 AddHost=host.docker.internal:host-gateway
 Secret=authkey
 
+HealthCmd=["CMD", "/healthcheck"]
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=5
+HealthStartPeriod=120s
+Notify=healthy
+
 Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=dash
@@ -35,6 +42,7 @@ Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+$
 
 [Service]
 Restart=always
+TimeoutStartSec=300
 
 [Install]
 WantedBy=default.target

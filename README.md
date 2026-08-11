@@ -69,7 +69,7 @@ pulled. To go through anyway, use `--reinstall`.
 ## Requirements
 
 - **Podman 5.0 or newer.** This is the real floor: `Notify=healthy` arrived
-  there, and 94 of the 103 units use it. On 4.x the start returns before the app
+  there, and 95 of the 103 units use it. On 4.x the start returns before the app
   is ready, and the install reports a success it cannot know about.
 - **systemd with a user session** and cgroups v2.
 - **SELinux**, if your distribution has it. The units carry `:Z` on 125 volume
