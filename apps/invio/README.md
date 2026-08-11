@@ -1,6 +1,6 @@
 # Invio
 
-<img src="https://cdn.simpleicons.org/invoiceninja/888888" width="64" height="64" alt="">
+<img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/invio.svg" width="64" height="64" alt="">
 
 **[🇧🇷 Leia em português](./README.pt-BR.md)**
 

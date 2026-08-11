@@ -24,11 +24,12 @@ Notify=healthy
 Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=invio
+Label=tsdproxy.dash.icon=sh/invio-light
 Label=tsdproxy.port.web=443/https:8000/http
 
 Label=homepage.group=Personal
 Label=homepage.name=Invio
-Label=homepage.icon=si-invoiceninja
+Label=homepage.icon=https://cdn.jsdelivr.net/gh/selfhst/icons/svg/invio.svg
 Label=homepage.href=https://invio.${TAILNET}.ts.net
 Label=homepage.description="Invoicing and invoice tracking, with no external service"
 
