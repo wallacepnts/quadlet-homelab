@@ -19,7 +19,8 @@ Detection covers sqlite and none. `stop` cannot be detected — a folder with a
 Mongo in it looks like plain files — so it is declared in the app's
 install.ini under [backup].
 
-Stdlib only: it runs on the host, next to the hook.
+Run it as `qh --zerobyte`: it reads which volume folders are this repository's
+from install.py, so it only works from inside the repository.
 """
 import argparse
 import json
@@ -31,6 +32,44 @@ import urllib.error
 import urllib.request
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent.parent.parent))
+import qhui
+from qhui import translator
+
+# Same shape as install.py's table: English in the source, Portuguese when the
+# system asks for it. Longest first is translator()'s job.
+PT = {
+    "base URL of Zerobyte (default: BASE_URL from its .env)":
+        "URL do Zerobyte (padrão: o BASE_URL do .env dele)",
+    "where the backup runs (default: the only one)":
+        "onde o backup roda (padrão: o único cadastrado)",
+    "do not mirror to the other registered repositories":
+        "não espelhar nos outros repositórios cadastrados",
+    "schedule (default: 03:00 daily)": "agendamento (padrão: 03:00 todo dia)",
+    "execute (without it, only show)": "executa (sem ele, só mostra)",
+    "pass --url": "passe o --url",
+    "no BASE_URL in": "sem BASE_URL em",
+    "create one in Settings -> API keys": "crie uma em Settings -> API keys",
+    "no API key at": "sem chave de API em",
+    "say which one runs the backup with --repository "
+    "(the others become mirrors)":
+        "diga qual roda o backup com --repository (os outros viram espelho)",
+    "repositories —": "repositórios —",
+    "job already exists": "job já existe",
+    "needs the hook": "precisa do gancho",
+    "but there is no token — skipping": "mas não há token — pulando",
+    "needs stop, but there is no unit": "precisa de stop, mas não há unit",
+    "declare this job by hand": "declare o job à mão",
+    "volume": "volume",
+    "mode": "modo",
+    "mirroring": "espelhando",
+    "repository(ies) on every job": "repositório(s) em cada job",
+    "outside this repository, left alone": "fora deste repositório, não tocadas",
+    "ZEROBYTE_HOOK_UNITS must include these, or the jobs fail:":
+        "o ZEROBYTE_HOOK_UNITS precisa incluir estas, ou os jobs falham:",
+    "nothing was done. repeat with --apply":
+        "nada foi feito. repita com --apply",
+}
+loc = translator(PT)
 
 def raizes_do_repositorio():
     """The volume folder names this repository's apps actually use.
@@ -125,22 +164,23 @@ def url_do_env():
 
 
 def main():
+    qhui.argparse_ptbr()
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--url", default=os.environ.get("ZEROBYTE_URL") or url_do_env(),
-                    help="base URL of Zerobyte (default: BASE_URL from its .env)")
-    ap.add_argument("--repository", help="where the backup runs (default: the only one)")
+                    help=loc("base URL of Zerobyte (default: BASE_URL from its .env)"))
+    ap.add_argument("--repository", help=loc("where the backup runs (default: the only one)"))
     ap.add_argument("--no-mirror", action="store_true",
-                    help="do not mirror to the other registered repositories")
-    ap.add_argument("--cron", default="0 3 * * *", help="schedule (default: 03:00 daily)")
+                    help=loc("do not mirror to the other registered repositories"))
+    ap.add_argument("--cron", default="0 3 * * *", help=loc("schedule (default: 03:00 daily)"))
     ap.add_argument("--hook-port", default="8766")
-    ap.add_argument("--apply", action="store_true", help="execute (without it, only show)")
+    ap.add_argument("--apply", action="store_true", help=loc("execute (without it, only show)"))
     a = ap.parse_args()
 
     if not a.url:
-        raise SystemExit(f"no BASE_URL in {ENV} — pass --url")
+        raise SystemExit(f"{loc('no BASE_URL in')} {ENV} — {loc('pass --url')}")
     if not CHAVE.is_file():
-        raise SystemExit(f"no API key at {CHAVE} — create one in Settings -> API keys")
+        raise SystemExit(f"{loc('no API key at')} {CHAVE} — {loc('create one in Settings -> API keys')}")
     key = CHAVE.read_text().strip()
     token = TOKEN.read_text().strip() if TOKEN.is_file() else None
 
@@ -150,8 +190,8 @@ def main():
     elif len(repos) == 1:
         repo = repos[0]["shortId"]
     else:
-        raise SystemExit(f"{len(repos)} repositories — say which one runs the "
-                         f"backup with --repository (the others become mirrors)")
+        raise SystemExit(f"{len(repos)} " + loc("repositories — say which one runs the backup "
+                                 "with --repository (the others become mirrors)"))
     # Every other registered repository mirrors this one. A second job per
     # destination would run the backup twice: two stops of any-sync-bundle, two
     # SQLite copies, and two chances to differ. A mirror copies the snapshot
@@ -177,21 +217,21 @@ def main():
         if m != "none":
             allowlist.append(f"{nome}:{m}")
         if nome in jobs:
-            print(f"  {nome:24} job já existe")
+            print(f"  {nome:24} " + loc("job already exists"))
             continue
         if m != "none" and not token:
-            print(f"  {nome:24} precisa do gancho ({m}), mas não há token — pulando")
+            print(f"  {nome:24} " + loc("needs the hook") + f" ({m}), " + loc("but there is no token — skipping"))
             continue
         if m == "stop" and not any(UNITS.rglob(f"{nome}.container")):
             # `stop` is `systemctl stop <name>`, so the folder name has to BE a
             # unit. media-stack is the case that is not: twelve units share the
             # directory, and one of them (dispatcharr) carries a Postgres. No
             # single hook call is right there, so this asks instead of guessing.
-            print(f"  {nome:24} precisa de stop, mas não há unit `{nome}` — "
-                  f"declare o job à mão")
+            print(f"  {nome:24} " + loc("needs stop, but there is no unit")
+                  + f" `{nome}` — " + loc("declare this job by hand"))
             continue
         alvo = f"/sources/volumes/{nome}"
-        print(f"  {nome:24} volume {alvo}  |  modo {m}")
+        print(f"  {nome:24} {loc('volume')} {alvo}  |  {loc('mode')} {m}")
         if not a.apply:
             continue
         if nome not in volumes:
@@ -218,7 +258,7 @@ def main():
     # job anyway. Restoring is selective, so one snapshot holding all of them
     # gives the same choice at the moment it matters.
     if SECRETS.is_dir() and "secrets" not in jobs:
-        print(f"  {'secrets':24} volume /sources/secrets  |  modo none")
+        print(f"  {'secrets':24} {loc('volume')} /sources/secrets  |  {loc('mode')} none")
         if a.apply:
             if "secrets" not in volumes:
                 api(a.url, key, "volumes", "POST",
@@ -229,10 +269,10 @@ def main():
                 {"name": "secrets", "volumeId": volumes["secrets"], "repositoryId": repo,
                  "enabled": True, "cronExpression": a.cron})
     elif "secrets" in jobs:
-        print(f"  {'secrets':24} job já existe")
+        print(f"  {'secrets':24} " + loc("job already exists"))
 
     if espelhos and not a.no_mirror:
-        print(f"\nespelhando {len(espelhos)} repositório(s) em cada job")
+        print(f"\n{loc('mirroring')} {len(espelhos)} {loc('repository(ies) on every job')}")
         for b in api(a.url, key, "backups"):
             if not a.apply:
                 continue
@@ -240,15 +280,15 @@ def main():
                 {"mirrors": [{"repositoryId": r, "enabled": True} for r in espelhos]})
 
     if alheias:
-        print(f"\nfora deste repositório, não tocadas: {', '.join(alheias)}")
+        print(f"\n{loc('outside this repository, left alone')}: {', '.join(alheias)}")
     if allowlist:
         # A job whose hook is not in the allowlist gets a 404 on pre-backup,
         # and Zerobyte treats that as a failed backup. Printing the line beats
         # finding out at 03:00.
-        print("\nZEROBYTE_HOOK_UNITS must include these, or the jobs fail:")
+        print(loc("\nZEROBYTE_HOOK_UNITS must include these, or the jobs fail:"))
         print("  " + ",".join(sorted(allowlist)))
     if not a.apply:
-        print("\nnothing was done. repeat with --apply")
+        print(loc("\nnothing was done. repeat with --apply"))
 
 
 if __name__ == "__main__":
