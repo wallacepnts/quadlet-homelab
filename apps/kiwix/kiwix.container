@@ -1,0 +1,50 @@
+[Unit]
+Description=Kiwix (Wikipedia and other libraries, offline)
+
+[Container]
+ReadOnly=true
+Tmpfs=/tmp:size=32M
+DropCapability=ALL
+NoNewPrivileges=true
+User=1001
+PidsLimit=256
+
+Image=ghcr.io/kiwix/kiwix-serve:3.8.2
+ContainerName=kiwix
+Network=tsdproxy-net.network
+PublishPort=8118:8080
+# The image's own start.sh runs `kiwix-serve --port=8080 $@` unquoted, so the
+# glob is expanded there, in /data. Every .zim in the volume is served, and a
+# new one only needs a restart.
+Exec=*.zim
+
+Volume=%h/.config/containers/volumes/kiwix/data:/data:Z
+EnvironmentFile=%h/.config/containers/env/kiwix.env
+
+HealthCmd=CMD-SHELL wget -q --spider http://127.0.0.1:8080/ || exit 1
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+HealthStartPeriod=20s
+Notify=healthy
+
+Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
+Label=tsdproxy.name=kiwix
+Label=tsdproxy.port.web=443/https:8080/http
+Label=tsdproxy.dash.icon=sh/kiwix
+
+Label=homepage.group=Personal
+Label=homepage.name=Kiwix
+Label=homepage.icon=kiwix.svg
+Label=homepage.href=https://kiwix.${TAILNET}.ts.net
+Label=homepage.description="Wikipedia and other libraries, read with the internet off"
+Label=wud.watch=true
+Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+$
+
+[Service]
+Restart=always
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target

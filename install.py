@@ -1414,6 +1414,8 @@ DESCRICOES = {
     "Network-wide ad and tracker blocking over DNS": "Bloqueio de anúncios e rastreadores por DNS, para a rede toda",
     "NVR with AI object detection": "NVR com detecção de objetos por IA",
     "Offline converters, generators and calculators — everything runs in the browser": "Conversores, geradores e calculadoras offline — tudo roda no navegador",
+    "Wikipedia and other libraries, read with the internet off":
+        "Wikipedia e outras bibliotecas, para ler com a internet desligada",
     "Live logs of every container, without opening a terminal":
         "Log ao vivo de cada container, sem abrir terminal",
     "The house's shopping list, shared by one password":

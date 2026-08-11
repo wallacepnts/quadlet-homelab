@@ -2,7 +2,7 @@
 
 **[🇧🇷 Leia em português](./docs/pt-BR/README.md)**
 
-70 self-hosted services as [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)
+71 self-hosted services as [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)
 units, rootless, one service per folder.
 
 ## Quick start
@@ -69,7 +69,7 @@ pulled. To go through anyway, use `--reinstall`.
 ## Requirements
 
 - **Podman 5.0 or newer.** This is the real floor: `Notify=healthy` arrived
-  there, and 98 of the 106 units use it. On 4.x the start returns before the app
+  there, and 99 of the 107 units use it. On 4.x the start returns before the app
   is ready, and the install reports a success it cannot know about.
 - **systemd with a user session** and cgroups v2.
 - **SELinux**, if your distribution has it. The units carry `:Z` on 125 volume
@@ -134,6 +134,7 @@ Leap 15's problem — it publishes no container image and was not measured here.
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/immich.svg" width="48" height="48" alt=""> | [Immich](./apps/immich) | `v3.1.0` | Photo and video backup and organisation, with face recognition and smart search |
 | <img src="https://cdn.simpleicons.org/invoiceninja/888888" width="48" height="48" alt=""> | [Invio](./apps/invio) | `v2.1.1` | Self-hosted invoicing and invoice tracking, on SQLite and with no external service |
 | <img src="https://api.iconify.design/mdi/microphone-variant.svg?color=%23888888" width="48" height="48" alt=""> | [Karaoke Eternal](./apps/karaoke-eternal) | `2.0.2` | A karaoke party from your own library — everyone queues songs from their phone, one screen plays |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/kiwix.svg" width="48" height="48" alt=""> | [Kiwix](./apps/kiwix) | `3.8.2` | Wikipedia and other libraries served from disk, read with the internet off |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/koffan.png" width="48" height="48" alt=""> | [Koffan](./apps/koffan) | `v2.13.0` | The house's shopping list — one password, no accounts, everyone edits the same list |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/karakeep.svg" width="48" height="48" alt=""> | [Karakeep](./apps/karakeep) | `0.33.1` | A bookmark manager with full-text search and automatic archiving of every saved page's content |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/lubelogger.png" width="48" height="48" alt=""> | [LubeLogger](./apps/lubelogger) | `v1.7.0` | Vehicle maintenance records — oil changes, services, costs and reminders, per vehicle |
