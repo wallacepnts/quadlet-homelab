@@ -22,7 +22,7 @@ Label=tsdproxy.dash.icon=mdi/file-document-edit
 
 Label=homepage.group=Files
 Label=homepage.name=Collabora
-Label=homepage.icon=https://api.iconify.design/mdi/file-document-edit.svg?color=%%23888888
+Label=homepage.icon=https://sdk.collaboraonline.com/_static/collabora.svg
 Label=homepage.href=https://collabora.${TAILNET}.ts.net
 Label=homepage.description="Editing documents inside ownCloud, with no cloud in between"
 Label=wud.watch=true
