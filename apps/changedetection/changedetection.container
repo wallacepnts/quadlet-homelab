@@ -1,0 +1,46 @@
+[Unit]
+Description=changedetection.io (website change monitor)
+
+[Container]
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+NoNewPrivileges=true
+User=1000
+PidsLimit=256
+
+Image=ghcr.io/dgtlmoon/changedetection.io:0.55.8
+ContainerName=changedetection
+Network=tsdproxy-net.network
+PublishPort=8109:5000
+
+Volume=%h/.config/containers/volumes/changedetection/datastore:/datastore:Z
+EnvironmentFile=%h/.config/containers/env/changedetection.env
+
+HealthCmd=CMD-SHELL python3 -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/')" || exit 1
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=30s
+Notify=healthy
+
+Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
+Label=tsdproxy.name=changedetection
+Label=tsdproxy.port.web=443/https:5000/http
+Label=tsdproxy.dash.icon=sh/changedetection
+
+Label=homepage.group=Automation
+Label=homepage.name=changedetection.io
+Label=homepage.icon=changedetection.svg
+Label=homepage.href=https://changedetection.${TAILNET}.ts.net
+Label=homepage.description="Watches web pages and tells you what changed, without an account anywhere"
+Label=wud.watch=true
+Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+$
+
+[Service]
+Restart=always
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target

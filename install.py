@@ -1403,6 +1403,8 @@ DESCRICOES = {
     "Network-wide ad and tracker blocking over DNS": "Bloqueio de anúncios e rastreadores por DNS, para a rede toda",
     "NVR with AI object detection": "NVR com detecção de objetos por IA",
     "Offline converters, generators and calculators — everything runs in the browser": "Conversores, geradores e calculadoras offline — tudo roda no navegador",
+    "Watches web pages and tells you what changed, without an account anywhere":
+        "Vigia páginas e avisa o que mudou, sem conta em lugar nenhum",
     "Editing documents inside ownCloud, with no cloud in between":
         "Edição de documentos dentro do ownCloud, sem nuvem no meio",
     "Metasearch that queries other engines without profiling you":
