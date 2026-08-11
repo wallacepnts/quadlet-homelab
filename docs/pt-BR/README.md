@@ -241,4 +241,5 @@ convidado da mesma arquitetura. O `apps/vm` traz `vm-windows` pra x86_64 e
 | [Recuperação e migração](./recuperacao.md) | a máquina morreu, ou você está mudando de host |
 | [Referência](./referencia.md) | onde cada arquivo mora, e um `.container` anotado |
 | [Auto-update](./auto-update.md) | por que quase tudo atualiza na mão |
+| [Uma tailnet sua](./tailnet-propria.md) | headscale, headplane e Caddy, ao lado do Tailscale que você já roda |
 | [Ferramentas](./ferramentas.md) | `qh-check` e `qh-updates` |
