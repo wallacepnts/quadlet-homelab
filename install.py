@@ -1403,6 +1403,8 @@ DESCRICOES = {
     "Network-wide ad and tracker blocking over DNS": "Bloqueio de anúncios e rastreadores por DNS, para a rede toda",
     "NVR with AI object detection": "NVR com detecção de objetos por IA",
     "Offline converters, generators and calculators — everything runs in the browser": "Conversores, geradores e calculadoras offline — tudo roda no navegador",
+    "The web interface Headscale does not ship with":
+        "A interface web que o Headscale não traz",
     "Your own control plane for the tailnet, in place of Tailscale's":
         "Seu próprio control plane da tailnet, no lugar do da Tailscale",
     "TLS and routing for names of your own, signed by a CA of your own":

@@ -1,0 +1,29 @@
+# Headplane reads this at start and never writes it: the file is mounted
+# read-only, like every config in this repository.
+server:
+  host: "0.0.0.0"
+  port: 3000
+  # A Podman secret, mounted as a file rather than pasted here. Losing it logs
+  # everyone out; it decides nothing else.
+  cookie_secret_path: "/run/secrets/cookie-secret"
+  # true once you reach it over HTTPS through Caddy. Left false so the first
+  # start works over plain http://<host>:8116/admin.
+  cookie_secure: false
+  data_path: "/var/lib/headplane"
+
+headscale:
+  # By container name over tsdproxy-net — no published port in the way.
+  url: "http://headscale:8080"
+  # Headplane reads headscale's own config to know the tailnet's shape. The
+  # unit mounts it read-only from headscale's volume, which is why headscale
+  # has to be installed first.
+  config_path: "/etc/headscale/config.yaml"
+
+integration:
+  # Off: with it on, Headplane restarts headscale when you change ACLs, and
+  # that means handing it the Podman socket. Turn it on only if you want that
+  # trade, and mount the socket in the unit.
+  docker:
+    enabled: false
+  agent:
+    enabled: false

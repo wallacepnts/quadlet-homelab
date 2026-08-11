@@ -2,7 +2,7 @@
 
 **[🇧🇷 Leia em português](./docs/pt-BR/README.md)**
 
-71 self-hosted services as [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)
+72 self-hosted services as [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)
 units, rootless, one service per folder.
 
 ## Quick start
@@ -69,7 +69,7 @@ pulled. To go through anyway, use `--reinstall`.
 ## Requirements
 
 - **Podman 5.0 or newer.** This is the real floor: `Notify=healthy` arrived
-  there, and 99 of the 107 units use it. On 4.x the start returns before the app
+  there, and 100 of the 108 units use it. On 4.x the start returns before the app
   is ready, and the install reports a success it cannot know about.
 - **systemd with a user session** and cgroups v2.
 - **SELinux**, if your distribution has it. The units carry `:Z` on 125 volume
@@ -130,6 +130,7 @@ Leap 15's problem — it publishes no container image and was not measured here.
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/homebox.svg" width="48" height="48" alt=""> | [HomeBox](./apps/homebox) | `0.26.2` | A home inventory — what you own, where it is, the receipt, the manual and the warranty, with search and labels |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/grafana.svg" width="48" height="48" alt=""> | [Grafana](./apps/grafana) | `13.1.3` | Dashboards over whatever you point it at — it brings no data of its own |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/headscale.svg" width="48" height="48" alt=""> | [Headscale](./apps/headscale) | `v0.29.3` | Your own control plane for the tailnet — the coordination, without the company |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/headscale.svg" width="48" height="48" alt=""> | [Headplane](./apps/headplane) | `0.7.0` | The web interface Headscale does not ship with — nodes, users and ACLs on a screen |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/home-assistant.svg" width="48" height="48" alt=""> | [Home Assistant](./apps/home-assistant) | `2026.8.1` | The central home automation hub; it brings devices from any manufacturer into a single panel |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/homepage.png" width="48" height="48" alt=""> | [homepage](./apps/homepage) | `latest` (auto-update) | A dashboard that discovers and organises the other containers by itself through labels, with no config to edit per new service |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/immich.svg" width="48" height="48" alt=""> | [Immich](./apps/immich) | `v3.1.0` | Photo and video backup and organisation, with face recognition and smart search |
