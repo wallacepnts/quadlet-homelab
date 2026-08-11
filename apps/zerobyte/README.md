@@ -89,19 +89,29 @@ curl -s http://127.0.0.1:8766/healthz     # {"ok": true}
 # Port taken? ZEROBYTE_HOOK_PORT moves it; WEBHOOK_ALLOWED_ORIGINS must agree.
 ```
 
-Each job then carries two URLs — `qh --zerobyte` below writes them for you;
-by hand only if you create the job through the interface:
+The allowlist lives in a systemd drop-in (`systemctl --user edit
+zerobyte-backup-hook`), not in the shipped unit — and `qh --zerobyte` asks the
+running hook which units it knows, then names the ones missing. A unit missing
+there is a backup that fails at 03:00 with a 404 nobody is watching.
+
+Each job then carries two URLs, which `qh --zerobyte` writes for you:
 
 ```
-http://host.containers.internal:8766/hooks/<unit>/pre-backup
-http://host.containers.internal:8766/hooks/<unit>/post-backup
+http://<host-ip>:8766/hooks/<unit>/pre-backup
+http://<host-ip>:8766/hooks/<unit>/post-backup
 ```
 
-`host.containers.internal` is the host as seen from inside the container: the
-hook runs on the host, because stopping a unit is `systemctl --user`, which a
-container cannot reach. `<unit>` says who to act on. The token goes in the
-`X-Zerobyte-Hook-Secret` header — without it the hook answers 401, and that is
-what keeps anything reaching port 8766 from stopping your services.
+The hook runs on the host, because stopping a unit is `systemctl --user`, which
+a container cannot reach. But do **not** use `host.containers.internal`: it
+only answers from Podman's default network, and every service here is on
+`tsdproxy-net`, where it times out and the job fails with `pre webhook failed`.
+Pass the host's own address, the tailscale one for preference since it does not
+move with DHCP: `qh --zerobyte --hook-host 100.x.y.z`. The same origin has to
+be in `WEBHOOK_ALLOWED_ORIGINS`.
+
+`<unit>` says who to act on. The token goes in the `X-Zerobyte-Hook-Secret`
+header — without it the hook answers 401, and that is what keeps anything
+reaching port 8766 from stopping your services.
 
 ### Creating the jobs
 

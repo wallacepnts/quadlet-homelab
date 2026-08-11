@@ -89,19 +89,29 @@ curl -s http://127.0.0.1:8766/healthz     # {"ok": true}
 # Porta ocupada? O ZEROBYTE_HOOK_PORT muda; o WEBHOOK_ALLOWED_ORIGINS tem que acompanhar.
 ```
 
-Cada job leva então duas URLs — o `qh --zerobyte` abaixo as escreve sozinho;
-à mão só se você criar o job pela interface:
+A lista mora num drop-in do systemd (`systemctl --user edit
+zerobyte-backup-hook`), não na unit publicada — e o `qh --zerobyte` pergunta ao
+gancho em execução quais units ele conhece e diz quais faltam. Unit ausente ali
+é backup que falha às 03:00 com um 404 que ninguém está olhando.
+
+Cada job leva então duas URLs, que o `qh --zerobyte` escreve sozinho:
 
 ```
-http://host.containers.internal:8766/hooks/<unit>/pre-backup
-http://host.containers.internal:8766/hooks/<unit>/post-backup
+http://<ip-do-host>:8766/hooks/<unit>/pre-backup
+http://<ip-do-host>:8766/hooks/<unit>/post-backup
 ```
 
-`host.containers.internal` é o host visto de dentro do container: o gancho roda
-no host, porque quem para uma unit é o `systemctl --user`, e isso um container
-não alcança. `<unit>` diz sobre quem agir. O token vai no cabeçalho
-`X-Zerobyte-Hook-Secret` — sem ele o gancho responde 401, e é o que impede que
-qualquer coisa que chegue na porta 8766 pare os seus serviços.
+O gancho roda no host, porque quem para uma unit é o `systemctl --user`, e isso
+um container não alcança. Mas **não** use o `host.containers.internal`: ele só
+responde na rede default do Podman, e todo serviço daqui está na
+`tsdproxy-net`, de onde ele dá timeout — o job falha com `pre webhook failed`.
+Passe o endereço do próprio host, de preferência o da tailscale, que não muda
+com DHCP: `qh --zerobyte --hook-host 100.x.y.z`. A mesma origem precisa estar
+no `WEBHOOK_ALLOWED_ORIGINS`.
+
+O token vai no cabeçalho `X-Zerobyte-Hook-Secret` — sem ele o gancho responde
+401, e é o que impede que qualquer coisa que chegue na porta 8766 pare os seus
+serviços.
 
 ### Criando os jobs
 

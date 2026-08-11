@@ -47,6 +47,8 @@ PT = {
         "desliga o espelho: tira o espelho de todos os jobs",
     "schedule (default: 03:00 daily)": "agendamento (padrão: 03:00 todo dia)",
     "execute (without it, only show)": "executa (sem ele, só mostra)",
+    "host the container calls back on (host.containers.internal fails from a custom network)":
+        "host que o container chama de volta (o host.containers.internal falha em rede própria)",
     "pass --url": "passe o --url",
     "no BASE_URL in": "sem BASE_URL em",
     "create one in Settings -> API keys": "crie uma em Settings -> API keys",
@@ -74,6 +76,8 @@ PT = {
     "outside this repository, left alone": "fora deste repositório, não tocadas",
     "ZEROBYTE_HOOK_UNITS must include these, or the jobs fail:":
         "o ZEROBYTE_HOOK_UNITS precisa incluir estas, ou os jobs falham:",
+    "the running hook is missing": "o gancho em execução não tem",
+    "the hook did not answer on": "o gancho não respondeu em",
     "nothing was done. repeat with --apply":
         "nada foi feito. repita com --apply",
 }
@@ -182,7 +186,7 @@ def excluir(app):
     return EXCLUIR + [l.strip() for l in bruto.splitlines() if l.strip()]
 
 
-def ajusta_job(a, key, job, padroes):
+def ajusta_job(a, key, job, padroes, chamadas=None):
     """Bring an existing job's excludes and retention up to date.
 
     A body with only the changed fields is refused (`expected string, path:
@@ -192,13 +196,18 @@ def ajusta_job(a, key, job, padroes):
     guardado = job.get("retentionPolicy") or {}
     if (job.get("excludePatterns") == padroes
             and job.get("excludeIfPresent") == EXCLUIR_SE
-            and all(guardado.get(k) == v for k, v in RETENCAO.items())):
+            and all(guardado.get(k) == v for k, v in RETENCAO.items())
+            # The callback address is part of the job, and a wrong one is not
+            # cosmetic: the run fails with `pre webhook failed`.
+            and (chamadas is None or job.get("backupWebhooks") == chamadas)):
         return ""
     if a.apply:
         corpo = {k: job[k] for k in CAMPOS if job.get(k) is not None}
         corpo["excludePatterns"] = padroes
         corpo["excludeIfPresent"] = list(EXCLUIR_SE)
         corpo["retentionPolicy"] = dict(RETENCAO)
+        if chamadas is not None:
+            corpo["backupWebhooks"] = chamadas
         api(a.url, key, f"backups/{job['shortId']}", "PATCH", corpo)
     return "  |  " + loc("settings updated")
 
@@ -223,8 +232,8 @@ def ajusta_avisos(a, key, job, destinos):
     return "  |  " + loc("alerts wired")
 
 
-def ganchos(nome, porta, token):
-    base = f"http://host.containers.internal:{porta}/hooks/{nome}"
+def ganchos(nome, host, porta, token):
+    base = f"http://{host}:{porta}/hooks/{nome}"
     cab = [f"X-Zerobyte-Hook-Secret: {token}"]
     return {"pre": {"url": f"{base}/pre-backup", "headers": cab},
             "post": {"url": f"{base}/post-backup", "headers": cab}}
@@ -254,6 +263,13 @@ def main():
                     help=loc("turn mirroring off: clears the mirrors on every job"))
     ap.add_argument("--cron", default="0 3 * * *", help=loc("schedule (default: 03:00 daily)"))
     ap.add_argument("--hook-port", default="8766")
+    # `host.containers.internal` is the pasta address, and a container on a
+    # network of its own does not reach it under rootless Podman: the call
+    # times out and the job fails with `pre webhook failed`. The host's own
+    # address does answer, from every network.
+    ap.add_argument("--hook-host", default="host.containers.internal",
+                    help=loc("host the container calls back on "
+                             "(host.containers.internal fails from a custom network)"))
     ap.add_argument("--apply", action="store_true", help=loc("execute (without it, only show)"))
     a = ap.parse_args()
 
@@ -314,8 +330,10 @@ def main():
                   + f" `{nome}` — " + loc("declare this job by hand"))
             continue
         if nome in jobs:
+            chamadas = (ganchos(nome, a.hook_host, a.hook_port, token)
+                        if m != "none" and token else None)
             print(f"  {nome:24} " + loc("job already exists")
-                  + ajusta_job(a, key, jobs[nome], excluir(app)))
+                  + ajusta_job(a, key, jobs[nome], excluir(app), chamadas))
             continue
         if m != "none" and not token:
             print(f"  {nome:24} " + loc("needs the hook") + f" ({m}), " + loc("but there is no token — skipping"))
@@ -337,7 +355,7 @@ def main():
                  "excludePatterns": excluir(app), "excludeIfPresent": list(EXCLUIR_SE),
                  "retentionPolicy": dict(RETENCAO)}
         if m != "none":
-            corpo["backupWebhooks"] = ganchos(nome, a.hook_port, token)
+            corpo["backupWebhooks"] = ganchos(nome, a.hook_host, a.hook_port, token)
         api(a.url, key, "backups", "POST", corpo)
 
     # The secrets, as one job. Restoring a data volume without them gives a
@@ -410,6 +428,20 @@ def main():
 
     if alheias:
         print(f"\n{loc('outside this repository, left alone')}: {', '.join(alheias)}")
+    # What the hook actually has loaded, against what these jobs need. A
+    # mismatch is a job that fails at 03:00 with a 404 nobody is watching.
+    if allowlist and a.apply:
+        try:
+            with urllib.request.urlopen(
+                    f"http://{a.hook_host}:{a.hook_port}/healthz", timeout=5) as r:
+                tem = set((json.loads(r.read()) or {}).get("units") or [])
+            faltam = sorted(set(allowlist) - tem)
+            if faltam:
+                print(f"\n{loc('the running hook is missing')}: {','.join(faltam)}")
+        except OSError:
+            print(f"\n{loc('the hook did not answer on')} "
+                  f"http://{a.hook_host}:{a.hook_port}/healthz")
+
     if allowlist:
         # A job whose hook is not in the allowlist gets a 404 on pre-backup,
         # and Zerobyte treats that as a failed backup. Printing the line beats

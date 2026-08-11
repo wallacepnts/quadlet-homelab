@@ -107,7 +107,11 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         if self.path == "/healthz":
-            self._send_json(200, {"ok": True})
+            # The allowlist is reported, not just liveness: an empty one answers
+            # 404 to every job, and the only other way to notice is a night of
+            # failed backups. `qh --zerobyte` reads this and says what is
+            # missing. Unit names only — no token, no paths.
+            self._send_json(200, {"ok": True, "units": sorted(f"{u}:{v[0]}" for u, v in ALLOWED.items())})
             return
         self._send_json(404, {"error": "not found"})
 
