@@ -16,10 +16,10 @@ PublishPort=8116:3000
 
 Volume=%h/.config/containers/volumes/headplane/config/config.yaml:/etc/headplane/config.yaml:ro,Z
 Volume=%h/.config/containers/volumes/headplane/data:/var/lib/headplane:Z
-Volume=%h/.config/containers/volumes/headscale/config:/etc/headscale:ro,Z
-Secret=headplane-cookie-secret,target=/run/secrets/cookie-secret
+Volume=%h/.config/containers/volumes/headscale/config:/etc/headscale:ro,z
+Secret=headplane-cookie-secret,type=env,target=HEADPLANE_SERVER__COOKIE_SECRET
 
-HealthCmd=CMD-SHELL /nodejs/bin/node -e "require('http').get('http://127.0.0.1:3000/admin/', r => process.exit(r.statusCode < 400 ? 0 : 1)).on('error', () => process.exit(1))" || exit 1
+HealthCmd=["CMD", "/nodejs/bin/node", "-e", "require('http').get('http://127.0.0.1:3000/admin/', r => process.exit(r.statusCode < 400 ? 0 : 1)).on('error', () => process.exit(1))"]
 HealthInterval=30s
 HealthTimeout=10s
 HealthRetries=3
