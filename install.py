@@ -211,6 +211,13 @@ PT = {
     'save the rule every install and update follows ': 'salva a regra que toda instalação e atualização segue ',
     '(local, tailnet or both), and exit': '(local, tailnet ou both), e sai',
     'rule saved:': 'regra salva:',
+    'domain saved:': 'domínio salvo:',
+    'add to the Caddyfile, then `podman exec caddy caddy reload --config /etc/caddy/Caddyfile`:':
+        'acrescente no Caddyfile, e depois `podman exec caddy caddy reload --config /etc/caddy/Caddyfile`:',
+    'with --access headscale: the suffix the links use (default: qh), saved and followed from then on':
+        'com --access headscale: o sufixo dos links (padrão: qh), salvo e seguido a partir daí',
+    'local: no tsdproxy, link to the LAN | tailnet: link via the tailnet name (default) | both: on the tailnet, with a LAN link | headscale: no tsdproxy, links under your own domain behind Caddy':
+        'local: sem tsdproxy, link pra LAN | tailnet: link pelo nome da tailnet (padrão) | both: na tailnet, com link da LAN | headscale: sem tsdproxy, links no seu domínio atrás do Caddy',
     'every install and update follows it, unless --access says otherwise': 'toda instalação e atualização segue ela, a menos que o --access diga outra coisa',
     '  rule:': '  regra:',
     '  (default, never set)': '  (padrão, nunca definida)',
@@ -988,11 +995,37 @@ def service_units(s):
     return sorted(u.stem for u in s.units if u.suffix == ".container")
 
 
-ACCESS_MODES = ("local", "tailnet", "both")
+ACCESS_MODES = ("local", "tailnet", "both", "headscale")
 
 
 def access_file(home=None):
     return (home or Path.home()) / ".config/quadlet-homelab/access"
+
+
+def domain_file(home=None):
+    return (home or Path.home()) / ".config/quadlet-homelab/domain"
+
+
+def local_domain(home=None):
+    """The suffix `--access headscale` builds links from, `qh` by default.
+
+    Not the tailnet name: that one comes from the control plane and is public
+    (rule 19). This one is yours to invent, because nothing outside your
+    network resolves it — Caddy signs it and AdGuard answers it.
+    """
+    f = domain_file(home)
+    if f.exists():
+        v = f.read_text().strip()
+        if v:
+            return v
+    return "qh"
+
+
+def save_domain(dominio, home=None):
+    f = domain_file(home)
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text(dominio + "\n")
+    return f
 
 
 def saved_access(home=None):
@@ -1022,6 +1055,8 @@ def installed_access(path):
     if not path.exists():
         return None
     text = path.read_text()
+    if "# disabled by --access headscale:" in text:
+        return "headscale"
     if "# disabled by --access local:" in text:
         return "local"
     if "# reached over tsdproxy-net" in text:
@@ -1518,9 +1553,12 @@ def unit_bytes(source, access, href_local):
     on the host — and tsdproxy depends on exactly that port to reach the
     service. What the mode decides is whether to register a tailnet node:
 
-      local    strips the tsdproxy labels (comments them out, does not delete)
-      tailnet  keeps the labels                                     (default)
-      both     keeps the labels
+      local      strips the tsdproxy labels (comments them out, does not delete)
+      tailnet    keeps the labels                                   (default)
+      both       keeps the labels
+      headscale  strips them too, and hides the proxied port: Caddy reaches the
+                 container by name over the shared network, so nothing of it is
+                 open on the LAN either
 
     And `homepage.href` follows what makes sense for each: in `local` only the
     LAN address exists; in `tailnet` and `both` the link is the tailnet name,
@@ -1549,7 +1587,7 @@ def unit_bytes(source, access, href_local):
     # IP on the internal port, which is why tsdproxy.autodetect is on the units.
     # Only that one port: a unit can also publish DNS, MQTT or a torrent port,
     # which devices reach directly and which no proxy stands in front of.
-    if access == "tailnet" and not href_local:
+    if access in ("tailnet", "headscale") and not href_local:
         text = data.decode()
         web = next((v.rpartition(":")[2].partition("/")[0]
                     for c, v in directives(text)
@@ -1561,6 +1599,22 @@ def unit_bytes(source, access, href_local):
                 return "# reached over tsdproxy-net, not the LAN: " + m.group(0)
             text = re.sub(r"(?m)^PublishPort=.*$", hide, text)
             data = text.encode()
+
+    if access == "headscale":
+        # The name Caddy will answer for. `tsdproxy.name` is what every unit
+        # already declares as its short name, and falling back to the container
+        # keeps a unit without that label working.
+        text = data.decode()
+        nome = next((v.partition("=")[2] for c, v in directives(text)
+                     if c == "Label" and v.startswith("tsdproxy.name=")), None)
+        if not nome:
+            nome = next((v for c, v in directives(text) if c == "ContainerName"), None)
+        if nome:
+            text = re.sub(r"(?m)^(Label=homepage\.href=).*$",
+                          rf"\1https://{nome}.{local_domain()}", text)
+        text = re.sub(r"(?m)^(Label=tsdproxy\.)",
+                      r"# disabled by --access headscale: \1", text)
+        data = text.encode()
 
     if access == "local" or href_local:
         text = data.decode()
@@ -1832,7 +1886,7 @@ def local_ip():
             return "127.0.0.1"
 
 
-def addresses(service, tailnet):
+def addresses(service, tailnet, access=None):
     """[(unit, local_url, tailnet_url)] for the containers that serve HTTP.
 
     Everything comes from the unit itself: `tsdproxy.port.web` says which
@@ -1868,7 +1922,13 @@ def addresses(service, tailnet):
             # Without the label (tsdproxy auto-detects), a single port leaves no
             # doubt about which one is the interface.
             host = published[0][-2]
-        if tailnet:
+        # `--access headscale` builds its own name: the tailnet URL in the unit
+        # is not where this host serves it from, and printing it would send you
+        # to a name nothing resolves.
+        if access == "headscale":
+            nome = labels.get("tsdproxy.name") or f.stem
+            href = f"https://{nome}.{local_domain()}"
+        elif tailnet:
             href = href.replace("${TAILNET}", tailnet)
         elif "${TAILNET}" in href:
             href = ""
@@ -2331,6 +2391,35 @@ def selftest():
     say("selftest: ok")
 
 
+def show_caddy_routes(s):
+    """The Caddyfile block this service needs, ready to paste.
+
+    `--access headscale` closes the LAN port and drops the tsdproxy labels, so
+    nothing reaches the service until Caddy is told about it. Printing the
+    block is the smallest thing that keeps the two in step — the alternative,
+    editing the Caddyfile from here, would fight whatever else is in it.
+    """
+    linhas = []
+    for f in sorted(s.dir.glob("*.container")):
+        ds = directives(f.read_text())
+        labels = {k.partition("=")[0]: k.partition("=")[2].strip('"')
+                  for c, k in ds if c == "Label"}
+        interno = labels.get("tsdproxy.port.web", "").rpartition(":")[2].partition("/")[0]
+        if not interno:
+            continue
+        alvo = next((v for c, v in ds if c == "ContainerName"), f.stem)
+        nome = labels.get("tsdproxy.name") or alvo
+        linhas.append(f"{nome}.{local_domain()} {{\n\treverse_proxy {alvo}:{interno}\n}}")
+    if not linhas:
+        return
+    say("")
+    say(loc("add to the Caddyfile, then `podman exec caddy caddy reload "
+            "--config /etc/caddy/Caddyfile`:"))
+    for b in linhas:
+        for l in b.splitlines():
+            say(f"    {dim(l)}")
+
+
 def show_addresses(s, tailnet, modo="both"):
     """The URLs, raw, ready to click or paste, for the mode it was installed in.
 
@@ -2340,13 +2429,16 @@ def show_addresses(s, tailnet, modo="both"):
     name above each one, because otherwise the bare list would not say which is
     which.
     """
-    lines = addresses(s, tailnet)
+    lines = addresses(s, tailnet, modo)
     if not lines:
         return
     many = len(lines) > 1
     saida = []
     for unit, local, tail in lines:
-        quais = {"local": (local,), "tailnet": (tail,)}.get(modo, (local, tail))
+        # headscale: only the Caddy name. The LAN port was commented out, and
+        # the tailnet name is not what this host answers to any more.
+        quais = {"local": (local,), "tailnet": (tail,),
+                 "headscale": (tail,)}.get(modo, (local, tail))
         urls = [u for u in quais if u]
         if urls:
             saida.append((unit, urls))
@@ -2679,6 +2771,8 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
     if not a.apply:
         if not (a.remove or a.backup or a.restore):
             show_addresses(s, tailnet, modo_efetivo)
+            if modo_efetivo == "headscale":
+                show_caddy_routes(s)
             if not a.update:
                 show_secrets(s)
         return 0
@@ -2717,6 +2811,8 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
         say(f"\n{app}: {green(loc('done.'))} " + loc("Check with:")
             + f"  systemctl --user status {unit}")
         show_addresses(s, tailnet, modo_efetivo)
+        if modo_efetivo == "headscale":
+            show_caddy_routes(s)
         # Not on an update: it changes no credential, and `qh --all --update`
         # would spill every password in the terminal at once. `qh <app>` still
         # prints it, which is the deliberate way to look one up.
@@ -2764,12 +2860,17 @@ def main():
     ap.add_argument("--selftest", action="store_true", help=loc("test the script's parser"))
     ap.add_argument("--status", action="store_true",
                     help=loc("what is installed, running, and changed in the repository"))
+    ap.add_argument("--set-domain", metavar="DOMAIN",
+                    help=loc("with --access headscale: the suffix the links use "
+                             "(default: qh), saved and followed from then on"))
     ap.add_argument("--set-access", choices=ACCESS_MODES, metavar="MODE",
                     help=loc("save the rule every install and update follows "
                              "(local, tailnet or both), and exit"))
     ap.add_argument("--access", choices=ACCESS_MODES, default=None,
                     help=loc("local: no tsdproxy, link to the LAN | tailnet: link via the "
-                             "tailnet name (default) | both: on the tailnet, with a LAN link"))
+                             "tailnet name (default) | both: on the tailnet, with a LAN "
+                             "link | headscale: no tsdproxy, links under your own domain "
+                             "behind Caddy"))
     ap.add_argument("--href-local", action="store_true",
                     help=loc("point the dashboard link at the LAN instead of the tailnet "
                              "name (implied by --access local)"))
@@ -2805,6 +2906,12 @@ def main():
 
     if a.status:
         return show_status(a.app or None)
+
+    if a.set_domain:
+        f = save_domain(a.set_domain, Path(a.prefix) if a.prefix else None)
+        say(loc("domain saved:") + f" {a.set_domain}  ({f})")
+        if not a.app and not a.set_access:
+            return 0
 
     if a.set_access:
         f = save_access(a.set_access, Path(a.prefix) if a.prefix else None)
