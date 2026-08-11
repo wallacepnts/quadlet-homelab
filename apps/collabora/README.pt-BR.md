@@ -1,6 +1,6 @@
 # Collabora Online
 
-<img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/collabora-online.svg" width="64" height="64" alt="">
+<img src="https://api.iconify.design/mdi/file-document-edit.svg?color=%23888888" width="64" height="64" alt="">
 
 **[🇺🇸 Read in English](./README.md)**
 

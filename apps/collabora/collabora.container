@@ -18,11 +18,11 @@ Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=collabora
 Label=tsdproxy.port.web=443/https:9980/http
-Label=tsdproxy.dash.icon=sh/collabora-online
+Label=tsdproxy.dash.icon=mdi/file-document-edit
 
 Label=homepage.group=Files
 Label=homepage.name=Collabora
-Label=homepage.icon=collabora-online.svg
+Label=homepage.icon=https://api.iconify.design/mdi/file-document-edit.svg?color=%%23888888
 Label=homepage.href=https://collabora.${TAILNET}.ts.net
 Label=homepage.description="Editing documents inside ownCloud, with no cloud in between"
 Label=wud.watch=true
