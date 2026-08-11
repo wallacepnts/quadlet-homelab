@@ -10,6 +10,9 @@ PidsLimit=256
 Image=docker.io/adguard/adguardhome:v0.107.78
 ContainerName=adguardhome
 Network=tsdproxy-net.network
+# NEVER 0.0.0.0:53 — that address includes the container network's own
+# gateway, where aardvark-dns answers, and publishing over it breaks name
+# resolution between every container on the host. Bind one address:
 PublishPort=5335:53/tcp
 PublishPort=5335:53/udp
 PublishPort=3006:3000/tcp

@@ -12,12 +12,13 @@ PidsLimit=256
 Image=docker.io/library/caddy:2.11.4-alpine
 ContainerName=caddy
 Network=tsdproxy-net.network
-# Rootless Podman cannot expose a port below 1024. For https://name.casa with
-# no port, raise the floor on the host and change these to 443:443 and 80:80:
-#   echo 'net.ipv4.ip_unprivileged_port_start=80' | sudo tee /etc/sysctl.d/50-unprivileged-ports.conf
+# Rootless Podman refuses a port below the host's floor, and 443 is below the
+# default 1024. One sysctl moves it, and without it these two lines are what
+# fails — change them to 8443 and 8114 if you would rather not:
+#   echo 'net.ipv4.ip_unprivileged_port_start=53' | sudo tee /etc/sysctl.d/50-unprivileged-ports.conf
 #   sudo sysctl --system
-PublishPort=8443:443
-PublishPort=8114:80
+PublishPort=443:443
+PublishPort=80:80
 
 Volume=%h/.config/containers/volumes/caddy/config:/etc/caddy:ro,Z
 Volume=%h/.config/containers/volumes/caddy/data:/data:Z
