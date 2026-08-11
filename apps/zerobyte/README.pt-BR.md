@@ -146,9 +146,10 @@ qh --zerobyte --repository <shortId> --no-mirror --apply   # desliga o espelho
 ```
 
 Espelho copia o snapshot pronto, em vez de repetir o backup: o serviço para uma
-vez só, e o que chega na nuvem é o mesmo que foi verificado aqui. O
-`--no-mirror` tira o espelho de todos os jobs — pela interface isso seria um a
-um.
+vez só, e o que chega na nuvem é o mesmo que foi verificado aqui. Ele
+também dispara a primeira cópia, então o repositório novo se enche na hora e
+não só na próxima execução. O `--no-mirror` tira o espelho de todos os jobs —
+pela interface isso seria um a um.
 
 ## Atualizar
 

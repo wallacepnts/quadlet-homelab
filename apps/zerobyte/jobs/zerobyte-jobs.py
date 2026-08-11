@@ -286,8 +286,16 @@ def main():
         print(f"\n{loc('clearing the mirrors on every job')}" if a.no_mirror else
               f"\n{loc('mirroring')} {len(espelhos)} {loc('repository(ies) on every job')}")
         for b in api(a.url, key, "backups"):
-            if a.apply:
-                api(a.url, key, f"backups/{b['shortId']}/mirrors", "PUT", {"mirrors": lista})
+            if not a.apply:
+                continue
+            api(a.url, key, f"backups/{b['shortId']}/mirrors", "PUT", {"mirrors": lista})
+            # Enabling a mirror copies nothing: the first copy happens when the
+            # job next runs. Without this the new repository stays empty until
+            # 03:00, which reads as the command having done nothing at all.
+            # The `{}` matters — the endpoint takes no arguments, but rejects a
+            # JSON content type with no body at all ("Malformed body").
+            for r in espelhos:
+                api(a.url, key, f"backups/{b['shortId']}/mirrors/{r}/sync", "POST", {})
 
     if alheias:
         print(f"\n{loc('outside this repository, left alone')}: {', '.join(alheias)}")
