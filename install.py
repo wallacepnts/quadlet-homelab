@@ -496,7 +496,14 @@ class Service:
             # container then bind-mounts that directory over the file the app
             # wanted to read — owntracks' frontend-config.js.
             base = Path(path).name
-            is_file = (self.dir / f"{base}.example").exists() or path in self.config_dests()
+            is_file = ((self.dir / f"{base}.example").exists()
+                       or path in self.config_dests()
+                       # Already a file on disk, or declared as one by whichever
+                       # app owns it: a unit may mount a file out of another
+                       # service's volume, and that service's install.ini is the
+                       # only place saying so.
+                       or Path(path).is_file()
+                       or path in config_dests_de_todos())
             out.append((path, is_file))
         return out
 
@@ -1475,6 +1482,29 @@ GRUPOS = {
     "Tools": "Ferramentas",
     "Virtual Machines": "Máquinas Virtuais",
 }
+
+
+_TODOS_CONFIG = None
+
+
+def config_dests_de_todos():
+    """Every [config] destination declared by every app, read once.
+
+    A unit can mount a file that belongs to another service — headplane reads
+    headscale's config.yaml — and only that service's install.ini knows it is a
+    file. Without this, the path is `mkdir -p`'d into a directory with the
+    file's name.
+    """
+    global _TODOS_CONFIG
+    if _TODOS_CONFIG is None:
+        _TODOS_CONFIG = set()
+        for d in sorted(APPS.iterdir()):
+            if d.is_dir():
+                try:
+                    _TODOS_CONFIG |= Service(d.name).config_dests()
+                except Exception:
+                    pass
+    return _TODOS_CONFIG
 
 
 def unit_bytes(source, access, href_local):

@@ -65,14 +65,15 @@ do headscale.
 ## Ele monta a configuração do headscale
 
 ```ini
-Volume=%h/.config/containers/volumes/headscale/config/config.yaml:/etc/headscale/config.yaml:ro,Z
+Volume=%h/.config/containers/volumes/headscale/config:/etc/headscale:ro,Z
 ```
 
 O Headplane lê esse arquivo para saber o formato da tailnet — domínio base,
-prefixos, onde fica o banco. Vem montado somente-leitura e do volume do próprio
-headscale, o que significa que **o headscale precisa estar instalado antes**, ou
-a unit não sobe: bind mount de arquivo inexistente falha, a mesma regra que vale
-pra diretório.
+prefixos, onde fica o banco. A pasta inteira e não só o arquivo: a política de ACL do
+headscale cai ali também, e diretório não deixa dúvida sobre o que o `mkdir -p`
+deve criar. Vem somente-leitura, do volume do próprio headscale, o que
+significa que **o headscale precisa estar instalado antes** — bind mount de
+caminho inexistente falha.
 
 ## O que ela muda e o que não muda
 

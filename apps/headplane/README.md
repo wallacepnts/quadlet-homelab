@@ -64,14 +64,14 @@ itself is headscale's database.
 ## It mounts headscale's config
 
 ```ini
-Volume=%h/.config/containers/volumes/headscale/config/config.yaml:/etc/headscale/config.yaml:ro,Z
+Volume=%h/.config/containers/volumes/headscale/config:/etc/headscale:ro,Z
 ```
 
 Headplane reads it to know the shape of the tailnet — base domain, prefixes,
-where the database is. It is mounted read-only and from headscale's own volume,
-which means **headscale has to be installed first** or the unit will not start:
-a bind mount of a file that does not exist fails, the same rule that applies to
-directories.
+where the database is. The whole folder and not just the file: headscale's policy file lands there
+too, and a directory has no ambiguity about what `mkdir -p` should create. It
+is read-only and comes from headscale's own volume, which means **headscale has
+to be installed first** — a bind mount of a path that does not exist fails.
 
 ## What it can and cannot change
 
