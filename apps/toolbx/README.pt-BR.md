@@ -1,6 +1,6 @@
 # Toolbx
 
-<img src="https://api.iconify.design/mdi/toolbox.svg?color=%23888888" width="64" height="64" alt="">
+<img src="https://cdn.jsdelivr.net/gh/containers/containertoolbx.org@main/apple-touch-icon.png" width="64" height="64" alt="">
 
 **[🇺🇸 Read in English](./README.md)**
 
