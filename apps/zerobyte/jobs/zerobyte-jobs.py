@@ -80,15 +80,16 @@ PT = {
 loc = translator(PT)
 
 def raizes_do_repositorio():
-    """The volume folder names this repository's apps actually use.
+    """Volume folder name -> the app folder that owns it.
 
-    Not the app names: actual-budget writes to volumes/actual, and twelve
+    Not the same string: actual-budget writes to volumes/actual, and twelve
     media-stack units share volumes/media-stack. `Service.volume_roots()`
-    already answers this, so it is imported rather than guessed.
+    already answers this, so it is imported rather than guessed. The mapping
+    and not just the names, because install.ini lives under the app's folder.
     """
     from install import APPS, Service
-    return {pathlib.Path(r).name
-            for d in APPS.iterdir() if d.is_dir()
+    return {pathlib.Path(r).name: d.name
+            for d in sorted(APPS.iterdir()) if d.is_dir()
             for r in Service(d.name).volume_roots()}
 
 
@@ -124,8 +125,9 @@ EXCLUIR_SE = ["CACHEDIR.TAG"]
 RETENCAO = {"keepLast": 3, "keepDaily": 7, "keepWeekly": 4, "keepMonthly": 6}
 # PATCH takes the whole object, so an existing job is read back and sent again.
 CAMPOS = ("name", "volumeId", "repositoryId", "enabled", "cronExpression",
-          "excludePatterns", "excludeIfPresent", "backupWebhooks",
-          "customResticParams", "maxRetries", "retryDelay", "oneFileSystem")
+          "excludePatterns", "excludeIfPresent", "includePaths", "includePatterns",
+          "tags", "backupWebhooks", "customResticParams", "maxRetries",
+          "retryDelay", "oneFileSystem")
 
 
 def api(base, key, caminho, metodo="GET", corpo=None):
@@ -141,9 +143,9 @@ def api(base, key, caminho, metodo="GET", corpo=None):
         raise SystemExit(f"{metodo} {caminho}: HTTP {e.code} — {detalhe}")
 
 
-def modo(pasta):
+def modo(pasta, app):
     """The mode this folder's data needs: declared, or worked out by looking."""
-    ini = APPS / pasta.name / "install.ini"
+    ini = APPS / app / "install.ini"
     if ini.is_file():
         m = re.search(r"(?ms)^\[backup\].*?^mode\s*=\s*(\w+)", ini.read_text())
         if m:
@@ -167,9 +169,9 @@ def modo(pasta):
     return "sqlite" if sqlite else "none"
 
 
-def excluir(nome):
+def excluir(app):
     """This job's exclude patterns: the shared ones, plus the app's own."""
-    ini = APPS / nome / "install.ini"
+    ini = APPS / app / "install.ini"
     if not ini.is_file():
         return list(EXCLUIR)
     # interpolation=None for the same reason install.py does it: the values
@@ -208,9 +210,10 @@ def ajusta_avisos(a, key, job, destinos):
     noise you learn to skip past, and the one that failed goes with it — which
     is how a Mongo went a month reporting `warning` without anyone reading it.
     """
-    atual = {(x["destinationId"], bool(x.get("notifyOnFailure")), bool(x.get("notifyOnWarning")))
+    atual = {(x["destinationId"], bool(x.get("notifyOnStart")), bool(x.get("notifyOnSuccess")),
+              bool(x.get("notifyOnWarning")), bool(x.get("notifyOnFailure")))
              for x in (api(a.url, key, f"backups/{job['shortId']}/notifications") or [])}
-    if atual == {(d, True, True) for d in destinos}:
+    if atual == {(d, False, False, True, True) for d in destinos}:
         return ""
     if a.apply:
         api(a.url, key, f"backups/{job['shortId']}/notifications", "PUT",
@@ -296,23 +299,26 @@ def main():
         if pasta.name not in conhecidas:
             alheias.append(pasta.name)
             continue
-        nome, m = pasta.name, modo(pasta)
+        app = conhecidas[pasta.name]
+        nome, m = pasta.name, modo(pasta, app)
         if m != "none":
             allowlist.append(f"{nome}:{m}")
-        if nome in jobs:
-            print(f"  {nome:24} " + loc("job already exists")
-                  + ajusta_job(a, key, jobs[nome], excluir(nome)))
-            continue
-        if m != "none" and not token:
-            print(f"  {nome:24} " + loc("needs the hook") + f" ({m}), " + loc("but there is no token — skipping"))
-            continue
         if m == "stop" and not any(UNITS.rglob(f"{nome}.container")):
             # `stop` is `systemctl stop <name>`, so the folder name has to BE a
             # unit. media-stack is the case that is not: twelve units share the
             # directory, and one of them (dispatcharr) carries a Postgres. No
             # single hook call is right there, so this asks instead of guessing.
+            # Checked before the job exists: one declared by hand was tuned by
+            # hand, and rewriting its excludes and retention would undo that.
             print(f"  {nome:24} " + loc("needs stop, but there is no unit")
                   + f" `{nome}` — " + loc("declare this job by hand"))
+            continue
+        if nome in jobs:
+            print(f"  {nome:24} " + loc("job already exists")
+                  + ajusta_job(a, key, jobs[nome], excluir(app)))
+            continue
+        if m != "none" and not token:
+            print(f"  {nome:24} " + loc("needs the hook") + f" ({m}), " + loc("but there is no token — skipping"))
             continue
         alvo = f"/sources/volumes/{nome}"
         print(f"  {nome:24} {loc('volume')} {alvo}  |  {loc('mode')} {m}")
@@ -328,7 +334,7 @@ def main():
         vid = volumes[nome]
         corpo = {"name": nome, "volumeId": vid, "repositoryId": repo,
                  "enabled": True, "cronExpression": a.cron,
-                 "excludePatterns": excluir(nome), "excludeIfPresent": list(EXCLUIR_SE),
+                 "excludePatterns": excluir(app), "excludeIfPresent": list(EXCLUIR_SE),
                  "retentionPolicy": dict(RETENCAO)}
         if m != "none":
             corpo["backupWebhooks"] = ganchos(nome, a.hook_port, token)
@@ -364,7 +370,7 @@ def main():
     # would leave yesterday's mirrors in place, so the flag would turn nothing
     # off — and turning them off by hand is job by job, through the interface.
     todos = api(a.url, key, "backups")
-    destinos = [d["id"] for d in api(a.url, key, "notifications/destinations")]
+    destinos = [d["id"] for d in api(a.url, key, "notifications/destinations") or []]
     if destinos:
         mudou = sum(1 for b in todos if ajusta_avisos(a, key, b, destinos))
         print(f"\n{loc('alerting on failure')}: {len(destinos)} → {mudou} job(s)")
@@ -379,8 +385,12 @@ def main():
         for b in todos:
             if not a.apply:
                 continue
+            # 4. enabled too: a mirror switched off in the interface is a
+            # difference, and has to be switched back on rather than reported
+            # as mirroring while it copies nothing.
             atual = {m["repositoryId"]
-                     for m in api(a.url, key, f"backups/{b['shortId']}/mirrors")}
+                     for m in api(a.url, key, f"backups/{b['shortId']}/mirrors") or []
+                     if m.get("enabled")}
             if atual == alvo:  # same rule as the jobs: a second run changes nothing
                 continue
             api(a.url, key, f"backups/{b['shortId']}/mirrors", "PUT",
@@ -395,7 +405,7 @@ def main():
                     # The `{}` matters: the endpoint takes no arguments, but
                     # rejects a JSON content type with no body ("Malformed body").
                     api(a.url, key, f"backups/{b['shortId']}/mirrors/{r}/sync", "POST", {})
-                except SystemExit as e:
+                except (SystemExit, OSError) as e:
                     print(f"  {b['name']:24} {loc('first copy failed')}: {e}")
 
     if alheias:
