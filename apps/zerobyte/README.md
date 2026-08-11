@@ -165,6 +165,17 @@ or paper.
 
 ### Alerts
 
+Its origin has to be in `WEBHOOK_ALLOWED_ORIGINS` in the `.env`, next to the
+hook's — Zerobyte refuses to call a URL it was not told about, and says so.
+With [ntfy](../ntfy) that is `http://ntfy:2586`, reached by container name over
+`tsdproxy-net`, and it needs a token: ntfy here denies by default.
+
+```bash
+podman exec ntfy ntfy user add zerobyte          # a publisher, not an admin
+podman exec ntfy ntfy access zerobyte backups write-only
+podman exec ntfy ntfy token add zerobyte         # goes in the destination
+```
+
 A destination created once in **Settings → Notifications** (ntfy, e-mail,
 Telegram, Gotify, Discord, Slack) is wired to every job by the same command, on
 failure and on warning. Not on success: twelve "it worked" messages a night is

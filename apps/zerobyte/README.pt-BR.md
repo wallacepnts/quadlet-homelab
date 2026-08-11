@@ -164,6 +164,18 @@ senhas, ou no papel.
 
 ### Avisos
 
+A origem dele precisa estar no `WEBHOOK_ALLOWED_ORIGINS` do `.env`, junto com
+a do gancho — o Zerobyte recusa chamar URL que não lhe foi declarada, e avisa.
+Com o [ntfy](../ntfy/README.pt-BR.md) isso é `http://ntfy:2586`, alcançado pelo
+nome do container na `tsdproxy-net`, e exige token: o ntfy daqui nega por
+padrão.
+
+```bash
+podman exec ntfy ntfy user add zerobyte          # publicador, não admin
+podman exec ntfy ntfy access zerobyte backups write-only
+podman exec ntfy ntfy token add zerobyte         # vai no destino
+```
+
 Destino criado uma vez em **Settings → Notifications** (ntfy, e-mail, Telegram,
 Gotify, Discord, Slack) é ligado em todos os jobs pelo mesmo comando, em falha e
 em aviso. Em sucesso não: doze mensagens de "deu certo" por noite viram ruído
