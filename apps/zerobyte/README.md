@@ -129,6 +129,21 @@ that list gets a 404 and fails. A folder that is not one of this repository's
 services is listed and left alone. Running it again changes nothing: jobs are
 matched by name.
 
+Every job excludes `*.tmp`, `*.partial`, `lost+found`, `.Trash-*` and any
+directory carrying a `CACHEDIR.TAG`. The list is short because the disposable
+files measured across the real volumes add up to single-digit megabytes — a
+longer guessed list would only add ways to drop something that mattered. What
+an app knows about its own data goes in its `install.ini`:
+
+```ini
+[backup]
+exclude =
+    repositories
+```
+
+That is zerobyte's own, and it is worth 15 MB a night: a repository created
+through the interface lands inside the volume this job backs up.
+
 A `secrets` job covers `~/.config/containers/secrets` — a volume restored
 without them gives a service that starts and does not work.
 

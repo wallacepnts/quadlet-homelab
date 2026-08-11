@@ -128,6 +128,21 @@ Ele avisa em vez de fazer, em dois casos: `stop` sem unit com aquele nome (o
 recebe 404 e falha. Pasta que não é de um serviço daqui é listada e deixada em
 paz. Rodar de novo não muda nada: os jobs são casados pelo nome.
 
+Todo job exclui `*.tmp`, `*.partial`, `lost+found`, `.Trash-*` e qualquer
+diretório com um `CACHEDIR.TAG`. A lista é curta porque o descartável medido
+nos volumes reais dá poucos megabytes — lista longa e chutada só acrescentaria
+formas de perder algo que importava. O que o app sabe sobre o próprio dado vai
+no `install.ini` dele:
+
+```ini
+[backup]
+exclude =
+    repositories
+```
+
+Essa é a do próprio zerobyte, e vale 15 MB por noite: repositório criado pela
+interface cai dentro do volume de que este job faz backup.
+
 Um job `secrets` cobre o `~/.config/containers/secrets` — volume restaurado sem
 eles dá serviço que sobe e não funciona.
 

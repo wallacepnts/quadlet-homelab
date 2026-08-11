@@ -23,6 +23,7 @@ Run it as `qh --zerobyte`: it reads which volume folders are this repository's
 from install.py, so it only works from inside the repository.
 """
 import argparse
+import configparser
 import json
 import os
 import pathlib
@@ -64,6 +65,7 @@ PT = {
     "mirroring": "espelhando",
     "clearing the mirrors on every job": "tirando o espelho de todos os jobs",
     "first copy failed": "a primeira cópia falhou",
+    "excludes updated": "exclusões atualizadas",
     "repository(ies) on every job": "repositório(s) em cada job",
     "outside this repository, left alone": "fora deste repositório, não tocadas",
     "ZEROBYTE_HOOK_UNITS must include these, or the jobs fail:":
@@ -104,6 +106,17 @@ MARCAS = {
     "ibdata1": "mysql/mariadb",
     "WiredTiger": "mongo",
 }
+# Excluded from every job. Short on purpose: measured across the real volumes,
+# the disposable directories add up to single-digit megabytes, so a long list
+# of guessed patterns would only add ways to drop something that mattered. What
+# an app knows about its own data goes in its install.ini, under [backup].
+EXCLUIR = ["*.tmp", "*.partial", "lost+found", ".Trash-*"]
+# restic's own convention: a directory carrying this file is a cache.
+EXCLUIR_SE = ["CACHEDIR.TAG"]
+# PATCH takes the whole object, so an existing job is read back and sent again.
+CAMPOS = ("name", "volumeId", "repositoryId", "enabled", "cronExpression",
+          "excludePatterns", "excludeIfPresent", "backupWebhooks",
+          "customResticParams", "maxRetries", "retryDelay", "oneFileSystem")
 
 
 def api(base, key, caminho, metodo="GET", corpo=None):
@@ -143,6 +156,36 @@ def modo(pasta):
         # answer is the safe one.
         return "stop"
     return "sqlite" if sqlite else "none"
+
+
+def excluir(nome):
+    """This job's exclude patterns: the shared ones, plus the app's own."""
+    ini = APPS / nome / "install.ini"
+    if not ini.is_file():
+        return list(EXCLUIR)
+    # interpolation=None for the same reason install.py does it: the values
+    # carry %h, a systemd specifier that configparser would try to expand.
+    cp = configparser.ConfigParser(interpolation=None)
+    cp.read(ini)
+    bruto = cp.get("backup", "exclude", fallback="")
+    return EXCLUIR + [l.strip() for l in bruto.splitlines() if l.strip()]
+
+
+def ajusta_exclusoes(a, key, job, padroes):
+    """Bring an existing job's exclude lists up to date.
+
+    A body with only the two fields is refused (`expected string, path:
+    repositoryId`), so the job is sent back whole with those two replaced.
+    """
+    if (job.get("excludePatterns") == padroes
+            and job.get("excludeIfPresent") == EXCLUIR_SE):
+        return ""
+    if a.apply:
+        corpo = {k: job[k] for k in CAMPOS if job.get(k) is not None}
+        corpo["excludePatterns"] = padroes
+        corpo["excludeIfPresent"] = list(EXCLUIR_SE)
+        api(a.url, key, f"backups/{job['shortId']}", "PATCH", corpo)
+    return "  |  " + loc("excludes updated")
 
 
 def ganchos(nome, porta, token):
@@ -208,7 +251,7 @@ def main():
 
     # shortId by name, so a second run changes nothing
     volumes = {v["name"]: v["shortId"] for v in api(a.url, key, "volumes")}
-    jobs = {b["name"] for b in api(a.url, key, "backups")}
+    jobs = {b["name"]: b for b in api(a.url, key, "backups")}
 
     pastas = sorted(p for p in VOLUMES.iterdir() if p.is_dir()) if VOLUMES.is_dir() else []
     conhecidas = raizes_do_repositorio()
@@ -225,7 +268,8 @@ def main():
         if m != "none":
             allowlist.append(f"{nome}:{m}")
         if nome in jobs:
-            print(f"  {nome:24} " + loc("job already exists"))
+            print(f"  {nome:24} " + loc("job already exists")
+                  + ajusta_exclusoes(a, key, jobs[nome], excluir(nome)))
             continue
         if m != "none" and not token:
             print(f"  {nome:24} " + loc("needs the hook") + f" ({m}), " + loc("but there is no token — skipping"))
@@ -251,7 +295,8 @@ def main():
             volumes = {v["name"]: v["shortId"] for v in api(a.url, key, "volumes")}
         vid = volumes[nome]
         corpo = {"name": nome, "volumeId": vid, "repositoryId": repo,
-                 "enabled": True, "cronExpression": a.cron}
+                 "enabled": True, "cronExpression": a.cron,
+                 "excludePatterns": excluir(nome), "excludeIfPresent": list(EXCLUIR_SE)}
         if m != "none":
             corpo["backupWebhooks"] = ganchos(nome, a.hook_port, token)
         api(a.url, key, "backups", "POST", corpo)
@@ -275,9 +320,11 @@ def main():
                 volumes = {v["name"]: v["shortId"] for v in api(a.url, key, "volumes")}
             api(a.url, key, "backups", "POST",
                 {"name": "secrets", "volumeId": volumes["secrets"], "repositoryId": repo,
-                 "enabled": True, "cronExpression": a.cron})
+                 "enabled": True, "cronExpression": a.cron,
+                 "excludePatterns": list(EXCLUIR), "excludeIfPresent": list(EXCLUIR_SE)})
     elif "secrets" in jobs:
-        print(f"  {'secrets':24} " + loc("job already exists"))
+        print(f"  {'secrets':24} " + loc("job already exists")
+              + ajusta_exclusoes(a, key, jobs["secrets"], list(EXCLUIR)))
 
     # --no-mirror writes an empty list rather than skipping the step: skipping
     # would leave yesterday's mirrors in place, so the flag would turn nothing
