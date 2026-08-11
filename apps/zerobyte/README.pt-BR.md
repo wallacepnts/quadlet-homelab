@@ -162,6 +162,14 @@ eles dá serviço que sobe e não funciona.
 `secrets/`, que agora mora *dentro* do que ela destranca: num gerenciador de
 senhas, ou no papel.
 
+### Avisos
+
+Destino criado uma vez em **Settings → Notifications** (ntfy, e-mail, Telegram,
+Gotify, Discord, Slack) é ligado em todos os jobs pelo mesmo comando, em falha e
+em aviso. Em sucesso não: doze mensagens de "deu certo" por noite viram ruído
+que você aprende a pular, e a que falhou vai junto — foi assim que um Mongo
+passou um mês reportando `warning` sem ninguém ler.
+
 ### Mais de um repositório
 
 Com dois ou mais cadastrados, diga qual roda o backup; os outros viram espelho

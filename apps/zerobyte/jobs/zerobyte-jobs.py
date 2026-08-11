@@ -66,6 +66,10 @@ PT = {
     "clearing the mirrors on every job": "tirando o espelho de todos os jobs",
     "first copy failed": "a primeira cópia falhou",
     "settings updated": "ajustes atualizados",
+    "alerts wired": "avisos ligados",
+    "alerting on failure": "avisando em falha, destinos",
+    "no notification destination: create one in Settings -> Notifications":
+        "nenhum destino de notificação: crie um em Settings -> Notifications",
     "repository(ies) on every job": "repositório(s) em cada job",
     "outside this repository, left alone": "fora deste repositório, não tocadas",
     "ZEROBYTE_HOOK_UNITS must include these, or the jobs fail:":
@@ -195,6 +199,25 @@ def ajusta_job(a, key, job, padroes):
         corpo["retentionPolicy"] = dict(RETENCAO)
         api(a.url, key, f"backups/{job['shortId']}", "PATCH", corpo)
     return "  |  " + loc("settings updated")
+
+
+def ajusta_avisos(a, key, job, destinos):
+    """Point every notification destination at this job.
+
+    On failure and on warning only. Twelve "it worked" messages a night is
+    noise you learn to skip past, and the one that failed goes with it — which
+    is how a Mongo went a month reporting `warning` without anyone reading it.
+    """
+    atual = {(x["destinationId"], bool(x.get("notifyOnFailure")), bool(x.get("notifyOnWarning")))
+             for x in (api(a.url, key, f"backups/{job['shortId']}/notifications") or [])}
+    if atual == {(d, True, True) for d in destinos}:
+        return ""
+    if a.apply:
+        api(a.url, key, f"backups/{job['shortId']}/notifications", "PUT",
+            {"assignments": [{"destinationId": d, "notifyOnStart": False,
+                              "notifyOnSuccess": False, "notifyOnWarning": True,
+                              "notifyOnFailure": True} for d in destinos]})
+    return "  |  " + loc("alerts wired")
 
 
 def ganchos(nome, porta, token):
@@ -340,11 +363,20 @@ def main():
     # --no-mirror writes an empty list rather than skipping the step: skipping
     # would leave yesterday's mirrors in place, so the flag would turn nothing
     # off — and turning them off by hand is job by job, through the interface.
+    todos = api(a.url, key, "backups")
+    destinos = [d["id"] for d in api(a.url, key, "notifications/destinations")]
+    if destinos:
+        mudou = sum(1 for b in todos if ajusta_avisos(a, key, b, destinos))
+        print(f"\n{loc('alerting on failure')}: {len(destinos)} → {mudou} job(s)")
+    else:
+        # Without one, a failed job is only visible to whoever goes looking.
+        print(f"\n{loc('no notification destination: create one in Settings -> Notifications')}")
+
     if espelhos or a.no_mirror:
         alvo = set() if a.no_mirror else set(espelhos)
         print(f"\n{loc('clearing the mirrors on every job')}" if a.no_mirror else
               f"\n{loc('mirroring')} {len(espelhos)} {loc('repository(ies) on every job')}")
-        for b in api(a.url, key, "backups"):
+        for b in todos:
             if not a.apply:
                 continue
             atual = {m["repositoryId"]

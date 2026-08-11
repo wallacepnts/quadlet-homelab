@@ -163,6 +163,14 @@ without them gives a service that starts and does not work.
 `secrets/`, which now lives *inside* the thing it unlocks: a password manager,
 or paper.
 
+### Alerts
+
+A destination created once in **Settings → Notifications** (ntfy, e-mail,
+Telegram, Gotify, Discord, Slack) is wired to every job by the same command, on
+failure and on warning. Not on success: twelve "it worked" messages a night is
+noise you learn to skip, and the one that failed goes with it — which is how a
+Mongo can spend a month reporting `warning` with nobody reading it.
+
 ### More than one repository
 
 With two or more registered, say which one runs the backup; the others become
