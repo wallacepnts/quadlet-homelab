@@ -2,7 +2,7 @@
 
 **[🇺🇸 Read in English](../../README.md)**
 
-72 serviços self-hosted como units do [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html),
+69 serviços self-hosted como units do [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html),
 rootless, um serviço por pasta.
 
 ## Início rápido
@@ -69,7 +69,7 @@ use `--reinstall`.
 ## Requisitos
 
 - **Podman 5.0 ou mais novo.** É a régua de verdade: o `Notify=healthy` chegou
-  nessa versão, e 100 das 108 units usam. No 4.x o start volta antes de o app
+  nessa versão, e 97 das 105 units usam. No 4.x o start volta antes de o app
   estar pronto, e a instalação relata um sucesso que ela não tem como saber.
 - **systemd com sessão de usuário** e cgroups v2.
 - **SELinux**, se a sua distribuição tiver. As units trazem `:Z` em 125 linhas
@@ -112,7 +112,6 @@ aqui.
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/authentik.svg" width="48" height="48" alt=""> | [Authentik](../../apps/authentik/README.pt-BR.md) | `2026.5.6` | Servidor de identidade (SSO, MFA, OIDC/SAML) — só o core implantado, sem forward-auth via tsdproxy ainda (ver README) |
 | <img src="https://api.iconify.design/mdi/check-circle-outline.svg?color=%23888888" width="48" height="48" alt=""> | [Beaver Habits](../../apps/beaverhabits/README.pt-BR.md) | `0.10.0` | Acompanhamento de hábitos sem metas e sem cobrança de sequência — você marca o dia e segue |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/beszel.svg" width="48" height="48" alt=""> | [Beszel](../../apps/beszel/README.pt-BR.md) | `0.18.7` | Dashboard leve de monitoramento de recursos (CPU/RAM/disco/rede/containers) deste host |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/caddy.svg" width="48" height="48" alt=""> | [Caddy](../../apps/caddy/README.pt-BR.md) | `2.11.4-alpine` | TLS e roteamento para nomes seus, assinados por uma autoridade sua |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/calibre-web.svg" width="48" height="48" alt=""> | [Calibre-Web-Automated](../../apps/calibre-web-automated/README.pt-BR.md) | `v4.0.6` | Biblioteca de ebooks com conversão, metadados e capas automáticas via Calibre, com leitura direto no navegador |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/changedetection.svg" width="48" height="48" alt=""> | [changedetection.io](../../apps/changedetection/README.pt-BR.md) | `0.55.8` | Vigia páginas e avisa o que mudou — preço, estoque, um parágrafo de termos de uso |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/collabora-online.svg" width="48" height="48" alt=""> | [Collabora](../../apps/collabora/README.pt-BR.md) | `26.04.3.1.1` | Edição de documentos dentro do ownCloud — texto, planilha e slides, no navegador |
@@ -130,8 +129,6 @@ aqui.
 | <img src="https://cdn.jsdelivr.net/gh/NousResearch/hermes-agent@main/website/static/img/logo.png" width="48" height="48" alt=""> | [Hermes Agent](../../apps/hermes-agent/README.pt-BR.md) | `v2026.8.3` | Agente de IA pessoal com habilidades e memória, expondo uma API compatível com a da OpenAI pros outros serviços chamarem |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/homebox.svg" width="48" height="48" alt=""> | [HomeBox](../../apps/homebox/README.pt-BR.md) | `0.26.2` | Inventário doméstico — o que você tem, onde está, nota fiscal, manual e garantia, com busca e etiquetas |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/grafana.svg" width="48" height="48" alt=""> | [Grafana](../../apps/grafana/README.pt-BR.md) | `13.1.3` | Painéis sobre o que você apontar — ele não traz dado nenhum próprio |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/headscale.svg" width="48" height="48" alt=""> | [Headscale](../../apps/headscale/README.pt-BR.md) | `v0.29.3` | Seu próprio control plane da tailnet — a coordenação, sem a empresa |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/headscale.svg" width="48" height="48" alt=""> | [Headplane](../../apps/headplane/README.pt-BR.md) | `0.7.0` | A interface web que o Headscale não traz — nós, usuários e ACLs numa tela |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/home-assistant.svg" width="48" height="48" alt=""> | [Home Assistant](../../apps/home-assistant/README.pt-BR.md) | `2026.8.1` | Hub central de automação residencial, integra dispositivos de qualquer fabricante num painel só |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/homepage.png" width="48" height="48" alt=""> | [homepage](../../apps/homepage/README.pt-BR.md) | `latest` (auto-update) | Dashboard que descobre e organiza os outros containers sozinho via labels, sem editar config a cada serviço novo |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/immich.svg" width="48" height="48" alt=""> | [Immich](../../apps/immich/README.pt-BR.md) | `v3.1.0` | Backup e organização de fotos/vídeos, com reconhecimento facial e busca smart |
@@ -241,5 +238,4 @@ convidado da mesma arquitetura. O `apps/vm` traz `vm-windows` pra x86_64 e
 | [Recuperação e migração](./recuperacao.md) | a máquina morreu, ou você está mudando de host |
 | [Referência](./referencia.md) | onde cada arquivo mora, e um `.container` anotado |
 | [Auto-update](./auto-update.md) | por que quase tudo atualiza na mão |
-| [Uma tailnet sua](./tailnet-propria.md) | headscale, headplane e Caddy, ao lado do Tailscale que você já roda |
 | [Ferramentas](./ferramentas.md) | `qh-check` e `qh-updates` |

@@ -10,17 +10,8 @@ PidsLimit=256
 Image=docker.io/adguard/adguardhome:v0.107.78
 ContainerName=adguardhome
 Network=tsdproxy-net.network
-# One address, never 0.0.0.0: that one includes the container network's own
-# gateway, where aardvark-dns answers, and publishing over it breaks name
-# resolution between every container on the host — measured, and it took the
-# whole host's inter-container DNS down with it.
-#
-# ${AGH_DNS_BIND} comes from ~/.config/environment.d/adguardhome.conf (rule 19
-# of the conventions). Set it to the address the clients ask, usually the
-# host's tailnet one. Without the file the unit will not start, which is the
-# loud failure to prefer here.
-PublishPort=${AGH_DNS_BIND}:53:53/tcp
-PublishPort=${AGH_DNS_BIND}:53:53/udp
+PublishPort=5335:53/tcp
+PublishPort=5335:53/udp
 PublishPort=3006:3000/tcp
 
 Volume=%h/.config/containers/volumes/adguardhome/conf:/opt/adguardhome/conf:Z

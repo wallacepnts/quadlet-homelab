@@ -95,27 +95,15 @@ Sai com código diferente de zero quando há algo precisando de atenção.
 Escolhida uma vez, seguida por toda instalação e atualização:
 
 ```bash
-qh --set-access tailnet     # local | tailnet | both | headscale
+qh --set-access tailnet     # local | tailnet | both
 qh                          # mostra a regra em vigor
 ```
 
-| regra | alcançável em | tsdproxy | porta na LAN |
-| --- | --- | --- | --- |
-| `local` | `http://<ip-do-host>:<porta>` | labels comentados | aberta |
-| `tailnet` | `https://<app>.<your-tailnet>.ts.net` | ligado | **fechada** |
-| `both` | qualquer um dos dois | ligado | aberta |
-| `headscale` | `https://<app>.qh` | labels comentados | **fechada** |
-
-O `headscale` é para uma tailnet sua: sem tsdproxy, sem porta na LAN, e o
-[Caddy](../../apps/caddy/README.pt-BR.md) na frente respondendo por um nome que
-você escolheu, assinado pela autoridade dele. Cada instalação imprime o bloco
-do Caddyfile para colar. O sufixo é `qh`, salvo se você disser outro:
-
-```bash
-qh --set-domain casa
-```
-
-A montagem inteira está em [Uma tailnet sua](./tailnet-propria.md).
+| regra | tsdproxy | porta na LAN |
+| --- | --- | --- |
+| `local` | labels comentados | aberta |
+| `tailnet` | ligado | **fechada** |
+| `both` | ligado | aberta |
 
 
 O `qh` informa quantos serviços instalados não a seguem, e o comando que os

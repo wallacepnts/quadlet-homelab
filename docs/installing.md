@@ -96,27 +96,15 @@ what `qh-updates` is for. It exits non-zero when anything needs attention.
 Chosen once, followed by every install and update:
 
 ```bash
-qh --set-access tailnet     # local | tailnet | both | headscale
+qh --set-access tailnet     # local | tailnet | both
 qh                          # shows the rule in force
 ```
 
-| rule | reachable at | tsdproxy | LAN port |
-| --- | --- | --- | --- |
-| `local` | `http://<host-ip>:<port>` | labels commented out | open |
-| `tailnet` | `https://<app>.<tailnet>.ts.net` | on | **closed** |
-| `both` | either | on | open |
-| `headscale` | `https://<app>.qh` | labels commented out | **closed** |
-
-`headscale` is for a tailnet of your own: no tsdproxy, no port on the LAN, and
-[Caddy](../apps/caddy) in front answering a name you chose, signed by its own
-authority. Each install prints the Caddyfile block to paste. The suffix is
-`qh` unless you say otherwise:
-
-```bash
-qh --set-domain casa
-```
-
-The whole setup is in [A tailnet of your own](./self-hosted-tailnet.md).
+| rule | tsdproxy | LAN port |
+| --- | --- | --- |
+| `local` | labels commented out | open |
+| `tailnet` | on | **closed** |
+| `both` | on | open |
 
 `qh` reports how many installed services do not follow it, and the command
 that brings them in line — a rule that only applied to the next install would
