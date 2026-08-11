@@ -13,6 +13,7 @@ Exits 1 if there is any error, 0 if there are only warnings.
 No dependencies: stdlib only, so it runs on the immutable host as-is.
 """
 
+import configparser
 import re
 import sys
 from collections import defaultdict
@@ -318,6 +319,24 @@ def check_tailnet():
                                  f"public; use ${{TAILNET}} or <your-tailnet>")
 
 
+def check_config_sources():
+    """A [config] line whose source is missing is a step that never runs.
+
+    install.py skips it without a word, and the service starts with no
+    configuration — caddy did, and only the container's own error said so.
+    """
+    for ini in sorted(APPS.glob("*/install.ini")):
+        cp = configparser.ConfigParser(interpolation=None)
+        cp.optionxform = str
+        cp.read(ini)
+        if not cp.has_section("config"):
+            continue
+        for origem, _ in cp.items("config"):
+            if not (ini.parent / origem).exists():
+                error("config", f"{ini.relative_to(ROOT)}: [config] names "
+                                f"`{origem}`, which does not exist")
+
+
 def check_counts(folders):
     """The counts the READMEs open with, against what the folder actually holds.
 
@@ -442,6 +461,7 @@ def main():
     check_units(folders)
     uses = check_ports(folders)
     check_manifest(folders)
+    check_config_sources()
     check_counts(folders)
     check_table(folders)
     check_tailnet()

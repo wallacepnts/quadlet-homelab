@@ -443,6 +443,10 @@ class Service:
         # interpolation=None: the values use %h (a systemd specifier) and %s
         # (printf), which configparser's interpolator would try to expand.
         self.ini = configparser.ConfigParser(interpolation=None)
+        # Keys keep their case: configparser lower-cases them by default, and a
+        # [config] source like `config/Caddyfile` then points at a file that
+        # does not exist — the step is dropped without a word.
+        self.ini.optionxform = str
         self.ini.read(self.dir / "install.ini")
 
         self.units = sorted(self.dir.glob("*.container")) + sorted(self.dir.glob("*.network"))
