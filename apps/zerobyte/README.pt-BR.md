@@ -132,9 +132,13 @@ O modo sai do dado: SQLite vira `sqlite`, marca de Postgres ou Mongo vira
 `stop`, o resto não precisa de gancho. Pasta que ele não consegue ler também
 conta como `stop` — é dado de container com uid mapeado.
 
-Ele avisa em vez de fazer, em dois casos: `stop` sem unit com aquele nome (o
-`media-stack`, cujas doze units dividem um diretório), e o
-`ZEROBYTE_HOOK_UNITS`, que ele imprime mas não edita — job fora dessa lista
+`stop` numa pasta sem unit própria para a stack inteira: a regra 1 prefixa toda
+unit de uma stack com o nome do app, então `media-stack` quer dizer as doze
+`media-stack-*`. Doze paradas levam mais que os 60 segundos de timeout padrão
+do Zerobyte, e é por isso que o `WEBHOOK_TIMEOUT=180` está no `.env`.
+
+Ele avisa em vez de fazer quando unit nenhuma atende por aquele nome, e no caso
+do `ZEROBYTE_HOOK_UNITS`, que ele imprime mas não edita — job fora dessa lista
 recebe 404 e falha. Pasta que não é de um serviço daqui é listada e deixada em
 paz. Rodar de novo não muda nada: os jobs são casados pelo nome.
 

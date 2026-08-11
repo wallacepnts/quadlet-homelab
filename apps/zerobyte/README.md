@@ -132,8 +132,12 @@ The mode comes from the data: SQLite means `sqlite`, a Postgres or Mongo
 fingerprint means `stop`, anything else needs no hook. A folder it cannot read
 counts as `stop` too — that is a container's data owned by a mapped uid.
 
-It reports instead of acting in two cases: `stop` with no unit of that name
-(`media-stack`, whose twelve units share one directory), and
+`stop` on a folder with no unit of its own stops the stack instead: rule 1
+prefixes every unit of a stack with the app's name, so `media-stack` means the
+twelve `media-stack-*` units. Twelve stops take longer than Zerobyte's default
+60-second webhook timeout, which is why `WEBHOOK_TIMEOUT=180` is in the `.env`.
+
+It reports instead of acting when no unit answers to that name at all, and for
 `ZEROBYTE_HOOK_UNITS`, which it prints but does not edit — a job missing from
 that list gets a 404 and fails. A folder that is not one of this repository's
 services is listed and left alone. Running it again changes nothing: jobs are

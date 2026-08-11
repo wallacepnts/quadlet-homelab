@@ -1403,6 +1403,8 @@ DESCRICOES = {
     "Network-wide ad and tracker blocking over DNS": "Bloqueio de anúncios e rastreadores por DNS, para a rede toda",
     "NVR with AI object detection": "NVR com detecção de objetos por IA",
     "Offline converters, generators and calculators — everything runs in the browser": "Conversores, geradores e calculadoras offline — tudo roda no navegador",
+    "Keeps the Ferdium desktop app in sync, in place of a Franz account":
+        "Mantém o Ferdium desktop sincronizado, no lugar de uma conta Franz",
     "Watches web pages and tells you what changed, without an account anywhere":
         "Vigia páginas e avisa o que mudou, sem conta em lugar nenhum",
     "Editing documents inside ownCloud, with no cloud in between":

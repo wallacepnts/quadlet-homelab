@@ -71,6 +71,23 @@ def load_token() -> str:
         return f.read().strip()
 
 
+def units_for(name: str) -> list:
+    """The units this name stands for.
+
+    Usually one, of the same name. media-stack is the exception the whole
+    repository is built around: rule 1 makes every unit of a stack start with
+    the app's name, so twelve `media-stack-*` units share one volume folder and
+    there is no `media-stack.service` to stop. Stopping the prefix covers them
+    without naming each one here, and a name that owns nothing stops nothing.
+    """
+    name = name[:-len(".service")] if name.endswith(".service") else name
+    exato = systemctl("list-unit-files", f"{name}.service", "--no-legend", timeout=15)
+    if f"{name}.service" in exato.stdout:
+        return [name]
+    achadas = systemctl("list-unit-files", f"{name}-*.service", "--no-legend", timeout=15)
+    return [l.split()[0][:-len(".service")] for l in achadas.stdout.splitlines() if l.strip()]
+
+
 def systemctl(*args: str, timeout: int) -> subprocess.CompletedProcess:
     return subprocess.run(
         ["systemctl", "--user", *args],
@@ -188,8 +205,12 @@ class Handler(BaseHTTPRequestHandler):
         # Blocking on purpose: Zerobyte only runs Restic after a 2xx here,
         # so the response MUST wait for the stop to really finish
         # (systemctl --user stop already blocks until it has stopped).
+        alvos = units_for(unit)
+        if not alvos:
+            self._send_json(500, {"error": "no unit to stop", "unit": unit})
+            return
         try:
-            result = systemctl("stop", unit, timeout=STOP_TIMEOUT)
+            result = systemctl("stop", *alvos, timeout=STOP_TIMEOUT)
         except subprocess.TimeoutExpired:
             self._send_json(500, {"error": "timeout stopping units"})
             return
@@ -197,7 +218,7 @@ class Handler(BaseHTTPRequestHandler):
             print(f"stop failed: {result.stderr}", file=sys.stderr)
             self._send_json(500, {"error": "stop failed", "detail": result.stderr})
             return
-        self._send_json(200, {"ok": True, "action": "stopped", "unit": unit})
+        self._send_json(200, {"ok": True, "action": "stopped", "units": alvos})
 
     def _handle_post(self, unit: str) -> None:
         # Non-blocking on purpose: the container uses Notify=healthy, so
@@ -207,12 +228,13 @@ class Handler(BaseHTTPRequestHandler):
         # which has already run), so it is better to answer straight away and
         # let the restart happen in the background than to risk the webhook
         # blowing the timeout with the container still stopped.
+        alvos = units_for(unit)
         subprocess.Popen(
-            ["systemctl", "--user", "start", unit],
+            ["systemctl", "--user", "start", *alvos],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
-        self._send_json(200, {"ok": True, "action": "start triggered", "unit": unit})
+        self._send_json(200, {"ok": True, "action": "start triggered", "units": alvos})
 
     def log_message(self, fmt: str, *args) -> None:
         sys.stderr.write("%s - %s\n" % (self.address_string(), fmt % args))

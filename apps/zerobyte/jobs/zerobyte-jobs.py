@@ -319,13 +319,13 @@ def main():
         nome, m = pasta.name, modo(pasta, app)
         if m != "none":
             allowlist.append(f"{nome}:{m}")
-        if m == "stop" and not any(UNITS.rglob(f"{nome}.container")):
-            # `stop` is `systemctl stop <name>`, so the folder name has to BE a
-            # unit. media-stack is the case that is not: twelve units share the
-            # directory, and one of them (dispatcharr) carries a Postgres. No
-            # single hook call is right there, so this asks instead of guessing.
-            # Checked before the job exists: one declared by hand was tuned by
-            # hand, and rewriting its excludes and retention would undo that.
+        if m == "stop" and not any(UNITS.rglob(f"{nome}.container")) \
+                and not any(UNITS.rglob(f"{nome}-*.container")):
+            # `stop` is `systemctl stop`, so the folder name has to name units.
+            # Either one of its own, or a stack's — rule 1 prefixes every unit
+            # of a stack with the app's name, and the hook stops the prefix.
+            # Neither means there is nothing to quiesce, and copying whatever
+            # is in there hot is exactly what this refuses to guess at.
             print(f"  {nome:24} " + loc("needs stop, but there is no unit")
                   + f" `{nome}` — " + loc("declare this job by hand"))
             continue
