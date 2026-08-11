@@ -34,7 +34,7 @@ Label=tsdproxy.dash.icon=si/ghost
 
 Label=homepage.group=Productivity
 Label=homepage.name=Ghost
-Label=homepage.icon=si-ghost
+Label=homepage.icon=https://cdn.jsdelivr.net/gh/selfhst/icons/webp/ghost.webp
 Label=homepage.href=https://ghost.${TAILNET}.ts.net
 Label=homepage.description="Self-hosted blog/newsletter (SQLite, development mode)"
 

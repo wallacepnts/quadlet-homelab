@@ -1,6 +1,6 @@
 # Ghost
 
-<img src="https://cdn.simpleicons.org/ghost" width="64" height="64" alt="">
+<img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/ghost.webp" width="64" height="64" alt="">
 
 **[🇧🇷 Leia em português](./README.pt-BR.md)**
 
