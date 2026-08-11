@@ -30,11 +30,11 @@ Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=faved
 Label=tsdproxy.port.web=443/https:80/http
-Label=tsdproxy.dash.icon=mdi/bookmark-multiple
+Label=tsdproxy.dash.icon=sh/faved-light
 
 Label=homepage.group=Personal
 Label=homepage.name=Faved
-Label=homepage.icon=https://api.iconify.design/mdi/bookmark-multiple.svg?color=%%23888888
+Label=homepage.icon=https://cdn.jsdelivr.net/gh/selfhst/icons/svg/faved.svg
 Label=homepage.href=https://faved.${TAILNET}.ts.net
 Label=homepage.description="Bookmarks with nested tags, kept on your own server"
 Label=wud.watch=true

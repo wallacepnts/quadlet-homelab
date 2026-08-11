@@ -1,6 +1,6 @@
 # Faved
 
-<img src="https://api.iconify.design/mdi/bookmark-multiple.svg?color=%23888888" width="64" height="64" alt="">
+<img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/faved.svg" width="64" height="64" alt="">
 
 **[🇺🇸 Read in English](./README.md)**
 
