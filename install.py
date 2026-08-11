@@ -1403,6 +1403,8 @@ DESCRICOES = {
     "Network-wide ad and tracker blocking over DNS": "Bloqueio de anúncios e rastreadores por DNS, para a rede toda",
     "NVR with AI object detection": "NVR com detecção de objetos por IA",
     "Offline converters, generators and calculators — everything runs in the browser": "Conversores, geradores e calculadoras offline — tudo roda no navegador",
+    "TLS and routing for names of your own, signed by a CA of your own":
+        "TLS e roteamento para nomes seus, assinados por uma CA sua",
     "The house's shopping list, shared by one password":
         "A lista de compras da casa, compartilhada por uma senha só",
     "Bookmarks with nested tags, kept on your own server":

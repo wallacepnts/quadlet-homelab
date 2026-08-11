@@ -2,7 +2,7 @@
 
 **[🇺🇸 Read in English](../../README.md)**
 
-69 serviços self-hosted como units do [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html),
+70 serviços self-hosted como units do [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html),
 rootless, um serviço por pasta.
 
 ## Início rápido
@@ -69,7 +69,7 @@ use `--reinstall`.
 ## Requisitos
 
 - **Podman 5.0 ou mais novo.** É a régua de verdade: o `Notify=healthy` chegou
-  nessa versão, e 97 das 105 units usam. No 4.x o start volta antes de o app
+  nessa versão, e 98 das 106 units usam. No 4.x o start volta antes de o app
   estar pronto, e a instalação relata um sucesso que ela não tem como saber.
 - **systemd com sessão de usuário** e cgroups v2.
 - **SELinux**, se a sua distribuição tiver. As units trazem `:Z` em 125 linhas
@@ -112,6 +112,7 @@ aqui.
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/authentik.svg" width="48" height="48" alt=""> | [Authentik](../../apps/authentik/README.pt-BR.md) | `2026.5.6` | Servidor de identidade (SSO, MFA, OIDC/SAML) — só o core implantado, sem forward-auth via tsdproxy ainda (ver README) |
 | <img src="https://api.iconify.design/mdi/check-circle-outline.svg?color=%23888888" width="48" height="48" alt=""> | [Beaver Habits](../../apps/beaverhabits/README.pt-BR.md) | `0.10.0` | Acompanhamento de hábitos sem metas e sem cobrança de sequência — você marca o dia e segue |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/beszel.svg" width="48" height="48" alt=""> | [Beszel](../../apps/beszel/README.pt-BR.md) | `0.18.7` | Dashboard leve de monitoramento de recursos (CPU/RAM/disco/rede/containers) deste host |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/caddy.svg" width="48" height="48" alt=""> | [Caddy](../../apps/caddy/README.pt-BR.md) | `2.11.4-alpine` | TLS e roteamento para nomes seus, assinados por uma autoridade sua |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/calibre-web.svg" width="48" height="48" alt=""> | [Calibre-Web-Automated](../../apps/calibre-web-automated/README.pt-BR.md) | `v4.0.6` | Biblioteca de ebooks com conversão, metadados e capas automáticas via Calibre, com leitura direto no navegador |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/changedetection.svg" width="48" height="48" alt=""> | [changedetection.io](../../apps/changedetection/README.pt-BR.md) | `0.55.8` | Vigia páginas e avisa o que mudou — preço, estoque, um parágrafo de termos de uso |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/collabora-online.svg" width="48" height="48" alt=""> | [Collabora](../../apps/collabora/README.pt-BR.md) | `26.04.3.1.1` | Edição de documentos dentro do ownCloud — texto, planilha e slides, no navegador |

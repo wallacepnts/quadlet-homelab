@@ -1,0 +1,21 @@
+# One certificate authority of your own, and one entry per service.
+#
+# `local_certs` is what makes this work without a domain: Caddy signs every
+# name below with its own CA instead of asking Let's Encrypt, which would
+# require a name you can prove you own. The price is that each device has to
+# trust that CA once — see the README.
+{
+	local_certs
+}
+
+# The container name is enough: everything here shares tsdproxy-net, so Caddy
+# reaches each service by name on its internal port, with nothing published on
+# the LAN.
+#
+# faved.casa {
+#	reverse_proxy faved:80
+# }
+#
+# koffan.casa {
+#	reverse_proxy koffan:8080
+# }
