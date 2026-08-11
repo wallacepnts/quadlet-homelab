@@ -189,6 +189,12 @@ helps — neither `\\` nor quoting the value. Rewrite it without the backslash:
 `[0-9]` in place of `\d`, and an unescaped `.` (acceptable in a filter regex,
 which is not critical).
 
+A neighbouring trap, systemd's rather than Quadlet's: **`%` in a `Label=`
+value** is a specifier, and one it cannot resolve stops the unit from loading
+at all — `Failed to resolve unit specifiers`. A literal percent is `%%`, so the
+`?color=%23888888` of an iconify URL becomes `?color=%%23888888`; the container
+still sees `%23`.
+
 ### 19. One variable, several units: `~/.config/environment.d/*.conf`
 
 When several different `.container` files need to point at the **same**

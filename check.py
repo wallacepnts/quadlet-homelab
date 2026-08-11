@@ -214,6 +214,12 @@ def check_container(path, folder):
             if "\\" in value:
                 error("rule 18", f"{ref}: Label with a backslash — Quadlet drops the "
                                  f"whole line ({value[:40]}…)")
+            # systemd reads % as a specifier and refuses to load the unit:
+            # "Failed to resolve unit specifiers". A literal one is %%.
+            if re.search(r"(?<!%)%(?!%)", value):
+                error("rule 12", f"{ref}: Label with a bare % — systemd reads it as a "
+                                 f"specifier and the unit will not load, escape it as "
+                                 f"%% ({value[:44]}…)")
             _, _, content = value.partition("=")
             if " " in content and not (content.startswith(('"', "'"))):
                 error("rule 12", f"{ref}: Label with an unquoted space, truncates at the "

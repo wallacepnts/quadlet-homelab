@@ -2,7 +2,7 @@
 
 **[🇺🇸 Read in English](../../README.md)**
 
-67 serviços self-hosted como units do [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html),
+68 serviços self-hosted como units do [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html),
 rootless, um serviço por pasta.
 
 ## Início rápido
@@ -69,7 +69,7 @@ use `--reinstall`.
 ## Requisitos
 
 - **Podman 5.0 ou mais novo.** É a régua de verdade: o `Notify=healthy` chegou
-  nessa versão, e 95 das 103 units usam. No 4.x o start volta antes de o app
+  nessa versão, e 96 das 104 units usam. No 4.x o start volta antes de o app
   estar pronto, e a instalação relata um sucesso que ela não tem como saber.
 - **systemd com sessão de usuário** e cgroups v2.
 - **SELinux**, se a sua distribuição tiver. As units trazem `:Z` em 125 linhas
@@ -120,6 +120,7 @@ aqui.
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/donetick.svg" width="48" height="48" alt=""> | [Donetick](../../apps/donetick/README.pt-BR.md) | `v0.1.76` | Tarefas domésticas recorrentes — quem faz, com que frequência e quando vence |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/excalidraw.svg" width="48" height="48" alt=""> | [ExcaliDash](../../apps/excalidash/README.pt-BR.md) | `0.5.1` | Painel para desenhos do Excalidraw — pastas, compartilhamento e multiusuário, no seu armazenamento |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/filebrowser-quantum.svg" width="48" height="48" alt=""> | [FileBrowser Quantum](../../apps/filebrowser/README.pt-BR.md) | `1.5.1-stable` | Gerenciador de arquivos web — busca, miniaturas, WebDAV e um shell sobre um diretório que você escolhe |
+| <img src="https://api.iconify.design/mdi/bookmark-multiple.svg?color=%23888888" width="48" height="48" alt=""> | [Faved](../../apps/faved/README.pt-BR.md) | `2.10.0` | Favoritos com tags aninhadas — prateleira mais leve que um arquivador, no seu servidor |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/ferdium.svg" width="48" height="48" alt=""> | [Ferdium Server](../../apps/ferdium-server/README.pt-BR.md) | `2.0.13` | Sincronização do Ferdium desktop — sua lista de serviços no seu servidor, não no do Franz |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/freshrss.svg" width="48" height="48" alt=""> | [FreshRSS](../../apps/freshrss/README.pt-BR.md) | `1.29.1-alpine` | Agregador de feeds RSS/Atom self-hosted, com API compatível pra apps móveis |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/frigate.png" width="48" height="48" alt=""> | [Frigate](../../apps/frigate/README.pt-BR.md) | `0.17.2` | NVR com detecção de objetos por IA — CPU-only por padrão, sem câmera configurada ainda (ver README) |

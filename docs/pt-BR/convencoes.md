@@ -192,6 +192,12 @@ tivesse sido escrita). Não tem escape que resolva — nem `\\` nem aspas
 em volta do valor. Reescrever sem barra invertida: `[0-9]` no lugar de
 `\d`, `.` sem escapar (aceitável em regex de filtro, não crítica).
 
+Uma armadilha vizinha, do systemd e não do Quadlet: **`%` num valor de
+`Label=`** é especificador, e um que ele não resolve impede a unit de carregar
+por inteiro — `Failed to resolve unit specifiers`. Porcento literal é `%%`, e o
+`?color=%23888888` de uma URL do iconify vira `?color=%%23888888`; o container
+continua vendo `%23`.
+
 ### 19. Uma variável só, pra várias units: `~/.config/environment.d/*.conf`
 
 Quando vários `.container` diferentes precisam apontar pro **mesmo**

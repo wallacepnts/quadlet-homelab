@@ -34,7 +34,7 @@ Label=tsdproxy.dash.icon=mdi/gamepad-variant
 
 Label=homepage.group=Media
 Label=homepage.name=Retrom
-Label=homepage.icon=https://api.iconify.design/mdi/gamepad-variant.svg?color=%23888888
+Label=homepage.icon=https://api.iconify.design/mdi/gamepad-variant.svg?color=%%23888888
 Label=homepage.href=https://retrom.${TAILNET}.ts.net
 Label=homepage.description="Game library for emulation, played in the browser or a client"
 

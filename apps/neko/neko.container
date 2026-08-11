@@ -36,7 +36,7 @@ Label=tsdproxy.port.webrtc=59000/tcp:59000/tcp
 
 Label=homepage.group=Tools
 Label=homepage.name=neko
-Label=homepage.icon=https://api.iconify.design/mdi/web-box.svg?color=%23888888
+Label=homepage.icon=https://api.iconify.design/mdi/web-box.svg?color=%%23888888
 Label=homepage.href=https://neko.${TAILNET}.ts.net
 Label=homepage.description="A throwaway browser others can watch and share control of"
 

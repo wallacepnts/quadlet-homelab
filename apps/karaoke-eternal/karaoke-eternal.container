@@ -33,7 +33,7 @@ Label=tsdproxy.dash.icon=mdi/microphone-variant
 
 Label=homepage.group=Media
 Label=homepage.name="Karaoke Eternal"
-Label=homepage.icon=https://api.iconify.design/mdi/microphone-variant.svg?color=%23888888
+Label=homepage.icon=https://api.iconify.design/mdi/microphone-variant.svg?color=%%23888888
 Label=homepage.href=https://karaoke.${TAILNET}.ts.net
 Label=homepage.description="Karaoke party server — phones queue songs, one screen plays"
 
