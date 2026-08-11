@@ -2,7 +2,7 @@
 
 **[🇺🇸 Read in English](../../README.md)**
 
-69 serviços self-hosted como units do [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html),
+70 serviços self-hosted como units do [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html),
 rootless, um serviço por pasta.
 
 ## Início rápido
@@ -69,7 +69,7 @@ use `--reinstall`.
 ## Requisitos
 
 - **Podman 5.0 ou mais novo.** É a régua de verdade: o `Notify=healthy` chegou
-  nessa versão, e 97 das 105 units usam. No 4.x o start volta antes de o app
+  nessa versão, e 98 das 106 units usam. No 4.x o start volta antes de o app
   estar pronto, e a instalação relata um sucesso que ela não tem como saber.
 - **systemd com sessão de usuário** e cgroups v2.
 - **SELinux**, se a sua distribuição tiver. As units trazem `:Z` em 125 linhas
@@ -118,6 +118,7 @@ aqui.
 | <img src="https://cdn.simpleicons.org/gnubash" width="48" height="48" alt=""> | [CookCLI](../../apps/cookcli/README.pt-BR.md) | `0.32.1` | Receitas em texto puro no formato CookLang — versionáveis em git, sem banco e sem formulário |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/copyparty.svg" width="48" height="48" alt=""> | [Copyparty](../../apps/copyparty/README.pt-BR.md) | `1.20.20` | Servidor de arquivos com upload pelo navegador ou celular, retomada de transferência e WebDAV |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/donetick.svg" width="48" height="48" alt=""> | [Donetick](../../apps/donetick/README.pt-BR.md) | `v0.1.76` | Tarefas domésticas recorrentes — quem faz, com que frequência e quando vence |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/dozzle.svg" width="48" height="48" alt=""> | [Dozzle](../../apps/dozzle/README.pt-BR.md) | `v10.7.1` | Log ao vivo de cada container no navegador, sem abrir terminal |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/excalidraw.svg" width="48" height="48" alt=""> | [ExcaliDash](../../apps/excalidash/README.pt-BR.md) | `0.5.1` | Painel para desenhos do Excalidraw — pastas, compartilhamento e multiusuário, no seu armazenamento |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/filebrowser-quantum.svg" width="48" height="48" alt=""> | [FileBrowser Quantum](../../apps/filebrowser/README.pt-BR.md) | `1.5.1-stable` | Gerenciador de arquivos web — busca, miniaturas, WebDAV e um shell sobre um diretório que você escolhe |
 | <img src="https://api.iconify.design/mdi/bookmark-multiple.svg?color=%23888888" width="48" height="48" alt=""> | [Faved](../../apps/faved/README.pt-BR.md) | `2.10.0` | Favoritos com tags aninhadas — prateleira mais leve que um arquivador, no seu servidor |

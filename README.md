@@ -2,7 +2,7 @@
 
 **[🇧🇷 Leia em português](./docs/pt-BR/README.md)**
 
-69 self-hosted services as [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)
+70 self-hosted services as [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)
 units, rootless, one service per folder.
 
 ## Quick start
@@ -69,7 +69,7 @@ pulled. To go through anyway, use `--reinstall`.
 ## Requirements
 
 - **Podman 5.0 or newer.** This is the real floor: `Notify=healthy` arrived
-  there, and 97 of the 105 units use it. On 4.x the start returns before the app
+  there, and 98 of the 106 units use it. On 4.x the start returns before the app
   is ready, and the install reports a success it cannot know about.
 - **systemd with a user session** and cgroups v2.
 - **SELinux**, if your distribution has it. The units carry `:Z` on 125 volume
@@ -117,6 +117,7 @@ Leap 15's problem — it publishes no container image and was not measured here.
 | <img src="https://cdn.simpleicons.org/gnubash" width="48" height="48" alt=""> | [CookCLI](./apps/cookcli) | `0.32.1` | Plain-text recipes in the CookLang format — versionable in git, with no database and no forms |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/copyparty.svg" width="48" height="48" alt=""> | [Copyparty](./apps/copyparty) | `1.20.20` | A file server with browser or phone uploads, resumable transfers and WebDAV |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/donetick.svg" width="48" height="48" alt=""> | [Donetick](./apps/donetick) | `v0.1.76` | Recurring household chores — who does them, how often, and when they are due |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/dozzle.svg" width="48" height="48" alt=""> | [Dozzle](./apps/dozzle) | `v10.7.1` | Live logs of every container in the browser, without opening a terminal |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/excalidraw.svg" width="48" height="48" alt=""> | [ExcaliDash](./apps/excalidash) | `0.5.1` | A dashboard for Excalidraw drawings — folders, sharing and multi-user, over your own storage |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/filebrowser-quantum.svg" width="48" height="48" alt=""> | [FileBrowser Quantum](./apps/filebrowser) | `1.5.1-stable` | A web file manager — search, thumbnails, WebDAV, and a shell over a directory you pick |
 | <img src="https://api.iconify.design/mdi/bookmark-multiple.svg?color=%23888888" width="48" height="48" alt=""> | [Faved](./apps/faved) | `2.10.0` | Bookmarks with nested tags — a lighter shelf than an archiver, kept on your server |

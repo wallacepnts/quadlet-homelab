@@ -1,0 +1,48 @@
+[Unit]
+Description=Dozzle (live container logs in the browser)
+
+[Container]
+ReadOnly=true
+Tmpfs=/tmp:size=32M
+DropCapability=ALL
+NoNewPrivileges=true
+User=1000
+PidsLimit=256
+
+Image=ghcr.io/amir20/dozzle:v10.7.1
+ContainerName=dozzle
+Network=tsdproxy-net.network
+PublishPort=8117:8080
+
+# Read-only, and the only thing this service needs: the socket is where the
+# logs come from. It is also everything Podman can do, so see the README.
+Volume=%t/podman/podman.sock:/var/run/docker.sock:ro
+EnvironmentFile=%h/.config/containers/env/dozzle.env
+
+HealthCmd=["CMD", "/dozzle", "healthcheck"]
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+HealthStartPeriod=10s
+Notify=healthy
+
+Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
+Label=tsdproxy.name=dozzle
+Label=tsdproxy.port.web=443/https:8080/http
+Label=tsdproxy.dash.icon=sh/dozzle
+
+Label=homepage.group=Monitoring
+Label=homepage.name=Dozzle
+Label=homepage.icon=dozzle.svg
+Label=homepage.href=https://dozzle.${TAILNET}.ts.net
+Label=homepage.description="Live logs of every container, without opening a terminal"
+Label=wud.watch=true
+Label=wud.tag.include=^v[0-9]+.[0-9]+.[0-9]+$
+
+[Service]
+Restart=always
+TimeoutStartSec=60
+
+[Install]
+WantedBy=default.target
