@@ -190,8 +190,14 @@ def main():
     elif len(repos) == 1:
         repo = repos[0]["shortId"]
     else:
-        raise SystemExit(f"{len(repos)} " + loc("repositories — say which one runs the backup "
-                                 "with --repository (the others become mirrors)"))
+        # With the ids listed: they are only visible in the URL of the
+        # repository's page, so an error telling you to pass one without
+        # saying where to find it is an error you cannot act on.
+        raise SystemExit(
+            f"{len(repos)} " + loc("repositories — say which one runs the backup "
+                                   "with --repository (the others become mirrors)")
+            + ":\n" + "\n".join(f"  --repository {r['shortId']:10} {r['name']}"
+                                for r in repos))
     # Every other registered repository mirrors this one. A second job per
     # destination would run the backup twice: two stops of any-sync-bundle, two
     # SQLite copies, and two chances to differ. A mirror copies the snapshot
