@@ -1,0 +1,50 @@
+[Unit]
+Description=Vikunja (tasks and projects)
+
+[Container]
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+NoNewPrivileges=true
+User=1000
+PidsLimit=256
+
+Image=docker.io/vikunja/vikunja:2.5.0
+ContainerName=vikunja
+Network=tsdproxy-net.network
+PublishPort=8121:3456
+
+Volume=%h/.config/containers/volumes/vikunja/db:/db:Z
+Volume=%h/.config/containers/volumes/vikunja/files:/files:Z
+EnvironmentFile=%h/.config/containers/env/vikunja.env
+
+# The binary's own subcommand, in exec form: the image is distroless — the
+# whole of it is /app/vikunja/vikunja and a CA bundle — so CMD-SHELL has no
+# shell to run in.
+HealthCmd=["CMD", "/app/vikunja/vikunja", "healthcheck"]
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=30s
+Notify=healthy
+
+Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
+Label=tsdproxy.name=vikunja
+Label=tsdproxy.port.web=443/https:3456/http
+Label=tsdproxy.dash.icon=sh/vikunja-light
+
+Label=homepage.group=Productivity
+Label=homepage.name=Vikunja
+Label=homepage.icon=https://cdn.jsdelivr.net/gh/selfhst/icons/svg/vikunja.svg
+Label=homepage.href=https://vikunja.${TAILNET}.ts.net
+Label=homepage.description="Tasks with a deadline and a project behind them"
+Label=wud.watch=true
+Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+$
+
+[Service]
+Restart=always
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target

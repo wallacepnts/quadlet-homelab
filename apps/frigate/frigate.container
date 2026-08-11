@@ -22,11 +22,12 @@ Notify=healthy
 Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=frigate
+Label=tsdproxy.dash.icon=sh/frigate-light
 Label=tsdproxy.port.web=443/https:8971/https
 
 Label=homepage.group=Home
 Label=homepage.name=Frigate
-Label=homepage.icon=frigate.svg
+Label=homepage.icon=https://cdn.jsdelivr.net/gh/selfhst/icons/svg/frigate.svg
 Label=homepage.href=https://frigate.${TAILNET}.ts.net
 Label=homepage.description="NVR with AI object detection"
 
