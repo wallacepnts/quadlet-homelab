@@ -42,8 +42,8 @@ PT = {
         "URL do Zerobyte (padrão: o BASE_URL do .env dele)",
     "where the backup runs (default: the only one)":
         "onde o backup roda (padrão: o único cadastrado)",
-    "do not mirror to the other registered repositories":
-        "não espelhar nos outros repositórios cadastrados",
+    "turn mirroring off: clears the mirrors on every job":
+        "desliga o espelho: tira o espelho de todos os jobs",
     "schedule (default: 03:00 daily)": "agendamento (padrão: 03:00 todo dia)",
     "execute (without it, only show)": "executa (sem ele, só mostra)",
     "pass --url": "passe o --url",
@@ -62,6 +62,7 @@ PT = {
     "volume": "volume",
     "mode": "modo",
     "mirroring": "espelhando",
+    "clearing the mirrors on every job": "tirando o espelho de todos os jobs",
     "repository(ies) on every job": "repositório(s) em cada job",
     "outside this repository, left alone": "fora deste repositório, não tocadas",
     "ZEROBYTE_HOOK_UNITS must include these, or the jobs fail:":
@@ -171,7 +172,7 @@ def main():
                     help=loc("base URL of Zerobyte (default: BASE_URL from its .env)"))
     ap.add_argument("--repository", help=loc("where the backup runs (default: the only one)"))
     ap.add_argument("--no-mirror", action="store_true",
-                    help=loc("do not mirror to the other registered repositories"))
+                    help=loc("turn mirroring off: clears the mirrors on every job"))
     ap.add_argument("--cron", default="0 3 * * *", help=loc("schedule (default: 03:00 daily)"))
     ap.add_argument("--hook-port", default="8766")
     ap.add_argument("--apply", action="store_true", help=loc("execute (without it, only show)"))
@@ -277,13 +278,16 @@ def main():
     elif "secrets" in jobs:
         print(f"  {'secrets':24} " + loc("job already exists"))
 
-    if espelhos and not a.no_mirror:
-        print(f"\n{loc('mirroring')} {len(espelhos)} {loc('repository(ies) on every job')}")
+    # --no-mirror writes an empty list rather than skipping the step: skipping
+    # would leave yesterday's mirrors in place, so the flag would turn nothing
+    # off — and turning them off by hand is job by job, through the interface.
+    if espelhos or a.no_mirror:
+        lista = [] if a.no_mirror else [{"repositoryId": r, "enabled": True} for r in espelhos]
+        print(f"\n{loc('clearing the mirrors on every job')}" if a.no_mirror else
+              f"\n{loc('mirroring')} {len(espelhos)} {loc('repository(ies) on every job')}")
         for b in api(a.url, key, "backups"):
-            if not a.apply:
-                continue
-            api(a.url, key, f"backups/{b['shortId']}/mirrors", "PUT",
-                {"mirrors": [{"repositoryId": r, "enabled": True} for r in espelhos]})
+            if a.apply:
+                api(a.url, key, f"backups/{b['shortId']}/mirrors", "PUT", {"mirrors": lista})
 
     if alheias:
         print(f"\n{loc('outside this repository, left alone')}: {', '.join(alheias)}")

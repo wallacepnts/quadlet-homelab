@@ -143,11 +143,13 @@ mirrors of every job:
 
 ```bash
 qh --zerobyte --repository <shortId> --apply
-qh --zerobyte --repository <shortId> --no-mirror --apply   # no mirroring
+qh --zerobyte --repository <shortId> --no-mirror --apply   # turn mirroring off
 ```
 
 A mirror copies the finished snapshot instead of repeating the backup: the
 service stops once, and what lands remotely is what was verified here.
+`--no-mirror` clears the mirrors on every job, which is otherwise one by one
+through the interface.
 
 ## Update
 
