@@ -343,7 +343,12 @@ dns:
 
     # Split DNS (see https://tailscale.com/docs/reference/dns-in-tailscale#restricted-nameservers),
     # a map of domains and which DNS server to use for each.
-    split: {}
+    # The .qh names live in AdGuard, and only they go there — everything else
+    # keeps using the global servers above. This is the headscale side of what
+    # the Tailscale admin calls "Restrict to domain".
+    split:
+      qh:
+        - <ip-do-adguard>
       # foo.bar.com:
       #   - 1.1.1.1
       # darp.headscale.net:

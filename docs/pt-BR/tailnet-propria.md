@@ -109,16 +109,32 @@ Escutar na porta 53 exige o sysctl do passo anterior. Sem ele, deixe a unit na
 
 ### Entregando o resolvedor a todo dispositivo
 
-Uma configuração no admin do Tailscale, e todo dispositivo da tailnet passa a
-resolver `.qh` — celular incluído:
+DNS dividido: só o `.qh` vai para o AdGuard, o resto continua como estava. É
+isso que torna a montagem usável do celular, e o motivo de o AdGuard fixar um
+endereço da tailnet e não um da LAN.
+
+**Quando os clientes estiverem no headscale**, isso vive no `config.yaml` dele
+e pede um restart:
+
+```yaml
+dns:
+  nameservers:
+    split:
+      qh:
+        - 100.x.y.z
+```
+
+**Enquanto ainda estiverem no Tailscale** — o que é o caso até você trocar o
+último cliente — a mesma configuração fica no admin deles, porque é quem
+entrega DNS aos seus aparelhos hoje:
 
 1. **DNS → Nameservers → Add nameserver → Custom**
 2. endereço: o do host na tailnet, o mesmo do `AGH_DNS_BIND`
 3. marque **Restrict to domain** e ponha `qh`
 
-DNS dividido: só o `.qh` vai para o AdGuard, o resto continua como estava. É
-isso que torna a montagem usável do celular, e é o motivo de o AdGuard fixar um
-endereço da tailnet e não um da LAN.
+São a mesma ideia em dois control planes, e durante a migração você vai querer
+as duas: um aparelho que já mudou lê a do headscale, um que não mudou lê a do
+Tailscale.
 
 Conferindo:
 

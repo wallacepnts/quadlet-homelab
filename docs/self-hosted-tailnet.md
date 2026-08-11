@@ -109,16 +109,32 @@ leave the unit on `5335` and use the `/etc/hosts` route below.
 
 ### Handing the resolver to every device
 
-One setting in the Tailscale admin, and every device on the tailnet resolves
-`.qh` from then on — phones included:
+Split DNS: only `.qh` goes to AdGuard, everything else keeps working as it did.
+It is what makes the setup usable from a phone, and the reason AdGuard binds a
+tailnet address rather than a LAN one.
+
+**Once the clients are on headscale**, it is in its own `config.yaml` and needs
+a restart:
+
+```yaml
+dns:
+  nameservers:
+    split:
+      qh:
+        - 100.x.y.z
+```
+
+**While they are still on Tailscale** — which is the case until you switch the
+last client — the same setting lives in their admin, because that is who hands
+your devices their DNS today:
 
 1. **DNS → Nameservers → Add nameserver → Custom**
 2. address: the host's tailnet address, the same one in `AGH_DNS_BIND`
 3. tick **Restrict to domain** and put `qh`
 
-Split DNS: only `.qh` goes to AdGuard, everything else keeps working as it did.
-This is what makes the setup usable from a phone, and it is the reason AdGuard
-binds a tailnet address rather than a LAN one.
+The two are the same idea in two control planes, and during the migration you
+will want both: a device that has moved reads headscale's, one that has not
+reads Tailscale's.
 
 Check it:
 
