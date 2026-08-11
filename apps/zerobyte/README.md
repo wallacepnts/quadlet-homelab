@@ -117,33 +117,23 @@ qh --zerobyte --url https://zerobyte.<your-tailnet>.ts.net            # shows th
 qh --zerobyte --url https://zerobyte.<your-tailnet>.ts.net --apply
 ```
 
-The mode comes from the data: SQLite files mean `sqlite`, a Postgres or Mongo
-fingerprint means `stop`, anything else needs no hook. A directory it cannot
-read also counts as `stop` — that is a container's data owned by a mapped uid,
-and guessing `none` there would back up a live database.
+The mode comes from the data: SQLite means `sqlite`, a Postgres or Mongo
+fingerprint means `stop`, anything else needs no hook. A folder it cannot read
+counts as `stop` too — that is a container's data owned by a mapped uid.
 
-Two things it reports instead of doing: `stop` with no unit of that name
-(`media-stack` is the case — twelve units share one directory, and one of them
-carries a Postgres), and your allowlist, which it prints but does not edit. A
-job whose hook is missing from `ZEROBYTE_HOOK_UNITS` gets a 404 and fails.
+It reports instead of acting in two cases: `stop` with no unit of that name
+(`media-stack`, whose twelve units share one directory), and
+`ZEROBYTE_HOOK_UNITS`, which it prints but does not edit — a job missing from
+that list gets a 404 and fails. A folder that is not one of this repository's
+services is listed and left alone. Running it again changes nothing: jobs are
+matched by name.
 
-It only looks at folders belonging to this repository's services. Anything else
-under `volumes/` is listed and left alone — with no `install.ini` and no unit,
-the mode would be a guess.
+A `secrets` job covers `~/.config/containers/secrets` — a volume restored
+without them gives a service that starts and does not work.
 
-A `secrets` job covers `~/.config/containers/secrets`. Restoring a data volume
-without them gives a service that starts and does not work: vaultwarden's admin
-token no longer matches, excalidash's `JWT_SECRET` logs everyone out. It is one
-job because a Zerobyte job covers a single directory — `includePaths` and
-`customResticParams` are joined to the volume's path, and cannot reach outside
-it.
-
-**Keep the repository's own password somewhere else.** Restic encrypts the
-repository with it, and that password is itself a file under `secrets/` — which
-now lives *inside* the thing it unlocks. In a total loss that copy is
-unreachable: put it in a password manager, or on paper.
-
-Running it again changes nothing — jobs are matched by name.
+**Keep the repository's own password somewhere else.** It is a file under
+`secrets/`, which now lives *inside* the thing it unlocks: a password manager,
+or paper.
 
 ### More than one repository
 

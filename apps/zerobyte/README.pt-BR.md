@@ -117,33 +117,22 @@ qh --zerobyte --url https://zerobyte.<your-tailnet>.ts.net            # mostra o
 qh --zerobyte --url https://zerobyte.<your-tailnet>.ts.net --apply
 ```
 
-O modo sai do dado: arquivo SQLite vira `sqlite`, marca de Postgres ou Mongo
-vira `stop`, o resto não precisa de gancho. Diretório que ele não consegue ler
-também conta como `stop` — ali está o dado de um container com uid mapeado, e
-chutar `none` faria backup de banco em uso.
+O modo sai do dado: SQLite vira `sqlite`, marca de Postgres ou Mongo vira
+`stop`, o resto não precisa de gancho. Pasta que ele não consegue ler também
+conta como `stop` — é dado de container com uid mapeado.
 
-Duas coisas ele avisa em vez de fazer: `stop` sem unit com aquele nome (o
-`media-stack` é o caso — doze units dividem um diretório, e uma delas carrega
-um Postgres), e a sua allowlist, que ele imprime mas não edita. Job cujo gancho
-não estiver no `ZEROBYTE_HOOK_UNITS` recebe 404 e falha.
+Ele avisa em vez de fazer, em dois casos: `stop` sem unit com aquele nome (o
+`media-stack`, cujas doze units dividem um diretório), e o
+`ZEROBYTE_HOOK_UNITS`, que ele imprime mas não edita — job fora dessa lista
+recebe 404 e falha. Pasta que não é de um serviço daqui é listada e deixada em
+paz. Rodar de novo não muda nada: os jobs são casados pelo nome.
 
-Só olha as pastas dos serviços deste repositório. O que mais houver em
-`volumes/` é listado e deixado em paz — sem `install.ini` e sem unit, o modo
-seria chute.
+Um job `secrets` cobre o `~/.config/containers/secrets` — volume restaurado sem
+eles dá serviço que sobe e não funciona.
 
-Um job `secrets` cobre o `~/.config/containers/secrets`. Restaurar um volume de
-dados sem eles dá um serviço que sobe e não funciona: o token de administrador
-do vaultwarden deixa de bater, o `JWT_SECRET` do excalidash desloga todo mundo.
-É um job só porque um job do Zerobyte cobre um único diretório — `includePaths`
-e `customResticParams` são juntados ao caminho do volume, e não alcançam fora
-dele.
-
-**Guarde a senha do repositório em outro lugar.** O Restic cifra o repositório
-com ela, e essa senha é ela própria um arquivo dentro de `secrets/` — que agora
-mora *dentro* do que ela destranca. Numa perda total essa cópia é inalcançável:
-deixe-a num gerenciador de senhas, ou no papel.
-
-Rodar de novo não muda nada — os jobs são casados pelo nome.
+**Guarde a senha do repositório em outro lugar.** Ela é um arquivo dentro de
+`secrets/`, que agora mora *dentro* do que ela destranca: num gerenciador de
+senhas, ou no papel.
 
 ### Mais de um repositório
 
