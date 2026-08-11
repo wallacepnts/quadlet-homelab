@@ -100,6 +100,20 @@ systemctl --user status owncloud
 podman logs -f owncloud
 ```
 
+## Editando documentos
+
+Com o [Collabora](../collabora/README.pt-BR.md) rodando, `.docx`, `.xlsx` e
+`.odt` abrem no navegador em vez de só baixar. Ligue o app uma vez:
+
+```bash
+podman exec owncloud occ app:enable richdocuments
+podman exec owncloud occ config:app:set richdocuments wopi_url \
+  --value="https://collabora.<your-tailnet>.ts.net"
+```
+
+O `wopi_url` é de onde o **seu navegador** carrega o editor, então é o endereço
+da tailnet e não um nome de container.
+
 ## Créditos
 
 [owncloud/core](https://github.com/owncloud/core) — AGPL-3.0.
