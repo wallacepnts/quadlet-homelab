@@ -2,7 +2,7 @@
 
 **[🇺🇸 Read in English](../../README.md)**
 
-68 serviços self-hosted como units do [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html),
+69 serviços self-hosted como units do [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html),
 rootless, um serviço por pasta.
 
 ## Início rápido
@@ -69,7 +69,7 @@ use `--reinstall`.
 ## Requisitos
 
 - **Podman 5.0 ou mais novo.** É a régua de verdade: o `Notify=healthy` chegou
-  nessa versão, e 96 das 104 units usam. No 4.x o start volta antes de o app
+  nessa versão, e 97 das 105 units usam. No 4.x o start volta antes de o app
   estar pronto, e a instalação relata um sucesso que ela não tem como saber.
 - **systemd com sessão de usuário** e cgroups v2.
 - **SELinux**, se a sua distribuição tiver. As units trazem `:Z` em 125 linhas
@@ -134,6 +134,7 @@ aqui.
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/immich.svg" width="48" height="48" alt=""> | [Immich](../../apps/immich/README.pt-BR.md) | `v3.1.0` | Backup e organização de fotos/vídeos, com reconhecimento facial e busca smart |
 | <img src="https://cdn.simpleicons.org/invoiceninja/888888" width="48" height="48" alt=""> | [Invio](../../apps/invio/README.pt-BR.md) | `v2.1.1` | Emissão e controle de faturas self-hosted, com SQLite e sem depender de serviço externo |
 | <img src="https://api.iconify.design/mdi/microphone-variant.svg?color=%23888888" width="48" height="48" alt=""> | [Karaoke Eternal](../../apps/karaoke-eternal/README.pt-BR.md) | `2.0.2` | Karaokê com a sua própria biblioteca — cada um enfileira do celular, uma tela reproduz |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/koffan.png" width="48" height="48" alt=""> | [Koffan](../../apps/koffan/README.pt-BR.md) | `v2.13.0` | A lista de compras da casa — uma senha, sem contas, todo mundo edita a mesma lista |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/karakeep.svg" width="48" height="48" alt=""> | [Karakeep](../../apps/karakeep/README.pt-BR.md) | `0.33.1` | Gerenciador de bookmarks com busca full-text e arquivamento automático do conteúdo de cada página salva |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/lubelogger.png" width="48" height="48" alt=""> | [LubeLogger](../../apps/lubelogger/README.pt-BR.md) | `v1.7.0` | Registro de manutenção veicular — trocas de óleo, revisões, gastos e lembretes, por veículo |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/mailpit.svg" width="48" height="48" alt=""> | [Mailpit](../../apps/mailpit/README.pt-BR.md) | `v1.30.7` | Servidor SMTP que captura tudo que seus apps enviam, para ler no navegador em vez de numa caixa de entrada de verdade |
