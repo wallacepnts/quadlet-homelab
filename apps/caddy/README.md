@@ -23,7 +23,7 @@ Then add a route per service in
 `~/.config/containers/volumes/caddy/config/Caddyfile` and reload:
 
 ```
-faved.casa {
+faved.qh {
 	reverse_proxy faved:80
 }
 ```
@@ -76,9 +76,9 @@ sudo cp root.crt /etc/pki/trust/anchors/caddy-local.crt && sudo update-ca-certif
 On Android and iOS it is installed through the settings, and on iOS it also has
 to be enabled under **Certificate Trust Settings** — two different screens.
 
-**The names have to resolve.** Nothing knows what `faved.casa` is. Either an
+**The names have to resolve.** Nothing knows what `faved.qh` is. Either an
 entry per device in `/etc/hosts`, or a resolver everyone already uses — the
-[adguardhome](../adguardhome) in this repository can answer `*.casa` with the
+[adguardhome](../adguardhome) in this repository can answer `*.qh` with the
 host's address, and the tailnet can be pointed at it as a split DNS.
 
 ## Ports

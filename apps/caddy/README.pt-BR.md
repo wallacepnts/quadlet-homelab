@@ -23,7 +23,7 @@ Depois acrescente uma rota por serviço no
 `~/.config/containers/volumes/caddy/config/Caddyfile` e recarregue:
 
 ```
-faved.casa {
+faved.qh {
 	reverse_proxy faved:80
 }
 ```
@@ -77,10 +77,10 @@ No Android e no iOS a instalação é pelas configurações, e no iOS ainda prec
 ser habilitado em **Ajustes de confiança de certificado** — duas telas
 diferentes.
 
-**Os nomes precisam resolver.** Nada sabe o que é `faved.casa`. Ou uma entrada
+**Os nomes precisam resolver.** Nada sabe o que é `faved.qh`. Ou uma entrada
 por dispositivo no `/etc/hosts`, ou um resolvedor que todos já usam — o
 [adguardhome](../adguardhome/README.pt-BR.md) deste repositório responde
-`*.casa` com o endereço do host, e a tailnet pode ser apontada para ele como
+`*.qh` com o endereço do host, e a tailnet pode ser apontada para ele como
 DNS dividido.
 
 ## Portas

@@ -30,7 +30,7 @@ podman exec headscale headscale users create casa
 podman exec headscale headscale preauthkeys create --user casa --expiration 24h
 
 # na máquina cliente
-sudo tailscale up --login-server https://headscale.casa --authkey <chave>
+sudo tailscale up --login-server https://headscale.qh --authkey <chave>
 ```
 
 <details>
@@ -76,8 +76,8 @@ estão marcadas no topo dele:
 - **`listen_addr: 0.0.0.0:8080`** — o exemplo escuta em `127.0.0.1`, que dentro
   de um container significa que nada de fora conecta.
 - **`metrics_listen_addr`** — mesmo motivo.
-- **`base_domain: casa`** — o que o MagicDNS acrescenta, para um nó atender por
-  `laptop.casa`.
+- **`base_domain: rede.qh`** — o que o MagicDNS acrescenta, para um nó atender por
+  `laptop.qh`.
 
 As linhas de TLS ficam vazias de propósito: o [Caddy](../caddy/README.pt-BR.md)
 termina na frente, e servidor atrás de proxy não deve fazer ACME próprio.

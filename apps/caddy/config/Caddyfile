@@ -12,10 +12,10 @@
 # reaches each service by name on its internal port, with nothing published on
 # the LAN.
 #
-# faved.casa {
+# faved.qh {
 #	reverse_proxy faved:80
 # }
 #
-# koffan.casa {
+# koffan.qh {
 #	reverse_proxy koffan:8080
 # }

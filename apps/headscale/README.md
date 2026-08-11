@@ -30,7 +30,7 @@ podman exec headscale headscale users create casa
 podman exec headscale headscale preauthkeys create --user casa --expiration 24h
 
 # on the client machine
-sudo tailscale up --login-server https://headscale.casa --authkey <key>
+sudo tailscale up --login-server https://headscale.qh --authkey <key>
 ```
 
 <details>
@@ -76,8 +76,8 @@ marked at the top of it:
 - **`listen_addr: 0.0.0.0:8080`** — the example binds `127.0.0.1`, which
   inside a container means nothing outside it can connect.
 - **`metrics_listen_addr`** — same reason.
-- **`base_domain: casa`** — what MagicDNS appends, so a node answers to
-  `laptop.casa`.
+- **`base_domain: rede.qh`** — what MagicDNS appends, so a node answers to
+  `laptop.qh`.
 
 The TLS lines are left empty on purpose: [Caddy](../caddy) terminates it in
 front, and a server behind a proxy should not be running ACME of its own.
