@@ -2,7 +2,7 @@
 
 **[🇧🇷 Leia em português](./docs/pt-BR/README.md)**
 
-71 self-hosted services as [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)
+72 self-hosted services as [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)
 units, rootless, one service per folder.
 
 ## Quick start
@@ -69,7 +69,7 @@ pulled. To go through anyway, use `--reinstall`.
 ## Requirements
 
 - **Podman 5.0 or newer.** This is the real floor: `Notify=healthy` arrived
-  there, and 99 of the 107 units use it. On 4.x the start returns before the app
+  there, and 100 of the 108 units use it. On 4.x the start returns before the app
   is ready, and the install reports a success it cannot know about.
 - **systemd with a user session** and cgroups v2.
 - **SELinux**, if your distribution has it. The units carry `:Z` on 125 volume
@@ -137,6 +137,7 @@ Leap 15's problem — it publishes no container image and was not measured here.
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/kiwix.svg" width="48" height="48" alt=""> | [Kiwix](./apps/kiwix) | `3.8.2` | Wikipedia and other libraries served from disk, read with the internet off |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/koffan.png" width="48" height="48" alt=""> | [Koffan](./apps/koffan) | `v2.13.0` | The house's shopping list — one password, no accounts, everyone edits the same list |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/karakeep.svg" width="48" height="48" alt=""> | [Karakeep](./apps/karakeep) | `0.33.1` | A bookmark manager with full-text search and automatic archiving of every saved page's content |
+| <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/komga.svg" width="48" height="48" alt=""> | [Komga](./apps/komga) | `1.26.1` | Comics and manga, with reading progress that follows you between devices |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/lubelogger.png" width="48" height="48" alt=""> | [LubeLogger](./apps/lubelogger) | `v1.7.0` | Vehicle maintenance records — oil changes, services, costs and reminders, per vehicle |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/mailpit.svg" width="48" height="48" alt=""> | [Mailpit](./apps/mailpit) | `v1.30.7` | An SMTP server that catches everything your apps send, to read in the browser instead of a real inbox |
 | <img src="https://cdn.simpleicons.org/markdown/888888" width="48" height="48" alt=""> | [mdrop](./apps/mdrop) | `latest` (pinned by digest) | Converts PDF, Office, image and audio to Markdown over the web, stateless and without leaving the machine |
