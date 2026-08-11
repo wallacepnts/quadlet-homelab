@@ -60,7 +60,7 @@ systemctl --user start zerobyte
 ```
 zerobyte.container   unit
 backup-hook/         the hook, into ~/.local/bin and systemd/user
-jobs/                the job generator, into ~/.local/bin
+jobs/                the job generator, behind `qh --zerobyte`
 install.ini
 .env.example
 ```
@@ -89,7 +89,7 @@ curl -s http://127.0.0.1:8766/healthz     # {"ok": true}
 # Port taken? ZEROBYTE_HOOK_PORT moves it; WEBHOOK_ALLOWED_ORIGINS must agree.
 ```
 
-Each job then carries two URLs — `zerobyte-jobs.py` below writes them for you;
+Each job then carries two URLs — `qh --zerobyte` below writes them for you;
 by hand only if you create the job through the interface:
 
 ```
@@ -106,15 +106,15 @@ what keeps anything reaching port 8766 from stopping your services.
 ### Creating the jobs
 
 One job per folder under `volumes/`, each with the hook mode its data needs.
-`zerobyte-jobs.py` works that out and creates them through the API:
+`qh --zerobyte` works that out and creates them through the API:
 
 ```bash
 # An API key from Settings -> API keys, saved where the script looks
 mkdir -p ~/.config/zerobyte
 printf '%s' 'THE_KEY' > ~/.config/zerobyte/api-key && chmod 600 ~/.config/zerobyte/api-key
 
-zerobyte-jobs.py --url https://zerobyte.<your-tailnet>.ts.net            # shows the plan
-zerobyte-jobs.py --url https://zerobyte.<your-tailnet>.ts.net --apply
+qh --zerobyte --url https://zerobyte.<your-tailnet>.ts.net            # shows the plan
+qh --zerobyte --url https://zerobyte.<your-tailnet>.ts.net --apply
 ```
 
 The mode comes from the data: SQLite files mean `sqlite`, a Postgres or Mongo
@@ -151,8 +151,8 @@ With two or more registered, say which one runs the backup; the others become
 mirrors of every job:
 
 ```bash
-zerobyte-jobs.py --url ... --repository <shortId> --apply
-zerobyte-jobs.py --url ... --repository <shortId> --no-mirror --apply   # no mirroring
+qh --zerobyte --url ... --repository <shortId> --apply
+qh --zerobyte --url ... --repository <shortId> --no-mirror --apply   # no mirroring
 ```
 
 A mirror copies the finished snapshot instead of repeating the backup: the

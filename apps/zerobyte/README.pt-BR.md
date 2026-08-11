@@ -60,7 +60,7 @@ systemctl --user start zerobyte
 ```
 zerobyte.container   unit
 backup-hook/         o gancho, para ~/.local/bin e systemd/user
-jobs/                o gerador de jobs, para ~/.local/bin
+jobs/                o gerador de jobs, atrás do `qh --zerobyte`
 install.ini
 .env.example
 ```
@@ -89,7 +89,7 @@ curl -s http://127.0.0.1:8766/healthz     # {"ok": true}
 # Porta ocupada? O ZEROBYTE_HOOK_PORT muda; o WEBHOOK_ALLOWED_ORIGINS tem que acompanhar.
 ```
 
-Cada job leva então duas URLs — o `zerobyte-jobs.py` abaixo as escreve sozinho;
+Cada job leva então duas URLs — o `qh --zerobyte` abaixo as escreve sozinho;
 à mão só se você criar o job pela interface:
 
 ```
@@ -106,15 +106,15 @@ qualquer coisa que chegue na porta 8766 pare os seus serviços.
 ### Criando os jobs
 
 Um job por pasta dentro de `volumes/`, cada um com o modo de gancho que o dado
-dele pede. O `zerobyte-jobs.py` descobre isso e cria pela API:
+dele pede. O `qh --zerobyte` descobre isso e cria pela API:
 
 ```bash
 # Uma chave de API em Settings -> API keys, salva onde o script procura
 mkdir -p ~/.config/zerobyte
 printf '%s' 'A_CHAVE' > ~/.config/zerobyte/api-key && chmod 600 ~/.config/zerobyte/api-key
 
-zerobyte-jobs.py --url https://zerobyte.<your-tailnet>.ts.net            # mostra o plano
-zerobyte-jobs.py --url https://zerobyte.<your-tailnet>.ts.net --apply
+qh --zerobyte --url https://zerobyte.<your-tailnet>.ts.net            # mostra o plano
+qh --zerobyte --url https://zerobyte.<your-tailnet>.ts.net --apply
 ```
 
 O modo sai do dado: arquivo SQLite vira `sqlite`, marca de Postgres ou Mongo
@@ -151,8 +151,8 @@ Com dois ou mais cadastrados, diga qual roda o backup; os outros viram espelho
 de todos os jobs:
 
 ```bash
-zerobyte-jobs.py --url ... --repository <shortId> --apply
-zerobyte-jobs.py --url ... --repository <shortId> --no-mirror --apply   # sem espelhar
+qh --zerobyte --url ... --repository <shortId> --apply
+qh --zerobyte --url ... --repository <shortId> --no-mirror --apply   # sem espelhar
 ```
 
 Espelho copia o snapshot pronto, em vez de repetir o backup: o serviço para uma

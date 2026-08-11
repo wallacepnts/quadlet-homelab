@@ -20,6 +20,7 @@ No dependencies: stdlib only.
 
 import argparse
 import configparser
+import importlib.util
 import os
 import re
 import secrets
@@ -2674,12 +2675,31 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
     return 0
 
 
+def zerobyte_jobs(called):
+    """`--zerobyte`: hand over to the job generator in apps/zerobyte/jobs/.
+
+    It lives with the service and not here because it is Zerobyte's, but it
+    imports Service to know which volume folders are this repository's — so it
+    only runs from inside the repository, which is where `qh` points.
+    """
+    caminho = APPS / "zerobyte" / "jobs" / "zerobyte-jobs.py"
+    spec = importlib.util.spec_from_file_location("zerobyte_jobs", caminho)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    sys.argv = [f"{called} --zerobyte", *(x for x in sys.argv[1:] if x != "--zerobyte")]
+    return mod.main()
+
+
 def main():
     # The examples in the docstring have to match how you actually invoked it:
     # installed as a `qh` symlink, telling you to type `python3 install.py`
     # sends you back to a directory you no longer need to be in.
     called = Path(sys.argv[0]).name
     how = "python3 install.py" if called.endswith(".py") else called
+    # Before the parser: the generator carries flags of its own (--url,
+    # --repository), which this one would reject as unknown.
+    if "--zerobyte" in sys.argv[1:]:
+        return zerobyte_jobs(called)
     qhui.argparse_ptbr()
     abertura = AJUDA_PT if qhui.PTBR else __doc__
     ap = argparse.ArgumentParser(description=abertura.replace("python3 install.py", how),
@@ -2723,6 +2743,8 @@ def main():
                     help=loc("with --backup: where to write the .tar.gz (default: here)"))
     ap.add_argument("--all", action="store_true",
                     help=loc("act on ALL the services in apps/"))
+    ap.add_argument("--zerobyte", action="store_true",
+                    help=loc("create the Zerobyte backup jobs (its own flags follow: --url)"))
     a = ap.parse_args()
 
     if a.selftest:
