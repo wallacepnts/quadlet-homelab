@@ -2744,7 +2744,7 @@ def main():
     ap.add_argument("--all", action="store_true",
                     help=loc("act on ALL the services in apps/"))
     ap.add_argument("--zerobyte", action="store_true",
-                    help=loc("create the Zerobyte backup jobs (its own flags follow: --url)"))
+                    help=loc("create the Zerobyte backup jobs (`--zerobyte --help` for its own flags)"))
     a = ap.parse_args()
 
     if a.selftest:

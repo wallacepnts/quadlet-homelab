@@ -106,15 +106,16 @@ qualquer coisa que chegue na porta 8766 pare os seus serviços.
 ### Criando os jobs
 
 Um job por pasta dentro de `volumes/`, cada um com o modo de gancho que o dado
-dele pede. O `qh --zerobyte` descobre isso e cria pela API:
+dele pede. O `qh --zerobyte` descobre isso e cria pela API. O endereço ele lê
+do `BASE_URL` no `.env` do próprio serviço; o `--url` sobrescreve:
 
 ```bash
 # Uma chave de API em Settings -> API keys, salva onde o script procura
 mkdir -p ~/.config/zerobyte
 printf '%s' 'A_CHAVE' > ~/.config/zerobyte/api-key && chmod 600 ~/.config/zerobyte/api-key
 
-qh --zerobyte --url https://zerobyte.<your-tailnet>.ts.net            # mostra o plano
-qh --zerobyte --url https://zerobyte.<your-tailnet>.ts.net --apply
+qh --zerobyte            # mostra o plano
+qh --zerobyte --apply
 ```
 
 O modo sai do dado: SQLite vira `sqlite`, marca de Postgres ou Mongo vira
@@ -140,8 +141,8 @@ Com dois ou mais cadastrados, diga qual roda o backup; os outros viram espelho
 de todos os jobs:
 
 ```bash
-qh --zerobyte --url ... --repository <shortId> --apply
-qh --zerobyte --url ... --repository <shortId> --no-mirror --apply   # sem espelhar
+qh --zerobyte --repository <shortId> --apply
+qh --zerobyte --repository <shortId> --no-mirror --apply   # sem espelhar
 ```
 
 Espelho copia o snapshot pronto, em vez de repetir o backup: o serviço para uma

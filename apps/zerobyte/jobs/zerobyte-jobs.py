@@ -50,6 +50,7 @@ SECRETS = pathlib.Path.home() / ".config/containers/secrets"
 UNITS = pathlib.Path.home() / ".config/containers/systemd"
 APPS = pathlib.Path(__file__).resolve().parent.parent.parent  # apps/
 CHAVE = pathlib.Path.home() / ".config/zerobyte/api-key"
+ENV = pathlib.Path.home() / ".config/containers/env/zerobyte.env"
 TOKEN = pathlib.Path.home() / ".config/zerobyte-backup-hook/token"
 BANCOS = (".db", ".sqlite", ".sqlite3")
 COPIA = ".dbbackup"
@@ -110,11 +111,24 @@ def ganchos(nome, porta, token):
             "post": {"url": f"{base}/post-backup", "headers": cab}}
 
 
+def url_do_env():
+    """The URL Zerobyte answers on, from its own env file.
+
+    Not 127.0.0.1: under the tailnet access mode the unit publishes no port,
+    and the only way in is through tsdproxy. BASE_URL is what Zerobyte itself
+    builds its links from, so it is right in every access mode.
+    """
+    if not ENV.exists():
+        return None
+    m = re.search(r"(?m)^\s*BASE_URL\s*=\s*(\S+)", ENV.read_text())
+    return m.group(1).strip("\"'") if m else None
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--url", default=os.environ.get("ZEROBYTE_URL"),
-                    help="base URL of Zerobyte (or ZEROBYTE_URL)")
+    ap.add_argument("--url", default=os.environ.get("ZEROBYTE_URL") or url_do_env(),
+                    help="base URL of Zerobyte (default: BASE_URL from its .env)")
     ap.add_argument("--repository", help="where the backup runs (default: the only one)")
     ap.add_argument("--no-mirror", action="store_true",
                     help="do not mirror to the other registered repositories")
@@ -124,7 +138,7 @@ def main():
     a = ap.parse_args()
 
     if not a.url:
-        raise SystemExit("--url or ZEROBYTE_URL is required")
+        raise SystemExit(f"no BASE_URL in {ENV} — pass --url")
     if not CHAVE.is_file():
         raise SystemExit(f"no API key at {CHAVE} — create one in Settings -> API keys")
     key = CHAVE.read_text().strip()

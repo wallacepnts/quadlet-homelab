@@ -106,15 +106,16 @@ what keeps anything reaching port 8766 from stopping your services.
 ### Creating the jobs
 
 One job per folder under `volumes/`, each with the hook mode its data needs.
-`qh --zerobyte` works that out and creates them through the API:
+`qh --zerobyte` works that out and creates them through the API. It reads the
+address from `BASE_URL` in the service's own `.env`; `--url` overrides it:
 
 ```bash
 # An API key from Settings -> API keys, saved where the script looks
 mkdir -p ~/.config/zerobyte
 printf '%s' 'THE_KEY' > ~/.config/zerobyte/api-key && chmod 600 ~/.config/zerobyte/api-key
 
-qh --zerobyte --url https://zerobyte.<your-tailnet>.ts.net            # shows the plan
-qh --zerobyte --url https://zerobyte.<your-tailnet>.ts.net --apply
+qh --zerobyte            # shows the plan
+qh --zerobyte --apply
 ```
 
 The mode comes from the data: SQLite means `sqlite`, a Postgres or Mongo
@@ -141,8 +142,8 @@ With two or more registered, say which one runs the backup; the others become
 mirrors of every job:
 
 ```bash
-qh --zerobyte --url ... --repository <shortId> --apply
-qh --zerobyte --url ... --repository <shortId> --no-mirror --apply   # no mirroring
+qh --zerobyte --repository <shortId> --apply
+qh --zerobyte --repository <shortId> --no-mirror --apply   # no mirroring
 ```
 
 A mirror copies the finished snapshot instead of repeating the backup: the
