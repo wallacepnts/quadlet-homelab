@@ -1,6 +1,6 @@
 # Beaver Habits
 
-<img src="https://api.iconify.design/mdi/check-circle-outline.svg?color=%23888888" width="64" height="64" alt="">
+<img src="https://avatars.githubusercontent.com/u/6239652?s=200&v=4" width="64" height="64" alt="">
 
 **[🇧🇷 Leia em português](./README.pt-BR.md)**
 
