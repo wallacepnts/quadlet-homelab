@@ -29,7 +29,7 @@ Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=koffan
 Label=tsdproxy.port.web=443/https:8080/http
-Label=tsdproxy.dash.icon=sh/koffan
+Label=tsdproxy.dash.icon=mdi/cart-outline
 
 Label=homepage.group=Home
 Label=homepage.name=Koffan

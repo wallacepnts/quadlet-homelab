@@ -32,7 +32,7 @@ Label=tsdproxy.dash.icon=sh/zimaos
 
 Label=homepage.group="Virtual Machines"
 Label=homepage.name=ZimaOS
-Label=homepage.icon=https://cdn.jsdelivr.net/gh/dockur/zima@master/assets/20241126-153324.png
+Label=homepage.icon=https://cdn.jsdelivr.net/gh/selfhst/icons/svg/zimaos.svg
 Label=homepage.href=https://zima.${TAILNET}.ts.net
 Label=homepage.description="ZimaOS in a VM — the CasaOS-derived NAS interface, without the hardware"
 
