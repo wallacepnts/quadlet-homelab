@@ -2,7 +2,7 @@
 
 **[🇺🇸 Read in English](../../README.md)**
 
-70 serviços self-hosted como units do [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html),
+71 serviços self-hosted como units do [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html),
 rootless, um serviço por pasta.
 
 ## Início rápido
@@ -69,7 +69,7 @@ use `--reinstall`.
 ## Requisitos
 
 - **Podman 5.0 ou mais novo.** É a régua de verdade: o `Notify=healthy` chegou
-  nessa versão, e 98 das 106 units usam. No 4.x o start volta antes de o app
+  nessa versão, e 99 das 107 units usam. No 4.x o start volta antes de o app
   estar pronto, e a instalação relata um sucesso que ela não tem como saber.
 - **systemd com sessão de usuário** e cgroups v2.
 - **SELinux**, se a sua distribuição tiver. As units trazem `:Z` em 125 linhas
@@ -130,6 +130,7 @@ aqui.
 | <img src="https://cdn.jsdelivr.net/gh/NousResearch/hermes-agent@main/website/static/img/logo.png" width="48" height="48" alt=""> | [Hermes Agent](../../apps/hermes-agent/README.pt-BR.md) | `v2026.8.3` | Agente de IA pessoal com habilidades e memória, expondo uma API compatível com a da OpenAI pros outros serviços chamarem |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/homebox.svg" width="48" height="48" alt=""> | [HomeBox](../../apps/homebox/README.pt-BR.md) | `0.26.2` | Inventário doméstico — o que você tem, onde está, nota fiscal, manual e garantia, com busca e etiquetas |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/grafana.svg" width="48" height="48" alt=""> | [Grafana](../../apps/grafana/README.pt-BR.md) | `13.1.3` | Painéis sobre o que você apontar — ele não traz dado nenhum próprio |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/headscale.svg" width="48" height="48" alt=""> | [Headscale](../../apps/headscale/README.pt-BR.md) | `v0.29.3` | Seu próprio control plane da tailnet — a coordenação, sem a empresa |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/home-assistant.svg" width="48" height="48" alt=""> | [Home Assistant](../../apps/home-assistant/README.pt-BR.md) | `2026.8.1` | Hub central de automação residencial, integra dispositivos de qualquer fabricante num painel só |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/homepage.png" width="48" height="48" alt=""> | [homepage](../../apps/homepage/README.pt-BR.md) | `latest` (auto-update) | Dashboard que descobre e organiza os outros containers sozinho via labels, sem editar config a cada serviço novo |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/immich.svg" width="48" height="48" alt=""> | [Immich](../../apps/immich/README.pt-BR.md) | `v3.1.0` | Backup e organização de fotos/vídeos, com reconhecimento facial e busca smart |

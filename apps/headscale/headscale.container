@@ -1,0 +1,41 @@
+[Unit]
+Description=Headscale (control plane for your own tailnet)
+
+[Container]
+ReadOnly=true
+Tmpfs=/tmp:size=32M
+Tmpfs=/var/run/headscale:size=8M
+DropCapability=ALL
+NoNewPrivileges=true
+User=1000
+PidsLimit=256
+
+Image=ghcr.io/juanfont/headscale:v0.29.3
+ContainerName=headscale
+Network=tsdproxy-net.network
+PublishPort=8115:8080
+Exec=serve
+
+Volume=%h/.config/containers/volumes/headscale/config:/etc/headscale:ro,Z
+Volume=%h/.config/containers/volumes/headscale/data:/var/lib/headscale:Z
+
+HealthCmd=CMD-SHELL wget -q --spider http://127.0.0.1:8080/health || exit 1
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+HealthStartPeriod=20s
+Notify=healthy
+
+Label=homepage.group="Network & Security"
+Label=homepage.name=Headscale
+Label=homepage.icon=headscale.svg
+Label=homepage.description="Your own control plane for the tailnet, in place of Tailscale's"
+Label=wud.watch=true
+Label=wud.tag.include=^v[0-9]+.[0-9]+.[0-9]+$
+
+[Service]
+Restart=always
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target
