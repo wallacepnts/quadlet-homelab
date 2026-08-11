@@ -148,6 +148,13 @@ mensais e as 3 últimas execuções. O Zerobyte aplica com `restic forget --prun
 logo depois de cada backup, então o espaço volta — não é só o snapshot sumir da
 lista. Não há `keepHourly`: o agendamento é diário e ele nunca casaria.
 
+O container mantém uma capacidade, a `DAC_READ_SEARCH`. Serviço que roda o
+banco sob usuário próprio deixa arquivo de dono mapeado e modo 600 — com tudo
+descartado, o restic lista o diretório e falha arquivo por arquivo
+(`permission denied` no Mongo do any-sync-bundle). Ela fura só a checagem de
+leitura; escrever seria `DAC_OVERRIDE`, que ele não tem, e os volumes estão
+montados como somente-leitura de qualquer forma.
+
 Um job `secrets` cobre o `~/.config/containers/secrets` — volume restaurado sem
 eles dá serviço que sobe e não funciona.
 

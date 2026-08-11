@@ -5,6 +5,7 @@ Description=Zerobyte (backup automation, Restic)
 ReadOnly=true
 Tmpfs=/tmp:size=64M
 DropCapability=ALL
+AddCapability=DAC_READ_SEARCH
 PidsLimit=256
 Image=ghcr.io/nicotsx/zerobyte:v0.41.0
 ContainerName=zerobyte

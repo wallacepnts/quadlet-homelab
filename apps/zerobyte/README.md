@@ -149,6 +149,13 @@ last 3 runs. Zerobyte applies it as `restic forget --prune` right after each
 backup, so the space comes back rather than only the snapshot disappearing.
 There is no `keepHourly` — the schedule is daily and it would never match.
 
+The container keeps one capability, `DAC_READ_SEARCH`. A service that runs its
+database under its own user leaves files owned by a mapped uid, mode 600 — with
+every capability dropped, restic reads a directory listing and then fails on
+each file (`permission denied` on any-sync-bundle's Mongo). This one bypasses
+the read check and nothing else; writing would be `DAC_OVERRIDE`, which it does
+not have, and the volumes are mounted read-only anyway.
+
 A `secrets` job covers `~/.config/containers/secrets` — a volume restored
 without them gives a service that starts and does not work.
 
