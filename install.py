@@ -1414,6 +1414,8 @@ DESCRICOES = {
     "Network-wide ad and tracker blocking over DNS": "Bloqueio de anúncios e rastreadores por DNS, para a rede toda",
     "NVR with AI object detection": "NVR com detecção de objetos por IA",
     "Offline converters, generators and calculators — everything runs in the browser": "Conversores, geradores e calculadoras offline — tudo roda no navegador",
+    "Tasks with a deadline and a project behind them":
+        "Tarefas com prazo e projeto por trás",
     "Signing documents without sending them to a company first":
         "Assinar documentos sem mandá-los antes para uma empresa",
     "Comics and manga, with reading progress that follows you between devices":
