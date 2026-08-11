@@ -60,9 +60,9 @@ systemctl --user start zerobyte
 ```
 zerobyte.container   unit
 backup-hook/         the hook, into ~/.local/bin and systemd/user
+jobs/                the job generator, into ~/.local/bin
 install.ini
 .env.example
-install.ini
 ```
 
 ## Backup hook
@@ -110,41 +110,46 @@ zerobyte-jobs.py --url https://zerobyte.<your-tailnet>.ts.net            # shows
 zerobyte-jobs.py --url https://zerobyte.<your-tailnet>.ts.net --apply
 ```
 
-It picks the mode by looking: SQLite files mean `sqlite`, a Postgres or Mongo
+The mode comes from the data: SQLite files mean `sqlite`, a Postgres or Mongo
 fingerprint means `stop`, anything else needs no hook. A directory it cannot
-read counts as `stop` — that is a container's data owned by a mapped uid, and
-guessing `none` there would back up a live database.
+read also counts as `stop` — that is a container's data owned by a mapped uid,
+and guessing `none` there would back up a live database.
 
-Two things it will not do, and says so instead:
+Two things it reports instead of doing: `stop` with no unit of that name
+(`media-stack` is the case — twelve units share one directory, and one of them
+carries a Postgres), and your allowlist, which it prints but does not edit. A
+job whose hook is missing from `ZEROBYTE_HOOK_UNITS` gets a 404 and fails.
 
-- **`stop` with no unit of that name.** `media-stack` is the case: twelve units
-  share one directory and one of them carries a Postgres, so no single hook
-  call is right. Declare that job by hand.
-- **Guess your allowlist.** It prints the `ZEROBYTE_HOOK_UNITS` the jobs
-  require; a job whose hook is missing from it gets a 404 and fails.
+It only looks at folders belonging to this repository's services. Anything else
+under `volumes/` is listed and left alone — with no `install.ini` and no unit,
+the mode would be a guess.
 
-It only looks at folders belonging to this repository's services. Anything
-else under `volumes/` — something you installed by hand — is listed and left
-alone: it has no `install.ini` to declare a mode and no unit to reason about,
-so the mode would be a guess. Jobs for those are yours to create, and their
-`ZEROBYTE_HOOK_UNITS` entries yours to keep.
-
-A `secrets` job is created too, over `~/.config/containers/secrets`. Restoring
-a data volume without them gives a service that starts and does not work:
-vaultwarden's admin token no longer matches, excalidash's `JWT_SECRET` logs
-everyone out.
-
-It is one job rather than one per app because a Zerobyte job covers a single
-directory: `includePaths` and `customResticParams` are joined to the volume's
-path, so they cannot reach outside it. Restoring is selective anyway, so one
-snapshot holding all of them gives the same choice where it matters.
+A `secrets` job covers `~/.config/containers/secrets`. Restoring a data volume
+without them gives a service that starts and does not work: vaultwarden's admin
+token no longer matches, excalidash's `JWT_SECRET` logs everyone out. It is one
+job because a Zerobyte job covers a single directory — `includePaths` and
+`customResticParams` are joined to the volume's path, and cannot reach outside
+it.
 
 **Keep the repository's own password somewhere else.** Restic encrypts the
 repository with it, and that password is itself a file under `secrets/` — which
 now lives *inside* the thing it unlocks. In a total loss that copy is
-unreachable, so put it where the backup is not: a password manager, or paper.
+unreachable: put it in a password manager, or on paper.
 
 Running it again changes nothing — jobs are matched by name.
+
+### More than one repository
+
+With two or more registered, say which one runs the backup; the others become
+mirrors of every job:
+
+```bash
+zerobyte-jobs.py --url ... --repository <shortId> --apply
+zerobyte-jobs.py --url ... --repository <shortId> --no-mirror --apply   # no mirroring
+```
+
+A mirror copies the finished snapshot instead of repeating the backup: the
+service stops once, and what lands remotely is what was verified here.
 
 ## Update
 

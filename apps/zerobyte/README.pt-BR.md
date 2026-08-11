@@ -60,9 +60,9 @@ systemctl --user start zerobyte
 ```
 zerobyte.container   unit
 backup-hook/         o gancho, para ~/.local/bin e systemd/user
+jobs/                o gerador de jobs, para ~/.local/bin
 install.ini
 .env.example
-install.ini
 ```
 
 ## Gancho de backup
@@ -110,41 +110,46 @@ zerobyte-jobs.py --url https://zerobyte.<your-tailnet>.ts.net            # mostr
 zerobyte-jobs.py --url https://zerobyte.<your-tailnet>.ts.net --apply
 ```
 
-Ele escolhe o modo olhando: arquivo SQLite vira `sqlite`, marca de Postgres ou
-Mongo vira `stop`, o resto não precisa de gancho. Diretório que ele não
-consegue ler conta como `stop` — ali está o dado de um container com uid
-mapeado, e chutar `none` faria backup de banco em uso.
+O modo sai do dado: arquivo SQLite vira `sqlite`, marca de Postgres ou Mongo
+vira `stop`, o resto não precisa de gancho. Diretório que ele não consegue ler
+também conta como `stop` — ali está o dado de um container com uid mapeado, e
+chutar `none` faria backup de banco em uso.
 
-Duas coisas ele não faz, e avisa em vez de fazer:
+Duas coisas ele avisa em vez de fazer: `stop` sem unit com aquele nome (o
+`media-stack` é o caso — doze units dividem um diretório, e uma delas carrega
+um Postgres), e a sua allowlist, que ele imprime mas não edita. Job cujo gancho
+não estiver no `ZEROBYTE_HOOK_UNITS` recebe 404 e falha.
 
-- **`stop` sem unit com aquele nome.** O `media-stack` é o caso: doze units
-  dividem um diretório e uma delas carrega um Postgres, então nenhuma chamada
-  única de gancho está certa. Esse job é declarado à mão.
-- **Adivinhar a sua allowlist.** Ele imprime o `ZEROBYTE_HOOK_UNITS` que os
-  jobs exigem; job cujo gancho não estiver lá recebe 404 e falha.
+Só olha as pastas dos serviços deste repositório. O que mais houver em
+`volumes/` é listado e deixado em paz — sem `install.ini` e sem unit, o modo
+seria chute.
 
-Ele olha só as pastas dos serviços deste repositório. O que mais houver
-dentro de `volumes/` — algo que você instalou à mão — é listado e deixado em
-paz: não tem `install.ini` declarando modo nem unit sobre a qual raciocinar,
-então o modo seria chute. Os jobs desses são seus para criar, e as entradas
-deles no `ZEROBYTE_HOOK_UNITS` são suas para manter.
-
-Um job `secrets` também é criado, sobre o `~/.config/containers/secrets`.
-Restaurar um volume de dados sem eles dá um serviço que sobe e não funciona: o
-token de administrador do vaultwarden deixa de bater, o `JWT_SECRET` do
-excalidash desloga todo mundo.
-
-É um job só, e não um por app, porque um job do Zerobyte cobre um único
-diretório: o `includePaths` e o `customResticParams` são juntados ao caminho do
-volume, então não alcançam fora dele. E a restauração é seletiva de qualquer
-forma, então um snapshot com todos dá a mesma escolha na hora que importa.
+Um job `secrets` cobre o `~/.config/containers/secrets`. Restaurar um volume de
+dados sem eles dá um serviço que sobe e não funciona: o token de administrador
+do vaultwarden deixa de bater, o `JWT_SECRET` do excalidash desloga todo mundo.
+É um job só porque um job do Zerobyte cobre um único diretório — `includePaths`
+e `customResticParams` são juntados ao caminho do volume, e não alcançam fora
+dele.
 
 **Guarde a senha do repositório em outro lugar.** O Restic cifra o repositório
 com ela, e essa senha é ela própria um arquivo dentro de `secrets/` — que agora
-mora *dentro* do que ela destranca. Numa perda total essa cópia é inalcançável,
-então deixe-a onde o backup não está: num gerenciador de senhas, ou no papel.
+mora *dentro* do que ela destranca. Numa perda total essa cópia é inalcançável:
+deixe-a num gerenciador de senhas, ou no papel.
 
 Rodar de novo não muda nada — os jobs são casados pelo nome.
+
+### Mais de um repositório
+
+Com dois ou mais cadastrados, diga qual roda o backup; os outros viram espelho
+de todos os jobs:
+
+```bash
+zerobyte-jobs.py --url ... --repository <shortId> --apply
+zerobyte-jobs.py --url ... --repository <shortId> --no-mirror --apply   # sem espelhar
+```
+
+Espelho copia o snapshot pronto, em vez de repetir o backup: o serviço para uma
+vez só, e o que chega na nuvem é o mesmo que foi verificado aqui.
 
 ## Atualizar
 

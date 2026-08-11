@@ -115,7 +115,9 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--url", default=os.environ.get("ZEROBYTE_URL"),
                     help="base URL of Zerobyte (or ZEROBYTE_URL)")
-    ap.add_argument("--repository", help="repository shortId (default: the only one)")
+    ap.add_argument("--repository", help="where the backup runs (default: the only one)")
+    ap.add_argument("--no-mirror", action="store_true",
+                    help="do not mirror to the other registered repositories")
     ap.add_argument("--cron", default="0 3 * * *", help="schedule (default: 03:00 daily)")
     ap.add_argument("--hook-port", default="8766")
     ap.add_argument("--apply", action="store_true", help="execute (without it, only show)")
@@ -134,7 +136,13 @@ def main():
     elif len(repos) == 1:
         repo = repos[0]["shortId"]
     else:
-        raise SystemExit(f"{len(repos)} repositories — pick one with --repository")
+        raise SystemExit(f"{len(repos)} repositories — say which one runs the "
+                         f"backup with --repository (the others become mirrors)")
+    # Every other registered repository mirrors this one. A second job per
+    # destination would run the backup twice: two stops of any-sync-bundle, two
+    # SQLite copies, and two chances to differ. A mirror copies the snapshot
+    # that was already made, so what lands remotely is what was verified here.
+    espelhos = [r["shortId"] for r in repos if r["shortId"] != repo]
 
     # shortId by name, so a second run changes nothing
     volumes = {v["name"]: v["shortId"] for v in api(a.url, key, "volumes")}
@@ -208,6 +216,14 @@ def main():
                  "enabled": True, "cronExpression": a.cron})
     elif "secrets" in jobs:
         print(f"  {'secrets':24} job já existe")
+
+    if espelhos and not a.no_mirror:
+        print(f"\nespelhando {len(espelhos)} repositório(s) em cada job")
+        for b in api(a.url, key, "backups"):
+            if not a.apply:
+                continue
+            api(a.url, key, f"backups/{b['shortId']}/mirrors", "PUT",
+                {"mirrors": [{"repositoryId": r, "enabled": True} for r in espelhos]})
 
     if alheias:
         print(f"\nfora deste repositório, não tocadas: {', '.join(alheias)}")
