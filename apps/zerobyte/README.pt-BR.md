@@ -143,6 +143,11 @@ exclude =
 Essa é a do próprio zerobyte, e vale 15 MB por noite: repositório criado pela
 interface cai dentro do volume de que este job faz backup.
 
+Todo job leva também a mesma janela de retenção: 7 diários, 4 semanais, 6
+mensais e as 3 últimas execuções. O Zerobyte aplica com `restic forget --prune`
+logo depois de cada backup, então o espaço volta — não é só o snapshot sumir da
+lista. Não há `keepHourly`: o agendamento é diário e ele nunca casaria.
+
 Um job `secrets` cobre o `~/.config/containers/secrets` — volume restaurado sem
 eles dá serviço que sobe e não funciona.
 

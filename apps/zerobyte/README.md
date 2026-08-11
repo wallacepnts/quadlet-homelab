@@ -144,6 +144,11 @@ exclude =
 That is zerobyte's own, and it is worth 15 MB a night: a repository created
 through the interface lands inside the volume this job backs up.
 
+Every job also keeps the same window: 7 daily, 4 weekly, 6 monthly, and the
+last 3 runs. Zerobyte applies it as `restic forget --prune` right after each
+backup, so the space comes back rather than only the snapshot disappearing.
+There is no `keepHourly` — the schedule is daily and it would never match.
+
 A `secrets` job covers `~/.config/containers/secrets` — a volume restored
 without them gives a service that starts and does not work.
 

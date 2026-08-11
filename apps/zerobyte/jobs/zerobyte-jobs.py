@@ -65,7 +65,7 @@ PT = {
     "mirroring": "espelhando",
     "clearing the mirrors on every job": "tirando o espelho de todos os jobs",
     "first copy failed": "a primeira cópia falhou",
-    "excludes updated": "exclusões atualizadas",
+    "settings updated": "ajustes atualizados",
     "repository(ies) on every job": "repositório(s) em cada job",
     "outside this repository, left alone": "fora deste repositório, não tocadas",
     "ZEROBYTE_HOOK_UNITS must include these, or the jobs fail:":
@@ -113,6 +113,11 @@ MARCAS = {
 EXCLUIR = ["*.tmp", "*.partial", "lost+found", ".Trash-*"]
 # restic's own convention: a directory carrying this file is a cache.
 EXCLUIR_SE = ["CACHEDIR.TAG"]
+# Kept on every job: a week of days, a month of weeks, half a year of months.
+# No keepHourly — the schedule is daily, so it would never match anything. The
+# keepLast is for the runs you trigger by hand on the same day as a scheduled
+# one, which the daily rule alone would collapse into a single kept snapshot.
+RETENCAO = {"keepLast": 3, "keepDaily": 7, "keepWeekly": 4, "keepMonthly": 6}
 # PATCH takes the whole object, so an existing job is read back and sent again.
 CAMPOS = ("name", "volumeId", "repositoryId", "enabled", "cronExpression",
           "excludePatterns", "excludeIfPresent", "backupWebhooks",
@@ -171,21 +176,25 @@ def excluir(nome):
     return EXCLUIR + [l.strip() for l in bruto.splitlines() if l.strip()]
 
 
-def ajusta_exclusoes(a, key, job, padroes):
-    """Bring an existing job's exclude lists up to date.
+def ajusta_job(a, key, job, padroes):
+    """Bring an existing job's excludes and retention up to date.
 
-    A body with only the two fields is refused (`expected string, path:
-    repositoryId`), so the job is sent back whole with those two replaced.
+    A body with only the changed fields is refused (`expected string, path:
+    repositoryId`), so the job is sent back whole with those replaced. The
+    retention is compared key by key: the API answers with keys we never set.
     """
+    guardado = job.get("retentionPolicy") or {}
     if (job.get("excludePatterns") == padroes
-            and job.get("excludeIfPresent") == EXCLUIR_SE):
+            and job.get("excludeIfPresent") == EXCLUIR_SE
+            and all(guardado.get(k) == v for k, v in RETENCAO.items())):
         return ""
     if a.apply:
         corpo = {k: job[k] for k in CAMPOS if job.get(k) is not None}
         corpo["excludePatterns"] = padroes
         corpo["excludeIfPresent"] = list(EXCLUIR_SE)
+        corpo["retentionPolicy"] = dict(RETENCAO)
         api(a.url, key, f"backups/{job['shortId']}", "PATCH", corpo)
-    return "  |  " + loc("excludes updated")
+    return "  |  " + loc("settings updated")
 
 
 def ganchos(nome, porta, token):
@@ -269,7 +278,7 @@ def main():
             allowlist.append(f"{nome}:{m}")
         if nome in jobs:
             print(f"  {nome:24} " + loc("job already exists")
-                  + ajusta_exclusoes(a, key, jobs[nome], excluir(nome)))
+                  + ajusta_job(a, key, jobs[nome], excluir(nome)))
             continue
         if m != "none" and not token:
             print(f"  {nome:24} " + loc("needs the hook") + f" ({m}), " + loc("but there is no token — skipping"))
@@ -296,7 +305,8 @@ def main():
         vid = volumes[nome]
         corpo = {"name": nome, "volumeId": vid, "repositoryId": repo,
                  "enabled": True, "cronExpression": a.cron,
-                 "excludePatterns": excluir(nome), "excludeIfPresent": list(EXCLUIR_SE)}
+                 "excludePatterns": excluir(nome), "excludeIfPresent": list(EXCLUIR_SE),
+                 "retentionPolicy": dict(RETENCAO)}
         if m != "none":
             corpo["backupWebhooks"] = ganchos(nome, a.hook_port, token)
         api(a.url, key, "backups", "POST", corpo)
@@ -321,10 +331,11 @@ def main():
             api(a.url, key, "backups", "POST",
                 {"name": "secrets", "volumeId": volumes["secrets"], "repositoryId": repo,
                  "enabled": True, "cronExpression": a.cron,
-                 "excludePatterns": list(EXCLUIR), "excludeIfPresent": list(EXCLUIR_SE)})
+                 "excludePatterns": list(EXCLUIR), "excludeIfPresent": list(EXCLUIR_SE),
+                 "retentionPolicy": dict(RETENCAO)})
     elif "secrets" in jobs:
         print(f"  {'secrets':24} " + loc("job already exists")
-              + ajusta_exclusoes(a, key, jobs["secrets"], list(EXCLUIR)))
+              + ajusta_job(a, key, jobs["secrets"], list(EXCLUIR)))
 
     # --no-mirror writes an empty list rather than skipping the step: skipping
     # would leave yesterday's mirrors in place, so the flag would turn nothing
