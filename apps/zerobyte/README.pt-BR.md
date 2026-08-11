@@ -89,12 +89,19 @@ curl -s http://127.0.0.1:8766/healthz     # {"ok": true}
 # Porta ocupada? O ZEROBYTE_HOOK_PORT muda; o WEBHOOK_ALLOWED_ORIGINS tem que acompanhar.
 ```
 
-Aponte cada job para estas, com aquele token como segredo:
+Cada job leva então duas URLs — o `zerobyte-jobs.py` abaixo as escreve sozinho;
+à mão só se você criar o job pela interface:
 
 ```
 http://host.containers.internal:8766/hooks/<unit>/pre-backup
 http://host.containers.internal:8766/hooks/<unit>/post-backup
 ```
+
+`host.containers.internal` é o host visto de dentro do container: o gancho roda
+no host, porque quem para uma unit é o `systemctl --user`, e isso um container
+não alcança. `<unit>` diz sobre quem agir. O token vai no cabeçalho
+`X-Zerobyte-Hook-Secret` — sem ele o gancho responde 401, e é o que impede que
+qualquer coisa que chegue na porta 8766 pare os seus serviços.
 
 ### Criando os jobs
 

@@ -89,12 +89,19 @@ curl -s http://127.0.0.1:8766/healthz     # {"ok": true}
 # Port taken? ZEROBYTE_HOOK_PORT moves it; WEBHOOK_ALLOWED_ORIGINS must agree.
 ```
 
-Point each job at these, with that token as the secret:
+Each job then carries two URLs — `zerobyte-jobs.py` below writes them for you;
+by hand only if you create the job through the interface:
 
 ```
 http://host.containers.internal:8766/hooks/<unit>/pre-backup
 http://host.containers.internal:8766/hooks/<unit>/post-backup
 ```
+
+`host.containers.internal` is the host as seen from inside the container: the
+hook runs on the host, because stopping a unit is `systemctl --user`, which a
+container cannot reach. `<unit>` says who to act on. The token goes in the
+`X-Zerobyte-Hook-Secret` header — without it the hook answers 401, and that is
+what keeps anything reaching port 8766 from stopping your services.
 
 ### Creating the jobs
 
