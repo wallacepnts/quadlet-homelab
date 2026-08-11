@@ -3,9 +3,9 @@
 server:
   host: "0.0.0.0"
   port: 3000
-  # A Podman secret, mounted as a file rather than pasted here. Losing it logs
-  # everyone out; it decides nothing else.
-  cookie_secret_path: "/run/secrets/cookie-secret"
+  # Comes in as HEADPLANE_SERVER__COOKIE_SECRET, from a Podman secret. Not
+  # `cookie_secret_path`: a file secret needs a mount point, and ReadOnly=true
+  # forbids creating one — the same refusal recorded for vaultzap.
   # true once you reach it over HTTPS through Caddy. Left false so the first
   # start works over plain http://<host>:8116/admin.
   cookie_secure: false

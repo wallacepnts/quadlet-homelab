@@ -4,7 +4,10 @@
 #   listen_addr       0.0.0.0 and not 127.0.0.1, or nothing outside the
 #                     container reaches it
 #   metrics_listen_addr   same reason
-#   base_domain       what MagicDNS appends: node.casa
+#   base_domain       what MagicDNS appends: node.rede.casa. It cannot
+#                     contain server_url — headscale refuses to start with
+#                     "server_url cannot be part of base_domain", because a
+#                     node called `headscale` would then shadow the server.
 #
 # The TLS lines are left empty on purpose: Caddy terminates it, and headscale
 # behind a proxy should not be doing ACME of its own.
@@ -320,7 +323,7 @@ dns:
   # `base_domain` must be a FQDN, without the trailing dot.
   # The FQDN of the hosts will be
   # `hostname.base_domain` (e.g., _myhost.example.com_).
-  base_domain: casa
+  base_domain: rede.casa
 
   # Whether to use the local DNS settings of a node or override the local DNS
   # settings (default) and force the use of Headscale's DNS configuration.

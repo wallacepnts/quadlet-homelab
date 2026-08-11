@@ -16,10 +16,10 @@ Network=tsdproxy-net.network
 PublishPort=8115:8080
 Exec=serve
 
-Volume=%h/.config/containers/volumes/headscale/config:/etc/headscale:ro,Z
+Volume=%h/.config/containers/volumes/headscale/config:/etc/headscale:ro,z
 Volume=%h/.config/containers/volumes/headscale/data:/var/lib/headscale:Z
 
-HealthCmd=CMD-SHELL wget -q --spider http://127.0.0.1:8080/health || exit 1
+HealthCmd=["CMD", "/ko-app/headscale", "debug", "db-info"]
 HealthInterval=30s
 HealthTimeout=5s
 HealthRetries=3
