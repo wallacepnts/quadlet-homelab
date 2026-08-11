@@ -1,0 +1,46 @@
+[Unit]
+Description=SearXNG (metasearch engine)
+
+[Container]
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+Tmpfs=/var/cache/searxng:size=64M
+DropCapability=ALL
+NoNewPrivileges=true
+User=977
+PidsLimit=256
+
+Image=docker.io/searxng/searxng:2026.8.10-0a118066d
+ContainerName=searxng
+Network=tsdproxy-net.network
+PublishPort=8107:8080
+
+Volume=%h/.config/containers/volumes/searxng/config:/etc/searxng:ro,Z
+Secret=searxng-secret,type=env,target=SEARXNG_SECRET
+
+HealthCmd=CMD-SHELL wget -q --spider http://127.0.0.1:8080/healthz || exit 1
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+HealthStartPeriod=20s
+Notify=healthy
+
+Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
+Label=tsdproxy.name=searxng
+Label=tsdproxy.port.web=443/https:8080/http
+Label=tsdproxy.dash.icon=si/searxng
+
+Label=homepage.group=Tools
+Label=homepage.name=SearXNG
+Label=homepage.icon=searxng.svg
+Label=homepage.href=https://searxng.${TAILNET}.ts.net
+Label=homepage.description="Metasearch that queries other engines without profiling you"
+Label=wud.watch=true
+
+[Service]
+Restart=always
+TimeoutStartSec=90
+
+[Install]
+WantedBy=default.target

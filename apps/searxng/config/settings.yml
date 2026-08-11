@@ -1,0 +1,14 @@
+# Merged on top of the defaults inside the image, which is what
+# `use_default_settings` means — the same shape as the file the entrypoint
+# would have generated, so a new version's defaults arrive on their own.
+use_default_settings: true
+
+server:
+  image_proxy: true
+
+search:
+  # `json` is not a default. Without it SearXNG answers 403 to anything that
+  # is not a browser, and Open WebUI's web search is exactly that.
+  formats:
+    - html
+    - json

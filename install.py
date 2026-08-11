@@ -1403,6 +1403,8 @@ DESCRICOES = {
     "Network-wide ad and tracker blocking over DNS": "Bloqueio de anúncios e rastreadores por DNS, para a rede toda",
     "NVR with AI object detection": "NVR com detecção de objetos por IA",
     "Offline converters, generators and calculators — everything runs in the browser": "Conversores, geradores e calculadoras offline — tudo roda no navegador",
+    "Metasearch that queries other engines without profiling you":
+        "Metabusca que consulta outros motores sem traçar perfil seu",
     "P2P file sync between devices, with no central server": "Sincronização P2P de arquivos entre dispositivos, sem servidor central",
     "PDF manipulation — merge, split, convert, OCR, sign": "Manipulação de PDF — juntar, dividir, converter, OCR, assinar",
     "Personal AI agent with skills and memory, exposing an OpenAI-compatible API": "Agente de IA pessoal com habilidades e memória, expondo API compatível com a da OpenAI",
