@@ -1,0 +1,50 @@
+[Unit]
+Description=DocuSeal (documents signed at home)
+
+[Container]
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+NoNewPrivileges=true
+User=1000
+PidsLimit=512
+
+Image=docker.io/docuseal/docuseal:3.2.0
+ContainerName=docuseal
+Network=tsdproxy-net.network
+PublishPort=8120:3000
+
+# Straight at /data/docuseal, not at /data: the app creates that subfolder
+# itself on first start and cannot, running as a non-root user on a read-only
+# filesystem — `Permission denied @ rb_sysopen - /data/docuseal/docuseal.env`.
+# Mounting the path it wants sidesteps the creation entirely.
+Volume=%h/.config/containers/volumes/docuseal/data:/data/docuseal:Z
+EnvironmentFile=%h/.config/containers/env/docuseal.env
+
+HealthCmd=CMD-SHELL wget -q --spider http://127.0.0.1:3000/ || exit 1
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=5
+HealthStartPeriod=60s
+Notify=healthy
+
+Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
+Label=tsdproxy.name=docuseal
+Label=tsdproxy.port.web=443/https:3000/http
+Label=tsdproxy.dash.icon=sh/docuseal-light
+
+Label=homepage.group=Productivity
+Label=homepage.name=DocuSeal
+Label=homepage.icon=https://cdn.jsdelivr.net/gh/selfhst/icons/svg/docuseal.svg
+Label=homepage.href=https://docuseal.${TAILNET}.ts.net
+Label=homepage.description="Signing documents without sending them to a company first"
+Label=wud.watch=true
+Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+$
+
+[Service]
+Restart=always
+TimeoutStartSec=180
+
+[Install]
+WantedBy=default.target

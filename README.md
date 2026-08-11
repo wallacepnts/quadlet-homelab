@@ -2,7 +2,7 @@
 
 **[🇧🇷 Leia em português](./docs/pt-BR/README.md)**
 
-72 self-hosted services as [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)
+73 self-hosted services as [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)
 units, rootless, one service per folder.
 
 ## Quick start
@@ -69,7 +69,7 @@ pulled. To go through anyway, use `--reinstall`.
 ## Requirements
 
 - **Podman 5.0 or newer.** This is the real floor: `Notify=healthy` arrived
-  there, and 100 of the 108 units use it. On 4.x the start returns before the app
+  there, and 101 of the 109 units use it. On 4.x the start returns before the app
   is ready, and the install reports a success it cannot know about.
 - **systemd with a user session** and cgroups v2.
 - **SELinux**, if your distribution has it. The units carry `:Z` on 125 volume
@@ -116,6 +116,7 @@ Leap 15's problem — it publishes no container image and was not measured here.
 | <img src="https://sdk.collaboraonline.com/_static/collabora.svg" width="48" height="48" alt=""> | [Collabora](./apps/collabora) | `26.04.3.1.1` | Editing documents inside ownCloud — writer, spreadsheet and slides, in the browser |
 | <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/cookcli.svg" width="48" height="48" alt=""> | [CookCLI](./apps/cookcli) | `0.32.1` | Plain-text recipes in the CookLang format — versionable in git, with no database and no forms |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/copyparty.svg" width="48" height="48" alt=""> | [Copyparty](./apps/copyparty) | `1.20.20` | A file server with browser or phone uploads, resumable transfers and WebDAV |
+| <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/docuseal.svg" width="48" height="48" alt=""> | [DocuSeal](./apps/docuseal) | `3.2.0` | Signing documents at home, without handing them to a company first |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/donetick.svg" width="48" height="48" alt=""> | [Donetick](./apps/donetick) | `v0.1.76` | Recurring household chores — who does them, how often, and when they are due |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/dozzle.svg" width="48" height="48" alt=""> | [Dozzle](./apps/dozzle) | `v10.7.1` | Live logs of every container in the browser, without opening a terminal |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/excalidraw.svg" width="48" height="48" alt=""> | [ExcaliDash](./apps/excalidash) | `0.5.1` | A dashboard for Excalidraw drawings — folders, sharing and multi-user, over your own storage |
