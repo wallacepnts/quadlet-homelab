@@ -88,6 +88,14 @@ def units_for(name: str) -> list:
     return [l.split()[0][:-len(".service")] for l in achadas.stdout.splitlines() if l.strip()]
 
 
+ESTADO = os.path.expanduser("~/.config/zerobyte-backup-hook")
+
+
+def estado_path(unit: str) -> str:
+    """Where pre-backup records what it stopped, for post-backup to start."""
+    return os.path.join(ESTADO, f"stopped-{unit.replace('/', '_')}.json")
+
+
 def systemctl(*args: str, timeout: int) -> subprocess.CompletedProcess:
     return subprocess.run(
         ["systemctl", "--user", *args],
@@ -209,6 +217,16 @@ class Handler(BaseHTTPRequestHandler):
         if not alvos:
             self._send_json(500, {"error": "no unit to stop", "unit": unit})
             return
+        # Only what is actually running. A stack has units that are deliberately
+        # off — media-stack's gluetun, the optional VPN — and starting those
+        # afterwards puts them in a crash loop until systemd's start limit
+        # gives up. What was stopped here is what gets started later.
+        ativas = [u for u in alvos
+                  if systemctl("is-active", "--quiet", u, timeout=10).returncode == 0]
+        if not ativas:
+            self._send_json(200, {"ok": True, "action": "already stopped", "units": []})
+            return
+        alvos = ativas
         try:
             result = systemctl("stop", *alvos, timeout=STOP_TIMEOUT)
         except subprocess.TimeoutExpired:
@@ -218,6 +236,12 @@ class Handler(BaseHTTPRequestHandler):
             print(f"stop failed: {result.stderr}", file=sys.stderr)
             self._send_json(500, {"error": "stop failed", "detail": result.stderr})
             return
+        try:
+            os.makedirs(ESTADO, exist_ok=True)
+            with open(estado_path(unit), "w") as f:
+                json.dump(alvos, f)
+        except OSError as e:
+            print(f"could not record what was stopped: {e}", file=sys.stderr)
         self._send_json(200, {"ok": True, "action": "stopped", "units": alvos})
 
     def _handle_post(self, unit: str) -> None:
@@ -228,7 +252,18 @@ class Handler(BaseHTTPRequestHandler):
         # which has already run), so it is better to answer straight away and
         # let the restart happen in the background than to risk the webhook
         # blowing the timeout with the container still stopped.
-        alvos = units_for(unit)
+        try:
+            with open(estado_path(unit)) as f:
+                alvos = json.load(f)
+            os.unlink(estado_path(unit))
+        except (OSError, ValueError):
+            # No record: the hook restarted between the two calls. Starting the
+            # whole set is the lesser evil — something up beats something down.
+            print(f"no record for {unit}, starting all of them", file=sys.stderr)
+            alvos = units_for(unit)
+        if not alvos:
+            self._send_json(200, {"ok": True, "action": "nothing to start", "units": []})
+            return
         subprocess.Popen(
             ["systemctl", "--user", "start", *alvos],
             stdout=subprocess.DEVNULL,
