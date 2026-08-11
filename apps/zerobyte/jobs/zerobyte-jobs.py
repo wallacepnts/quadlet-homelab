@@ -142,10 +142,6 @@ def main():
 
     pastas = sorted(p for p in VOLUMES.iterdir() if p.is_dir()) if VOLUMES.is_dir() else []
     conhecidas = raizes_do_repositorio()
-    # The secrets folder is named after the app, not after its volume root:
-    # actual-budget writes data to volumes/actual but secrets to
-    # secrets/actual-budget. Filtering both by the same set would drop it.
-    apps_do_repo = {d.name for d in (pathlib.Path(__file__).resolve().parent.parent.parent).iterdir() if d.is_dir()}
     allowlist, alheias = [], []
     for pasta in pastas:
         # Only this repository's services. A folder from somewhere else has no
@@ -190,34 +186,28 @@ def main():
             corpo["backupWebhooks"] = ganchos(nome, a.hook_port, token)
         api(a.url, key, "backups", "POST", corpo)
 
-    # One secrets job per app, named <app>-secrets. Restoring a data volume
-    # without them gives a service that starts and does not work: vaultwarden's
-    # admin token no longer matches, excalidash's JWT_SECRET logs everyone out.
+    # The secrets, as one job. Restoring a data volume without them gives a
+    # service that starts and does not work: vaultwarden's admin token no
+    # longer matches, excalidash's JWT_SECRET logs everyone out.
     #
-    # A job covers one directory — includePaths filters inside it, it does not
-    # reach outside — so the secrets cannot ride along in the app's own job.
-    # Copying them into the app's volume would fix that and is exactly what not
-    # to do: some apps serve their volume (copyparty publishes it, filebrowser
-    # browses it), and that turns a backup into an exposure.
-    for pasta in sorted(p for p in SECRETS.iterdir() if p.is_dir()) if SECRETS.is_dir() else []:
-        nome = pasta.name
-        if nome not in apps_do_repo:
-            continue
-        job = f"{nome}-secrets"
-        if job in jobs:
-            print(f"  {job:24} job já existe")
-            continue
-        alvo = f"/sources/secrets/{nome}"
-        print(f"  {job:24} volume {alvo}  |  modo none")
-        if not a.apply:
-            continue
-        if job not in volumes:
-            api(a.url, key, "volumes", "POST",
-                {"name": job, "config": {"backend": "directory", "path": alvo}})
-            volumes = {v["name"]: v["shortId"] for v in api(a.url, key, "volumes")}
-        api(a.url, key, "backups", "POST",
-            {"name": job, "volumeId": volumes[job], "repositoryId": repo,
-             "enabled": True, "cronExpression": a.cron})
+    # One job and not one per app: a Zerobyte job covers a single directory —
+    # includePaths and customResticParams are joined to the volume's path, they
+    # do not reach outside — so the secrets cannot ride along in the app's own
+    # job anyway. Restoring is selective, so one snapshot holding all of them
+    # gives the same choice at the moment it matters.
+    if SECRETS.is_dir() and "secrets" not in jobs:
+        print(f"  {'secrets':24} volume /sources/secrets  |  modo none")
+        if a.apply:
+            if "secrets" not in volumes:
+                api(a.url, key, "volumes", "POST",
+                    {"name": "secrets",
+                     "config": {"backend": "directory", "path": "/sources/secrets"}})
+                volumes = {v["name"]: v["shortId"] for v in api(a.url, key, "volumes")}
+            api(a.url, key, "backups", "POST",
+                {"name": "secrets", "volumeId": volumes["secrets"], "repositoryId": repo,
+                 "enabled": True, "cronExpression": a.cron})
+    elif "secrets" in jobs:
+        print(f"  {'secrets':24} job já existe")
 
     if alheias:
         print(f"\nfora deste repositório, não tocadas: {', '.join(alheias)}")
