@@ -1,6 +1,6 @@
 # CookCLI
 
-<img src="https://cdn.simpleicons.org/gnubash" width="64" height="64" alt="">
+<img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/cookcli.svg" width="64" height="64" alt="">
 
 **[🇧🇷 Leia em português](./README.pt-BR.md)**
 

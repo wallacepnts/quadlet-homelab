@@ -20,11 +20,12 @@ WorkingDir=/recipes
 Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=cookcli
+Label=tsdproxy.dash.icon=sh/cookcli-light
 Label=tsdproxy.port.web=443/https:9080/http
 
 Label=homepage.group=Productivity
 Label=homepage.name=CookCLI
-Label=homepage.icon=mdi-chef-hat
+Label=homepage.icon=https://cdn.jsdelivr.net/gh/selfhst/icons/svg/cookcli.svg
 Label=homepage.href=https://cookcli.${TAILNET}.ts.net
 Label=homepage.description="Plain-text recipes (CookLang) — versionable in git, with no database"
 
