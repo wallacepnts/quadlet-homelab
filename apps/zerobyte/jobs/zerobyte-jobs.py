@@ -63,6 +63,7 @@ PT = {
     "mode": "modo",
     "mirroring": "espelhando",
     "clearing the mirrors on every job": "tirando o espelho de todos os jobs",
+    "first copy failed": "a primeira cópia falhou",
     "repository(ies) on every job": "repositório(s) em cada job",
     "outside this repository, left alone": "fora deste repositório, não tocadas",
     "ZEROBYTE_HOOK_UNITS must include these, or the jobs fail:":
@@ -282,20 +283,30 @@ def main():
     # would leave yesterday's mirrors in place, so the flag would turn nothing
     # off — and turning them off by hand is job by job, through the interface.
     if espelhos or a.no_mirror:
-        lista = [] if a.no_mirror else [{"repositoryId": r, "enabled": True} for r in espelhos]
+        alvo = set() if a.no_mirror else set(espelhos)
         print(f"\n{loc('clearing the mirrors on every job')}" if a.no_mirror else
               f"\n{loc('mirroring')} {len(espelhos)} {loc('repository(ies) on every job')}")
         for b in api(a.url, key, "backups"):
             if not a.apply:
                 continue
-            api(a.url, key, f"backups/{b['shortId']}/mirrors", "PUT", {"mirrors": lista})
+            atual = {m["repositoryId"]
+                     for m in api(a.url, key, f"backups/{b['shortId']}/mirrors")}
+            if atual == alvo:  # same rule as the jobs: a second run changes nothing
+                continue
+            api(a.url, key, f"backups/{b['shortId']}/mirrors", "PUT",
+                {"mirrors": [{"repositoryId": r, "enabled": True} for r in sorted(alvo)]})
             # Enabling a mirror copies nothing: the first copy happens when the
             # job next runs. Without this the new repository stays empty until
-            # 03:00, which reads as the command having done nothing at all.
-            # The `{}` matters — the endpoint takes no arguments, but rejects a
-            # JSON content type with no body at all ("Malformed body").
-            for r in espelhos:
-                api(a.url, key, f"backups/{b['shortId']}/mirrors/{r}/sync", "POST", {})
+            # 03:00, which reads as the command having done nothing at all. Only
+            # for mirrors that were just added, and never fatal — the copy is a
+            # convenience, while the list above is what has to land.
+            for r in sorted(alvo - atual):
+                try:
+                    # The `{}` matters: the endpoint takes no arguments, but
+                    # rejects a JSON content type with no body ("Malformed body").
+                    api(a.url, key, f"backups/{b['shortId']}/mirrors/{r}/sync", "POST", {})
+                except SystemExit as e:
+                    print(f"  {b['name']:24} {loc('first copy failed')}: {e}")
 
     if alheias:
         print(f"\n{loc('outside this repository, left alone')}: {', '.join(alheias)}")
