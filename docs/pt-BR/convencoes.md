@@ -146,6 +146,37 @@ containers ao mesmo tempo (ex.: backup, ver [zerobyte](../../apps/zerobyte/READM
 precisam desligar a confinação SELinux pra esse container específico.
 Trade-off consciente, não usar por padrão.
 
+**Montar o socket do próprio Podman é outro caso, e o `:z` não cobre.** O
+rótulo cai no arquivo, mas o processo do container continua `container_t`, que
+a política não autoriza a falar com o runtime. O serviço sobe, o health check
+passa, e ele não enxerga container nenhum:
+
+```
+permission denied while trying to connect to the docker API at
+unix:///var/run/docker.sock
+```
+
+Medido em openSUSE MicroOS com SELinux enforcing: só `:z` é negado,
+`label=disable` funciona, e `label=type:container_runtime_t` funciona **com o
+SELinux seguindo enforcing**. Então as units que montam o socket declaram o
+tipo estreito:
+
+```ini
+SecurityLabelType=container_runtime_t
+```
+
+Prefira-o ao `SecurityLabelDisable=true` aqui: este é um container que, por
+definição, tem a API que controla todos os outros — tirar o confinamento
+inteiro é o caminho errado. Seis units montam o socket e levam a diretiva:
+`authentik-worker`, `beszel-agent`, `dozzle`, `homepage`, `tsdproxy` e `wud`.
+Em host sem SELinux a diretiva é inócua, e em host cuja política já rotula o
+socket como `container_file_t:s0` sem categorias a falha nem aparece — que é
+justamente por que vale registrar: encontrá-la depende da distribuição.
+
+O modo de falhar é a parte a lembrar. Um `Notify=healthy` passando enquanto o
+serviço é incapaz de fazer o que existe para fazer é pior que um crash, porque
+nada no `systemctl status` diz isso.
+
 ### 17. Mexer manualmente em arquivo criado por container: `podman unshare`, não `sudo`
 
 Rootless Podman mapeia os uids internos do container pra uma faixa de

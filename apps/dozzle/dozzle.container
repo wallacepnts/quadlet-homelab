@@ -16,6 +16,8 @@ PublishPort=8117:8080
 
 # Read-only, and the only thing this service needs: the socket is where the
 # logs come from. It is also everything Podman can do, so see the README.
+# `:z` alone is not enough on SELinux: rule 16 of the conventions.
+SecurityLabelType=container_runtime_t
 Volume=%t/podman/podman.sock:/var/run/docker.sock:ro
 EnvironmentFile=%h/.config/containers/env/dozzle.env
 

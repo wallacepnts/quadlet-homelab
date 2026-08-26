@@ -74,7 +74,10 @@ use `--reinstall`.
 - **systemd com sessão de usuário** e cgroups v2.
 - **SELinux**, se a sua distribuição tiver. As units trazem `:Z` em 125 linhas
   de volume; onde não há SELinux elas são ignoradas e nada quebra, mas o
-  isolamento por container que elas pedem também não existe.
+  isolamento por container que elas pedem também não existe. As seis units que
+  montam o socket do Podman precisam de mais que rótulo — só `:z` as deixa
+  saudáveis e cegas, sem enxergar container nenhum, então elas declaram
+  `SecurityLabelType=container_runtime_t` (regra 16 das convenções).
 - `/dev/kvm`, só para os seis serviços de VM.
 
 ```bash

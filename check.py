@@ -319,6 +319,25 @@ def check_tailnet():
                                  f"public; use ${{TAILNET}} or <your-tailnet>")
 
 
+def check_socket_label():
+    """A unit that mounts Podman's socket has to say how SELinux should see it.
+
+    `:z` labels the file, but the process stays `container_t`, which the policy
+    does not let talk to the runtime. The service then starts, passes its health
+    check, and sees no containers — the worst shape a failure can take, and one
+    that only appears on some distributions.
+    """
+    for f in sorted(APPS.glob("*/*.container")):
+        text = f.read_text()
+        monta = any(k == "Volume" and "podman.sock" in v for k, v in directives(text))
+        if not monta:
+            continue
+        if not any(k.startswith("SecurityLabel") for k, _ in directives(text)):
+            error("rule 16", f"{f.relative_to(ROOT)} mounts podman.sock without a "
+                             f"SecurityLabel — on SELinux it starts healthy and sees "
+                             f"nothing; use SecurityLabelType=container_runtime_t")
+
+
 def check_config_sources():
     """A [config] line whose source is missing is a step that never runs.
 
@@ -461,6 +480,7 @@ def main():
     check_units(folders)
     uses = check_ports(folders)
     check_manifest(folders)
+    check_socket_label()
     check_config_sources()
     check_counts(folders)
     check_table(folders)

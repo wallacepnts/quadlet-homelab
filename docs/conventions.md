@@ -144,6 +144,37 @@ exclusive by design. Tools that need to see several containers' data at once
 SELinux confinement off for that specific container. A deliberate trade-off,
 not something to use by default.
 
+**Mounting Podman's own socket is a different case, and `:z` does not cover
+it.** The label lands on the file, but the container's process stays
+`container_t`, which the policy does not allow to talk to the runtime. The
+service starts, its health check passes, and it sees no containers at all:
+
+```
+permission denied while trying to connect to the docker API at
+unix:///var/run/docker.sock
+```
+
+Measured on openSUSE MicroOS with SELinux enforcing: `:z` alone is refused,
+`label=disable` works, and `label=type:container_runtime_t` works with SELinux
+still enforcing. So the units that mount the socket declare the narrow one:
+
+```ini
+SecurityLabelType=container_runtime_t
+```
+
+Prefer it to `SecurityLabelDisable=true` here: this is a container that, by
+definition, holds the API controlling every other container — unconfining it
+entirely is the wrong direction. Six units mount the socket and carry the
+directive: `authentik-worker`, `beszel-agent`, `dozzle`, `homepage`,
+`tsdproxy` and `wud`. On a host without SELinux the directive is inert, and on
+a host whose policy already labels the socket `container_file_t:s0` without
+categories the failure does not appear at all — which is exactly why it is
+worth writing down: whether you meet it depends on the distribution.
+
+The failure mode is the part to remember. `Notify=healthy` passing while the
+service cannot do its job is worse than a crash, because nothing in
+`systemctl status` says so.
+
 ### 17. Touching a container-created file by hand: `podman unshare`, not `sudo`
 
 Rootless Podman maps the container's internal uids to a range of "phantom"

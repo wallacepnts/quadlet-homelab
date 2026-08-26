@@ -19,6 +19,8 @@ Secret=authentik-secret-key,type=env,target=AUTHENTIK_SECRET_KEY
 
 Volume=%h/.config/containers/volumes/authentik/data:/data:Z
 Volume=%h/.config/containers/volumes/authentik/certs:/certs:Z
+# `:z` alone is not enough on SELinux: rule 16 of the conventions.
+SecurityLabelType=container_runtime_t
 Volume=%t/podman/podman.sock:/var/run/docker.sock:z
 
 PodmanArgs=--shm-size=512m

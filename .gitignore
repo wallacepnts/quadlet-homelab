@@ -28,3 +28,9 @@ _template/
 # Cache do Python.
 __pycache__/
 *.pyc
+
+# Apps que moram fora desta árvore, ligados por symlink. O durockrj é
+# proprietário e fechado (o §13 do CLAUDE.md dele): a ferramenta o enxerga em
+# apps/, mas os arquivos ficam no repositório privado e nada dele é publicado
+# aqui. Quem clonar este repositório simplesmente não tem esse app.
+/apps/durockrj

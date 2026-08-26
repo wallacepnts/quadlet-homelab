@@ -74,7 +74,10 @@ pulled. To go through anyway, use `--reinstall`.
 - **systemd with a user session** and cgroups v2.
 - **SELinux**, if your distribution has it. The units carry `:Z` on 125 volume
   lines; where SELinux is absent those are ignored and nothing breaks, but the
-  per-container isolation they ask for is not there either.
+  per-container isolation they ask for is not there either. The six units that
+  mount Podman's socket need more than a label — `:z` alone leaves them healthy
+  and blind, seeing no containers at all, so they declare
+  `SecurityLabelType=container_runtime_t` (rule 16 of the conventions).
 - `/dev/kvm`, only for the six VM services.
 
 ```bash

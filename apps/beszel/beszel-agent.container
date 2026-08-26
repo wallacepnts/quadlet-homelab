@@ -11,6 +11,8 @@ Network=host
 
 Volume=%h/.config/containers/volumes/beszel/agent-data:/var/lib/beszel-agent:Z
 Volume=%h/.config/containers/volumes/beszel/socket:/beszel_socket:Z
+# `:z` alone is not enough on SELinux: rule 16 of the conventions.
+SecurityLabelType=container_runtime_t
 Volume=%t/podman/podman.sock:/var/run/docker.sock:ro,z
 EnvironmentFile=%h/.config/containers/env/beszel.env
 Secret=beszel-agent-key,target=/run/secrets/beszel-key
