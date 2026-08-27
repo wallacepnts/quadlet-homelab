@@ -2,3 +2,12 @@
 # Empty on purpose: every service here comes from the container labels, read
 # through docker.yaml. Homepage writes a sample file when this one is missing,
 # and that sample is what puts "My First Group" on the dashboard.
+
+# The exception to the rule above: Cockpit is a host service, not a container,
+# so it has no labels to read. It is published on the tailnet through
+# tsdproxy's list file (apps/tsdproxy/config/lists.yaml), and named here.
+- Host:
+    - Cockpit:
+        icon: sh-cockpit.svg
+        href: https://cockpit.${TAILNET}.ts.net
+        description: Disks, network, journal and the system's own updates

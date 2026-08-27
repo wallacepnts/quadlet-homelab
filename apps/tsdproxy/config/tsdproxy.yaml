@@ -24,3 +24,11 @@ proxyAccessLog: true
 log:
   level: info
   json: false
+
+# Services that are not containers: tsdproxy discovers containers by label, and
+# the host's own daemons have none. A list file covers them, and tsdproxy
+# reloads it on change — only this file needs a restart.
+lists:
+  host:
+    filename: /config/lists.yaml
+    defaultProxyProvider: default

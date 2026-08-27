@@ -31,6 +31,9 @@ wget -P ~/.config/containers/systemd/ \
 mkdir -p ~/.config/containers/volumes/tsdproxy/{data,config}
 wget -O ~/.config/containers/volumes/tsdproxy/config/tsdproxy.yaml \
   https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/tsdproxy/config/tsdproxy.yaml
+wget -O ~/.config/containers/volumes/tsdproxy/config/lists.yaml \
+  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/tsdproxy/config/lists.yaml
+# edit lists.yaml: replace <host-ip> with this machine's address
 
 # 3. A secret with the Tailscale authkey
 mkdir -p ~/.config/containers/secrets/tsdproxy
@@ -52,8 +55,49 @@ systemctl --user start tsdproxy
 
 ```
 tsdproxy.container
+config/tsdproxy.yaml   the proxy's own configuration
+config/lists.yaml      services that are not containers
 install.ini
 ```
+
+## Publishing something that is not a container
+
+A container is discovered by its labels. The host's own daemons have none, so
+they go in `config/lists.yaml` instead — one entry per name, and tsdproxy
+rereads that file without a restart.
+
+The file ships with **Cockpit**, the web console openSUSE already carries
+(`cockpit.socket` on 9090, plus `cockpit-podman` if you want the containers
+listed there too). Replace `<host-ip>` with this machine's address and it
+answers on `https://cockpit.<your-tailnet>.ts.net`:
+
+```yaml
+cockpit:
+  ports:
+    443/https:
+      targets:
+        - https://<host-ip>:9090
+```
+
+Two details that are not obvious:
+
+- The address has to be a **real** one. `host.containers.internal` only
+  answers on Podman's default network, and tsdproxy lives on `tsdproxy-net` —
+  from there it times out. The tailscale address is the steadier choice, since
+  it does not move with DHCP.
+- The target is `https://`, not `http://` — Cockpit serves TLS itself on 9090.
+  With the scheme right, its origin check passes as-is and no
+  `/etc/cockpit/cockpit.conf` is needed; get it wrong and the login page loads
+  but the session never opens.
+
+Cockpit is the one host service worth this: disks, network, journal and the
+system's own updates, none of which a container can show you. Creating
+containers *through* it is another matter — a unit that is `--replace --rm`
+comes back as soon as Cockpit stops it, and anything created by hand is
+invisible to this repository. Read, do not write.
+
+If you do not run Cockpit, empty the file: an entry pointing at a closed port
+publishes a name that answers 502.
 
 ## Update
 

@@ -1,0 +1,19 @@
+---
+# Host services published on the tailnet, one entry each.
+#
+# `<host-ip>` is the address of THIS machine, and it has to be a real one:
+# `host.containers.internal` only answers on Podman's default network, and
+# tsdproxy lives on tsdproxy-net — measured, it times out from there. The
+# tailscale address is the steadier choice, since it does not move with DHCP.
+#
+# Empty the file if you do not run Cockpit; an entry pointing at a closed port
+# publishes a name that answers 502.
+cockpit:
+  ports:
+    443/https:
+      targets:
+        - https://<host-ip>:9090
+  dashboard:
+    visible: true
+    label: Cockpit
+    icon: sh/cockpit
