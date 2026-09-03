@@ -256,6 +256,13 @@ PT = {
     'secret removed': 'secret removido',
     'done.': 'pronto.',
     'Check with:': 'Confira com:',
+    'verifying:': 'verificando:',
+    'check(s) failed — the service is NOT working':
+        'verificação(ões) falharam — o serviço NÃO está funcionando',
+    'checks that the service exists and answers, and exits != 0 if not '
+    '(runs on its own after every --apply)':
+        'confere que o serviço existe e responde, e sai != 0 se não '
+        '(roda sozinho ao fim de todo --apply)',
     "unit(s) in": "unit(s) em",
     "failed:": "falharam:",
 }
@@ -1895,7 +1902,12 @@ def find_tailnet():
         if conf.exists():
             m = re.search(r"^TAILNET=(.*)$", conf.read_text(), re.M)
             value = m.group(1).strip() if m else ""
-    return value
+    # `<your-tailnet>` is the placeholder every README and .env.example carries,
+    # and pasting the example line verbatim is the obvious way to set it. A DNS
+    # label cannot hold `<`, so the value is never real — treated as unset it
+    # gets the warning the empty case already prints, instead of building a
+    # homepage.href out of the placeholder and looking like it worked.
+    return "" if value.startswith("<") or value.endswith(">") else value
 
 
 # --------------------------------------------------------------------------
@@ -2335,6 +2347,46 @@ def selftest():
     assert published_port("127.0.0.1:8082:80") == 8082
     assert published_port("69") is None, "a bare port is picked by Podman"
 
+    # find_tailnet: the placeholder is the value people actually paste, and
+    # accepting it builds a homepage.href that looks right and resolves nowhere.
+    _antes = os.environ.get("TAILNET")
+    try:
+        for ruim in ("<your-tailnet>", "<sua-tailnet>"):
+            os.environ["TAILNET"] = ruim
+            assert find_tailnet() == "", f"{ruim} is a placeholder, not a tailnet"
+        os.environ["TAILNET"] = "example-tailnet"
+        assert find_tailnet() == "example-tailnet", "a real name still comes through"
+    finally:
+        os.environ.pop("TAILNET", None)
+        if _antes is not None:
+            os.environ["TAILNET"] = _antes
+
+    # quadlet_units: a .container naming a .network nobody installed generates
+    # NOTHING, and that is invisible in the file system — only the generator
+    # says so. Skipped where podman is not installed, which is most CI runners.
+    if quadlet_units(Path.home())[0] is not None:
+        with tempfile.TemporaryDirectory() as d:
+            sd = Path(d) / ".config/containers/systemd"
+            sd.mkdir(parents=True)
+            (sd / "orphan.container").write_text(
+                "[Container]\nImage=x\nNetwork=nobody-net.network\n")
+            gerados, erros = quadlet_units(Path(d))
+            assert gerados == [], gerados
+            assert any("nobody-net.network" in e for e in erros), erros
+
+    # verify_service: a service with nothing on the host answers in one line,
+    # not one failure per unit, volume and secret it would have had.
+    with tempfile.TemporaryDirectory() as d:
+        h = Path(d)
+        (h / "apps/app").mkdir(parents=True)
+        (h / "apps/app/app.container").write_text(
+            "[Container]\nImage=x\nVolume=%h/.config/containers/volumes/app:/d\n")
+        fake = types.SimpleNamespace(name="app", home=h, units=[h / "apps/app/app.container"],
+                                     installed=lambda: [])
+        got = verify_service(fake, "")
+        assert len(got) == 1 and got[0][0] is False, got
+        assert "not installed" in got[0][2], got
+
     say("selftest: ok")
 
 
@@ -2375,6 +2427,156 @@ def run_read(cmd):
         return r.stdout if r.returncode == 0 else None
     except Exception:
         return None
+
+
+def quadlet_units(home):
+    """(the units Quadlet generates, the errors it hit), or (None, []) without it.
+
+    `installed()` answers "is the file on the host", which is a different
+    question. A `.container` naming a `.network` nobody installed copies fine,
+    generates NOTHING, and `systemctl start` then answers "Unit not found"
+    without ever naming the file it could not convert. The generator is the
+    only thing that knows, and it says so in one line.
+    """
+    exe = next((p for p in ("/usr/libexec/podman/quadlet", "/usr/lib/podman/quadlet")
+                if Path(p).is_file()), None)
+    if not exe:
+        return None, []
+    # XDG_CONFIG_HOME, not HOME: the generator resolves the user's config
+    # directory through XDG and ignores HOME entirely, so pointing it elsewhere
+    # with HOME reads the real ~/.config/containers/systemd and answers about
+    # the wrong host. `home / ".config"` is the same assumption `unit_dest`
+    # already makes.
+    r = subprocess.run([exe, "-user", "-dryrun"], capture_output=True, text=True,
+                       env={**os.environ, "HOME": str(home),
+                            "XDG_CONFIG_HOME": str(Path(home) / ".config")})
+    gerados = re.findall(r"^---(\S+)---$", r.stdout, re.M)
+    # `converting "x.container": reason` names the file and the reason; the rest
+    # of stderr is one "Loading source unit file" per input, which says nothing.
+    erros = [linha.partition("]: ")[2] or linha
+             for linha in r.stderr.splitlines() if "converting" in linha]
+    return gerados, erros
+
+
+def verify_service(s, tailnet, modo="tailnet"):
+    """Checks that the service EXISTS and answers — not that the plan ran.
+
+    Every silent failure this script has produced has the same shape: the steps
+    ran to the end, `done.` was printed, and the service was not working. The
+    steps use check=True, so a command that fails aborts the plan — but a
+    prerequisite nobody installed, a secret nobody typed and an auth key the
+    control plane refuses are not commands, and none of them moves an exit code.
+
+    Returns [(ok, what, detail)], with ok=None for a check that does not apply.
+    """
+    import json
+
+    out = []
+    conts = [u for u in s.units if u.suffix == ".container"]
+
+    # Nothing installed is one answer, not sixteen: every check below would fail
+    # for the same reason, and a screen of red hides which of them is the cause.
+    if not s.installed():
+        return [(False, s.name, f"not installed — python3 install.py {s.name} --apply")]
+
+    gerados, erros = quadlet_units(s.home)
+    if gerados is None:
+        out.append((None, "generated units", "quadlet generator not found"))
+    for u in (conts if gerados is not None else []):
+        nome = f"{u.stem}.service"
+        motivo = next((e for e in erros if u.name in e), "")
+        out.append((nome in gerados, nome, "generated" if nome in gerados
+                    else motivo or "Quadlet generated nothing from this file"))
+
+    for name in s.secrets():
+        existe = secret_exists(name)
+        out.append((existe, f"secret {name}", "exists" if existe else
+                    "missing — Quadlet cannot resolve Secret= and the unit dies at start"))
+
+    for path, _ in s.volumes():
+        if "${" in path:
+            continue            # systemd resolves it; the label check below sees the result
+        existe = Path(path).exists()
+        out.append((existe, f"volume {path}", "exists" if existe else
+                    "missing — a bind mount of a nonexistent path fails at start"))
+
+    saude = {}
+    for linha in (run_read(["podman", "ps", "-a", "--format",
+                            "{{.Names}}|{{.Status}}"]) or "").splitlines():
+        nome, _, estado = linha.partition("|")
+        saude[nome] = estado
+    for u in conts:
+        ativo = (run_read(["systemctl", "--user", "is-active", u.stem]) or "").strip()
+        estado = saude.get(container_name(u), "")
+        # "unhealthy" contains "healthy": test the parenthesised word, not a
+        # substring, or a dying container reads as a passing check.
+        no_ar = ativo == "active" and estado.startswith("Up") \
+            and "(unhealthy)" not in estado
+        out.append((no_ar, u.stem, estado.lower() if no_ar else
+                    f"{ativo or 'inactive'}"
+                    f"{', ' + estado.lower() if estado else ''}"
+                    f" — journalctl --user -u {u.stem} -n 30"))
+
+    # A label still carrying ${VAR} or a <placeholder> costs nothing at start
+    # and everything afterwards: the dashboard link points at a name that does
+    # not resolve, and the only symptom is a click that goes nowhere. The
+    # running container is where the value is final — `systemctl cat` is not,
+    # it shows the literal ${VAR} even when the expansion worked (rule 19).
+    for u in conts:
+        cru = run_read(["podman", "inspect", container_name(u), "--format",
+                        "{{json .Config.Labels}}"])
+        try:
+            labels = json.loads(cru) if cru else None
+        except ValueError:
+            labels = None
+        if not labels:
+            continue
+        ruins = sorted(k for k, v in labels.items()
+                       if isinstance(v, str) and ("${" in v or re.search(r"<[a-z-]+>", v)))
+        if ruins:
+            out.append((False, f"{u.stem} labels",
+                        f"unresolved value in {', '.join(ruins)}"
+                        f" — see ~/.config/environment.d/"))
+
+    # Reachable on the tailnet is the one thing no local check can see: tsdproxy
+    # stays healthy while every proxy it manages fails to register, because its
+    # healthcheck measures its own webserver and not the nodes.
+    if modo != "local" and tailnet:
+        for unit, _local, tail in addresses(s, tailnet):
+            if not tail:
+                continue
+            code = (run_read(["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}",
+                              "--max-time", "10", tail]) or "").strip()
+            # 4xx is an answer: a login wall is the service working. 5xx is the
+            # proxy answering for a target that is not there.
+            respondeu = code[:1] in ("2", "3", "4")
+            out.append((respondeu, f"{unit} on the tailnet",
+                        f"HTTP {code}" if respondeu else
+                        (f"HTTP {code} — the node is up but the target is not"
+                         if code[:1] == "5" else
+                         f"no answer at {tail} — the node did not register "
+                         f"(podman logs tsdproxy)")))
+    return out
+
+
+def show_verify(s, tailnet, modo="tailnet"):
+    """Prints one line per check and answers whether all of them passed.
+
+    A line each, like `qh tailscale`, and not a count: a summary that only says
+    "3 failed" sends you back to running the checks by hand, which is the thing
+    this replaces.
+    """
+    checks = verify_service(s, tailnet, modo)
+    if not checks:
+        return True
+    say(f"\n{s.name}: " + loc("verifying:"))
+    for ok, what, detail in checks:
+        marca = green("\u2713") if ok else (yellow("\u00b7") if ok is None else red("\u2717"))
+        say(f"  {marca} {what}" + (f"  {dim(detail)}" if detail else ""))
+    ruins = [c for c in checks if c[0] is False]
+    if ruins:
+        say(red(f"\n{len(ruins)} ") + red(loc("check(s) failed — the service is NOT working")))
+    return not ruins
 
 
 VERBOS = {
@@ -2608,6 +2810,12 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
     folder, only = find_app(app)
     s = Service(folder, a.prefix, only)
 
+    if a.verify:
+        # Read-only, so it does not wait for --apply: the whole point is to be
+        # cheap enough to run whenever you are unsure.
+        return 0 if show_verify(s, find_tailnet(),
+                                access or saved_access(s.home) or "tailnet") else 1
+
     # A plain install over an installed service is never what someone means:
     # it rewrites the units and restarts, but leaves env, config and secrets
     # untouched — an update wearing the wrong name. Stop and let the caller
@@ -2732,7 +2940,13 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
             show_secrets(s)
     if warnings and not (a.remove or a.backup or a.restore):
         say("The items marked (!) above were not done — see apps/%s/README.md" % s.name)
-    return 0
+    # The plan reaching its last step is not the same as the service working.
+    # Nothing to verify after a backup (the data did not change) or a remove
+    # (the service is meant to be gone), and --prefix is a sandbox with no
+    # systemd or podman behind it.
+    if a.backup or a.remove or a.prefix:
+        return 0
+    return 0 if show_verify(s, tailnet, modo_efetivo) else 1
 
 
 def zerobyte_jobs(called):
@@ -2794,6 +3008,9 @@ def main():
                         help=loc("cold backup of the data (stop, pack, bring back)"))
     action.add_argument("--restore", metavar="FILE",
                         help=loc("restores a .tar.gz from --backup OVER the current data"))
+    action.add_argument("--verify", action="store_true",
+                        help=loc("checks that the service exists and answers, and exits != 0 "
+                                 "if not (runs on its own after every --apply)"))
     ap.add_argument("--ask-secrets", action="store_true",
                     help=loc("type each secret instead of generating it "
                              "(Enter takes the generated one)"))
@@ -2823,6 +3040,12 @@ def main():
 
     if a.all:
         a.app = sorted(x.name for x in APPS.iterdir() if x.is_dir())
+        # --all --verify asks about the HOST, so the host decides the list: a
+        # service nobody installed is absent, not broken, and seventy red blocks
+        # saying "not installed" bury the one service that is actually failing.
+        # Naming a service is the opposite request, and still answers.
+        if a.verify:
+            a.app = [x for x in a.app if Service(x).installed()]
 
     if not a.app:
         for p in sorted(x.name for x in APPS.iterdir() if x.is_dir()):
@@ -2903,7 +3126,8 @@ def main():
     # done for them with --apply either, so the line would be a wrong nudge.
     if a.apply:
         show_summary(feitos, verbos)
-    elif sincronizados < len(a.app) and any(x not in NOT_QUADLET for x in a.app):
+    elif not a.verify and sincronizados < len(a.app) \
+            and any(x not in NOT_QUADLET for x in a.app):
         # Not when everything was already in sync: --apply would do nothing, and
         # telling someone to run it again is a nudge into a no-op.
         say("\nnothing was done. repeat with --apply")
