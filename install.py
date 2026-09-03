@@ -258,6 +258,11 @@ PT = {
     'Check with:': 'Confira com:',
     'verifying:': 'verificando:',
     'missing prerequisite': 'falta um pré-requisito',
+    '  checking the value (this reaches the network)...':
+        '  conferindo o valor (isto acessa a rede)...',
+    'refused': 'recusado',
+    '  type it again, or press Enter to skip and create it by hand':
+        '  digite de novo, ou Enter para pular e criar na mão',
     'belongs to': 'pertence ao',
     'which is not installed': 'que não está instalado',
     '  install it first:': '  instale ele primeiro:',
@@ -1273,6 +1278,21 @@ def plan_restore(s, archive):
         source = base / "secrets" / s.name / (name.removeprefix(s.name + "-") + ".txt")
         rel = str(source.relative_to(base))
         if rel not in inside:
+            # Silence here is how a restore comes back with the data and a unit
+            # that cannot start: Quadlet fails to resolve Secret= and the only
+            # message is `no such secret`, which does not mention the archive.
+            # Naming the files the archive DOES carry is what closes the gap —
+            # a secret saved by hand under another name (admin-token-hash.txt
+            # for admin-token) is the case that produced this.
+            pasta = f"secrets/{s.name}/"
+            tem = sorted(Path(n).name for n in inside
+                         if n.startswith(pasta) and not n.endswith("/"))
+            warnings.append(
+                f"secret {name}: the archive has no {Path(rel).name} — "
+                + (f"it carries {', '.join(tem)}; create it by hand from the right one "
+                   f"(podman secret create {name} <file>)" if tem
+                   else "it carries no secret file at all, so recreate it with "
+                        f"`qh {s.name} --reinstall --apply`"))
             continue
         steps.append((f"podman secret create {name}  (from the restored file)",
                       lambda name=name, source=source: recreate_secret(name, source)))
@@ -1665,6 +1685,36 @@ def ask_choices(path, choices):
         say(f"  {key}={picked}")
 
 
+def secret_ok(s, name, value):
+    """(True, "") when the value passes this secret's [validate] check.
+
+    Some credentials are only wrong at the far end. A Tailscale auth key the
+    control plane refuses leaves tsdproxy healthy and publishing nothing, which
+    reads as success everywhere except the tailnet — it cost a whole afternoon
+    once. The check is a command in `install.ini`, because only the service
+    knows what "valid" means for its own credential.
+
+    The value goes in on STDIN, never on argv: /proc shows a command line to
+    anyone on the box, and this is the one string that must not be there.
+    """
+    receita = (s.ini.get("validate", name, fallback=None)
+               if s.ini.has_section("validate") else None)
+    if not receita or not receita.startswith("shell "):
+        return True, ""
+    say(loc("  checking the value (this reaches the network)..."))
+    try:
+        r = subprocess.run(["sh", "-c", receita.partition(" ")[2]],
+                           input=value, text=True, capture_output=True, timeout=300)
+    except (subprocess.TimeoutExpired, OSError) as e:
+        # A check that cannot run is not a value that is wrong: say so and take
+        # it, or a broken network would block an install that would have worked.
+        return True, f"(check did not run: {e})"
+    if r.returncode == 0:
+        return True, ""
+    linhas = [x for x in (r.stderr or r.stdout or "").strip().splitlines() if x.strip()]
+    return False, linhas[-1] if linhas else f"exit {r.returncode}"
+
+
 def ask_secret(s, name, instruction):
     """Reads the value from the terminal and creates the secret.
 
@@ -1676,11 +1726,19 @@ def ask_secret(s, name, instruction):
     import getpass
     say(f"\n  {name}")
     say(f"  {instruction}")
-    value = getpass.getpass("  value (not echoed): ").strip()
-    if not value:
-        say("  empty — skipped, create it by hand later (see the README)")
-        return
-    store_secret(s, name, value)
+    while True:
+        value = getpass.getpass("  value (not echoed): ").strip()
+        if not value:
+            say("  empty — skipped, create it by hand later (see the README)")
+            return
+        ok, porque = secret_ok(s, name, value)
+        if ok:
+            if porque:
+                say(f"  {yellow('!')}  {porque}")
+            store_secret(s, name, value)
+            return
+        say(f"  {red(loc('refused'))}: {porque}")
+        say(loc("  type it again, or press Enter to skip and create it by hand"))
 
 
 def ask_or_generate(s, name, recipe):
@@ -2364,6 +2422,24 @@ def selftest():
         os.environ.pop("TAILNET", None)
         if _antes is not None:
             os.environ["TAILNET"] = _antes
+
+    # secret_ok: no [validate] entry means anything passes; a command that
+    # fails refuses and hands back its last line; one that cannot run at all
+    # must NOT refuse, or a broken network blocks an install that would work.
+    import types as _t
+    def _ini(texto):
+        c = configparser.ConfigParser(interpolation=None); c.optionxform = str
+        c.read_string(texto)
+        return _t.SimpleNamespace(ini=c)
+    assert secret_ok(_ini("[secrets]\nk = manual x\n"), "k", "v") == (True, ""), \
+        "no [validate] section means no opinion"
+    assert secret_ok(_ini("[validate]\nk = shell true\n"), "k", "v") == (True, "")
+    ok, porque = secret_ok(_ini("[validate]\nk = shell echo nope >&2; false\n"), "k", "v")
+    assert (ok, porque) == (False, "nope"), (ok, porque)
+    # The value arrives on stdin and nowhere else.
+    ok, _ = secret_ok(_ini("[validate]\nk = shell test \"$(cat)\" = segredo\n"),
+                      "k", "segredo")
+    assert ok, "the value is what the command reads on stdin"
 
     # missing_prereqs: 71 of the 74 services name tsdproxy's network, and
     # Quadlet resolves that against the HOST. An empty host owes the whole list;
