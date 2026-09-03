@@ -33,7 +33,7 @@ wget -O ~/.config/containers/volumes/tsdproxy/config/tsdproxy.yaml \
   https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/tsdproxy/config/tsdproxy.yaml
 wget -O ~/.config/containers/volumes/tsdproxy/config/lists.yaml \
   https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/tsdproxy/config/lists.yaml
-# edit lists.yaml: replace <host-ip> with this machine's address
+# lists.yaml only if you run Cockpit: uncomment it, replace <host-ip>
 
 # 3. A secret with the Tailscale authkey
 mkdir -p ~/.config/containers/secrets/tsdproxy
@@ -66,10 +66,10 @@ A container is discovered by its labels. The host's own daemons have none, so
 they go in `config/lists.yaml` instead — one entry per name, and tsdproxy
 rereads that file without a restart.
 
-The file ships with **Cockpit**, the web console openSUSE already carries
+The file carries **Cockpit**, the web console openSUSE already carries
 (`cockpit.socket` on 9090, plus `cockpit-podman` if you want the containers
-listed there too). Replace `<host-ip>` with this machine's address and it
-answers on `https://cockpit.<your-tailnet>.ts.net`:
+listed there too), commented out. Uncomment it, replace `<host-ip>` with this
+machine's address, and it answers on `https://cockpit.<your-tailnet>.ts.net`:
 
 ```yaml
 cockpit:
@@ -96,8 +96,8 @@ containers *through* it is another matter — a unit that is `--replace --rm`
 comes back as soon as Cockpit stops it, and anything created by hand is
 invisible to this repository. Read, do not write.
 
-If you do not run Cockpit, empty the file: an entry pointing at a closed port
-publishes a name that answers 502.
+That is why the entry ships commented out: pointing at a closed port, it
+publishes a name that answers 502 — and most hosts do not run Cockpit.
 
 ## Update
 

@@ -6,14 +6,16 @@
 # tsdproxy lives on tsdproxy-net — measured, it times out from there. The
 # tailscale address is the steadier choice, since it does not move with DHCP.
 #
-# Empty the file if you do not run Cockpit; an entry pointing at a closed port
-# publishes a name that answers 502.
-cockpit:
-  ports:
-    443/https:
-      targets:
-        - https://<host-ip>:9090
-  dashboard:
-    visible: true
-    label: Cockpit
-    icon: sh/cockpit
+# Cockpit ships COMMENTED OUT on purpose: an entry pointing at a closed port
+# publishes a name that answers 502, and most hosts do not run Cockpit.
+# Uncomment it and replace `<host-ip>` if yours does.
+#
+# cockpit:
+#   ports:
+#     443/https:
+#       targets:
+#         - https://<host-ip>:9090
+#   dashboard:
+#     visible: true
+#     label: Cockpit
+#     icon: sh/cockpit
