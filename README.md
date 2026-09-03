@@ -72,6 +72,16 @@ pulled. To go through anyway, use `--reinstall`.
   there, and 102 of the 110 units use it. On 4.x the start returns before the app
   is ready, and the install reports a success it cannot know about.
 - **systemd with a user session** and cgroups v2.
+- **`network-online.target` reached at boot.** Quadlet orders every unit it
+  generates behind `podman-user-wait-network-online.service`, which loops on
+  `until systemctl is-active network-online.target` until its 90s timeout. A
+  target is only activated when something wants it, and desktops often want
+  nothing — measured on Tumbleweed with KDE, where the one unit asking for it
+  was a oneshot that had already finished. The dependency is `Wants=`, so the
+  service does come up: ninety seconds late, on every single start.
+  `sudo systemctl add-wants multi-user.target network-online.target` settles
+  it, and the boot then waits for `NetworkManager-wait-online` — seconds when
+  the machine has a network, `NM_ONLINE_TIMEOUT` when it does not.
 - **SELinux**, if your distribution has it. The units carry `:Z` on 125 volume
   lines; where SELinux is absent those are ignored and nothing breaks, but the
   per-container isolation they ask for is not there either. The six units that
@@ -82,6 +92,7 @@ pulled. To go through anyway, use `--reinstall`.
 
 ```bash
 podman --version
+systemctl is-active network-online.target
 ```
 
 Measured, by installing podman in each and reading the version:

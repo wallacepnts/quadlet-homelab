@@ -72,6 +72,16 @@ use `--reinstall`.
   nessa versão, e 102 das 110 units usam. No 4.x o start volta antes de o app
   estar pronto, e a instalação relata um sucesso que ela não tem como saber.
 - **systemd com sessão de usuário** e cgroups v2.
+- **`network-online.target` alcançado no boot.** O Quadlet ordena toda unit que
+  gera atrás do `podman-user-wait-network-online.service`, que gira em
+  `until systemctl is-active network-online.target` até o timeout de 90s. Um
+  target só é ativado quando alguém o requer, e desktop muitas vezes não requer
+  nada — medido no Tumbleweed com KDE, onde o único que pedia era um oneshot já
+  terminado. A dependência é `Wants=`, então o serviço sobe: noventa segundos
+  atrasado, em cada start.
+  `sudo systemctl add-wants multi-user.target network-online.target` resolve, e
+  o boot passa a esperar o `NetworkManager-wait-online` — segundos quando a
+  máquina tem rede, `NM_ONLINE_TIMEOUT` quando não tem.
 - **SELinux**, se a sua distribuição tiver. As units trazem `:Z` em 125 linhas
   de volume; onde não há SELinux elas são ignoradas e nada quebra, mas o
   isolamento por container que elas pedem também não existe. As seis units que
@@ -82,6 +92,7 @@ use `--reinstall`.
 
 ```bash
 podman --version
+systemctl is-active network-online.target
 ```
 
 Medido, instalando o podman em cada uma e lendo a versão:
