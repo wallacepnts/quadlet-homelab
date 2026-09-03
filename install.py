@@ -257,6 +257,10 @@ PT = {
     'done.': 'pronto.',
     'Check with:': 'Confira com:',
     'verifying:': 'verificando:',
+    'missing prerequisite': 'falta um pré-requisito',
+    'belongs to': 'pertence ao',
+    'which is not installed': 'que não está instalado',
+    '  install it first:': '  instale ele primeiro:',
     'check(s) failed — the service is NOT working':
         'verificação(ões) falharam — o serviço NÃO está funcionando',
     'checks that the service exists and answers, and exits != 0 if not '
@@ -2361,6 +2365,28 @@ def selftest():
         if _antes is not None:
             os.environ["TAILNET"] = _antes
 
+    # missing_prereqs: 71 of the 74 services name tsdproxy's network, and
+    # Quadlet resolves that against the HOST. An empty host owes the whole list;
+    # a service that ships its own network owes nothing.
+    with tempfile.TemporaryDirectory() as d:
+        vazio = Service("memos", d)
+        assert missing_prereqs(vazio) == [("tsdproxy", "tsdproxy-net.network")], \
+            missing_prereqs(vazio)
+        # immich carries immich-net.network in its own folder: its own network
+        # travels with it, so only the foreign one can ever be a prerequisite.
+        assert ("immich", "immich-net.network") not in missing_prereqs(Service("immich", d)), \
+            "a stack's own .network is copied alongside, never a prerequisite"
+
+    # install_order: whoever owns a network comes before whoever needs it, and
+    # equals keep the order they came in.
+    ordem = install_order(["memos", "tsdproxy", "postfix"])
+    assert ordem.index("tsdproxy") < ordem.index("memos"), ordem
+    assert set(ordem) == {"memos", "tsdproxy", "postfix"}, ordem
+    assert install_order(["postfix", "toolbx"]) == ["postfix", "toolbx"], \
+        "with nothing to reorder the caller's order is kept"
+    # A service whose owner is not in the list must not be dropped.
+    assert install_order(["memos"]) == ["memos"], install_order(["memos"])
+
     # quadlet_units: a .container naming a .network nobody installed generates
     # NOTHING, and that is invisible in the file system — only the generator
     # says so. Skipped where podman is not installed, which is most CI runners.
@@ -2427,6 +2453,77 @@ def run_read(cmd):
         return r.stdout if r.returncode == 0 else None
     except Exception:
         return None
+
+
+def net_owners():
+    """{`<file>.network`: the app that ships it} for the whole repository.
+
+    Rule 1 makes the basename the unit name across the host, so one file name
+    has exactly one owner and this map cannot be ambiguous.
+    """
+    return {n.name: n.parent.name for n in APPS.glob("*/*.network")}
+
+
+def foreign_networks(s):
+    """The `.network` units this service names but does not ship, by owner app.
+
+    A stack's own network travels with it in the same folder and `plan_install`
+    copies both; only a reference across folders is a prerequisite. `Network=`
+    may carry options after a colon, so the file name is the part before it.
+    """
+    donos = net_owners()
+    out = {}
+    for u in s.units:
+        if u.suffix != ".container":
+            continue
+        for k, v in directives(u.read_text()):
+            if k != "Network":
+                continue
+            arq = v.split(":")[0]
+            if not arq.endswith(".network") or (s.dir / arq).exists():
+                continue
+            dono = donos.get(arq)
+            if dono and dono != s.name:
+                out[arq] = dono
+    return out
+
+
+def missing_prereqs(s):
+    """[(owner, .network file)] this service needs and the host does not have.
+
+    Quadlet resolves `Network=x.network` against the units already on the HOST,
+    not against this repository. A `.container` naming a network nobody
+    installed copies fine, generates nothing, and `systemctl start` then answers
+    "Unit not found" without ever naming the file it could not convert. 71 of
+    the 74 services here point at tsdproxy's network, so installing almost
+    anything before tsdproxy produces exactly that.
+    """
+    # `s.home`, not the real one: under --prefix the service lives in a sandbox,
+    # and asking the actual host whether the owner is installed would answer
+    # about a machine this run is not touching.
+    return sorted((dono, arq) for arq, dono in foreign_networks(s).items()
+                  if not Service(dono, s.home).installed())
+
+
+def install_order(apps):
+    """`apps` reordered so a service comes after whoever owns the network it needs.
+
+    `--all` installs alphabetically, and actual-budget sorts long before
+    tsdproxy: on a fresh host that is seventy units copied in an order where
+    none of them can generate. Ordering costs nothing and is the difference
+    between `qh --all --apply` working on a new machine and not.
+    """
+    dentro = set(apps)
+    precisa = {a: set(foreign_networks(Service(a)).values()) & dentro for a in apps}
+    saida, restantes = [], list(apps)
+    while restantes:
+        # Stable: `restantes` keeps the caller's order, so equals stay alphabetical.
+        prontos = [a for a in restantes if not precisa[a] - set(saida)]
+        if not prontos:
+            return saida + restantes       # a cycle: leave the rest as they came
+        saida += prontos
+        restantes = [a for a in restantes if a not in prontos]
+    return saida
 
 
 def quadlet_units(home):
@@ -2816,6 +2913,26 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
         return 0 if show_verify(s, find_tailnet(),
                                 access or saved_access(s.home) or "tailnet") else 1
 
+    # A prerequisite that is not on the host is not a warning. The units would
+    # copy, Quadlet would generate nothing from them, and the failure would
+    # surface later as a start that says "Unit not found" and names no file.
+    # Refuse before writing, naming what to install first. It applies to every
+    # --access mode: `local` comments out the tsdproxy labels and the proxied
+    # port, and leaves `Network=` exactly as it was.
+    # Not under --prefix: that sandbox is a throwaway directory with nothing
+    # installed in it by design, so every service would refuse. CI builds one
+    # per app exactly that way.
+    if not (a.remove or a.backup or a.restore or a.prefix):
+        faltando = missing_prereqs(s)
+        if faltando:
+            say(f"{app}: {red(loc('missing prerequisite'))}")
+            for dono, arq in faltando:
+                say(f"  {arq} " + loc("belongs to") + f" {dono}, "
+                    + loc("which is not installed"))
+            donos = " ".join(sorted({d for d, _ in faltando}))
+            say(loc("  install it first:") + f"  qh {donos} --apply")
+            return 1
+
     # A plain install over an installed service is never what someone means:
     # it rewrites the units and restarts, but leaves env, config and secrets
     # untouched — an update wearing the wrong name. Stop and let the caller
@@ -3046,6 +3163,11 @@ def main():
         # Naming a service is the opposite request, and still answers.
         if a.verify:
             a.app = [x for x in a.app if Service(x).installed()]
+        elif not (a.remove or a.backup or a.restore):
+            # Whoever owns a network goes before whoever needs it. Not on a
+            # remove: there the right order is the reverse, and taking the
+            # network down first would be the same mistake upside down.
+            a.app = install_order(a.app)
 
     if not a.app:
         for p in sorted(x.name for x in APPS.iterdir() if x.is_dir()):
@@ -3126,7 +3248,10 @@ def main():
     # done for them with --apply either, so the line would be a wrong nudge.
     if a.apply:
         show_summary(feitos, verbos)
+    # Not when everything failed either: a refusal is never fixed by repeating
+    # the same command with --apply, and the nudge trains people to try it.
     elif not a.verify and sincronizados < len(a.app) \
+            and len(failures) < len(a.app) \
             and any(x not in NOT_QUADLET for x in a.app):
         # Not when everything was already in sync: --apply would do nothing, and
         # telling someone to run it again is a nudge into a no-op.
