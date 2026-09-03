@@ -197,6 +197,40 @@ qh filebrowser --reinstall --ask-secrets --apply
 Enter takes the generated value, so you can type the one password you log in
 with and leave the rest random. Needs a terminal and `--apply`.
 
+### Secrets that are only wrong at the far end
+
+An auth key the other side refuses is the worst kind of wrong value: the
+install stores it, the container comes up healthy, and nothing works — the
+tsdproxy case, where a refused key leaves it publishing no node at all while
+its own healthcheck stays green. A `[validate]` entry checks the value before
+storing it:
+
+```ini
+[validate]
+authkey = shell podman run --rm -i ... tailscale up --authkey="$(cat)" ...
+```
+
+The value arrives on **stdin**, never on the command line, which `/proc` shows
+to anyone on the machine. The contract on the exit code is what keeps the check
+honest:
+
+| exit | meaning |
+| --- | --- |
+| `0` | the value is good, store it |
+| `1` | the value is **wrong** — say so and ask again |
+| anything else | the check could not run: keep the value, print why |
+
+That last row matters more than it looks. Without it a failed image pull, a
+DNS hiccup or a rate limit would each reject a perfectly good password, in a
+loop. `podman` already answers `125` when it cannot run a container at all, so
+the split falls out of what the tools do anyway.
+
+Only a `manual` secret is validated — a generated one has nothing to check —
+and `--prefix` skips the whole thing, because rehearsing an install is not the
+moment to reach the network. `check.py` fails the build if a `[validate]` key
+is not a declared `Secret=`, does not start with `shell `, or has no `manual`
+recipe next to it.
+
 ## Questions during the install
 
 Some `.env` values are a choice from a known list and only apply on the first

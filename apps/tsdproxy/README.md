@@ -35,7 +35,12 @@ wget -O ~/.config/containers/volumes/tsdproxy/config/lists.yaml \
   https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/tsdproxy/config/lists.yaml
 # lists.yaml only if you run Cockpit: uncomment it, replace <host-ip>
 
-# 3. A secret with the Tailscale authkey
+# 3. A secret with the Tailscale authkey. It has to be REUSABLE: tsdproxy
+#    registers one node per proxy, so a one-off key gets the first one on the
+#    tailnet and no more.  `qh tsdproxy --apply` checks the key against the
+#    control plane before storing it (install.ini's [validate]); by hand,
+#    below, nothing checks it — a refused key leaves tsdproxy healthy and
+#    publishing nothing.
 mkdir -p ~/.config/containers/secrets/tsdproxy
 echo -n "YOUR_AUTHKEY" > ~/.config/containers/secrets/tsdproxy/authkey.txt
 chmod 600 ~/.config/containers/secrets/tsdproxy/authkey.txt

@@ -258,9 +258,16 @@ PT = {
     'Check with:': 'Confira com:',
     'verifying:': 'verificando:',
     'missing prerequisite': 'falta um pré-requisito',
-    '  checking the value (this reaches the network)...':
-        '  conferindo o valor (isto acessa a rede)...',
-    'refused': 'recusado',
+    '  checking the value — this pulls an image and reaches the network...':
+        '  conferindo o valor — isto baixa uma imagem e acessa a rede...',
+    'the service refused this value:': 'o serviço recusou este valor:',
+    'not checked: unknown [validate] form':
+        'não conferido: forma desconhecida em [validate]',
+    'not checked: --prefix does not reach the network':
+        'não conferido: --prefix não acessa a rede',
+    'not checked: the check could not start': 'não conferido: a checagem não iniciou',
+    'not checked: the check timed out': 'não conferido: a checagem estourou o tempo',
+    'not checked: the check itself failed': 'não conferido: a própria checagem falhou',
     '  type it again, or press Enter to skip and create it by hand':
         '  digite de novo, ou Enter para pular e criar na mão',
     'belongs to': 'pertence ao',
@@ -1686,7 +1693,7 @@ def ask_choices(path, choices):
 
 
 def secret_ok(s, name, value):
-    """(True, "") when the value passes this secret's [validate] check.
+    """(ok, note) for this secret's `[validate]` check in install.ini.
 
     Some credentials are only wrong at the far end. A Tailscale auth key the
     control plane refuses leaves tsdproxy healthy and publishing nothing, which
@@ -1696,23 +1703,59 @@ def secret_ok(s, name, value):
 
     The value goes in on STDIN, never on argv: /proc shows a command line to
     anyone on the box, and this is the one string that must not be there.
+
+    **Exit 1 means the value is wrong. Any other non-zero means the check could
+    not run** — no network, no podman, an image that would not pull — and that
+    must never reject a value that may well be right. It lines up with podman's
+    own convention, which reserves 125..127 for failing to run the container at
+    all, so a pull that dies is not read as a bad password.
     """
+    import signal
+
     receita = (s.ini.get("validate", name, fallback=None)
                if s.ini.has_section("validate") else None)
-    if not receita or not receita.startswith("shell "):
+    if not receita:
         return True, ""
-    say(loc("  checking the value (this reaches the network)..."))
+    if not receita.startswith("shell "):
+        # An unknown form is a check nobody runs. check.py refuses it at build
+        # time; saying so here too covers an install.ini edited by hand, which
+        # is the case where silence would be believed.
+        return True, loc("not checked: unknown [validate] form") + f" {receita.split()[0]!r}"
+    if SANDBOX:
+        # --prefix is the documented way to rehearse an install without touching
+        # the host. A check that pulls an image and registers a tailnet node is
+        # exactly the kind of touching it promises not to do.
+        return True, loc("not checked: --prefix does not reach the network")
+
+    say(loc("  checking the value — this pulls an image and reaches the network..."))
     try:
-        r = subprocess.run(["sh", "-c", receita.partition(" ")[2]],
-                           input=value, text=True, capture_output=True, timeout=300)
-    except (subprocess.TimeoutExpired, OSError) as e:
-        # A check that cannot run is not a value that is wrong: say so and take
-        # it, or a broken network would block an install that would have worked.
-        return True, f"(check did not run: {e})"
-    if r.returncode == 0:
+        # start_new_session + killpg: the recipe runs `podman run`, a grandchild.
+        # Killing only `sh` on timeout leaves the container alive, and for the
+        # tailscale check that means the node it registered stays on the tailnet
+        # — the very thing the recipe logs out to avoid.
+        proc = subprocess.Popen(["sh", "-c", receita.partition(" ")[2]],
+                                stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, text=True,
+                                start_new_session=True)
+    except OSError as e:
+        return True, loc("not checked: the check could not start") + f" ({e})"
+    try:
+        out, err = proc.communicate(value, timeout=300)
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        except OSError:
+            pass
+        proc.communicate()
+        return True, loc("not checked: the check timed out")
+    if proc.returncode == 0:
         return True, ""
-    linhas = [x for x in (r.stderr or r.stdout or "").strip().splitlines() if x.strip()]
-    return False, linhas[-1] if linhas else f"exit {r.returncode}"
+    linhas = [x for x in (err or out or "").strip().splitlines() if x.strip()]
+    porque = linhas[-1] if linhas else f"exit {proc.returncode}"
+    if proc.returncode != 1:
+        return True, (loc("not checked: the check itself failed")
+                      + f" (exit {proc.returncode}) {porque}")
+    return False, porque
 
 
 def ask_secret(s, name, instruction):
@@ -1732,12 +1775,17 @@ def ask_secret(s, name, instruction):
             say("  empty — skipped, create it by hand later (see the README)")
             return
         ok, porque = secret_ok(s, name, value)
+        # print(), not say(): `porque` carries the command's own stderr, and
+        # say() runs the whole line through the translator — which substitutes
+        # by substring, so a "connection refused" in there would come back as
+        # "connection recusado".
         if ok:
             if porque:
-                say(f"  {yellow('!')}  {porque}")
+                print(f"  {yellow('!')}  {porque}")
             store_secret(s, name, value)
             return
-        say(f"  {red(loc('refused'))}: {porque}")
+        say(f"  {red(loc('the service refused this value:'))}")
+        print(f"    {porque}")
         say(loc("  type it again, or press Enter to skip and create it by hand"))
 
 
@@ -2434,12 +2482,31 @@ def selftest():
     assert secret_ok(_ini("[secrets]\nk = manual x\n"), "k", "v") == (True, ""), \
         "no [validate] section means no opinion"
     assert secret_ok(_ini("[validate]\nk = shell true\n"), "k", "v") == (True, "")
-    ok, porque = secret_ok(_ini("[validate]\nk = shell echo nope >&2; false\n"), "k", "v")
+    ok, porque = secret_ok(_ini("[validate]\nk = shell echo nope >&2; exit 1\n"), "k", "v")
     assert (ok, porque) == (False, "nope"), (ok, porque)
+    # Exit 1 condemns the value; anything else means the check broke, and a
+    # broken check must never reject a value that may be right. podman answers
+    # 125 for an image it cannot run, which is the case this protects.
+    for codigo in (2, 125, 127):
+        ok, _ = secret_ok(_ini(f"[validate]\nk = shell exit {codigo}\n"), "k", "v")
+        assert ok, f"exit {codigo} is a check that failed, not a value that is wrong"
+    # An unknown form runs nothing, and saying nothing would be believed.
+    ok, porque = secret_ok(_ini("[validate]\nk = cmd x\n"), "k", "v")
+    assert ok and "unknown" in porque.lower() or "desconhecid" in porque.lower(), porque
     # The value arrives on stdin and nowhere else.
     ok, _ = secret_ok(_ini("[validate]\nk = shell test \"$(cat)\" = segredo\n"),
                       "k", "segredo")
     assert ok, "the value is what the command reads on stdin"
+
+    # --prefix promises to touch files and nothing else; a check that pulls an
+    # image and registers a tailnet node would break that promise silently.
+    _mod = sys.modules[__name__]
+    _mod.SANDBOX = True
+    try:
+        ok, porque = secret_ok(_ini("[validate]\nk = shell exit 1\n"), "k", "v")
+        assert ok and porque, "under --prefix the command must not run at all"
+    finally:
+        _mod.SANDBOX = False
 
     # missing_prereqs: 71 of the 74 services name tsdproxy's network, and
     # Quadlet resolves that against the HOST. An empty host owes the whole list;

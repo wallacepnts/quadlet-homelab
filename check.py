@@ -48,6 +48,10 @@ PT = {
         "não tem receita em install.ini [secrets] — o install.py não consegue gerá-lo",
     "install.ini has a recipe for": "install.ini tem receita para",
     "is not a Secret= any unit declares": "não é um Secret= que alguma unit declare",
+    "must start with `shell ` — install.py runs nothing else":
+        "tem que começar com `shell ` — o install.py não roda outra coisa",
+    "needs a `manual` recipe in [secrets] — a generated secret is never checked":
+        "precisa de receita `manual` em [secrets] — secret gerado nunca é conferido",
     "which no unit uses": "que nenhuma unit usa",
     "which no unit declares as a Secret=": "que nenhuma unit declara como Secret=",
     "has no row in the README version table": "não tem linha na tabela de versões do README",
@@ -293,6 +297,19 @@ def check_manifest(folders):
             if key not in declared:
                 error("manifest", f"apps/{folder.name}: install.ini [validate] {key} "
                                   f"is not a Secret= any unit declares")
+            # `shell` is the only form install.py runs. Any other word makes the
+            # check silently do nothing, which is worse than having none: the
+            # install prints no warning and you believe the value was verified.
+            elif not ini.get("validate", key, fallback="").startswith("shell "):
+                error("manifest", f"apps/{folder.name}: install.ini [validate] {key} "
+                                  f"must start with `shell ` — install.py runs nothing else")
+            # Only a `manual` secret is ever typed, and typing is the only moment
+            # there is a value to check. A recipe that generates its own has
+            # nothing to validate, so the entry would never fire.
+            elif not ini.get("secrets", key, fallback="").startswith("manual"):
+                error("manifest", f"apps/{folder.name}: install.ini [validate] {key} "
+                                  f"needs a `manual` recipe in [secrets] — a generated "
+                                  f"secret is never checked")
 
 
 # O rótulo que pode aparecer imediatamente antes de `.ts.net`. Vazio inclusive:

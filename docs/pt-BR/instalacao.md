@@ -196,6 +196,39 @@ qh filebrowser --reinstall --ask-secrets --apply
 Enter aceita o valor gerado, então dá pra digitar a única senha que você usa
 pra entrar e deixar o resto aleatório. Exige terminal e `--apply`.
 
+### Secrets que só se revelam errados do outro lado
+
+Uma authkey que o outro lado recusa é o pior tipo de valor errado: a instalação
+guarda, o container sobe saudável, e nada funciona — o caso do tsdproxy, onde
+uma chave recusada o deixa sem publicar nó nenhum enquanto o healthcheck dele
+segue verde. Uma entrada `[validate]` confere o valor antes de guardar:
+
+```ini
+[validate]
+authkey = shell podman run --rm -i ... tailscale up --authkey="$(cat)" ...
+```
+
+O valor chega por **stdin**, nunca pela linha de comando, que o `/proc` mostra
+para qualquer um na máquina. O contrato do código de saída é o que mantém a
+checagem honesta:
+
+| saída | significado |
+| --- | --- |
+| `0` | o valor é bom, pode guardar |
+| `1` | o valor está **errado** — avisar e perguntar de novo |
+| qualquer outra | a checagem não rodou: manter o valor e dizer por quê |
+
+A última linha importa mais do que parece. Sem ela, um pull de imagem que falha,
+um soluço de DNS ou um rate limit recusariam uma senha perfeitamente boa, em
+laço. O `podman` já responde `125` quando não consegue rodar o container, então
+a separação sai de graça do que as ferramentas já fazem.
+
+Só secret `manual` é validado — um gerado não tem o que conferir — e o
+`--prefix` pula tudo, porque ensaiar uma instalação não é hora de acessar a
+rede. O `check.py` reprova o build se a chave do `[validate]` não for um
+`Secret=` declarado, não começar com `shell `, ou não tiver receita `manual`
+ao lado.
+
 ## Perguntas durante a instalação
 
 Alguns valores de `.env` são escolha de uma lista conhecida e só valem no
