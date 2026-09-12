@@ -52,7 +52,7 @@ install.ini
 qh proxmox --update --apply
 ```
 
-Pinned to `9.2.9`. Nothing updates on its own — a new version is applied
+Pinned to `9.2.10`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

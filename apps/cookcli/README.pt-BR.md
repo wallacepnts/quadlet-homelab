@@ -53,7 +53,7 @@ install.ini
 qh cookcli --update --apply
 ```
 
-Fixado em `0.32.1`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `0.35.0`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

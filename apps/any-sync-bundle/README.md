@@ -75,7 +75,7 @@ losing the network.
 qh any-sync-bundle --update --apply
 ```
 
-Pinned to `1.5.0-2026-07-17`. Nothing updates on its own — a new version is applied
+Pinned to `1.6.0-2026-08-18`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

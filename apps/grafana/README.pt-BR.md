@@ -88,7 +88,7 @@ Outras fontes que fazem sentido aqui:
 qh grafana --update --apply
 ```
 
-Pinado em `13.1.3`. Nada atualiza sozinho — a versão nova entra quando você
+Pinado em `13.2.1`. Nada atualiza sozinho — a versão nova entra quando você
 roda o comando acima.
 
 Repare na imagem: a `grafana/grafana` é a compilação OSS e é a que acompanha as

@@ -97,7 +97,7 @@ Units da stack:
 qh owntracks --update --apply
 ```
 
-Fixado em `1.0.1`, `2.1.2-alpine`, `2.15.3`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `1.0.4`, `2.1.2-alpine`, `2.15.3`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

@@ -53,7 +53,7 @@ install.ini
 qh netbootxyz --update --apply
 ```
 
-Pinned to `0.7.6-nbxyz23`. Nothing updates on its own — a new version is applied
+Pinned to `0.7.6-nbxyz24`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

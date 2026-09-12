@@ -78,7 +78,7 @@ Mailpit reads.
 qh mailpit --update --apply
 ```
 
-Pinned to `v1.30.7`. Nothing updates on its own — a new version is applied
+Pinned to `v1.31.1`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

@@ -65,7 +65,7 @@ essa API.
 qh openwa --update --apply
 ```
 
-Fixado em `0.14.6`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `0.15.0`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

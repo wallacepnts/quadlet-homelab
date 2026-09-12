@@ -101,7 +101,7 @@ changing the password.
 qh filebrowser --update --apply
 ```
 
-Pinned to `1.5.1-stable`. Nothing updates on its own — a new version is
+Pinned to `1.5.6-stable`. Nothing updates on its own — a new version is
 applied when you run the command above. `config.yaml` is versioned here, so
 read the release notes for schema changes before a major bump.
 

@@ -69,7 +69,7 @@ install.ini
 qh gitea --update --apply
 ```
 
-Fixado em `1.27.1`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `1.27.3`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

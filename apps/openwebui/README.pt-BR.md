@@ -76,7 +76,7 @@ Units da stack:
 qh openwebui --update --apply
 ```
 
-Fixado em `0.32.6`, `v0.11.0`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `0.34.0`, `v0.11.3`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

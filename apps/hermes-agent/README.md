@@ -75,7 +75,7 @@ ls /sys/fs/cgroup/user.slice/user-$(id -u).slice/user@$(id -u).service/ | grep m
 qh hermes-agent --update --apply
 ```
 
-Pinned to `v2026.8.3`. Nothing updates on its own — a new version is applied
+Pinned to `v2026.9.11`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

@@ -52,7 +52,7 @@ freshrss.container
 qh freshrss --update --apply
 ```
 
-Pinned to `1.29.1-alpine`. Nothing updates on its own — a new version is applied
+Pinned to `1.30.0-alpine`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

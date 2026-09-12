@@ -69,7 +69,7 @@ install.ini
 qh invio --update --apply
 ```
 
-Fixado em `v2.1.1`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `v2.2.0`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

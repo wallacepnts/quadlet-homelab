@@ -75,7 +75,7 @@ want.
 qh vm --update --apply
 ```
 
-Pinned to `1.02`, `1.7.0`, `3.09`. Nothing updates on its own — a new version is applied
+Pinned to `1.05`, `1.7.1`, `3.12`, `6.05`, `7.50`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

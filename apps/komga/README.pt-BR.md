@@ -92,7 +92,7 @@ aqui antes da primeira varredura, e biblioteca fria demora mais.
 qh komga --update --apply
 ```
 
-Fixado em `1.26.1`.
+Fixado em `1.26.3`.
 
 ## Backup
 

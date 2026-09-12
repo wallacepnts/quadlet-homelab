@@ -80,7 +80,7 @@ Units da stack:
 qh karakeep --update --apply
 ```
 
-Fixado em `0.33.1`, `124`, `v1.41.0`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `0.33.2`, `124`, `v1.41.0`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

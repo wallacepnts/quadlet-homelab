@@ -56,7 +56,7 @@ install.ini
 qh copyparty --update --apply
 ```
 
-Fixado em `1.20.20`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `1.20.23`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

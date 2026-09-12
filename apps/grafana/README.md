@@ -85,7 +85,7 @@ Other sources that make sense here:
 qh grafana --update --apply
 ```
 
-Pinned to `13.1.3`. Nothing updates on its own — a new version is applied when
+Pinned to `13.2.1`. Nothing updates on its own — a new version is applied when
 you run the command above.
 
 Note the image: `grafana/grafana` is the OSS build and the one that tracks the

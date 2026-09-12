@@ -52,7 +52,7 @@ install.ini
 qh proxmox --update --apply
 ```
 
-Fixado em `9.2.9`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `9.2.10`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

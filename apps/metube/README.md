@@ -47,7 +47,7 @@ metube.container
 qh metube --update --apply
 ```
 
-Pinned to `2026.08.04`. Nothing updates on its own — a new version is applied
+Pinned to `2026.08.28`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

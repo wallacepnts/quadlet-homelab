@@ -83,7 +83,7 @@ tudo o que há dentro —, então o `CMD-SHELL` não teria shell onde rodar.
 qh vikunja --update --apply
 ```
 
-Fixado em `2.5.0`. Ele migra o banco no start, e é por isso que as notas da
+Fixado em `2.6.0`. Ele migra o banco no start, e é por isso que as notas da
 release valem uma lida antes de uma major.
 
 ## Backup

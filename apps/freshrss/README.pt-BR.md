@@ -52,7 +52,7 @@ freshrss.container
 qh freshrss --update --apply
 ```
 
-Fixado em `1.29.1-alpine`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `1.30.0-alpine`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

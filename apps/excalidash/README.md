@@ -75,7 +75,7 @@ that.
 qh excalidash --update --apply
 ```
 
-Pinned to `0.5.1`. Both images carry the same tag, and they are bumped
+Pinned to `0.6.0`. Both images carry the same tag, and they are bumped
 together.
 
 ## Backup

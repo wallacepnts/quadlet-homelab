@@ -74,7 +74,7 @@ instalar a pasta traz as seis, e você sobe a que quiser.
 qh vm --update --apply
 ```
 
-Fixado em `1.02`, `1.7.0`, `3.09`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `1.05`, `1.7.1`, `3.12`, `6.05`, `7.50`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

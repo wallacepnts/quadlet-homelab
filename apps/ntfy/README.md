@@ -62,7 +62,7 @@ ntfy.container
 qh ntfy --update --apply
 ```
 
-Pinned to `v2.27.0`. Nothing updates on its own — a new version is applied
+Pinned to `v2.28.0`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

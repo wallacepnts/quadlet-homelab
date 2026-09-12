@@ -128,7 +128,7 @@ Nada a instalar: é recurso do próprio Radicale, sem script nem timer por trás
 qh radicale --update --apply
 ```
 
-Fixado em `3.7.6.0`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `v0.27.0`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

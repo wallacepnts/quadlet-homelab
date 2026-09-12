@@ -129,7 +129,7 @@ script or timer behind it.
 qh radicale --update --apply
 ```
 
-Pinned to `3.7.6.0`. Nothing updates on its own — a new version is applied
+Pinned to `v0.27.0`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

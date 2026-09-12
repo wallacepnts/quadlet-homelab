@@ -54,7 +54,7 @@ traccar.xml.example
 qh traccar --update --apply
 ```
 
-Pinned to `6.14.5`. Nothing updates on its own — a new version is applied
+Pinned to `6.15.3`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

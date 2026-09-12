@@ -80,7 +80,7 @@ Units in this stack:
 qh karakeep --update --apply
 ```
 
-Pinned to `0.33.1`, `124`, `v1.41.0`. Nothing updates on its own — a new version is applied
+Pinned to `0.33.2`, `124`, `v1.41.0`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

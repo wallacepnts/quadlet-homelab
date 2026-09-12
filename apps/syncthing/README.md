@@ -56,7 +56,7 @@ syncthing.container
 qh syncthing --update --apply
 ```
 
-Pinned to `2.1.3`. Nothing updates on its own — a new version is applied
+Pinned to `2.1.5`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

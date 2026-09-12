@@ -65,7 +65,7 @@ Units in this stack:
 qh zigbee2mqtt --update --apply
 ```
 
-Pinned to `2.1.2-alpine`, `2.13.0`. Nothing updates on its own — a new version is applied
+Pinned to `2.1.2-alpine`, `2.14.1`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

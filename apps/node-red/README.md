@@ -53,7 +53,7 @@ install.ini
 qh node-red --update --apply
 ```
 
-Pinned to `5.0.4-minimal`. Nothing updates on its own — a new version is applied
+Pinned to `5.0.7-minimal`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

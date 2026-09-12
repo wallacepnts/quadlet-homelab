@@ -75,7 +75,7 @@ perdê-lo é perder a rede.
 qh any-sync-bundle --update --apply
 ```
 
-Fixado em `1.5.0-2026-07-17`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `1.6.0-2026-08-18`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

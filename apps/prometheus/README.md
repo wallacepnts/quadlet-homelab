@@ -83,7 +83,7 @@ qh prometheus --update --apply
 qh prometheus --update --apply
 ```
 
-Pinned to `v3.13.2`. Nothing updates on its own — a new version is applied when
+Pinned to `v3.14.0`. Nothing updates on its own — a new version is applied when
 you run the command above.
 
 ## Backup

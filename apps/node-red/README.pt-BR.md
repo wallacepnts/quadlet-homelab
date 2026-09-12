@@ -53,7 +53,7 @@ install.ini
 qh node-red --update --apply
 ```
 
-Fixado em `5.0.4-minimal`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `5.0.7-minimal`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

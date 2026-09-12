@@ -65,7 +65,7 @@ install.ini
 qh donetick --update --apply
 ```
 
-Fixado em `v0.1.76`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `v0.1.79`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

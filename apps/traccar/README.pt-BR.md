@@ -54,7 +54,7 @@ traccar.xml.example
 qh traccar --update --apply
 ```
 
-Fixado em `6.14.5`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `6.15.3`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

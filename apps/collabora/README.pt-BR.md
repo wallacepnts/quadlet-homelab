@@ -102,7 +102,7 @@ todo o `/usr/bin`, então não há o que rodar dentro dela.
 qh collabora --update --apply
 ```
 
-Fixado em `26.04.3.1.1`. O Collabora não publica release no GitHub, então o
+Fixado em `26.04.3.2.1`. O Collabora não publica release no GitHub, então o
 `qh-updates` compara com a lista de tags do registry.
 
 ## Backup

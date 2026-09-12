@@ -102,7 +102,7 @@ sem mudar a senha.
 qh filebrowser --update --apply
 ```
 
-Fixado em `1.5.1-stable`. Nada atualiza sozinho — versão nova entra quando
+Fixado em `1.5.6-stable`. Nada atualiza sozinho — versão nova entra quando
 você roda o comando acima. O `config.yaml` é versionado aqui, então leia as
 notas da release atrás de mudança de schema antes de subir uma major.
 

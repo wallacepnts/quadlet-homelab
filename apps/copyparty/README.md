@@ -56,7 +56,7 @@ install.ini
 qh copyparty --update --apply
 ```
 
-Pinned to `1.20.20`. Nothing updates on its own — a new version is applied
+Pinned to `1.20.23`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

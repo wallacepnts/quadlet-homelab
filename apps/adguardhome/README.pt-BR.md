@@ -47,7 +47,7 @@ install.ini
 qh adguardhome --update --apply
 ```
 
-Fixado em `v0.107.78`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `v0.107.79`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

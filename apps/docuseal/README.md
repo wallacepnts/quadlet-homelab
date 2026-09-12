@@ -96,7 +96,7 @@ answering — not just with the container up.
 qh docuseal --update --apply
 ```
 
-Pinned to `3.2.0`.
+Pinned to `3.2.4`.
 
 ## Backup
 

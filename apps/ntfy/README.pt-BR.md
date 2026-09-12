@@ -61,7 +61,7 @@ ntfy.container
 qh ntfy --update --apply
 ```
 
-Fixado em `v2.27.0`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `v2.28.0`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

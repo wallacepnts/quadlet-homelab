@@ -69,7 +69,7 @@ install.ini
 qh invio --update --apply
 ```
 
-Pinned to `v2.1.1`. Nothing updates on its own — a new version is applied
+Pinned to `v2.2.0`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

@@ -83,7 +83,7 @@ of it — so `CMD-SHELL` would have no shell to run in.
 qh vikunja --update --apply
 ```
 
-Pinned to `2.5.0`. It migrates the database on start, which is why the release
+Pinned to `2.6.0`. It migrates the database on start, which is why the release
 notes are worth a look before a major bump.
 
 ## Backup
