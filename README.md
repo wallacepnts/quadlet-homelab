@@ -47,8 +47,9 @@ pull the clone; they do the same thing:
 curl -fsSL https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/bootstrap.sh | bash
 ```
 
-It fast-forwards the clone and refreshes the links. A clone that has diverged
-is left alone and told about, so local edits are never dropped.
+It fast-forwards the clone and creates the links that are missing — one already
+pointing at another clone is named, not moved. A clone that has diverged is left
+alone and told about, so local edits are never dropped.
 
 **The services on the host** — nothing moves until you say so. A newer unit in
 the repository does not change the file already installed:

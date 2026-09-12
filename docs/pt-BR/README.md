@@ -47,8 +47,9 @@ dar pull no clone; dá no mesmo:
 curl -fsSL https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/bootstrap.sh | bash
 ```
 
-Ele avança o clone e refaz os links. Clone que divergiu é deixado em paz e
-avisado, então edição local sua nunca é descartada.
+Ele avança o clone e cria os links que faltam — link que já aponta pra outro
+clone ele nomeia, não move. Clone que divergiu é deixado em paz e avisado,
+então edição local sua nunca é descartada.
 
 **Os serviços no host** — nada se move até você mandar. Unit mais nova no
 repositório não muda o arquivo já instalado:

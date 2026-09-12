@@ -41,6 +41,7 @@ pt*)
     M_UPD="atualizado" ; M_CLONED="clonado em"
     M_NOTGIT="existe e não é um clone git — mova, ou defina DEST="
     M_TAKEN=": já há outro arquivo aí — deixado em paz"
+    M_OTHER="roda outra cópia — apague o link e rode de novo:"
     M_NOPATH="~/.local/bin ainda não está no PATH. Acrescente esta linha ao rc do seu shell:"
     M_PLAN="o plano de" ; M_PLAN2="(nada foi feito ainda):"
     M_TORUN="para executar:"
@@ -70,6 +71,7 @@ pt*)
     M_UPD="updated" ; M_CLONED="cloned into"
     M_NOTGIT="exists and is not a git clone — move it or set DEST="
     M_TAKEN=": a different file is already there — left alone"
+    M_OTHER="runs another copy — delete the link and run again:"
     M_NOPATH="~/.local/bin is not in PATH yet. Add this line to your shell's rc file:"
     M_PLAN="the plan for" ; M_PLAN2="(nothing is done yet):"
     M_TORUN="to run it:"
@@ -146,10 +148,13 @@ link() {
     if [ -e "$dest" ]; then
         atual=$(readlink -f "$dest" 2>/dev/null)
         [ "$atual" = "$(readlink -f "$target")" ] && return   # já é este, nada a dizer
-        # Another checkout of the same repository is not a conflict: the command
-        # works, it just runs a different copy. Saying so on every run trains
-        # people to skim past the line that does matter.
-        [ "$(basename "$atual")" = "$1" ] && return
+        # Another checkout of the same repository is the quiet failure, not the
+        # harmless case this once assumed: the command answers, out of a copy
+        # this script never updates. One left 41 commits behind reported 44
+        # services as outdated that were not. Name the copy that answers; the
+        # link is still the user's to move.
+        [ "$(basename "$atual")" = "$1" ] \
+            && { say "$name $M_OTHER ${atual/#$HOME/\~}"; return; }
         say "$name$M_TAKEN"
         return
     fi

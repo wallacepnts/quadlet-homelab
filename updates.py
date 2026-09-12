@@ -201,6 +201,33 @@ def registry_tags(image, paginas=20):
     return todas or None
 
 
+def registry_stable(image, tag):
+    """The numbered tag `latest` points at, which is the released one.
+
+    Fedora publishes the stable release, the branched one and rawhide side by
+    side, all numbered: `46` and `rawhide` are the same digest, `45` says
+    `Prerelease` inside, and `latest` is `44`. Taking the highest number — what
+    `registry` does — recommends rawhide every month, and had this repository
+    pinned to a prerelease for five weeks without anyone writing it down.
+
+    Matching by digest and not by name because `latest` is a pointer: the thing
+    to compare against is whichever numbered tag it currently resolves to.
+    """
+    h = _manifest_head(image, "latest")
+    alvo = (h or {}).get("Docker-Content-Digest")
+    if not alvo:
+        return None
+    forma = re.sub(r"\d+", r"\\d+", re.escape(tag))
+    candidatos = [x for x in (registry_tags(image) or []) if re.fullmatch(forma, x)]
+    # Newest first, so the usual case answers on the first request.
+    for cand in sorted(candidatos, key=lambda x: [int(v) for v in re.findall(r"\d+", x)],
+                       reverse=True)[:12]:
+        outro = _manifest_head(image, cand)
+        if outro and outro.get("Docker-Content-Digest") == alvo:
+            return cand
+    return None
+
+
 def registry_newest(image, tag, padrao=None):
     """The newest registry tag shaped like ours, or None.
 
@@ -502,7 +529,10 @@ def check(item):
         # a project that only publishes git tags, an image versioned apart from
         # its repository — the registry is the only source that knows.
         _, _, padrao = override.partition(":")
-        there = registry_newest(image, tag, padrao or None)
+        # `registry:latest` asks which numbered tag `latest` resolves to, for a
+        # project that publishes its prereleases under numbers too.
+        there = (registry_stable(image, tag) if padrao == "latest"
+                 else registry_newest(image, tag, padrao or None))
         if not there:
             return (unit, image, tag, "?", "registry: no comparable tag")
         n = lambda x: tuple(int(v) for v in re.findall(r"\d+", x))
@@ -634,6 +664,14 @@ def selftest():
         assert nova == "docker.io/valkey/valkey:9@sha256:" + "b" * 64, nova
         # a reference that is not there is left alone rather than guessed at
         assert escrever_imagem(u, "ghcr.io/nao/existe:1", "2") is None
+
+    # `registry:latest` builds the shape to look for from our own tag, so it
+    # compares `44` against other bare numbers and never against `rawhide`.
+    forma = lambda tag: re.sub(r"\d+", r"\\d+", re.escape(tag))
+    import re as _re
+    assert _re.fullmatch(forma("44"), "46") and not _re.fullmatch(forma("44"), "rawhide")
+    assert _re.fullmatch(forma("26.04"), "25.10")
+    assert not _re.fullmatch(forma("26.04"), "latest")
 
     assert version("1.30.0-alpine") == (1, 30, 0)
     assert version("release") is None, "a name with no digits has no version"
