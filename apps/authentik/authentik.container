@@ -24,7 +24,7 @@ Secret=authentik-postgres-password,type=env,target=AUTHENTIK_POSTGRESQL__PASSWOR
 Secret=authentik-secret-key,type=env,target=AUTHENTIK_SECRET_KEY
 
 Volume=%h/.config/containers/volumes/authentik/data:/data:Z
-PodmanArgs=--shm-size=512m
+ShmSize=512m
 
 HealthCmd=CMD-SHELL ak healthcheck || exit 1
 HealthInterval=30s

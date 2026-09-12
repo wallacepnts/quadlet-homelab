@@ -23,7 +23,7 @@ Volume=%h/.config/containers/volumes/authentik/certs:/certs:Z
 SecurityLabelType=container_runtime_t
 Volume=%t/podman/podman.sock:/var/run/docker.sock:z
 
-PodmanArgs=--shm-size=512m
+ShmSize=512m
 
 [Service]
 Restart=always

@@ -10,7 +10,7 @@ PublishPort=8971:8971
 Volume=%h/.config/containers/volumes/frigate/config:/config:Z
 Volume=${FRIGATE_MEDIA_DIR}:/media/frigate:Z
 Tmpfs=/tmp/cache:size=1g
-PodmanArgs=--shm-size=128m
+ShmSize=128m
 
 HealthCmd=CMD-SHELL curl -fsSk https://127.0.0.1:8971/ || exit 1
 HealthInterval=30s
