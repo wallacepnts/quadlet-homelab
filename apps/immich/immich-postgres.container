@@ -19,7 +19,6 @@ Environment=POSTGRES_INITDB_ARGS=--data-checksums
 Secret=immich-db-password,type=env,target=POSTGRES_PASSWORD
 
 NoNewPrivileges=true
-PodmanArgs=--cap-drop=NET_RAW
 HealthCmd=CMD-SHELL healthcheck.sh || exit 1
 HealthInterval=10s
 HealthTimeout=5s

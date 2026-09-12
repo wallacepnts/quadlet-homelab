@@ -18,7 +18,6 @@ Volume=%h/.config/containers/volumes/immich/ml-config:/.config:Z
 EnvironmentFile=%h/.config/containers/env/immich.env
 
 NoNewPrivileges=true
-PodmanArgs=--cap-drop=NET_RAW
 HealthCmd=CMD-SHELL python3 healthcheck.py || exit 1
 HealthInterval=30s
 HealthTimeout=10s
