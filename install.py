@@ -20,6 +20,7 @@ No dependencies: stdlib only.
 
 import argparse
 import configparser
+import difflib
 import importlib.util
 import os
 import re
@@ -142,6 +143,10 @@ PT = {
     "has no obvious destination — declare it in install.ini [config]":
         "não tem destino óbvio — declare em install.ini [config]",
     "has no recipe in install.ini [secrets]": "não tem receita em install.ini [secrets]",
+    "the copy on the host differs — this rewrites it, dropping ":
+        "a cópia no host difere — isto reescreve ela, descartando ",
+    " line(s) of its own": " linha(s) próprias",
+    " more line(s)": " linha(s) a mais",
     "has a systemd variable — create it by hand once the variable is set":
         "tem variável do systemd — crie na mão depois que a variável existir",
     "does not look installed — use the normal install":
@@ -1082,6 +1087,35 @@ def unit_current(u, target, modo, href_local):
     return int(criado) >= int(target.stat().st_mtime)
 
 
+def unit_drift(u, target, modo, href_local):
+    """The lines that differ between the installed unit and what would be written.
+
+    `unit_current` already makes this exact comparison — the repository's file
+    with the access rewrite applied, against the bytes on the host — and keeps
+    only the boolean. What it throws away is the answer to the question worth
+    asking before an overwrite: what of mine goes away? A `PublishPort`
+    commented out by hand to keep a password vault off the LAN is one line
+    here, and was nothing at all in a plan that only said `cp`.
+    """
+    if not target.exists():
+        return []
+    novo = unit_bytes(u, modo, href_local).decode("utf-8", "replace").splitlines()
+    velho = target.read_bytes().decode("utf-8", "replace").splitlines()
+    return [l for l in difflib.unified_diff(velho, novo, lineterm="", n=0)
+            if not l.startswith(("---", "+++", "@@"))]
+
+
+def drift_warning(u, linhas, limite=10):
+    """The drift as one warning: `-` is what the host loses, `+` what it gains."""
+    perde = sum(1 for l in linhas if l.startswith("-"))
+    cabeca = (f"{u.name}: the copy on the host differs — this rewrites it, "
+              f"dropping {perde} line(s) of its own")
+    corpo = [f"       {l}" for l in linhas[:limite]]
+    if len(linhas) > limite:
+        corpo.append(f"       … {len(linhas) - limite} more line(s)")
+    return "\n".join([cabeca] + corpo)
+
+
 def plan_update(s, access="tailnet", href_local=False):
     """Re-copies the units over the installed ones and restarts. Touches no
     data, env or secret.
@@ -1118,6 +1152,10 @@ def plan_update(s, access="tailnet", href_local=False):
     for u in s.units:
         target = dest / u.name
         modo = modos[u.name]
+        # Said before the copy, because after it there is nothing left to read.
+        drift = unit_drift(u, target, modo, href_local)
+        if drift:
+            warnings.append(drift_warning(u, drift))
         steps.append((f"cp {u.relative_to(ROOT)} -> {target}  (--access {modo})",
                       lambda u=u, target=target, modo=modo:
                           write_unit(u, target, modo, href_local)))
@@ -3150,7 +3188,7 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
     for desc, _ in steps:
         say(f"  {'->' if a.apply else '  '} {desc}")
     for w in warnings:
-        say(f"  {yellow('!')}  {w}")
+        say(f"  {yellow('!')}  {loc(w)}")
 
     if not a.apply:
         if not (a.remove or a.backup or a.restore):

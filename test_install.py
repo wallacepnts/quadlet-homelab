@@ -68,6 +68,31 @@ def scenario_no_overwrite(home):
           "--reinstall overwrites the .env")
 
 
+def scenario_drift(home):
+    """An edit made on the host has to survive being *named* before it is lost.
+
+    The plan used to say only `cp unit -> target`, which reads as housekeeping;
+    the line a hand had commented out to keep a port closed went with it and
+    nothing said so.
+    """
+    unit = path(home, "systemd", f"{APP}.container")
+    original = unit.read_text()
+    unit.write_text(original.replace("[Container]",
+                                     "[Container]\n# minha linha, escrita na mao"))
+    seco = run(APP, "--update", "--prefix", home)
+    check("differs" in seco.stdout and "minha linha" in seco.stdout,
+          "--update names the host's own line before overwriting it")
+    check("# minha linha" in unit.read_text(),
+          "the dry run does not touch the file it warned about")
+    run(APP, "--update", "--apply", "--prefix", home)
+    check("# minha linha" not in unit.read_text(),
+          "--apply does go through with the overwrite it announced")
+    unit.write_text(original)
+    limpo = run(APP, "--update", "--prefix", home)
+    check("differs" not in limpo.stdout,
+          "a unit matching the repository raises no drift warning")
+
+
 def scenario_backup_restore(home, out):
     data = path(home, "volumes", APP, "data", "db.sqlite")
     data.write_text("backup-state")
@@ -180,6 +205,7 @@ def main():
 
         print("install:");            scenario_install(home)
         print("user files:");         scenario_no_overwrite(home)
+        print("drift:");              scenario_drift(home)
         print("backup and restore:"); tgz = scenario_backup_restore(home, out)
         if tgz:
             print("restore refuses:"); scenario_restore_refuses(home, tgz, out)
