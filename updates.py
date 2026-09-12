@@ -63,12 +63,14 @@ PT = {
     "same digest": "mesmo digest",
     "released, image not published yet (": "lançado, imagem ainda não publicada (",
     "cannot compare (": "sem comparação (",
+    "pinned ahead of the release (": "fixados à frente da release (",
     "up to date:": "em dia:",
     "images:": "imagens:",
     "outdated,": "desatualizadas,",
     "up to date,": "em dia,",
     "with a floating tag,": "com tag flutuante,",
     'waiting for the image': 'aguardando a imagem',
+    'pinned ahead': 'à frente da release',
     'on a floating tag': 'com tag flutuante',
     'all up to date': 'tudo em dia',
     'images': 'imagens',
@@ -538,6 +540,11 @@ def check(item):
         n = lambda x: tuple(int(v) for v in re.findall(r"\d+", x))
         if n(there) > n(tag):
             return (unit, image, tag, there, "BEHIND")
+        # Pinned *past* the released tag is the prerelease this mode exists to
+        # catch — `46` outranks `44` by number and is rawhide. Asking only
+        # whether we are behind would call that up to date and say nothing.
+        if n(there) < n(tag):
+            return (unit, image, tag, there, "AHEAD")
         return (unit, image, tag, there, "up to date")
 
     if override and override.startswith("compose:"):
@@ -676,6 +683,22 @@ def selftest():
     assert version("1.30.0-alpine") == (1, 30, 0)
     assert version("release") is None, "a name with no digits has no version"
     assert "release" in FLOATING, "karakeep's chrome is pinned at `release` upstream"
+
+    # Every status check() can return has to land in a bucket the report
+    # prints. This is the one assertion that reads the source: the statuses are
+    # literals inside check(), and one that nothing sorts goes missing rather
+    # than wrong — the run still ends in "all up to date", minus a service.
+    import ast
+    fn = next(n for n in ast.walk(ast.parse(Path(__file__).read_text()))
+              if isinstance(n, ast.FunctionDef) and n.name == "check")
+    vistos = set()
+    for n in ast.walk(fn):
+        if (isinstance(n, ast.Return) and isinstance(n.value, ast.Tuple)
+                and isinstance(n.value.elts[-1], ast.Constant)):
+            status = n.value.elts[-1].value
+            assert balde(status), f"check() returns {status!r} and no bucket takes it"
+            vistos.add(status)
+    assert len(vistos) >= 10, f"only {len(vistos)} statuses found — did check() move?"
 
     print("selftest: ok")
 
@@ -889,6 +912,26 @@ def bump(behind, items, apply, com_major):
     return 0
 
 
+def balde(status):
+    """Which part of the report a status belongs to, or None if none takes it.
+
+    main() used to sort the rows with one filter per bucket, and the prefixes
+    for the uncomparable ones lived inside a single comprehension. A status
+    matching no filter was printed by no table and counted in no total, so the
+    service vanished from a run that still ended in "all up to date". Naming
+    the mapping once is what lets the selftest hold it against the statuses
+    check() actually returns.
+    """
+    if status in ("GONE", "BEHIND", "MOVED", "AHEAD", "up to date", "floating tag"):
+        return status
+    if status == "released, not published yet":
+        return "PENDING"
+    if (status.startswith(("unknown repo", "not comparable", "compose:", "registry:"))
+            or "no published release" in status):
+        return "UNCLEAR"
+    return None
+
+
 def main():
     qhui.argparse_ptbr()
     ap = argparse.ArgumentParser(description=AJUDA_PT if qhui.PTBR else __doc__,
@@ -911,15 +954,15 @@ def main():
     with ThreadPoolExecutor(max_workers=8) as pool:
         rows = list(pool.map(check, items))
 
-    sumidas = [l for l in rows if l[4] == "GONE"]
-    behind = [l for l in rows if l[4] == "BEHIND"]
+    baldes = {}
+    for l in rows:
+        baldes.setdefault(balde(l[4]), []).append(l)
+    sumidas, behind = baldes.get("GONE", []), baldes.get("BEHIND", [])
 
     if a.bump:
         return bump(behind, items, a.apply, a.major)
-    movidas = [l for l in rows if l[4] == "MOVED"]
-    unclear = [l for l in rows if l[4].startswith(("unknown repo", "not comparable", "compose:"))
-               or "no published release" in l[4]]
-    pendente = [l for l in rows if l[4] == "released, not published yet"]
+    movidas, adiante = baldes.get("MOVED", []), baldes.get("AHEAD", [])
+    unclear, pendente = baldes.get("UNCLEAR", []), baldes.get("PENDING", [])
 
     def table(label, ls, cor=yellow):
         if not ls:
@@ -931,12 +974,13 @@ def main():
     table(f"PINNED IMAGE IS GONE ({len(sumidas)}):", sumidas, red)
     table(f"OUTDATED ({len(behind)}):", behind, red)
     table(f"released, image not published yet ({len(pendente)}):", pendente)
+    table(f"pinned ahead of the release ({len(adiante)}):", adiante)
     table(f"floating tag, moved since your pull ({len(movidas)}):", movidas)
     # What could not be compared stays out of the way: it is a property of the
     # image's naming, not something to act on. --all brings it back.
     if a.all:
         table(f"cannot compare ({len(unclear)}):", unclear)
-        table("up to date:", [l for l in rows if l[4] == "up to date"], green)
+        table("up to date:", baldes.get("up to date", []), green)
 
     # Zeros are not news. What is left is coloured by whether it asks anything
     # of you: red acts now, yellow waits, the rest is background.
@@ -945,13 +989,17 @@ def main():
             (len(sumidas), "gone from the registry", red),
             (len(behind), "outdated", red),
             (len(pendente), "waiting for the image", yellow),
-            (sum(1 for l in rows if l[4] == "up to date"), "up to date", green),
-            (sum(1 for l in rows if l[4] == "floating tag"), "on a floating tag", dim),
+            (len(adiante), "pinned ahead", yellow),
+            (len(baldes.get("up to date", [])), "up to date", green),
+            (len(baldes.get("floating tag", [])), "on a floating tag", dim),
             (len(unclear), "not compared", dim)):
         if n:
             partes.append(cor(f"{n} {loc(rotulo)}"))
     cabeca = dim(loc(f"{len(rows)} images"))
-    if not behind and not pendente and not sumidas:
+    # `unclear` counts too: "all up to date" claims every image was compared,
+    # and an image the registry would not answer for was not. Saying it anyway
+    # is how a failed lookup reads exactly like a clean run.
+    if not behind and not pendente and not sumidas and not adiante and not unclear:
         print(f"\n{cabeca} {dim('·')} {green(loc('all up to date'))}")
     else:
         print("\n" + f" {dim('·')} ".join([cabeca] + partes))
