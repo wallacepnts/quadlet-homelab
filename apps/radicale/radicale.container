@@ -2,7 +2,7 @@
 Description=Radicale (CalDAV/CardDAV)
 
 [Container]
-PidsLimit=256
+PidsLimit=50
 Image=docker.io/christf/docker-radicale-birthday:v0.27.0
 ContainerName=radicale
 Network=tsdproxy-net.network
@@ -15,7 +15,6 @@ AddCapability=chown
 AddCapability=setuid
 AddCapability=setgid
 AddCapability=kill
-PodmanArgs=--pids-limit=50
 
 Volume=%h/.config/containers/volumes/radicale/data:/data:Z
 Volume=%h/.config/containers/volumes/radicale/config:/config:ro,Z
