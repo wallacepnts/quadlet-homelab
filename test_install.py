@@ -10,6 +10,7 @@ which touches files only. That is the same reason this fits in a bare CI runner.
     python3 test_install.py
 """
 
+import importlib.util
 import shutil
 import os
 import subprocess
@@ -19,6 +20,9 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
+_spec = importlib.util.spec_from_file_location("qh_install", ROOT / "install.py")
+I = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(I)          # restart_order is pure: worth asserting directly
 APP = "homebox"          # volume + secret + .env + User=: covers all four cases
 STACK = "immich"         # 4 containers + a shared .network, in a subfolder
 
@@ -200,6 +204,57 @@ def scenario_backup_restore(home, out):
     return tgz
 
 
+def scenario_update_gaps(tmp):
+    """An update is the weekly command, and it did less than an install.
+
+    A version that adds a `Volume=` or a `User=` was copied and then died at
+    the restart, because rule 6 was enforced on install only. The restart order
+    went main-first, so the unit the tool followed to healthy was torn down
+    twice more by its own dependencies. And on the flat-to-subfolder migration
+    the drift warning compared against a file that did not exist yet, so a hand
+    edit went out with the stray removal without a word.
+    """
+    check(I.restart_order(sorted(Path(ROOT, "apps", "owntracks").glob("*.container")))
+          == ["owntracks-mosquitto", "owntracks-recorder", "owntracks-frontend"],
+          "a two-deep chain orders dependencies first, main last")
+
+    # And the plan has to USE it: asserting the function alone passed while the
+    # call site still went main-first.
+    ordenado = str(Path(tmp, "ordem"))
+    run(STACK, "--apply", "--prefix", ordenado)
+    for f in path(ordenado, "systemd", STACK).iterdir():
+        os.utime(f, (0, 0))
+    r = run(STACK, "--update", "--prefix", ordenado)
+    reinicios = [l.split("restart ")[1].split()[0]
+                 for l in r.stdout.splitlines() if "systemctl --user restart" in l]
+    check(reinicios and reinicios[-1] == STACK,
+          f"the plan restarts the main unit last ({reinicios})")
+
+    home = str(Path(tmp, "upd"))
+    run(APP, "--apply", "--prefix", home)
+    unidade = path(home, "systemd", f"{APP}.container")
+
+    # A missing volume directory is created by the update, not left to podman.
+    alvo = path(home, "volumes", APP, "data")
+    shutil.rmtree(alvo)
+    unidade.write_text(unidade.read_text().replace("Image=", "# touched\nImage=", 1))
+    r = run(APP, "--update", "--prefix", home)
+    check(f"mkdir -p {alvo}" in r.stdout, "an update creates a Volume= that is missing")
+
+    # The drift warning has to read the file that is actually there.
+    plano = str(Path(tmp, "upd-flat"))
+    run(STACK, "--apply", "--prefix", plano)
+    origem = path(plano, "systemd", STACK)
+    for f in origem.iterdir():
+        f.rename(path(plano, "systemd", f.name))
+    origem.rmdir()
+    alvo = path(plano, "systemd", f"{STACK}.container")
+    alvo.write_text(alvo.read_text().replace("[Container]", "[Container]\n# minha linha", 1))
+    r = run(STACK, "--update", "--prefix", plano)
+    check("minha linha" in r.stdout,
+          "and names a hand edit even when the unit is moving address")
+
+
 def scenario_sandbox(tmp):
     """--prefix promises not to touch the real host. It was touching it.
 
@@ -370,6 +425,7 @@ def main():
         print("failure:");            scenario_failure(home, tmp)
         print("remove safety:");      scenario_remove_safety(tmp)
         print("archive safety:");     scenario_archive_safety(tmp)
+        print("update gaps:");        scenario_update_gaps(tmp)
         print("sandbox:");            scenario_sandbox(tmp)
         print("backup and restore:"); tgz = scenario_backup_restore(home, out)
         if tgz:

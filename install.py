@@ -1177,6 +1177,37 @@ class Recovery:
         return self.action()
 
 
+def restart_order(paths):
+    """The folder's units, each after everything it declares Requires= on.
+
+    Rule 8: restarting a dependency also restarts whoever requires it. Going
+    main-first meant immich came up, was followed to healthy, and was then torn
+    down twice more as Postgres and Redis restarted under it — the wait paid for
+    nothing, and a sidecar that failed left the main unit stopped with nothing
+    after it to bring it back.
+    """
+    nomes = {p.stem: p for p in paths if p.suffix == ".container"}
+    precisa = {}
+    for nome, caminho in nomes.items():
+        texto = caminho.read_text()
+        pedidos = set()
+        for chave, valor in directives(texto):
+            if chave in ("Requires", "Wants", "After"):
+                pedidos |= {v.removesuffix(".service") for v in valor.split()}
+        precisa[nome] = pedidos & set(nomes)
+    saida, restantes = [], sorted(nomes)
+    while restantes:
+        prontos = [n for n in restantes if precisa[n] <= set(saida)]
+        if not prontos:
+            # A cycle: systemd would refuse it anyway, and guessing an order is
+            # better than looping. Whatever is left goes in its declared order.
+            saida += restantes
+            break
+        saida += prontos
+        restantes = [n for n in restantes if n not in prontos]
+    return saida
+
+
 def plan_update(s, access="tailnet", href_local=False):
     """Re-copies the units over the installed ones and restarts. Touches no
     data, env or secret.
@@ -1205,6 +1236,40 @@ def plan_update(s, access="tailnet", href_local=False):
         return [], [EM_DIA]
 
     steps.append((f"mkdir -p {dest}", lambda: dest.mkdir(parents=True, exist_ok=True)))
+
+    # Rule 6 applies to an update too. `plan_install` creates every `Volume=`
+    # path; this one created only the systemd directory, so a bump that adds a
+    # volume copied the unit and then died at the restart with podman's
+    # `statfs ...: no such file or directory`. Only what is missing: naming
+    # sixty directories that already exist on every weekly update is noise.
+    for path, is_file in s.volumes():
+        if is_file is None:
+            continue
+        d = Path(path).parent if is_file else Path(path)
+        if not d.exists():
+            steps.append((f"mkdir -p {d}  (new in this version)",
+                          lambda d=d: d.mkdir(parents=True, exist_ok=True)))
+
+    # And the chown, for the same reason — but only where it changed. `chown -R`
+    # on immich's library every week would cost minutes for nothing, so this
+    # compares the installed unit's `User=` against the one about to be written.
+    for u in s.units:
+        if u.suffix != ".container":
+            continue
+        antigo = dest / u.name
+        if not antigo.exists():
+            continue
+        def user_de(texto):
+            return next((v.split(":")[0] for k, v in directives(texto) if k == "User"), None)
+        if user_de(antigo.read_text()) == user_de(u.read_text()):
+            continue
+        um = Service(s.name, s.home, u.stem)
+        for diretorio, uid in um.chowns():
+            steps.append((f"podman unshare chown -R {uid}:{uid} {diretorio}  "
+                          f"(User= changed in this version)",
+                          lambda d=diretorio, x=uid: run(["podman", "unshare", "chown",
+                                                          "-R", f"{x}:{x}", d])))
+
     # Before writing: a copy left at the old address would go on defining the
     # same unit, and copying over one of the two does not settle which wins.
     for velha in s.strays():
@@ -1213,8 +1278,14 @@ def plan_update(s, access="tailnet", href_local=False):
     for u in s.units:
         target = dest / u.name
         modo = modos[u.name]
-        # Said before the copy, because after it there is nothing left to read.
-        drift = unit_drift(u, target, modo, href_local)
+        # Said before the copy, because after it there is nothing left to read —
+        # and read from wherever the file actually is. On the flat-to-subfolder
+        # migration `target` does not exist yet, so the comparison came back
+        # empty and the line someone had edited by hand went out with the stray
+        # removal, silently. That is the loss this warning exists to prevent.
+        atual = target if target.exists() else next(
+            (v for v in s.strays() if v.name == u.name), target)
+        drift = unit_drift(u, atual, modo, href_local)
         if drift:
             warnings.append(drift_warning(u, drift))
         steps.append((f"cp {u.relative_to(ROOT)} -> {target}  (--access {modo})",
@@ -1227,10 +1298,7 @@ def plan_update(s, access="tailnet", href_local=False):
     # dependency — beszel's agent, authentik's worker, immich's ML — would be
     # copied and then never started, sitting installed with an empty journal
     # until the next login. Restarting the main one alone hid three of them.
-    main = s.main_unit()
-    outros = [u.stem for u in s.units if u.suffix == ".container"
-              and (not main or u.stem != main.stem)]
-    targets = ([main.stem] if main else []) + sorted(outros)
+    targets = restart_order(s.units)
     paths = {u.stem: u for u in s.units if u.suffix == ".container"}
     for unit in targets:
         path = paths.get(unit)
