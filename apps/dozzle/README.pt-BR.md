@@ -83,7 +83,7 @@ forma exec: a imagem não traz shell, então o `CMD-SHELL` falharia.
 qh dozzle --update --apply
 ```
 
-Fixado em `v11.0.0`.
+Fixado em `v11.0.1`.
 
 ## Backup
 

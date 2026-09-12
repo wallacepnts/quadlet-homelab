@@ -54,7 +54,7 @@ install.ini
 qh lubelogger --update --apply
 ```
 
-Fixado em `v1.7.2`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `v1.7.3`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

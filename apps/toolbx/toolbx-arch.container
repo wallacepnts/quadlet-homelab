@@ -5,7 +5,7 @@ Description=Toolbx Arch Linux (interactive shell)
 NoNewPrivileges=true
 PidsLimit=1024
 
-Image=quay.io/toolbx/arch-toolbox@sha256:38d89c96265cfa7d6795c2e6f4b5b803df3e1f3d934fcfbabb346153aabdf985
+Image=quay.io/toolbx/arch-toolbox@sha256:04fc926ccff8536279b739224bf36fd89f9ae448956ff139bbebcb0c0425bdc3
 ContainerName=toolbx-arch
 Exec=sleep infinity
 UserNS=keep-id

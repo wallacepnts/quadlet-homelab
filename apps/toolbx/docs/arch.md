@@ -8,11 +8,18 @@
 
 An Arch shell with `pacman` and access to the AUR.
 
-Unit `toolbx-arch`, image `quay.io/toolbx/arch-toolbox@sha256:38d89c…`.
+Unit `toolbx-arch`, image `quay.io/toolbx/arch-toolbox@sha256:04fc92…`.
 
 Pinned by digest, not by tag. Arch is a rolling release: its only tag is `latest`, which moves whenever the image is rebuilt, and a tag that moves is not a version this repository can pin.
 
-Updating means replacing the digest by hand — `podman pull quay.io/toolbx/arch-toolbox:latest` and reading the new one from `podman inspect`. `qh-updates` cannot compare it, and `install.ini` marks it `-` for that reason.
+Updating means replacing the digest by hand — `podman pull quay.io/toolbx/arch-toolbox:latest` and reading the new one from `podman inspect`. `qh-updates` cannot compare it to anything newer, and `install.ini` marks it `-` for that reason.
+
+A pinned digest here has an expiry, which is the part that surprises. Quay
+collects the manifests that no tag points at any more, and the one pinned in
+June stopped being servable — `manifest unknown`. The container kept running
+from the local copy while every fresh install failed. `qh-updates` does catch
+this one: it asks whether the pinned image still exists before asking whether a
+newer one does, and reports it as gone.
 
 The container runs `sleep infinity` and does nothing on its own — the point is
 the shell you open in it. `/work` is the only directory that survives a
