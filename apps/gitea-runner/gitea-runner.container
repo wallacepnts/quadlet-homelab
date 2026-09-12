@@ -1,0 +1,34 @@
+[Unit]
+Description=Gitea Actions runner (CI for the Gitea next door)
+
+[Container]
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+PidsLimit=256
+NoNewPrivileges=true
+Image=docker.io/gitea/runner:3.4.2
+ContainerName=gitea-runner
+Network=tsdproxy-net.network
+Environment=CONFIG_FILE=/data/config.yaml
+EnvironmentFile=%h/.config/containers/env/gitea-runner.env
+Secret=gitea-runner-token,type=env,target=GITEA_RUNNER_REGISTRATION_TOKEN
+Volume=%h/.config/containers/volumes/gitea-runner/data:/data:Z
+# `:z` alone is not enough on SELinux: rule 16 of the conventions.
+SecurityLabelType=container_runtime_t
+Volume=%t/podman/podman.sock:/var/run/docker.sock:z
+HealthCmd=CMD-SHELL wget -q -O /dev/null http://127.0.0.1:9101/healthz || exit 1
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=5
+HealthStartPeriod=30s
+Notify=healthy
+Label=wud.watch=true
+Label=wud.tag.include=^[0-9]+[.][0-9]+[.][0-9]+$
+
+[Service]
+Restart=always
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target

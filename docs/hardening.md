@@ -43,6 +43,7 @@ and is maintained by hand.
 | `frigate` | no | podman default |
 | `ghost` | yes | **none** + `User=1000` |
 | `gitea` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
+| `gitea-runner` | yes | **none** |
 | `grafana` | yes | **none** + `User=472` |
 | `hermes-agent` | no | podman default |
 | `home-assistant` | yes | **none** |

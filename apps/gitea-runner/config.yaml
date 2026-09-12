@@ -1,0 +1,29 @@
+# The runner reads this through CONFIG_FILE=/data/config.yaml. Everything not
+# written here keeps the upstream default; `gitea-runner generate-config` prints
+# the full example with the comments.
+log:
+  level: info
+
+runner:
+  # One job at a time. Each job is a container this runner creates through the
+  # Podman socket, so raising this raises what runs on the host at once.
+  capacity: 1
+  timeout: 1h
+
+cache:
+  enabled: true
+  # Default is $HOME/.cache/actcache, which is inside the image — and the unit
+  # mounts the image read-only, so the cache server refuses to start and
+  # disables itself with the container still healthy. Pointing it at the volume
+  # keeps it working and keeps it across restarts, which is the point of it.
+  dir: /data/cache
+
+container:
+  privileged: false
+
+metrics:
+  # Off upstream. On here because `Notify=healthy` needs a HealthCmd, and this
+  # is the only endpoint the runner serves: /healthz answers `ok` once the
+  # daemon is up, /readyz once it is polling Gitea.
+  enabled: true
+  addr: "127.0.0.1:9101"

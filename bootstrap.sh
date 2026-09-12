@@ -106,7 +106,7 @@ fi
 say "$M_DEPSOK"
 
 # 1b. Podman 5.0 is the real floor: `Notify=healthy` arrived there, and
-#     102 of the 110 units use it. On 4.x the start returns before the app is
+#     103 of the 111 units use it. On 4.x the start returns before the app is
 #     ready and the install reports success it cannot know about.
 pv=$(podman --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+' | head -1)
 if [ -n "$pv" ] && [ "${pv%%.*}" -lt 5 ]; then

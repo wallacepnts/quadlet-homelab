@@ -2,7 +2,7 @@
 
 **[🇧🇷 Leia em português](./docs/pt-BR/README.md)**
 
-74 self-hosted services as [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)
+75 self-hosted services as [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)
 units, rootless, one service per folder.
 
 ## Quick start
@@ -70,7 +70,7 @@ pulled. To go through anyway, use `--reinstall`.
 ## Requirements
 
 - **Podman 5.0 or newer.** This is the real floor: `Notify=healthy` arrived
-  there, and 102 of the 110 units use it. On 4.x the start returns before the app
+  there, and 103 of the 111 units use it. On 4.x the start returns before the app
   is ready, and the install reports a success it cannot know about.
 - **systemd with a user session** and cgroups v2.
 - **`network-online.target` reached at boot.** Quadlet orders every unit it
@@ -150,6 +150,7 @@ Leap 15's problem — it publishes no container image and was not measured here.
 | <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/frigate.svg" width="48" height="48" alt=""> | [Frigate](./apps/frigate) | `0.18.0` | An NVR with AI object detection — CPU-only by default, no camera configured yet (see the README) |
 | <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/ghost.webp" width="48" height="48" alt=""> | [Ghost](./apps/ghost) | `6.63.0-alpine` | A self-hosted blog/newsletter (SQLite, development mode — see the README) |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/gitea.svg" width="48" height="48" alt=""> | [Gitea](./apps/gitea) | `1.27.3` | A light but complete Git server — repositories, issues, pull requests and CI in a single interface |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/gitea.svg" width="48" height="48" alt=""> | [Gitea Runner](./apps/gitea-runner) | `3.4.2` | Runs the Actions workflows of the Gitea next door — CI that never leaves the machine |
 | <img src="https://cdn.jsdelivr.net/gh/NousResearch/hermes-agent@main/website/static/img/logo.png" width="48" height="48" alt=""> | [Hermes Agent](./apps/hermes-agent) | `v2026.9.11` | A personal AI agent with skills and memory, exposing an OpenAI-compatible API for the other services to call |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/homebox.svg" width="48" height="48" alt=""> | [HomeBox](./apps/homebox) | `0.26.2` | A home inventory — what you own, where it is, the receipt, the manual and the warranty, with search and labels |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/grafana.svg" width="48" height="48" alt=""> | [Grafana](./apps/grafana) | `13.2.1` | Dashboards over whatever you point it at — it brings no data of its own |
