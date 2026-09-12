@@ -8,7 +8,9 @@ que é para isso que a numeração serve. Para instalar e operar, ver
 As 22 regras deste repositório, cada uma com o caso real que a originou.
 São o que o [`check.py`](../../check.py) confere automaticamente onde dá.
 
-Regras a seguir em qualquer serviço novo neste repositório (Podman 5.8.3).
+Regras a seguir em qualquer serviço novo neste repositório (Podman 6.0.2 —
+toda unit daqui é gerada pelo Quadlet dele, e a 6.0 removeu cgroups v1, CNI e
+slirp4netns, nenhum dos quais este repositório pedia).
 
 ### 1. Nome de arquivo único em todo o repositório
 
