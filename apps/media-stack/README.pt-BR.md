@@ -49,6 +49,11 @@ mkdir -p ~/.config/containers/volumes/media-stack/jellyfin/{config,cache}
 mkdir -p ~/.config/containers/volumes/media-stack/{prowlarr,sonarr,radarr,lidarr,bazarr,seerr,deluge,sabnzbd}/config
 mkdir -p ~/.config/containers/volumes/media-stack/dispatcharr/data
 mkdir -p ~/.config/containers/volumes/media-stack/downtify/data
+mkdir -p ~/.config/containers/volumes/media-stack/navidrome/data
+# O Navidrome é o único aqui que roda como User=1000, então a pasta de dados
+# dele precisa pertencer a esse uid antes do start — o container não pode
+# mais fazer chown sozinho. A música em si é montada só-leitura e não é tocada.
+podman unshare chown -R 1000:1000 ~/.config/containers/volumes/media-stack/navidrome/data
 # Downtify baixa em downloads/ (dentro da raiz de mídia), a mesma pasta
 # onde o Deluge salva os torrents completos — diferente do resto (passo
 # 2 acima já cria a raiz, mas não downloads/, criado pelo Deluge só
@@ -64,6 +69,11 @@ wget -O ~/.config/containers/env/media-stack.env \
   https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/media-stack/.env.example
 sed -i "s/^PUID=.*/PUID=$(id -u)/;s/^PGID=.*/PGID=$(id -g)/" \
   ~/.config/containers/env/media-stack.env
+# O Gluetun tem env próprio, ocioso até você preencher um provedor. Baixe
+# mesmo sem usar a VPN: o EnvironmentFile= dele não leva `-` na frente, então
+# o systemd trata o arquivo ausente como erro fatal no dia em que você usar.
+wget -O ~/.config/containers/env/media-stack-gluetun.env \
+  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/media-stack/media-stack-gluetun.env.example
 
 # 5. Aplicar a env.d nova (precisa de daemon-reload, não só reiniciar
 #    o serviço — é o systemd --user que precisa reler o ambiente)
@@ -73,7 +83,7 @@ systemctl --user daemon-reload
 #    provedor. Sem
 #    Requires= entre serviços aqui — Dispatcharr é um container só,
 #    Postgres/Redis sobem dentro dele mesmo.
-systemctl --user start media-stack-jellyfin media-stack-dispatcharr media-stack-downtify media-stack-prowlarr media-stack-sonarr media-stack-radarr media-stack-lidarr media-stack-bazarr media-stack-seerr media-stack-deluge media-stack-sabnzbd
+systemctl --user start media-stack-jellyfin media-stack-dispatcharr media-stack-downtify media-stack-navidrome media-stack-prowlarr media-stack-sonarr media-stack-radarr media-stack-lidarr media-stack-bazarr media-stack-seerr media-stack-deluge media-stack-sabnzbd
 
 ```
 

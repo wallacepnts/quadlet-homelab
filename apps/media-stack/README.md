@@ -49,6 +49,11 @@ mkdir -p ~/.config/containers/volumes/media-stack/jellyfin/{config,cache}
 mkdir -p ~/.config/containers/volumes/media-stack/{prowlarr,sonarr,radarr,lidarr,bazarr,seerr,deluge,sabnzbd}/config
 mkdir -p ~/.config/containers/volumes/media-stack/dispatcharr/data
 mkdir -p ~/.config/containers/volumes/media-stack/downtify/data
+mkdir -p ~/.config/containers/volumes/media-stack/navidrome/data
+# Navidrome is the one here that runs as User=1000, so its data directory has
+# to belong to that uid before the start — the container can no longer chown
+# it for itself. The music itself is mounted read-only and is not touched.
+podman unshare chown -R 1000:1000 ~/.config/containers/volumes/media-stack/navidrome/data
 # Downtify downloads into downloads/ (inside the media root), the same folder
 # where Deluge saves completed torrents — unlike the rest (step 2 above
 # already creates the root, but not downloads/, which Deluge only creates
@@ -64,6 +69,11 @@ wget -O ~/.config/containers/env/media-stack.env \
   https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/media-stack/.env.example
 sed -i "s/^PUID=.*/PUID=$(id -u)/;s/^PGID=.*/PGID=$(id -g)/" \
   ~/.config/containers/env/media-stack.env
+# Gluetun keeps its own env, idle until you fill in a provider. Download it
+# even if you do not use the VPN: its EnvironmentFile= carries no leading `-`,
+# so systemd treats the file being absent as a fatal error the day you do.
+wget -O ~/.config/containers/env/media-stack-gluetun.env \
+  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/media-stack/media-stack-gluetun.env.example
 
 # 5. Apply the new env.d (this needs a daemon-reload, not just restarting
 #    the service — it is systemd --user that has to re-read the environment)
@@ -72,7 +82,7 @@ systemctl --user daemon-reload
 # 6. Start them. No Requires= between these — each is independent, and
 #    Dispatcharr is a single container with Postgres/Redis inside it.
 #    Gluetun is left out: it does nothing until you configure a provider.
-systemctl --user start media-stack-jellyfin media-stack-dispatcharr media-stack-downtify media-stack-prowlarr media-stack-sonarr media-stack-radarr media-stack-lidarr media-stack-bazarr media-stack-seerr media-stack-deluge media-stack-sabnzbd
+systemctl --user start media-stack-jellyfin media-stack-dispatcharr media-stack-downtify media-stack-navidrome media-stack-prowlarr media-stack-sonarr media-stack-radarr media-stack-lidarr media-stack-bazarr media-stack-seerr media-stack-deluge media-stack-sabnzbd
 
 ```
 
