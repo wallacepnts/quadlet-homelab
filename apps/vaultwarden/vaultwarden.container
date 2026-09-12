@@ -12,7 +12,10 @@ PidsLimit=128
 Image=docker.io/vaultwarden/server:1.37.2-alpine
 ContainerName=vaultwarden
 Network=tsdproxy-net.network
-PublishPort=8082:80
+# PublishPort ships COMMENTED OUT: vaultwarden answers over tsdproxy on the
+# tailnet, and publishing the port puts the vault on the LAN as well.
+# Uncomment it only if you want to reach it by host IP.
+# PublishPort=8082:80
 Volume=%h/.config/containers/volumes/vaultwarden/data:/data:Z
 EnvironmentFile=%h/.config/containers/env/vaultwarden.env
 Secret=vaultwarden-admin-token,type=env,target=ADMIN_TOKEN
