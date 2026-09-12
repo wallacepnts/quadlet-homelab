@@ -256,6 +256,7 @@ for x86_64 and `vm-windows-arm` for ARM64.
 | [Recovery and migration](./docs/recovery.md) | the machine died, or you are moving hosts |
 | [Reference](./docs/reference.md) | where every file lives, and an annotated `.container` |
 | [Auto-update](./docs/auto-update.md) | why almost everything updates by hand |
+| [Hardening, as measured](./docs/hardening.md) | what each image accepted, and the errors from what it refused |
 | [Tools](./docs/tools.md) | `qh-check` and `qh-updates` |
 
 All of it is also in Portuguese, in [`docs/pt-BR/`](./docs/pt-BR/).

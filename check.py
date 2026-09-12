@@ -527,6 +527,60 @@ def pinned_tags(folder):
     return sorted(set(out))
 
 
+HARDENING = ROOT / "docs" / "hardening.md"
+LINHA_HARD = re.compile(r"^\| `([a-z0-9.-]+)` \| (yes|no) \| (.+?) \|$")
+
+
+def hardening_state(path):
+    """(ReadOnly, capabilities) as the unit declares them, in the table's words."""
+    t = path.read_text()
+    def g(k):
+        return re.findall(rf"^{k}=(\S+)", t, re.M)
+    ro = "yes" if g("ReadOnly") and g("ReadOnly")[0].lower() == "true" else "no"
+    drop, add = g("DropCapability"), sorted({a.lower() for a in g("AddCapability")})
+    if drop and drop[0].lower() == "all":
+        caps = (f"{len(add)} (" + ", ".join(f"`{a}`" for a in add) + ")") if add else "**none**"
+    else:
+        caps = "podman default" + (f" + {len(add)} add" if add else "")
+    user, userns = g("User"), g("UserNS")
+    if user:
+        caps += f" + `User={user[0]}`"
+    elif userns:
+        caps += f" + `UserNS={userns[0]}`"
+    return ro, caps
+
+
+def check_hardening(folders):
+    """docs/hardening.md's measured state, against the units it describes.
+
+    The table is the expensive half of the repository: every row cost a test of
+    what an image tolerates. It lived outside version control and drifted —
+    radicale read `podman default` while its unit dropped all and added four,
+    and fourteen containers had no row at all. Both are the kind of thing only a
+    check finds, because nobody reads a 110-row table top to bottom.
+    """
+    if not HARDENING.exists():
+        error("hardening", "docs/hardening.md is missing — the measured state lives there")
+        return
+    linhas = {}
+    for n, line in enumerate(HARDENING.read_text().splitlines(), 1):
+        m = LINHA_HARD.match(line)
+        if m:
+            linhas[m.group(1)] = (n, m.group(2), m.group(3))
+    units = {c.stem: c for f in folders for c in f.glob("*.container")}
+    for nome in sorted(set(units) - set(linhas)):
+        error("hardening", f"{nome} has no row in docs/hardening.md")
+    for nome in sorted(set(linhas) - set(units)):
+        error("hardening", f"docs/hardening.md has a row for {nome}, which is not a unit")
+    for nome, (n, ro, caps) in sorted(linhas.items()):
+        if nome not in units:
+            continue
+        real_ro, real_caps = hardening_state(units[nome])
+        if (ro, caps) != (real_ro, real_caps):
+            error("hardening", f"docs/hardening.md:{n}: {nome} reads `{ro} | {caps}`, "
+                               f"the unit says `{real_ro} | {real_caps}`")
+
+
 def check_pinned(folders):
     """The service README's own version line, against the units beside it.
 
@@ -623,6 +677,23 @@ def selftest():
         p.write_text("[Container]\nImage=docker.io/a/b@sha256:" + "0" * 64 + "\n")
         assert image_tag(p) is None, "a digest is not a tag: nothing to compare against"
 
+    # the hardening table's two columns, in the words docs/hardening.md uses
+    import tempfile as _tf
+    with _tf.TemporaryDirectory() as d:
+        u = Path(d) / "x.container"
+        u.write_text("[Container]\nReadOnly=true\nDropCapability=ALL\n")
+        assert hardening_state(u) == ("yes", "**none**")
+        u.write_text("[Container]\nDropCapability=all\nAddCapability=CHOWN\n"
+                     "AddCapability=setuid\nUser=999\n")
+        assert hardening_state(u) == ("no", "2 (`chown`, `setuid`) + `User=999`")
+        u.write_text("[Container]\nUserNS=keep-id\n")
+        assert hardening_state(u) == ("no", "podman default + `UserNS=keep-id`"), \
+            "keep-id is not hardening, but it does decide the owner"
+
+    assert LINHA_HARD.match("| `wud` | yes | **none** |").groups() == ("wud", "yes", "**none**")
+    assert LINHA_HARD.match("| Container | `ReadOnly` | Capabilities |") is None, \
+        "the header is not a row"
+
     # PodmanArgs: the three spellings of a space, and the flag with a key of its own
     def pa(valor):
         errors.clear()
@@ -688,6 +759,7 @@ def main():
     check_counts(folders)
     check_table(folders)
     check_pinned(folders)
+    check_hardening(folders)
     check_tailnet()
 
     conts = sum(len(list(p.glob("*.container"))) for p in folders)

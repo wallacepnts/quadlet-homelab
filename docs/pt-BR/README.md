@@ -257,4 +257,5 @@ convidado da mesma arquitetura. O `apps/vm` traz `vm-windows` pra x86_64 e
 | [Recuperação e migração](./recuperacao.md) | a máquina morreu, ou você está mudando de host |
 | [Referência](./referencia.md) | onde cada arquivo mora, e um `.container` anotado |
 | [Auto-update](./auto-update.md) | por que quase tudo atualiza na mão |
+| [Endurecimento, o que foi medido](./endurecimento.md) | o que cada imagem aceitou, e os erros do que ela recusou |
 | [Ferramentas](./ferramentas.md) | `qh-check` e `qh-updates` |
