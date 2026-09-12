@@ -409,6 +409,30 @@ def version(tag):
     return tuple(int(x) for x in m.group().split(".")) if m else None
 
 
+def target_tags(tag, remote):
+    """The tags that could carry `remote`, best guess first.
+
+    A release name is not a tag. Around the version each side puts its own
+    decoration, and they rarely agree: we pin `v0.107.78`, `version-5.0.4` or
+    `1.5.1-stable` while the release is called `v0.107.79`, `5.1.3-ls273`,
+    `version/2026.8.2` or `n8n@2.38.7`.
+
+    So the first guess keeps *our* tag's shape and swaps only the version
+    inside it — that is the tag this repository would pin next. The release
+    name itself comes after, for the case the shape carries something the
+    version does not, such as the date in any-sync-bundle's
+    `1.5.0-2026-07-17`.
+    """
+    aqui, la = (re.search(r"\d+(?:\.\d+)+", s) for s in (tag, remote))
+    saida = []
+    if aqui and la:
+        saida.append(tag[:aqui.start()] + la.group() + tag[aqui.end():])
+    saida.append(remote)
+    if remote[:1] == "v" and remote[1:2].isdigit():
+        saida.append(remote[1:])
+    return list(dict.fromkeys(saida))
+
+
 def services():
     for folder in sorted(p for p in APPS.iterdir() if p.is_dir()):
         ini = configparser.ConfigParser(interpolation=None)
@@ -486,14 +510,17 @@ def check(item):
     here, there = here[:n], there[:n]
     if there > here:
         # The release names a version; the tag we would pull keeps our own
-        # variant (`-alpine`, `-stable`). Check that exact tag exists before
-        # calling it available: a release can land hours before the image does.
-        sufixo = re.sub(r"^[0-9][0-9.]*", "", tag)
-        alvo = remote.lstrip("v") + sufixo
-        existe = registry_has(image, alvo)
-        if existe is False:
-            return (unit, image, tag, alvo, "released, not published yet")
-        return (unit, image, tag, alvo, "BEHIND")
+        # shape (`v`, `version-`, `-alpine`, `-stable`). Check that the tag
+        # exists before calling it available: a release can land hours before
+        # the image does.
+        alvos = target_tags(tag, remote)
+        for alvo in alvos:
+            existe = registry_has(image, alvo)
+            # `None` is the check itself failing: reporting "not published" on
+            # a network error would cry wolf. Take the tag at face value.
+            if existe or existe is None:
+                return (unit, image, tag, alvo, "BEHIND")
+        return (unit, image, tag, alvos[0], "released, not published yet")
     return (unit, image, tag, remote, "up to date")
 
 
