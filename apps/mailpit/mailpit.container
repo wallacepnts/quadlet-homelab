@@ -9,7 +9,7 @@ NoNewPrivileges=true
 User=1000
 PidsLimit=256
 
-Image=docker.io/axllent/mailpit:v1.30.7
+Image=docker.io/axllent/mailpit:v1.31.1
 ContainerName=mailpit
 Network=tsdproxy-net.network
 PublishPort=8025:8025

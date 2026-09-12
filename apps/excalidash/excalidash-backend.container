@@ -11,7 +11,7 @@ AddCapability=FOWNER
 AddCapability=SETGID
 AddCapability=SETUID
 
-Image=docker.io/zimengxiong/excalidash-backend:0.5.1
+Image=docker.io/zimengxiong/excalidash-backend:0.6.0
 ContainerName=excalidash-backend
 Network=excalidash-net.network
 

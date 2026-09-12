@@ -7,7 +7,7 @@ ReadOnly=true
 Tmpfs=/tmp:size=64M
 DropCapability=ALL
 PidsLimit=256
-Image=docker.io/henrygd/beszel:0.18.7
+Image=docker.io/henrygd/beszel:0.19.0
 ContainerName=beszel
 Network=tsdproxy-net.network
 Network=beszel-net.network

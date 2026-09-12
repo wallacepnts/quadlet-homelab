@@ -9,7 +9,7 @@ NoNewPrivileges=true
 User=65534
 PidsLimit=256
 
-Image=docker.io/prom/prometheus:v3.13.2
+Image=docker.io/prom/prometheus:v3.14.0
 ContainerName=prometheus
 Network=tsdproxy-net.network
 PublishPort=9090:9090

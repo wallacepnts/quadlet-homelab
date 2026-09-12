@@ -4,7 +4,7 @@ Description=ChromeOS Flex in a VM
 [Container]
 PidsLimit=512
 
-Image=docker.io/dockurr/chromeos:1.02
+Image=docker.io/dockurr/chromeos:1.05
 ContainerName=vm-chromeos
 Network=tsdproxy-net.network
 PublishPort=8013:8006

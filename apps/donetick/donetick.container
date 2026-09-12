@@ -9,7 +9,7 @@ NoNewPrivileges=true
 PidsLimit=256
 User=1000
 
-Image=docker.io/donetick/donetick:v0.1.76
+Image=docker.io/donetick/donetick:v0.1.79
 ContainerName=donetick
 Network=tsdproxy-net.network
 PublishPort=2021:2021

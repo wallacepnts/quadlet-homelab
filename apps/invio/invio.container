@@ -6,7 +6,7 @@ DropCapability=ALL
 NoNewPrivileges=true
 PidsLimit=256
 
-Image=ghcr.io/kittendevv/invio:v2.1.1
+Image=ghcr.io/kittendevv/invio:v2.2.0
 ContainerName=invio
 Network=tsdproxy-net.network
 PublishPort=8106:8000

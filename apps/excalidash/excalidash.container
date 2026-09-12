@@ -12,7 +12,7 @@ AddCapability=NET_BIND_SERVICE
 AddCapability=SETGID
 AddCapability=SETUID
 
-Image=docker.io/zimengxiong/excalidash-frontend:0.5.1
+Image=docker.io/zimengxiong/excalidash-frontend:0.6.0
 ContainerName=excalidash
 Network=excalidash-net.network
 Network=tsdproxy-net.network

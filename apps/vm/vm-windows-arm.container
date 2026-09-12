@@ -7,7 +7,7 @@ PidsLimit=512
 # check: ignore ports — the same 8006/3389 as vm-windows on purpose. The two
 # are mutually exclusive: this one installs ARM64 Windows, that one x64, and
 # a host is one architecture or the other. They never run together.
-Image=docker.io/dockurr/windows-arm:6.04
+Image=docker.io/dockurr/windows-arm:6.05
 ContainerName=vm-windows-arm
 Network=tsdproxy-net.network
 PublishPort=8006:8006

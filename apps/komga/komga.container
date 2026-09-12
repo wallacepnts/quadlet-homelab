@@ -9,7 +9,7 @@ NoNewPrivileges=true
 User=1000
 PidsLimit=512
 
-Image=ghcr.io/gotson/komga:1.26.1
+Image=ghcr.io/gotson/komga:1.26.3
 ContainerName=komga
 Network=tsdproxy-net.network
 PublishPort=8119:25600

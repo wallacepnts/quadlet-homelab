@@ -9,7 +9,7 @@ NoNewPrivileges=true
 PidsLimit=256
 User=1000
 
-Image=ghcr.io/alexta69/metube:2026.08.04
+Image=ghcr.io/alexta69/metube:2026.08.28
 ContainerName=metube
 Network=tsdproxy-net.network
 PublishPort=8100:8081

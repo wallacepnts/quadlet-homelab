@@ -8,7 +8,7 @@ DropCapability=ALL
 ReadOnly=true
 Tmpfs=/tmp:size=64M
 
-Image=ghcr.io/gtsteffaniak/filebrowser:1.5.1-stable
+Image=ghcr.io/gtsteffaniak/filebrowser:1.5.6-stable
 ContainerName=filebrowser
 Network=tsdproxy-net.network
 PublishPort=8014:8080

@@ -9,7 +9,7 @@ NoNewPrivileges=true
 User=1000
 PidsLimit=256
 
-Image=docker.io/vikunja/vikunja:2.5.0
+Image=docker.io/vikunja/vikunja:2.6.0
 ContainerName=vikunja
 Network=tsdproxy-net.network
 PublishPort=8121:3456

@@ -4,7 +4,7 @@ Description=ZimaOS in a VM (NAS and home-server OS)
 [Container]
 PidsLimit=512
 
-Image=docker.io/dockurr/zima:1.7.0
+Image=docker.io/dockurr/zima:1.7.1
 ContainerName=vm-zima
 Network=tsdproxy-net.network
 PublishPort=8011:80

@@ -10,7 +10,7 @@ DropCapability=ALL
 NoNewPrivileges=true
 PidsLimit=256
 
-Image=ghcr.io/karakeep-app/karakeep:0.33.1
+Image=ghcr.io/karakeep-app/karakeep:0.33.2
 ContainerName=karakeep
 Network=tsdproxy-net.network
 Network=karakeep-net.network

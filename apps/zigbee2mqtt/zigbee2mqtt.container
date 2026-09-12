@@ -10,7 +10,7 @@ DropCapability=ALL
 NoNewPrivileges=true
 PidsLimit=256
 
-Image=ghcr.io/koenkk/zigbee2mqtt:2.13.0
+Image=ghcr.io/koenkk/zigbee2mqtt:2.14.1
 ContainerName=zigbee2mqtt
 Network=tsdproxy-net.network
 Network=zigbee2mqtt-net.network

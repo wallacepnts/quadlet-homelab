@@ -7,7 +7,7 @@ AddCapability=SYS_CHROOT
 NoNewPrivileges=true
 PidsLimit=512
 
-Image=docker.io/collabora/code:26.04.3.1.1
+Image=docker.io/collabora/code:26.04.3.2.1
 ContainerName=collabora
 Network=tsdproxy-net.network
 PublishPort=8108:9980

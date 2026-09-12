@@ -4,7 +4,7 @@ Description=Ollama (local LLMs, Open WebUI's backend)
 [Container]
 DropCapability=ALL
 PidsLimit=256
-Image=docker.io/ollama/ollama:0.32.6
+Image=docker.io/ollama/ollama:0.34.0
 ContainerName=ollama
 Network=tsdproxy-net.network
 Network=openwebui-net.network

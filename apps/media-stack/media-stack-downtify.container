@@ -3,7 +3,7 @@ Description=Downtify (self-hosted Spotify music downloader)
 
 [Container]
 PidsLimit=256
-Image=ghcr.io/henriquesebastiao/downtify:2.9.1
+Image=ghcr.io/henriquesebastiao/downtify:2.11.0
 ContainerName=downtify
 Network=tsdproxy-net.network
 PublishPort=8000:8000

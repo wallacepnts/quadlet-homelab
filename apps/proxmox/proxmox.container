@@ -2,7 +2,7 @@
 Description=Proxmox VE (hypervisor management, in a container)
 
 [Container]
-Image=docker.io/dockurr/proxmox:9.2.9
+Image=docker.io/dockurr/proxmox:9.2.10
 ContainerName=proxmox
 Network=tsdproxy-net.network
 HostName=pve

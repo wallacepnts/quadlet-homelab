@@ -9,7 +9,7 @@ NoNewPrivileges=true
 PidsLimit=256
 User=1000
 
-Image=docker.io/louislam/uptime-kuma:2.5.0
+Image=docker.io/louislam/uptime-kuma:2.5.4
 ContainerName=uptime-kuma
 Network=tsdproxy-net.network
 PublishPort=3001:3001

@@ -4,7 +4,7 @@ Description=macOS in a container (QEMU/KVM)
 [Container]
 PidsLimit=512
 
-Image=docker.io/dockurr/macos:3.09
+Image=docker.io/dockurr/macos:3.12
 ContainerName=vm-macos
 Network=tsdproxy-net.network
 PublishPort=8008:8006

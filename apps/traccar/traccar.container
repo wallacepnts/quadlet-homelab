@@ -10,7 +10,7 @@ NoNewPrivileges=true
 PidsLimit=256
 User=1000
 
-Image=docker.io/traccar/traccar:6.14.5
+Image=docker.io/traccar/traccar:6.15.3
 ContainerName=traccar
 Network=tsdproxy-net.network
 PublishPort=8099:8082

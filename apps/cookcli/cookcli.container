@@ -10,7 +10,7 @@ DropCapability=ALL
 NoNewPrivileges=true
 PidsLimit=256
 
-Image=ghcr.io/cooklang/cookcli:0.32.1
+Image=ghcr.io/cooklang/cookcli:0.35.0
 ContainerName=cookcli
 Network=tsdproxy-net.network
 PublishPort=9080:9080

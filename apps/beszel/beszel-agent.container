@@ -5,7 +5,7 @@ After=podman.socket
 
 [Container]
 PidsLimit=256
-Image=docker.io/henrygd/beszel-agent:0.18.7
+Image=docker.io/henrygd/beszel-agent:0.19.0
 ContainerName=beszel-agent
 Network=host
 

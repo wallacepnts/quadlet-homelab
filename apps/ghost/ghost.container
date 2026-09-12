@@ -7,7 +7,7 @@ Tmpfs=/tmp:size=64M
 DropCapability=ALL
 User=1000
 PidsLimit=256
-Image=docker.io/library/ghost:6.56.0-alpine
+Image=docker.io/library/ghost:6.63.0-alpine
 ContainerName=ghost
 Network=tsdproxy-net.network
 PublishPort=2368:2368

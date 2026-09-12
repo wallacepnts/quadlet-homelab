@@ -9,7 +9,7 @@ NoNewPrivileges=true
 User=1000
 PidsLimit=512
 
-Image=docker.io/docuseal/docuseal:3.2.0
+Image=docker.io/docuseal/docuseal:3.2.4
 ContainerName=docuseal
 Network=tsdproxy-net.network
 PublishPort=8120:3000
