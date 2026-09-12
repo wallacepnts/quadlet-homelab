@@ -38,7 +38,7 @@ Dados em `~/.config/containers/volumes/media-stack/sabnzbd/config`.
 qh media-stack-sabnzbd --update --apply
 ```
 
-Pinado em `version-5.1.3`. Nada atualiza sozinho — a versão nova entra quando você roda
+Fixado em `version-5.1.3`. Nada atualiza sozinho — a versão nova entra quando você roda
 o comando acima.
 
 ## Backup

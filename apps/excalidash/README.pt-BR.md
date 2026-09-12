@@ -73,7 +73,7 @@ ou `oidc_enforced` (só o Authentik) e preencha `OIDC_ISSUER_URL`,
 qh excalidash --update --apply
 ```
 
-Pinado em `0.6.0`. As duas imagens usam a mesma tag, e sobem juntas.
+Fixado em `0.6.0`. As duas imagens usam a mesma tag, e sobem juntas.
 
 ## Backup
 

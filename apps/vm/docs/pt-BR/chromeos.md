@@ -61,7 +61,7 @@ A senha dela é o segredo `vm-chromeos-password`, gerado pela instalação.
 qh vm-chromeos --update --apply
 ```
 
-Pinado em `1.05`. Nada atualiza sozinho — a versão nova entra quando você roda
+Fixado em `1.05`. Nada atualiza sozinho — a versão nova entra quando você roda
 o comando acima.
 
 ## Backup

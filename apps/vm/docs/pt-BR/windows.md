@@ -92,7 +92,7 @@ A senha dela é o segredo `vm-windows-password`, gerado pela instalação.
 qh vm-windows --update --apply
 ```
 
-Pinado em `6.05`. Nada atualiza sozinho — a versão nova entra quando você roda
+Fixado em `6.05`. Nada atualiza sozinho — a versão nova entra quando você roda
 o comando acima.
 
 ## Backup

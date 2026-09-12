@@ -78,7 +78,7 @@ Dados em `~/.config/containers/volumes/vm/qemu/storage`.
 qh vm-qemu --update --apply
 ```
 
-Pinado em `7.50`. Nada atualiza sozinho — a versão nova entra quando você roda
+Fixado em `7.50`. Nada atualiza sozinho — a versão nova entra quando você roda
 o comando acima.
 
 ## Backup

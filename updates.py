@@ -4,8 +4,9 @@
 The rule this script exists to automate: **the source of truth is the
 project's GitHub releases page, not the registry's tag list**. Registries list
 betas, RCs and build variants that sort as "newer" without being releases —
-n8n keeps 2.33.x and 2.34.x in parallel and marks 2.33 as latest; nginx,
-AdGuard, Memos and Frigate publish RCs alongside the stable tags.
+n8n keeps 2.38.x and 2.39.x in parallel and marks 2.38 as latest, publishing
+both on the same day; nginx, AdGuard, Memos and Frigate publish RCs alongside
+the stable tags.
 
 That is why the lookup follows the redirect of
 `github.com/<org>/<repo>/releases/latest`, which returns the tag without
@@ -65,8 +66,9 @@ AJUDA_PT = """Compara as tags `Image=` deste repositório com a última release 
 A regra que este script existe pra automatizar: **a fonte é a página de
 releases do projeto no GitHub, não a lista de tags do registry**. Registry
 lista beta, RC e variante de build que ordenam como "mais novo" sem serem
-release — o n8n mantém a 2.33.x e a 2.34.x em paralelo e marca a 2.33 como
-latest; nginx, AdGuard, Memos e Frigate publicam RC junto das estáveis.
+release — o n8n mantém a 2.38.x e a 2.39.x em paralelo e marca a 2.38 como
+latest, publicando as duas no mesmo dia; nginx, AdGuard, Memos e Frigate
+publicam RC junto das estáveis.
 
 Por isso a consulta segue o redirect de
 `github.com/<org>/<repo>/releases/latest`, que devolve a tag sem gastar rate

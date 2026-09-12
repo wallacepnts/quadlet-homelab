@@ -68,7 +68,7 @@ Providers](https://github.com/JMBeresford/retrom/wiki/Metadata-Providers).
 qh retrom --update --apply
 ```
 
-Pinado em `0.8.4`. Nada atualiza sozinho — a versão nova entra quando você roda
+Fixado em `0.8.4`. Nada atualiza sozinho — a versão nova entra quando você roda
 o comando acima.
 
 ## Backup

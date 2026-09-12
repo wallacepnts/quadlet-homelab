@@ -57,7 +57,7 @@ sem porta: esta não é um serviço.
 qh toolbx-fedora --update --apply
 ```
 
-Pinado em `44`. Nada atualiza sozinho — a versão nova entra quando você
+Fixado em `44`. Nada atualiza sozinho — a versão nova entra quando você
 roda o comando acima.
 
 ## Backup

@@ -71,7 +71,7 @@ player pergunta a sala antes de começar.
 qh karaoke-eternal --update --apply
 ```
 
-Pinado em `2.0.2`. Nada atualiza sozinho — a versão nova entra quando você roda
+Fixado em `2.0.2`. Nada atualiza sozinho — a versão nova entra quando você roda
 o comando acima.
 
 ## Backup

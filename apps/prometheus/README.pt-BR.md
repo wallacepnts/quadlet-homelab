@@ -83,7 +83,7 @@ qh prometheus --update --apply
 qh prometheus --update --apply
 ```
 
-Pinado em `v3.14.0`. Nada atualiza sozinho — a versão nova entra quando você
+Fixado em `v3.14.0`. Nada atualiza sozinho — a versão nova entra quando você
 roda o comando acima.
 
 ## Backup

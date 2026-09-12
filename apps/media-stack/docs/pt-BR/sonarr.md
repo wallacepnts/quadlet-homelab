@@ -38,7 +38,7 @@ Dados em `~/.config/containers/volumes/media-stack/sonarr/config`.
 qh media-stack-sonarr --update --apply
 ```
 
-Pinado em `4.0.19`. Nada atualiza sozinho — a versão nova entra quando você roda
+Fixado em `4.0.19`. Nada atualiza sozinho — a versão nova entra quando você roda
 o comando acima.
 
 ## Backup

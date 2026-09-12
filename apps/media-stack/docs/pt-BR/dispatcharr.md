@@ -37,7 +37,7 @@ Dados em `~/.config/containers/volumes/media-stack/dispatcharr/data`.
 qh media-stack-dispatcharr --update --apply
 ```
 
-Pinado em `latest`. Nada atualiza sozinho — a versão nova entra quando você roda
+Fixado em `latest`. Nada atualiza sozinho — a versão nova entra quando você roda
 o comando acima.
 
 ## Backup

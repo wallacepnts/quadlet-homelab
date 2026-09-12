@@ -38,7 +38,7 @@ Dados em `~/.config/containers/volumes/media-stack/lidarr/config`.
 qh media-stack-lidarr --update --apply
 ```
 
-Pinado em `3.1.0`. Nada atualiza sozinho — a versão nova entra quando você roda
+Fixado em `3.1.0`. Nada atualiza sozinho — a versão nova entra quando você roda
 o comando acima.
 
 ## Backup

@@ -61,7 +61,7 @@ Dados em `~/.config/containers/volumes/vm/macos/storage`.
 qh vm-macos --update --apply
 ```
 
-Pinado em `3.12`. Nada atualiza sozinho — a versão nova entra quando você roda
+Fixado em `3.12`. Nada atualiza sozinho — a versão nova entra quando você roda
 o comando acima.
 
 ## Backup

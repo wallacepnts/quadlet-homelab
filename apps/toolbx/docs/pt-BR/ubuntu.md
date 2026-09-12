@@ -52,7 +52,7 @@ sem porta: esta não é um serviço.
 qh toolbx-ubuntu --update --apply
 ```
 
-Pinado em `26.04`. Nada atualiza sozinho — a versão nova entra quando você
+Fixado em `26.04`. Nada atualiza sozinho — a versão nova entra quando você
 roda o comando acima.
 
 ## Backup

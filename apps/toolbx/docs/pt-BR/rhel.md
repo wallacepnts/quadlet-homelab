@@ -52,7 +52,7 @@ sem porta: esta não é um serviço.
 qh toolbx-rhel --update --apply
 ```
 
-Pinado em `10.2`. Nada atualiza sozinho — a versão nova entra quando você
+Fixado em `10.2`. Nada atualiza sozinho — a versão nova entra quando você
 roda o comando acima.
 
 ## Backup

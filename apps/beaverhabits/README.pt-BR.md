@@ -61,7 +61,7 @@ o [guia da API](https://github.com/daya0576/beaverhabits/wiki/Beaver-Habit-Track
 qh beaverhabits --update --apply
 ```
 
-Pinado em `0.10.0`. Nada atualiza sozinho — a versão nova entra quando você
+Fixado em `0.10.0`. Nada atualiza sozinho — a versão nova entra quando você
 roda o comando acima.
 
 ## Backup

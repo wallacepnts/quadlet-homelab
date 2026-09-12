@@ -448,7 +448,9 @@ def check_table(folders):
 
 
 # The "Pinned to `a`, `b`" line each service README opens its Update section
-# with. Both languages carry it, and Portuguese says it two ways.
+# with. Both languages carry it. Portuguese settled on "Fixado em", and
+# "Pinado em" stays accepted so a line written the old way is still checked
+# rather than silently skipped.
 FIXADO = re.compile(r"^(?:Pinned to|Fixado em|Pinado em) ((?:`[^`]+`(?:, )?)+)")
 
 
@@ -563,10 +565,11 @@ def selftest():
         p.write_text("[Container]\nImage=docker.io/a/b@sha256:" + "0" * 64 + "\n")
         assert image_tag(p) is None, "a digest is not a tag: nothing to compare against"
 
-    # the pinned-version line, in the three wordings the READMEs use
+    # the pinned-version line, in every wording the check has to recognise
     assert FIXADO.match("Pinned to `v1.2.3`. Nothing updates on its own").group(1) == "`v1.2.3`"
     assert FIXADO.match("Fixado em `16-alpine`, `2026.5.6`. Nada").group(1) == "`16-alpine`, `2026.5.6`"
-    assert FIXADO.match("Pinado em `0.6.0`. As duas imagens").group(1) == "`0.6.0`"
+    assert FIXADO.match("Pinado em `0.6.0`. As duas imagens").group(1) == "`0.6.0`", \
+        "the wording the repository moved away from is still checked"
     assert FIXADO.match("Pinned to the tag above") is None, "a sentence with no tag is not the line"
     assert FIXADO.match("> Pinned to `v1`") is None, "the line is never quoted or indented"
 

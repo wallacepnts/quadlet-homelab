@@ -40,7 +40,7 @@ Dados em `~/.config/containers/volumes/media-stack/deluge/config`.
 qh media-stack-deluge --update --apply
 ```
 
-Pinado em `2.2.0`. Nada atualiza sozinho — a versão nova entra quando você roda
+Fixado em `2.2.0`. Nada atualiza sozinho — a versão nova entra quando você roda
 o comando acima.
 
 ## Backup

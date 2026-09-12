@@ -38,7 +38,7 @@ Dados em `~/.config/containers/volumes/media-stack/prowlarr/config`.
 qh media-stack-prowlarr --update --apply
 ```
 
-Pinado em `2.5.2`. Nada atualiza sozinho — a versão nova entra quando você roda
+Fixado em `2.5.2`. Nada atualiza sozinho — a versão nova entra quando você roda
 o comando acima.
 
 ## Backup

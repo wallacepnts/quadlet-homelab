@@ -75,7 +75,7 @@ derivados do Chromium pedem mais memória compartilhada que o Firefox — o
 qh neko --update --apply
 ```
 
-Pinado em `3.1.5`. Nada atualiza sozinho — a versão nova entra quando você roda
+Fixado em `3.1.5`. Nada atualiza sozinho — a versão nova entra quando você roda
 o comando acima.
 
 ## Backup

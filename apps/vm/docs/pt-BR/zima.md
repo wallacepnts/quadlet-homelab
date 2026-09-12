@@ -47,7 +47,7 @@ Dados em `~/.config/containers/volumes/vm/zima/storage`.
 qh vm-zima --update --apply
 ```
 
-Pinado em `1.7.1`. Nada atualiza sozinho — a versão nova entra quando você roda
+Fixado em `1.7.1`. Nada atualiza sozinho — a versão nova entra quando você roda
 o comando acima.
 
 ## Backup

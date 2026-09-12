@@ -78,7 +78,7 @@ que o Mailpit lê.
 qh mailpit --update --apply
 ```
 
-Pinado em `v1.31.1`. Nada atualiza sozinho — a versão nova entra quando você
+Fixado em `v1.31.1`. Nada atualiza sozinho — a versão nova entra quando você
 roda o comando acima.
 
 ## Backup

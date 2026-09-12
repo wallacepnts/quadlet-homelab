@@ -43,7 +43,7 @@ Dados em `~/.config/containers/volumes/media-stack/navidrome/data`.
 qh media-stack-navidrome --update --apply
 ```
 
-Pinado em `0.63.2`. Nada atualiza sozinho — a versão nova entra quando você
+Fixado em `0.63.2`. Nada atualiza sozinho — a versão nova entra quando você
 roda o comando acima.
 
 ## Backup
