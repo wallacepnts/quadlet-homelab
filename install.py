@@ -1272,6 +1272,10 @@ def plan_backup(s, destination):
     archive = Path(destination).expanduser().resolve() / f"{s.only or s.name}-{stamp}.tar.gz"
     units = service_units(s)
 
+    # Before stopping anything: a destination that does not exist makes tar exit
+    # non-zero, and the service was already down by then.
+    steps.append((f"mkdir -p {archive.parent}",
+                  lambda: archive.parent.mkdir(parents=True, exist_ok=True)))
     steps.append((f"systemctl --user stop {' '.join(units)}",
                   lambda: run_lenient(["systemctl", "--user", "stop", *units])))
     steps.append((f"tar czf {archive}\n         from {base}: {' '.join(targets)}",
@@ -1284,6 +1288,31 @@ def plan_backup(s, destination):
                                run_lenient(["systemctl", "--user", "start", unit]))))
     warnings.append(f"to restore: tar xzf {archive.name} -C {base}")
     return steps, warnings
+
+
+def swap_in(origem, destino):
+    """Puts an extracted path in place of the live one, deleting it only now.
+
+    The delete and the move are one step on purpose: between them is the window
+    where the service has neither, and a plan that failed in that window is the
+    thing this whole reordering exists to avoid.
+    """
+    if not origem.exists():
+        return
+    if destino.exists():
+        _rmtree(destino)
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    origem.rename(destino)
+
+
+def pertence(nome, raizes):
+    """Whether an archive entry sits at or under one of the service's paths.
+
+    Compared whole, and with the separator: `volumes/traccar-evil` is not under
+    `volumes/traccar`, which a bare startswith would have accepted.
+    """
+    nome = nome.rstrip("/")
+    return any(nome == r or nome.startswith(r + "/") for r in raizes)
 
 
 def plan_restore(s, archive):
@@ -1302,7 +1331,9 @@ def plan_restore(s, archive):
     try:
         with tarfile.open(tgz) as t:
             inside = t.getnames()
-    except tarfile.TarError as e:
+    # EOFError, not TarError, is what a truncated gzip raises — the failure a
+    # half-copied archive actually produces — and it came out as a traceback.
+    except (tarfile.TarError, OSError, EOFError) as e:
         return steps, [f"{tgz.name} is not a readable tar.gz: {e}"]
 
     proprios = s.exclusive_volumes()
@@ -1311,10 +1342,18 @@ def plan_restore(s, archive):
     expected.append(f"secrets/{s.name}")
     expected += [str(Path(e).relative_to(base))
                  for e in (s.exclusive_envs() if proprios is not None else s.env_files())]
-    top = {n.split("/")[0] + "/" + n.split("/")[1] for n in inside if "/" in n}
-    if not any(any(t.startswith(e) for e in expected) for t in top):
-        return steps, [f"{tgz.name} does not look like a backup of {s.name} "
-                       f"(it contains {', '.join(sorted(top)[:3])})"]
+    # EVERY entry has to be this service's, not at least one. The old test cut
+    # each name to two components before comparing against full-depth expected
+    # paths, so a per-unit backup — `volumes/media-stack/jellyfin/config` — never
+    # matched and the tool refused the archive it had just written. And "at
+    # least one" is not containment: an archive with one matching directory
+    # licensed the rest of the tar, which is extracted into the directory that
+    # holds every service's units, secrets and volumes.
+    estranhos = sorted({n for n in inside if not pertence(n, expected)})
+    if estranhos:
+        return steps, [f"{tgz.name} carries paths that are not {s.name}'s: "
+                       + ", ".join(estranhos[:3])
+                       + (f" (+{len(estranhos) - 3})" if len(estranhos) > 3 else "")]
 
     # Restoring does not install: without the unit in place, tar would have
     # nowhere to extract to and start would not find the service. Failing here,
@@ -1333,21 +1372,31 @@ def plan_restore(s, archive):
     # corrupts — a -wal from the current state on top of an old .db is exactly
     # the bad scenario. Only the roots the archive actually carries, so a
     # partial backup does not delete what it cannot put back.
-    restored = []
-    for root in raizes:
-        rel = str(Path(root).relative_to(base))
-        if not any(n == rel or n.startswith(rel + "/") for n in inside):
-            continue
-        restored.append(root)
-        if Path(root).exists():
-            steps.append((f"rm -rf {root}   (before extracting, so it is a swap not a mix)",
-                          lambda root=root: _rmtree(Path(root))))
-
+    # Extract first, swap second. The old order deleted the volume and then ran
+    # tar, so an archive tar refuses mid-stream — a malformed member, a full
+    # disk — left the data gone and nothing put back. Extracting into a
+    # temporary directory costs one copy and makes the failure harmless.
+    temporario = base / f".qh-restore-{time.strftime('%Y%m%d-%H%M%S')}"
+    steps.append((f"mkdir -p {temporario}",
+                  lambda: temporario.mkdir(parents=True, exist_ok=True)))
     # unshare in both directions: as namespace-root, tar recreates the owner
     # recorded in the archive — without it, the volume of a service with User=
     # comes back wrong.
-    steps.append((f"tar xzf {tgz.name} -C {base}   ({len(inside)} entries)",
-                  lambda: tar_cmd("xzf", str(tgz), "-C", str(base))))
+    steps.append((f"tar xzf {tgz.name} -C {temporario}   ({len(inside)} entries)",
+                  rotulado(None, lambda: tar_cmd("xzf", str(tgz), "-C", str(temporario)))))
+
+    restored = []
+    for alvo in expected:
+        if not any(pertence(n, [alvo]) for n in inside):
+            continue
+        destino = base / alvo
+        if str(destino).startswith(str(base / "volumes") + "/"):
+            restored.append(str(destino))
+        steps.append((f"{destino}  <- swap in what was extracted",
+                      rotulado("data restored",
+                               lambda a=alvo: swap_in(temporario / a, base / a))))
+    steps.append((f"rm -rf {temporario}",
+                  rotulado(None, Recovery(lambda: _rmtree(temporario)))))
     # Per unit, like the install: one unit's User= must not chown a sibling's
     # directory. Only what the archive carries — a chown on a path that was not
     # extracted fails, and run() uses check=True, which would abort the plan
@@ -3075,13 +3124,14 @@ SINGULAR = {
     "data deleted": "data deleted",
     "secrets removed": "secret removed",
     "units removed": "unit removed",
+    "data restored": "data restored",
 }
 
 
 # Labels a step states outright, instead of leaving them to be read back out of
 # the description. Declared so the selftest can hold SINGULAR to the same
 # completeness it already holds FEITO to.
-ROTULOS = frozenset({"units removed"})
+ROTULOS = frozenset({"units removed", "data restored"})
 
 
 def rotulado(rotulo, action):
@@ -3092,15 +3142,18 @@ def rotulado(rotulo, action):
     under a warning saying the data was kept. A step knows what it is at the
     moment it is created; only the summary had to guess.
     """
-    assert rotulo in ROTULOS, f"undeclared step label: {rotulo}"
+    assert rotulo is None or rotulo in ROTULOS, f"undeclared step label: {rotulo}"
     action.rotulo = rotulo
     return action
 
 
 def classificar(desc, action=None):
-    rotulo = getattr(action, "rotulo", None)
-    if rotulo:
-        return rotulo
+    # hasattr, not getattr-or-None: a step that states `None` is saying it
+    # counts as nothing — the temporary directory a restore extracts into is
+    # not an archive written, and cleaning it up is not data deleted. Falling
+    # through to the prefixes there is how both got into the summary.
+    if hasattr(action, "rotulo"):
+        return action.rotulo
     for prefixo, rotulo in FEITO:
         if desc.startswith(prefixo) or f" {prefixo}" in desc[:20]:
             return rotulo

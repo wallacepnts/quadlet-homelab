@@ -76,8 +76,16 @@ def scenario_failure(home, tmp):
     a typo in `--out` used to stop the service, abort at `tar`, never reach the
     start, and still print `done: 1 backup`.
     """
-    r = run(APP, "--backup", "--apply", "--prefix", home,
-            "--out", str(Path(tmp, "nao-existe")), expected=1)
+    # Read-only, not missing: a missing --out is created now, and the point of
+    # this scenario is a step that fails AFTER the stop, with a start to undo it.
+    destino = Path(tmp, "so-leitura")
+    destino.mkdir(exist_ok=True)
+    destino.chmod(0o500)
+    try:
+        r = run(APP, "--backup", "--apply", "--prefix", home,
+                "--out", str(destino), expected=1)
+    finally:
+        destino.chmod(0o700)
     saida = r.stdout + r.stderr
     check("FAILED at:" in saida, "a failed backup says where it failed")
     check("putting back what the failure stopped" in saida,
@@ -192,6 +200,54 @@ def scenario_backup_restore(home, out):
     return tgz
 
 
+def scenario_archive_safety(tmp):
+    """What a backup promises: it can be restored, and only over its own service.
+
+    Three ways it did not. A per-unit archive was refused by the same tool that
+    wrote it, because the identity check cut every entry to two path components
+    before comparing against full-depth paths. The check passed on ONE matching
+    entry, so the rest of the tar — another service's units and secrets — came
+    along. And the volume was deleted before tar ran, so an archive tar gave up
+    on left the data gone with nothing put back.
+    """
+    home = str(Path(tmp, "arq"))
+    out = str(Path(tmp, "arq-out"))
+    unidade = "media-stack-jellyfin"
+    run(unidade, "--apply", "--prefix", home)
+    run(unidade, "--backup", "--apply", "--prefix", home, "--out", out)
+    tgz = sorted(Path(out).glob(f"{unidade}-*.tar.gz"))
+    check(bool(tgz), "a single unit of a stack can be backed up")
+    if not tgz:
+        return
+    r = run(unidade, "--restore", str(tgz[0]), "--apply", "--prefix", home,
+            stdin=f"{unidade}\n")
+    check("restored." in r.stdout, "and the same tool takes it back")
+
+    # One matching entry must not license the whole tar.
+    mal = Path(tmp, "mal")
+    (mal / "volumes" / "media-stack" / "jellyfin").mkdir(parents=True, exist_ok=True)
+    (mal / "secrets" / "vaultwarden").mkdir(parents=True, exist_ok=True)
+    (mal / "secrets" / "vaultwarden" / "admin-token.txt").write_text("stolen\n")
+    envenenado = Path(tmp, "poison.tar.gz")
+    subprocess.run(["tar", "czf", str(envenenado), "-C", str(mal),
+                    "volumes/media-stack", "secrets/vaultwarden"], check=True)
+    r = run(unidade, "--restore", str(envenenado), "--prefix", home, expected=1)
+    check("secrets/vaultwarden" in r.stdout,
+          "an archive carrying another service's paths is refused, naming them")
+
+    # A tar that fails must not have deleted anything first.
+    vivo = path(home, "volumes", "media-stack", "jellyfin")
+    antes = sorted(x.name for x in vivo.rglob("*"))
+    truncado = Path(tmp, "truncado.tar.gz")
+    truncado.write_bytes(tgz[0].read_bytes()[:200])
+    r = run(unidade, "--restore", str(truncado), "--apply", "--prefix", home,
+            stdin=f"{unidade}\n", expected=1)
+    check("Traceback" not in (r.stdout + r.stderr),
+          "a truncated archive is reported, not raised")
+    check(sorted(x.name for x in vivo.rglob("*")) == antes,
+          "and the live data is still there")
+
+
 def scenario_restore_refuses(home, tgz, out):
     run(APP, "--restore", str(Path(out) / "missing.tar.gz"), "--apply",
         "--prefix", home, stdin=f"{APP}\n", expected=1)
@@ -200,8 +256,8 @@ def scenario_restore_refuses(home, tgz, out):
     other = "traccar"
     r = run(other, "--restore", str(tgz), "--apply", "--prefix", home,
             stdin=f"{other}\n", expected=1)
-    check("does not look like a backup" in r.stdout,
-          "restore refuses a .tar.gz from another service")
+    check(f"{APP}" in r.stdout and "carries paths that are not" in r.stdout,
+          "restore refuses a .tar.gz from another service, naming what is foreign")
 
     broken = Path(out) / "broken.tar.gz"
     broken.write_bytes(b"this is not a tar")
@@ -279,6 +335,7 @@ def main():
         print("drift:");              scenario_drift(home)
         print("failure:");            scenario_failure(home, tmp)
         print("remove safety:");      scenario_remove_safety(tmp)
+        print("archive safety:");     scenario_archive_safety(tmp)
         print("backup and restore:"); tgz = scenario_backup_restore(home, out)
         if tgz:
             print("restore refuses:"); scenario_restore_refuses(home, tgz, out)
