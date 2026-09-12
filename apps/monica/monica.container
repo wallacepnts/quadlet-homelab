@@ -3,6 +3,7 @@ Description=Monica (personal CRM)
 
 [Container]
 PidsLimit=256
+NoNewPrivileges=true
 Image=ghcr.io/monicahq/monica-next:main
 ContainerName=monica
 Network=tsdproxy-net.network

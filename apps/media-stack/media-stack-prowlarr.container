@@ -8,6 +8,7 @@ AddCapability=SETUID
 AddCapability=SETGID
 AddCapability=NET_BIND_SERVICE
 PidsLimit=256
+NoNewPrivileges=true
 Image=lscr.io/linuxserver/prowlarr:2.5.2
 ContainerName=prowlarr
 Network=tsdproxy-net.network

@@ -294,6 +294,13 @@ PidsLimit=256
 NoNewPrivileges=true
 ```
 
+O `check.py` avisa quando uma unit está sem `NoNewPrivileges=true`. Por não
+custar nada, é justamente a que ninguém nota faltando: 54 units haviam
+derivado sem ela, 16 delas já com `ReadOnly` e `DropCapability=ALL` — a trava
+mais barata ausente nos containers mais fechados. Quem de fato não aceita
+dispensa a regra na própria unit, com o motivo; o `proxmox` faz isso, porque
+`no-new-privileges` contradiz o `--privileged` sem o qual ele não sobe.
+
 Depois testar, nesta ordem, parando no primeiro que o app recusar:
 
 1. `DropCapability=ALL` — o log diz o que falta (`chown: Operation not

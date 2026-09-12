@@ -8,6 +8,7 @@ AddCapability=SETUID
 AddCapability=SETGID
 AddCapability=NET_BIND_SERVICE
 PidsLimit=256
+NoNewPrivileges=true
 Image=lscr.io/linuxserver/deluge:2.2.0
 ContainerName=deluge
 Network=tsdproxy-net.network

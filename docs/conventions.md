@@ -290,6 +290,13 @@ PidsLimit=256
 NoNewPrivileges=true
 ```
 
+`check.py` warns for a unit without `NoNewPrivileges=true`. Costing nothing to
+apply, it is also the one nobody notices missing: 54 units had drifted without
+it, 16 of them already carrying `ReadOnly` and `DropCapability=ALL` — the
+cheapest lock absent from the tightest containers. One that genuinely cannot
+take it waives the rule in the unit, with the reason; `proxmox` does, because
+`no-new-privileges` contradicts the `--privileged` it refuses to start without.
+
 Then test, in this order, stopping at the first one the app refuses:
 
 1. `DropCapability=ALL` — the log names what is missing (`chown: Operation not

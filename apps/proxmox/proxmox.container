@@ -10,6 +10,8 @@ PublishPort=8010:8006
 
 # Upstream's entrypoint refuses to start without it, by design: Proxmox runs
 # systemd as PID 1 and manages bridges, storage and KVM from inside.
+# check: ignore hardening — the image refuses to start without --privileged,
+# and no-new-privileges contradicts what --privileged exists to grant.
 PodmanArgs=--privileged
 
 Volume=%h/.config/containers/volumes/proxmox/data:/var/lib/vz:Z

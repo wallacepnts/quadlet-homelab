@@ -7,6 +7,7 @@ Tmpfs=/tmp:size=64M
 DropCapability=ALL
 User=999
 PidsLimit=256
+NoNewPrivileges=true
 Image=docker.io/valkey/valkey:9.1.1-alpine3.24
 ContainerName=paperless-ngx-broker
 Network=paperless-ngx-net.network

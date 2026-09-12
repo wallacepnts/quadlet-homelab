@@ -9,6 +9,7 @@ AddCapability=SETGID
 AddCapability=DAC_OVERRIDE
 AddCapability=FOWNER
 PidsLimit=256
+NoNewPrivileges=true
 Image=docker.io/library/postgres:16-alpine
 ContainerName=authentik-postgres
 Network=authentik-net.network

@@ -278,6 +278,15 @@ def check_container(path, folder):
             warn("wud", f"{ref} has neither AutoUpdate= nor wud.watch — "
                         f"nothing will report a new version")
 
+    # Rule 20 applies this one without testing, and nothing tracked it: 54 of
+    # the 110 units had drifted without it, 16 already carrying ReadOnly and
+    # DropCapability=ALL — the cheapest lock missing from the tightest units.
+    # A warning, not an error: what is left needs a test on the machine those
+    # containers run on, and a waiver written blind would only hide that.
+    if "NoNewPrivileges" not in keys and "hardening" not in exemptions(text):
+        warn("rule 20", f"{ref} has no NoNewPrivileges=true — rule 20 applies it "
+                        f"without testing")
+
 
 def check_ports(folders):
     uses = defaultdict(list)

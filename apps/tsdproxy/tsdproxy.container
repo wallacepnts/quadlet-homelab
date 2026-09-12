@@ -6,6 +6,7 @@ After=podman.socket
 [Container]
 DropCapability=ALL
 PidsLimit=128
+NoNewPrivileges=true
 Image=docker.io/almeidapaulopt/tsdproxy:2
 ContainerName=tsdproxy
 # check: ignore structure — this .network is not tsdproxy's own, it is the one

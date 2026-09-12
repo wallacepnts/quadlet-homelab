@@ -10,6 +10,7 @@ Tmpfs=/tmp:size=64M
 DropCapability=ALL
 User=1000
 PidsLimit=256
+NoNewPrivileges=true
 Image=ghcr.io/goauthentik/server:2026.8.2
 ContainerName=authentik
 Network=tsdproxy-net.network

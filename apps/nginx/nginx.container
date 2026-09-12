@@ -8,6 +8,7 @@ AddCapability=SETUID
 AddCapability=SETGID
 AddCapability=NET_BIND_SERVICE
 PidsLimit=256
+NoNewPrivileges=true
 Image=docker.io/library/nginx:1.30.4-alpine
 ContainerName=nginx
 Network=tsdproxy-net.network

@@ -6,6 +6,7 @@ ReadOnly=true
 Tmpfs=/tmp:size=256M
 DropCapability=ALL
 PidsLimit=256
+NoNewPrivileges=true
 Image=docker.io/apache/tika:3.3.1.0
 ContainerName=paperless-ngx-tika
 Network=paperless-ngx-net.network

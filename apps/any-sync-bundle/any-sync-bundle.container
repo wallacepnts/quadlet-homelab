@@ -9,6 +9,7 @@ AddCapability=SETGID
 AddCapability=DAC_OVERRIDE
 AddCapability=FOWNER
 PidsLimit=512
+NoNewPrivileges=true
 Image=ghcr.io/grishy/any-sync-bundle:1.6.0-2026-08-18
 ContainerName=any-sync-bundle
 Network=tsdproxy-net.network

@@ -8,6 +8,7 @@ AddCapability=SETUID
 AddCapability=SETGID
 AddCapability=NET_BIND_SERVICE
 PidsLimit=256
+NoNewPrivileges=true
 Image=docker.io/gitea/gitea:1.27.3
 ContainerName=gitea
 Network=tsdproxy-net.network

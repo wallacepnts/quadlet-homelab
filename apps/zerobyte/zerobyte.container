@@ -7,6 +7,7 @@ Tmpfs=/tmp:size=64M
 DropCapability=ALL
 AddCapability=DAC_READ_SEARCH
 PidsLimit=256
+NoNewPrivileges=true
 Image=ghcr.io/nicotsx/zerobyte:v0.42.0
 ContainerName=zerobyte
 Network=tsdproxy-net.network

@@ -5,6 +5,7 @@ Requires=owntracks-recorder.service
 
 [Container]
 PidsLimit=256
+NoNewPrivileges=true
 Image=docker.io/owntracks/frontend:2.15.3
 ContainerName=owntracks-frontend
 Network=tsdproxy-net.network

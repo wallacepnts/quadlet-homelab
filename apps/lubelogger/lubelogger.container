@@ -4,6 +4,7 @@ Description=LubeLogger
 [Container]
 DropCapability=ALL
 PidsLimit=256
+NoNewPrivileges=true
 Image=ghcr.io/hargata/lubelogger:v1.7.3
 ContainerName=lubelogger
 Network=tsdproxy-net.network

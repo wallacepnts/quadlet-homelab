@@ -6,6 +6,7 @@ ReadOnly=true
 Tmpfs=/tmp:size=64M
 DropCapability=ALL
 PidsLimit=256
+NoNewPrivileges=true
 Image=ghcr.io/seerr-team/seerr:v3.4.1
 ContainerName=seerr
 Network=tsdproxy-net.network

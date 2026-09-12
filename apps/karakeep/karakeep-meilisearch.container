@@ -6,6 +6,7 @@ ReadOnly=true
 Tmpfs=/tmp:size=64M
 DropCapability=ALL
 PidsLimit=256
+NoNewPrivileges=true
 Image=docker.io/getmeili/meilisearch:v1.41.0
 ContainerName=karakeep-meilisearch
 Network=karakeep-net.network

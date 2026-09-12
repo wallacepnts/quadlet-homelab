@@ -6,6 +6,7 @@ ReadOnly=true
 Tmpfs=/tmp:size=256M
 DropCapability=ALL
 PidsLimit=256
+NoNewPrivileges=true
 Image=ghcr.io/home-assistant/home-assistant:2026.9.2
 ContainerName=home-assistant
 Network=tsdproxy-net.network

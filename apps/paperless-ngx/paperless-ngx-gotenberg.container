@@ -6,6 +6,7 @@ ReadOnly=true
 Tmpfs=/tmp:size=256M
 DropCapability=ALL
 PidsLimit=256
+NoNewPrivileges=true
 Image=docker.io/gotenberg/gotenberg:8.34
 ContainerName=paperless-ngx-gotenberg
 Network=paperless-ngx-net.network

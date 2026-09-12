@@ -4,6 +4,7 @@ Description=Node-RED (flow automation via a visual editor)
 [Container]
 DropCapability=ALL
 PidsLimit=256
+NoNewPrivileges=true
 Image=docker.io/nodered/node-red:5.0.7-minimal
 ContainerName=node-red
 Network=tsdproxy-net.network
