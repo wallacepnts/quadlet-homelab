@@ -16,9 +16,10 @@ qh-check
 What it catches: a unit whose basename does not match the app, two services
 publishing the same host port, a `Secret=` with no recipe in `install.ini`, a
 service missing from the README's version table, a service README whose
-pinned-version line no longer matches its units, `$` in `HealthCmd` without the
-double escape, a backslash in a `Label=` value, an unquoted value with spaces,
-and `Notify=healthy` without a `HealthCmd`.
+pinned-version line no longer matches its units, a `PodmanArgs=` carrying what
+Quadlet has a key for or a space it will not survive, `$` in `HealthCmd` without
+the double escape, a backslash in a `Label=` value, an unquoted value with
+spaces, and `Notify=healthy` without a `HealthCmd`.
 
 To waive a rule deliberately, the unit says so and the reason is required:
 

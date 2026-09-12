@@ -16,9 +16,10 @@ qh-check
 O que ele pega: unit com basename diferente do app, dois serviços publicando a
 mesma porta do host, `Secret=` sem receita no `install.ini`, serviço faltando na
 tabela de versões do README, README de serviço cuja linha de versão não bate
-mais com as units, `$` em `HealthCmd` sem o escape duplo, barra invertida em
-valor de `Label=`, valor com espaço sem aspas, e `Notify=healthy` sem
-`HealthCmd`.
+mais com as units, `PodmanArgs=` levando o que o Quadlet já tem chave para ou um
+espaço que ele não sobrevive, `$` em `HealthCmd` sem o escape duplo, barra
+invertida em valor de `Label=`, valor com espaço sem aspas, e `Notify=healthy`
+sem `HealthCmd`.
 
 Pra dispensar uma regra de propósito, a unit diz isso e o motivo é obrigatório:
 

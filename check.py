@@ -15,6 +15,7 @@ No dependencies: stdlib only, so it runs on the immutable host as-is.
 
 import configparser
 import re
+import shlex
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -197,11 +198,68 @@ def check_units(folders):
                             f"— they become the same systemd unit")
 
 
+# Measured on Podman 6.0.2: one unit generated per key, its `podman run` line
+# diffed against a bare one. PodmanArgs bypasses every check Quadlet makes —
+# its own manual says using it "is not recommended" — and each defect this
+# repository has found in a unit arrived through it.
+NATIVO = {
+    "--add-host": "AddHost", "--cap-add": "AddCapability",
+    "--cap-drop": "DropCapability", "--device": "AddDevice", "--dns": "DNS",
+    "--entrypoint": "Entrypoint", "--env": "Environment",
+    "--env-file": "EnvironmentFile", "--hostname": "HostName",
+    "--init": "RunInit", "--label": "Label", "--memory": "Memory",
+    "--pids-limit": "PidsLimit", "--publish": "PublishPort",
+    "--read-only": "ReadOnly", "--secret": "Secret",
+    "--security-opt": "NoNewPrivileges= or SecurityLabel*=",
+    "--shm-size": "ShmSize", "--stop-timeout": "StopTimeout",
+    "--tmpfs": "Tmpfs", "--user": "User", "--userns": "UserNS",
+    "--workdir": "WorkingDir",
+}
+
+
+def check_podman_args(text, ref):
+    """What goes through PodmanArgs, which Quadlet never looks at.
+
+    Two ways it has gone wrong here. A flag that has a key of its own ends up
+    written twice, and the last one silently wins — radicale ran at 50 pids
+    while its own unit said 256. And a space inside one argument does not
+    survive: unquoted, systemd splits it into separate arguments; escaped with
+    a backslash, Quadlet drops the argument and says nothing. Quoting is the
+    only spelling that works (`PodmanArgs=--foo="a b"`).
+    """
+    for n, line in enumerate(text.splitlines(), 1):
+        if not line.startswith("PodmanArgs="):
+            continue
+        valor = line.partition("=")[2]
+        onde = f"{ref}:{n}"
+        if "\\ " in valor:
+            error("PodmanArgs", f"{onde}: a backslash-escaped space drops the whole "
+                                f"argument — quote it instead")
+            continue
+        try:
+            tokens = shlex.split(valor)
+        except ValueError:
+            error("PodmanArgs", f"{onde}: unbalanced quote")
+            continue
+        for i, tok in enumerate(tokens):
+            if i and not tok.startswith("-") and "=" in tokens[i - 1]:
+                error("PodmanArgs", f"{onde}: an unquoted space splits "
+                                    f"`{tokens[i - 1]} {tok}` into two arguments")
+                break
+        for tok in tokens:
+            chave = NATIVO.get(tok.partition("=")[0])
+            if chave:
+                error("PodmanArgs", f"{onde}: {tok.partition('=')[0]} has a Quadlet key "
+                                    f"of its own — use {chave}")
+
+
 def check_container(path, folder):
     text = path.read_text()
     ds = directives(text)
     keys = {c for c, _ in ds}
     ref = f"apps/{folder.name}/{path.name}"
+
+    check_podman_args(text, ref)
 
     if ("Notify", "healthy") in ds and "HealthCmd" not in keys:
         error("rule 14", f"{ref} uses Notify=healthy without HealthCmd= "
@@ -564,6 +622,23 @@ def selftest():
         assert image_tag(p) is None, "an untagged image must not become a fake tag"
         p.write_text("[Container]\nImage=docker.io/a/b@sha256:" + "0" * 64 + "\n")
         assert image_tag(p) is None, "a digest is not a tag: nothing to compare against"
+
+    # PodmanArgs: the three spellings of a space, and the flag with a key of its own
+    def pa(valor):
+        errors.clear()
+        check_podman_args(f"PodmanArgs={valor}\n", "u")
+        saida = list(errors)
+        errors.clear()
+        return saida
+
+    assert pa('--foo="a b"') == [], "quoting is the spelling that survives"
+    assert pa("--privileged") == [], "a flag with no Quadlet key is what PodmanArgs is for"
+    assert "splits" in pa("--foo=a b")[0], "unquoted, systemd makes it two arguments"
+    assert "drops" in pa(r"--foo=a\ b")[0], "backslash-escaped, Quadlet emits nothing"
+    assert "PidsLimit" in pa("--pids-limit=50")[0]
+    assert "ShmSize" in pa("--shm-size=512m")[0]
+    assert "DropCapability" in pa("--cap-drop=NET_RAW")[0]
+    assert pa("--device-cgroup-rule=c 226:* rwm"), "the defect vm-chromeos shipped with"
 
     # the pinned-version line, in every wording the check has to recognise
     assert FIXADO.match("Pinned to `v1.2.3`. Nothing updates on its own").group(1) == "`v1.2.3`"
