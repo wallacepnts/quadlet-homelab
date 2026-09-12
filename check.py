@@ -20,7 +20,8 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-from qhui import translator, directives, published_port, red, yellow, green, dim
+from qhui import (translator, directives, directives_of, published_port,
+                  red, yellow, green, dim)
 
 PT = {
     "services,": "serviços,",
@@ -112,7 +113,7 @@ def image_tag(path):
     An image pinned by digest (`...@sha256:abc...`) has no tag: comparing the
     hex against the README's Version column would only produce noise.
     """
-    for key, value in directives(path.read_text()):
+    for key, value in directives_of(path):
         if key == "Image":
             if "@sha256:" in value:
                 return None
@@ -302,7 +303,7 @@ def check_manifest(folders):
         recipes = set(ini["secrets"]) if ini.has_section("secrets") else set()
         declared = set()
         for f in sorted(folder.glob("*.container")):
-            for key, value in directives(f.read_text()):
+            for key, value in directives_of(f):
                 if key == "Secret":
                     declared.add(value.split(",")[0])
         for missing in sorted(declared - recipes):
@@ -509,7 +510,7 @@ def pinned_tags(folder):
     """
     out = []
     for unit in sorted(folder.glob("*.container")):
-        for key, value in directives(unit.read_text()):
+        for key, value in directives_of(unit):
             if key == "Image":
                 out.append(value.partition("@sha256:")[2]
                            or value.rpartition(":")[2])
@@ -606,7 +607,7 @@ def check_per_unit(folder):
     """The per-unit page and Version column of a stack, against each unit."""
     tags = {}
     for unit in sorted(folder.glob("*.container")):
-        for key, value in directives(unit.read_text()):
+        for key, value in directives_of(unit):
             if key == "Image":
                 tags[unit.stem.replace(f"{folder.name}-", "")] = (
                     value.partition("@sha256:")[2] or value.rpartition(":")[2])

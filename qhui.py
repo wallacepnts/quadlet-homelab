@@ -16,6 +16,7 @@ No dependencies: stdlib only.
 
 import os
 import sys
+from pathlib import Path
 
 def ptbr_from(env):
     """Whether to speak Portuguese, from the environment.
@@ -71,6 +72,28 @@ def directives(text):
         if sep:
             out.append((key.strip(), value.strip()))
     return out
+
+
+_PARSEADO = {}
+
+
+def directives_of(path):
+    """directives() for a file, parsed once per (path, mtime, size).
+
+    `qh --all --update` called the parser 3743 times for 110 files — the same
+    unit re-read by volumes(), images(), secrets(), chowns() and the rest, each
+    from scratch. Keyed on mtime and size so a unit this process just wrote is
+    parsed again rather than answered from before.
+    """
+    p = Path(path)
+    try:
+        st = p.stat()
+        chave = (str(p), st.st_mtime_ns, st.st_size)
+    except OSError:
+        return []
+    if chave not in _PARSEADO:
+        _PARSEADO[chave] = directives(p.read_text())
+    return _PARSEADO[chave]
 
 
 def published_port(value):

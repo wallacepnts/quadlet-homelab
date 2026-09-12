@@ -29,6 +29,7 @@ import string
 import subprocess
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import qhui
@@ -53,7 +54,8 @@ de diretório.
 
 Sem dependências: só a stdlib.
 """
-from qhui import (translator, directives, published_port, ref_parts, FLOATING,
+from qhui import (translator, directives, directives_of, published_port,
+                  ref_parts, FLOATING,
                   red, yellow, green, dim, bold)
 
 ROOT = Path(__file__).resolve().parent
@@ -432,6 +434,30 @@ def access_drift(regra, prefix=None):
 
 
 
+_TAILSCALE = {}
+
+
+def tem_tailscale():
+    """Whether the tailscale binary is on PATH. Asked once per run.
+
+    preflight runs per service, so `qh --all` resolved the same PATH 74 times
+    and asked systemd 74 more — neither answer can change while the process is
+    alive.
+    """
+    if "bin" not in _TAILSCALE:
+        import shutil
+        _TAILSCALE["bin"] = bool(shutil.which("tailscale"))
+    return _TAILSCALE["bin"]
+
+
+def tailscaled_ativo():
+    """Whether the daemon is running. Asked once per run, for the same reason."""
+    if "ativo" not in _TAILSCALE:
+        _TAILSCALE["ativo"] = subprocess.run(
+            ["systemctl", "is-active", "--quiet", "tailscaled"]).returncode == 0
+    return _TAILSCALE["ativo"]
+
+
 def preflight(s, tailnet, local=False):
     """Warns when the host lacks what the service assumes.
 
@@ -470,13 +496,12 @@ def preflight(s, tailnet, local=False):
     if not uses_tailnet or local:
         return problems
 
-    import shutil
     if tailnet:
         # Wants a tailnet: a missing daemon is an error.
-        if not shutil.which("tailscale"):
+        if not tem_tailscale():
             problems.append("TAILNET is set but tailscale is not installed — "
                             "`python3 install.py tailscale` explains how")
-        elif subprocess.run(["systemctl", "is-active", "--quiet", "tailscaled"]).returncode != 0:
+        elif not tailscaled_ativo():
             problems.append("tailscaled is not active — "
                             "`sudo systemctl enable --now tailscaled`")
     else:
@@ -518,7 +543,7 @@ class Service:
         # Everything below — volumes, env files, secrets, examples — derives
         # from these directives, so the filter above narrows all of them at once.
         self.ds = [(k, v) for u in self.units if u.suffix == ".container"
-                   for k, v in directives(u.read_text())]
+                   for k, v in directives_of(u)]
 
     # -- destinations -----------------------------------------------------
 
@@ -667,6 +692,10 @@ class Service:
         nomes = {u.name for u in self.folder_units}
         if not base.is_dir():
             return []
+        # Not cached, deliberately. This answers about the filesystem now, and
+        # the selftest writes a stray between two asks to say so. Caching it
+        # was worth 0.27s of a 1.09s run — not worth a question that can answer
+        # from before the file it is being asked about appeared.
         return sorted(p for p in base.rglob("*")
                       if p.name in nomes and p.is_file() and p.parent != self.unit_dest)
 
@@ -727,7 +756,7 @@ class Service:
         minhas, outras = set(), set()
         for u in self.dir.glob("*.container"):
             alvo = minhas if u.stem == self.only else outras
-            for k, v in directives(u.read_text()):
+            for k, v in directives_of(u):
                 if k == "Volume":
                     origem = v.split(":")[0]
                     if "$" in origem or not origem.startswith("%h"):
@@ -761,7 +790,7 @@ class Service:
         minhas, outras = set(), set()
         for u in self.dir.glob("*.container"):
             alvo = minhas if u.stem == self.only else outras
-            for k, v in directives(u.read_text()):
+            for k, v in directives_of(u):
                 if k == "EnvironmentFile":
                     alvo.add(self._expand(v))
         return sorted(minhas - outras)
@@ -827,7 +856,7 @@ class Service:
         path = self.dir / f"{unit_stem}.container"
         if not path.is_file():
             return None
-        for key, value in directives(path.read_text()):
+        for key, value in directives_of(path):
             if key == "EnvironmentFile":
                 return self._expand(value)
         return None
@@ -2153,12 +2182,12 @@ SANDBOX = False     # with --prefix: touches files, not systemd nor podman
 
 def waits_for_health(unit_path):
     """True when the unit makes systemd hold the start until it is healthy."""
-    return ("Notify", "healthy") in directives(unit_path.read_text())
+    return ("Notify", "healthy") in directives_of(unit_path)
 
 
 def container_name(unit_path):
     """The `ContainerName=`, or the unit's basename, which is what Quadlet uses."""
-    for key, value in directives(unit_path.read_text()):
+    for key, value in directives_of(unit_path):
         if key == "ContainerName":
             return value
     return unit_path.stem
@@ -2206,8 +2235,31 @@ def restart_unit(unit, container=None):
         raise subprocess.CalledProcessError(proc.returncode, cmd, out, err)
 
 
+_IMAGENS = None
+
+
 def image_exists(image):
-    """True when the image is already on the host, so the pull step is skipped."""
+    """True when the image is already on the host, so the pull step is skipped.
+
+    One listing instead of one question per image: `qh --all --update` asked
+    218 times and spent 2.5s of a 3.8s run doing it, before deciding to write
+    nothing. The cache is per process and this is a dry-run/plan-time read; the
+    pull steps that follow invalidate it as they run.
+    """
+    global _IMAGENS
+    if _IMAGENS is None:
+        saida = run_read(["podman", "images", "--format",
+                          "{{.Repository}}:{{.Tag}}\n{{.Repository}}@{{.Digest}}"])
+        _IMAGENS = set((saida or "").split())
+    if image in _IMAGENS:
+        return True
+    # A short name (`nginx:1.30`) is stored fully qualified, so the listing
+    # spells it differently and only the direct question can answer. Every
+    # Image= in this repository carries its registry, so that path is for a unit
+    # someone writes by hand — asking for the other 109 was the whole cost.
+    host = image.split("/")[0]
+    if "." in host or ":" in host or host == "localhost":
+        return False
     return subprocess.run(["podman", "image", "exists", image],
                           capture_output=True).returncode == 0
 
@@ -2252,7 +2304,9 @@ def pull_steps(s):
     """A pull step per image the host does not have yet, or whose tag moves."""
     out = []
     for image in s.images():
-        if not SANDBOX and image_exists(image) and not moving_tag(image):
+        # moving_tag first: it is string work, and when it is true the answer
+        # from image_exists is thrown away anyway.
+        if not SANDBOX and not moving_tag(image) and image_exists(image):
             continue
         out.append((f"podman pull {image}", lambda image=image: pull(image)))
     return out
@@ -2304,7 +2358,7 @@ def addresses(service, tailnet):
     # that were never registered — eleven red crosses and exit 1 on an install
     # that worked.
     for f in sorted(u for u in service.units if u.suffix == ".container"):
-        ds = directives(f.read_text())
+        ds = directives_of(f)
         labels = {}
         for key, value in ds:
             if key == "Label":
@@ -2619,6 +2673,40 @@ def selftest():
         (base / "tsdproxy.container").write_text("a que ficou pra trás")
         assert [p.parent for p in s.strays()] == [base]
         assert [p.name for p in s.strays()] == ["tsdproxy.container"]
+
+    # The tailnet probes run in parallel and must still come back in the order
+    # they were asked. Someone reaching for as_completed would get them in the
+    # order they finished, which shuffles the report — the slowest service
+    # would be listed last whatever its position.
+    import http.server
+    import socketserver
+    import threading
+    from concurrent.futures import ThreadPoolExecutor as _Pool
+
+    class _H(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            atraso, _, codigo = self.path.strip("/").partition("/")
+            time.sleep(int(atraso) / 100)
+            self.send_response(int(codigo))
+            self.end_headers()
+
+        def log_message(self, *a):
+            pass
+
+    class _S(socketserver.ThreadingTCPServer):
+        allow_reuse_address = True
+        daemon_threads = True
+
+    with _S(("127.0.0.1", 0), _H) as srv:
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        porta = srv.server_address[1]
+        # Decreasing delays: finishing order is the reverse of asking order.
+        pedidos = [(20, 200), (15, 404), (10, 500), (5, 301), (0, 200)]
+        urls = [f"http://127.0.0.1:{porta}/{d}/{c}" for d, c in pedidos]
+        with _Pool(max_workers=8) as pool:
+            codigos = list(pool.map(sonda_http, urls))
+        srv.shutdown()
+    assert codigos == [str(c) for _, c in pedidos], codigos
 
     # argparse's own words. Rendering real help is what catches a Python whose
     # literals no longer match our keys — the table would silently miss instead.
@@ -3015,7 +3103,7 @@ def foreign_networks(s):
     for u in s.units:
         if u.suffix != ".container":
             continue
-        for k, v in directives(u.read_text()):
+        for k, v in directives_of(u):
             if k != "Network":
                 continue
             arq = v.split(":")[0]
@@ -3092,6 +3180,12 @@ def quadlet_units(home):
     erros = [linha.partition("]: ")[2] or linha
              for linha in r.stderr.splitlines() if "converting" in linha]
     return gerados, erros
+
+
+def sonda_http(url):
+    """The HTTP status `url` answers with, or "" when nothing does."""
+    return (run_read(["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}",
+                      "--max-time", "10", url]) or "").strip()
 
 
 def verify_service(s, tailnet, modo="tailnet"):
@@ -3175,11 +3269,15 @@ def verify_service(s, tailnet, modo="tailnet"):
     # stays healthy while every proxy it manages fails to register, because its
     # healthcheck measures its own webserver and not the nodes.
     if modo != "local" and tailnet:
-        for unit, _local, tail in addresses(s, tailnet):
-            if not tail:
-                continue
-            code = (run_read(["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}",
-                              "--max-time", "10", tail]) or "").strip()
+        alvos = [(unit, tail) for unit, _local, tail in addresses(s, tailnet) if tail]
+        # In parallel, because these are independent probes of different hosts
+        # and the timeout is what costs: a stack whose nodes never registered
+        # spent `--max-time 10` on each in turn — two minutes for media-stack's
+        # twelve, at the moment something is already broken. `map` keeps the
+        # results in the order of the list, so the output does not shuffle.
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            codes = list(pool.map(lambda alvo: sonda_http(alvo[1]), alvos))
+        for (unit, tail), code in zip(alvos, codes):
             # 4xx is an answer: a login wall is the service working. 5xx is the
             # proxy answering for a target that is not there.
             respondeu = code[:1] in ("2", "3", "4")

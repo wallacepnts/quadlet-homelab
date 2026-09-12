@@ -33,7 +33,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import qhui
-from qhui import (translator, directives, ref_parts, FLOATING,
+from qhui import (translator, directives, directives_of, ref_parts, FLOATING,
                   red, yellow, green, dim)
 
 PT = {
@@ -458,10 +458,10 @@ def services():
             principal = conts[0]
         ref = ""
         if principal.exists():
-            img = next((v for k, v in directives(principal.read_text()) if k == "Image"), "")
+            img = next((v for k, v in directives_of(principal) if k == "Image"), "")
             ref = img.split("@")[0].rpartition(":")[2]
         for cont in conts:
-            for key, value in directives(cont.read_text()):
+            for key, value in directives_of(cont):
                 if key == "Image":
                     yield folder.name, cont.stem, value, overrides.get(cont.stem), ref
 
