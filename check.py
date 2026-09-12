@@ -426,6 +426,13 @@ def check_manifest(folders):
 # acontece quando ${TAILNET} não está definida.
 TAILNET_PLACEHOLDERS = {"", "${TAILNET}", "<tailnet>", "<your-tailnet>", "your-tailnet"}
 
+# The label before `.ts.net`, which is the tailnet's name. One expression, used
+# by the check and by the test that holds it to account. The selftest used to
+# rebuild it instead, so loosening this one — dropping `{}` from the class, and
+# with it `${TAILNET}` as a recognised placeholder — still printed "ok" while
+# the guard on the repository's most emphatic rule quietly stopped guarding.
+TAILNET_NAME = re.compile(r"([A-Za-z0-9_${}<>-]*)\.ts\.net")
+
 
 def check_tailnet():
     """No real tailnet name anywhere: the repository is public.
@@ -443,7 +450,7 @@ def check_tailnet():
         except (UnicodeDecodeError, OSError):
             continue
         lines = text.split("\n")
-        for m in re.finditer(r"([A-Za-z0-9_${}<>-]*)\.ts\.net", text):
+        for m in TAILNET_NAME.finditer(text):
             if m.group(1) not in TAILNET_PLACEHOLDERS:
                 line = text[: m.start()].count("\n") + 1
                 if "check: ignore tailnet" in lines[line - 1]:
@@ -778,7 +785,7 @@ def selftest():
     assert LINHA_UNIT.match(linha.replace(" | `12.0` |", " |")) is None, "no version, nothing to check"
 
     # o guarda de tailnet: pega nome real, aceita os placeholders
-    lab = lambda t: re.findall(r"([A-Za-z0-9_${}<>-]*)\.ts\.net", t)
+    lab = TAILNET_NAME.findall
     assert lab("https://traccar.some-real-name.ts.net") == ["some-real-name"]  # check: ignore tailnet
     assert lab("https://memos.${TAILNET}.ts.net") == ["${TAILNET}"]
     assert lab("https://x.<your-tailnet>.ts.net") == ["<your-tailnet>"]
