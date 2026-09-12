@@ -685,6 +685,15 @@ class Service:
         """
         if not self.only:
             return None
+        # Fenced to the volumes directory, like volume_roots() is. What this
+        # answers feeds `--remove --purge`, and a `%h` mount outside that tree
+        # is not this service's data to delete: zerobyte declares
+        # `%h/.config/containers/volumes` and `%h/.config/containers/secrets`
+        # read-only so it can back them up. Unfenced, a sibling unit in that
+        # folder — routine under rule 1 — would make `--purge` plan
+        # `rm -rf ~/.config/containers/volumes`: every service's data, behind a
+        # confirmation that only asks for this app's name.
+        cerca = str(self.home / ".config/containers/volumes") + "/"
         minhas, outras = set(), set()
         for u in self.dir.glob("*.container"):
             alvo = minhas if u.stem == self.only else outras
@@ -693,7 +702,10 @@ class Service:
                     origem = v.split(":")[0]
                     if "$" in origem or not origem.startswith("%h"):
                         continue
-                    alvo.add(self._expand(origem))
+                    caminho = self._expand(origem)
+                    if not caminho.startswith(cerca):
+                        continue
+                    alvo.add(caminho)
         return minhas, outras
 
     def exclusive_volumes(self):
@@ -1242,8 +1254,11 @@ def plan_backup(s, destination):
     # stays out, so restoring one unit can never rewrite another one's data.
     proprios = s.exclusive_volumes()
     for root in (proprios if proprios is not None else s.volume_roots()):
-        if Path(root).exists():
-            targets.append(str(Path(root).relative_to(base)))
+        rel = sob_base(root, base) if Path(root).exists() else None
+        if rel:
+            targets.append(rel)
+        elif Path(root).exists():
+            warnings.append(f"{root} is outside {base} — not in the archive")
     if not targets:
         warnings.append("no volume found — has the service been installed?")
 
@@ -1259,8 +1274,11 @@ def plan_backup(s, destination):
                 targets.append(str(f.relative_to(base)))
     envs = s.exclusive_envs() if proprios is not None else s.env_files()
     for e in envs:
-        if Path(e).exists():
-            targets.append(str(Path(e).relative_to(base)))
+        rel = sob_base(e, base) if Path(e).exists() else None
+        if rel:
+            targets.append(rel)
+        elif Path(e).exists():
+            warnings.append(f"{e} is outside {base} — not in the archive")
     if proprios is not None and not s.exclusive_envs() and s.env_files():
         warnings.append("the folder's shared .env is not in the archive — it belongs "
                         "to the other units too")
@@ -1305,6 +1323,21 @@ def swap_in(origem, destino):
     origem.rename(destino)
 
 
+def sob_base(caminho, base):
+    """`caminho` relative to `base`, or None when it is not under it at all.
+
+    `relative_to` raises for a path outside the tree, at plan time, where the
+    step loop's handler cannot reach it — it would come out as a traceback.
+    Every `EnvironmentFile=` in the repository sits under
+    `~/.config/containers/env/`, so this guards a shape that does not exist
+    yet rather than fixing one that does.
+    """
+    try:
+        return str(Path(caminho).relative_to(base))
+    except ValueError:
+        return None
+
+
 def pertence(nome, raizes):
     """Whether an archive entry sits at or under one of the service's paths.
 
@@ -1338,10 +1371,11 @@ def plan_restore(s, archive):
 
     proprios = s.exclusive_volumes()
     raizes = proprios if proprios is not None else s.volume_roots()
-    expected = [str(Path(r).relative_to(base)) for r in raizes]
+    expected = [r for r in (sob_base(x, base) for x in raizes) if r]
     expected.append(f"secrets/{s.name}")
-    expected += [str(Path(e).relative_to(base))
-                 for e in (s.exclusive_envs() if proprios is not None else s.env_files())]
+    expected += [r for r in
+                 (sob_base(e, base) for e in
+                  (s.exclusive_envs() if proprios is not None else s.env_files())) if r]
     # EVERY entry has to be this service's, not at least one. The old test cut
     # each name to two components before comparing against full-depth expected
     # paths, so a per-unit backup — `volumes/media-stack/jellyfin/config` — never
@@ -2232,6 +2266,32 @@ def selftest():
         assert one.unit_dest == full.unit_dest, "a picked unit stays in the stack's folder"
         assert all("jellyfin" in p for p, _ in one.volumes()), one.volumes()
         assert all(t is not None for _, t in one.examples()), one.examples()
+
+    # What --purge may delete is fenced to the volumes directory, the same way
+    # volume_roots() is. Unfenced, a folder whose unit declares a wider `%h`
+    # mount — zerobyte reads ~/.config/containers/volumes to back it up — put
+    # every service's data one `--purge` away, behind a confirmation that only
+    # asks for this app's name.
+    with tempfile.TemporaryDirectory() as d:
+        pasta = Path(d) / "apps" / "cercado"
+        pasta.mkdir(parents=True)
+        (pasta / "cercado.container").write_text(
+            "[Container]\nImage=x:1\n"
+            "Volume=%h/.config/containers/volumes/cercado/data:/data:Z\n"
+            "Volume=%h/.config/containers/volumes:/sources:ro\n"
+            "Volume=%h/.config/rclone:/rclone:ro\n")
+        (pasta / "cercado-worker.container").write_text(
+            "[Container]\nImage=x:1\n"
+            "Volume=%h/.config/containers/volumes/cercado/w:/w:Z\n")
+        antes = APPS
+        globals()["APPS"] = Path(d) / "apps"
+        try:
+            own = Service("cercado", only="cercado").exclusive_volumes()
+        finally:
+            globals()["APPS"] = antes
+        assert all("/volumes/cercado" in p for p in own), own
+        assert not any(p.endswith("/containers/volumes") or p.endswith("/rclone")
+                       for p in own), f"a purge must not reach outside: {own}"
 
     # [choices]: the question, the options, and set_env_value replacing a
     # commented-out line rather than appending a second one
