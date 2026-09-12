@@ -14,7 +14,11 @@ A instalação pergunta qual canal acompanhar — stable, beta, ou um dos dois d
 
 É a única VM daqui com senha no próprio visualizador: a conta é `admin` e a senha é um segredo gerado, mostrado pela instalação.
 
-Ela alcança a placa de vídeo do host pelo `--device-cgroup-rule=c 226:* rwm`, que é a classe de dispositivos DRI. Sem essa regra ela ainda dá boot, só que sem aceleração.
+Ela alcança a placa de vídeo do host pelo `AddDevice=/dev/dri`, que é o que o
+compose do próprio upstream pede. Uma regra de cgroup de dispositivo seria a
+outra forma de escrever isso, e não funciona aqui: o Podman recusa uma de
+saída em modo rootless. Sem o dispositivo ela ainda dá boot, só que sem
+aceleração.
 
 Todas precisam do `/dev/kvm` no host — sem virtualização por hardware a VM
 não sobe ou fica lentíssima. O `RAM_SIZE` é reservado por toda a vida da VM,

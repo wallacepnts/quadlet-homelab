@@ -13,13 +13,8 @@ PublishPort=5901:5900/udp
 
 AddDevice=/dev/kvm
 AddDevice=/dev/net/tun
+AddDevice=/dev/dri
 AddCapability=NET_ADMIN
-
-# GPU: upstream requires both the bind mount and the cgroup rule for 226
-# (the DRM major). No :Z — relabelling the host's device nodes is not something
-# a container should do.
-Volume=/dev/dri:/dev/dri:rw
-PodmanArgs=--device-cgroup-rule=c 226:* rwm
 
 Volume=%h/.config/containers/volumes/vm/chromeos/storage:/storage:Z
 EnvironmentFile=%h/.config/containers/env/vm-chromeos.env

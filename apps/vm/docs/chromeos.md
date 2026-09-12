@@ -14,7 +14,10 @@ The install asks which channel to track — stable, beta, or one of the two long
 
 This is the only VM here with a password on the viewer itself: the account is `admin` and the password is a generated secret, printed by the install.
 
-It reaches the host's graphics through `--device-cgroup-rule=c 226:* rwm`, which is the DRI device class. Without that rule it still boots, only without acceleration.
+It reaches the host's graphics through `AddDevice=/dev/dri`, which is what
+upstream's own compose asks for. A device cgroup rule would be the other way
+to spell it, and it cannot work here: Podman refuses one outright in rootless
+mode. Without the device it still boots, only without acceleration.
 
 All of these need `/dev/kvm` on the host — without hardware virtualisation
 the VM either refuses to start or crawls. `RAM_SIZE` is reserved for the whole
