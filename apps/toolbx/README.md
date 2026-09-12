@@ -28,7 +28,7 @@ Data in `~/.config/containers/volumes/toolbx/<distro>`, mounted at `/work`. No
 
 | | Shell | What it is | Version |
 | --- | --- | --- | --- |
-| <img src="https://cdn.simpleicons.org/fedora" width="28" height="28" alt=""> | [Fedora](./docs/fedora.md) | A Fedora shell with `dnf`, on Fedora's own image | `45` |
+| <img src="https://cdn.simpleicons.org/fedora" width="28" height="28" alt=""> | [Fedora](./docs/fedora.md) | A Fedora shell with `dnf`, on Fedora's own image | `44` |
 | <img src="https://cdn.simpleicons.org/ubuntu" width="28" height="28" alt=""> | [Ubuntu](./docs/ubuntu.md) | An Ubuntu shell with `apt`, for anything that ships a `.deb` | `26.04` |
 | <img src="https://cdn.simpleicons.org/archlinux" width="28" height="28" alt=""> | [Arch Linux](./docs/arch.md) | An Arch shell with `pacman` and the AUR. Pinned by digest, not by tag | `digest` |
 | <img src="https://cdn.simpleicons.org/redhat" width="28" height="28" alt=""> | [RHEL](./docs/rhel.md) | A Red Hat Enterprise Linux shell, on the subscription-free UBI image | `10.2` |

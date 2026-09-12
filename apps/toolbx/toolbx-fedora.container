@@ -5,7 +5,7 @@ Description=Toolbx Fedora 45 (interactive shell)
 NoNewPrivileges=true
 PidsLimit=1024
 
-Image=registry.fedoraproject.org/fedora-toolbox:45
+Image=registry.fedoraproject.org/fedora-toolbox:44
 ContainerName=toolbx-fedora
 Exec=sleep infinity
 UserNS=keep-id

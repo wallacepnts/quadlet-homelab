@@ -8,9 +8,14 @@
 
 Um shell Fedora com `dnf`, na imagem que a própria Fedora publica para isso.
 
-Unit `toolbx-fedora`, image `registry.fedoraproject.org/fedora-toolbox:45`.
+Unit `toolbx-fedora`, image `registry.fedoraproject.org/fedora-toolbox:44`.
 
-A imagem vem do registry da própria Fedora, não do Docker Hub, e a tag é o número da versão.
+A imagem vem do registry da própria Fedora, não do Docker Hub, e a tag é o número
+da versão — da versão *estável*, que é pra onde o `latest` aponta. A Fedora
+publica as duas seguintes ao mesmo tempo, e as duas se identificam por dentro: a
+`45` é `45 (Toolbx Container Image Prerelease)` e a `46` carrega
+`REDHAT_SUPPORT_PRODUCT_VERSION=rawhide`. O maior número do registry nunca é o
+que se pega.
 
 É a natural em host baseado em rpm: os pacotes batem com o que o host teria instalado.
 
@@ -52,7 +57,7 @@ sem porta: esta não é um serviço.
 qh toolbx-fedora --update --apply
 ```
 
-Pinado em `45`. Nada atualiza sozinho — a versão nova entra quando você
+Pinado em `44`. Nada atualiza sozinho — a versão nova entra quando você
 roda o comando acima.
 
 ## Backup

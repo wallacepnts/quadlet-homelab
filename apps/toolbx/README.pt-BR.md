@@ -28,7 +28,7 @@ Sem `.env`, sem segredos e sem portas: são shells, não serviços.
 
 | | Shell | O que é | Versão |
 | --- | --- | --- | --- |
-| <img src="https://cdn.simpleicons.org/fedora" width="28" height="28" alt=""> | [Fedora](./docs/pt-BR/fedora.md) | Um shell Fedora com `dnf`, na imagem da própria Fedora | `45` |
+| <img src="https://cdn.simpleicons.org/fedora" width="28" height="28" alt=""> | [Fedora](./docs/pt-BR/fedora.md) | Um shell Fedora com `dnf`, na imagem da própria Fedora | `44` |
 | <img src="https://cdn.simpleicons.org/ubuntu" width="28" height="28" alt=""> | [Ubuntu](./docs/pt-BR/ubuntu.md) | Um shell Ubuntu com `apt`, para o que só publica `.deb` | `26.04` |
 | <img src="https://cdn.simpleicons.org/archlinux" width="28" height="28" alt=""> | [Arch Linux](./docs/pt-BR/arch.md) | Um shell Arch com `pacman` e o AUR. Pinada por digest, não por tag | `digest` |
 | <img src="https://cdn.simpleicons.org/redhat" width="28" height="28" alt=""> | [RHEL](./docs/pt-BR/rhel.md) | Um shell do RHEL, na imagem UBI que não exige assinatura | `10.2` |
