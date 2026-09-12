@@ -89,7 +89,15 @@ pulled. To go through anyway, use `--reinstall`.
   mount Podman's socket need more than a label — `:z` alone leaves them healthy
   and blind, seeing no containers at all, so they declare
   `SecurityLabelType=container_runtime_t` (rule 16 of the conventions).
-- `/dev/kvm`, only for the six VM services.
+- `/dev/kvm` for the six VM services, and `/dev/net/tun` for those plus
+  gluetun. Both are `0666` on a usual install, so rootless reaches them with no
+  group change.
+- `/dev/dri`, only for `vm-chromeos`, which passes the host GPU through. This
+  one is `0660 root:render`, and it works without joining that group only
+  because logind puts an ACL on it for the **active session**. A headless host
+  running on `enable-linger` with no seat may not have that ACL, and the
+  symptom is a container that starts and renders in software. Check it with
+  `getfacl /dev/dri/renderD128` before blaming the image.
 
 ```bash
 podman --version

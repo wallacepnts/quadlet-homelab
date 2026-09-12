@@ -89,7 +89,15 @@ use `--reinstall`.
   montam o socket do Podman precisam de mais que rótulo — só `:z` as deixa
   saudáveis e cegas, sem enxergar container nenhum, então elas declaram
   `SecurityLabelType=container_runtime_t` (regra 16 das convenções).
-- `/dev/kvm`, só para os seis serviços de VM.
+- `/dev/kvm` para os seis serviços de VM, e `/dev/net/tun` para esses mais o
+  gluetun. Os dois são `0666` numa instalação usual, então o rootless os
+  alcança sem mudar grupo nenhum.
+- `/dev/dri`, só para o `vm-chromeos`, que repassa a GPU do host. Esse é
+  `0660 root:render`, e funciona sem você entrar nesse grupo apenas porque o
+  logind põe uma ACL nele para a **sessão ativa**. Um host headless rodando
+  com `enable-linger` e sem seat pode não ter essa ACL, e o sintoma é um
+  container que sobe e renderiza por software. Confira com
+  `getfacl /dev/dri/renderD128` antes de culpar a imagem.
 
 ```bash
 podman --version

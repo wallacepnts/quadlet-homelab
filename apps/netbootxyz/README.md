@@ -13,7 +13,9 @@ qh netbootxyz            # shows the plan
 qh netbootxyz --apply
 ```
 
-Open `http://<host-ip>:69` or `https://netbootxyz.<your-tailnet>.ts.net`.
+Open `http://<host-ip>:8088` or `https://netbootxyz.<your-tailnet>.ts.net`. Port
+69 is published too, but it is TFTP over UDP — what the machines booting from it
+speak, not a page a browser can open.
 
 <details>
 <summary><b>Manual install</b></summary>

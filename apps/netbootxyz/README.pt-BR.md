@@ -13,7 +13,9 @@ qh netbootxyz            # mostra o plano
 qh netbootxyz --apply
 ```
 
-Abrir `http://<ip-do-host>:69` ou `https://netbootxyz.<your-tailnet>.ts.net`.
+Abrir `http://<ip-do-host>:8088` ou `https://netbootxyz.<your-tailnet>.ts.net`. A
+69 também é publicada, mas é TFTP sobre UDP — o que as máquinas que dão boot por
+ele falam, não uma página que o navegador abra.
 
 <details>
 <summary><b>Instalação manual</b></summary>
