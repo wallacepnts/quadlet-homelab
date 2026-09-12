@@ -508,6 +508,12 @@ def check_counts(folders):
             (rf"{len(folders)} serviços self-hosted", "the service count"),
             (rf"{len(notify)} das {len(conts)} units usam", "the Notify=healthy count"),
         ],
+        # The same claim, in the comment explaining why bootstrap refuses
+        # podman 4.x. It was not checked and it was the one that drifted:
+        # it still said 80 of 88 when the repository had reached 102 of 110.
+        "bootstrap.sh": [
+            (rf"{len(notify)} of the {len(conts)} units use it", "the Notify=healthy count"),
+        ],
     }
     for arquivo, checagens in esperado.items():
         texto = (ROOT / arquivo).read_text()
