@@ -2,7 +2,12 @@
 Description=Mosquitto (OwnTracks' MQTT broker)
 
 [Container]
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+User=1883
 PidsLimit=256
+NoNewPrivileges=true
 Image=docker.io/library/eclipse-mosquitto:2.1.2-alpine
 ContainerName=mosquitto
 Network=owntracks-net.network

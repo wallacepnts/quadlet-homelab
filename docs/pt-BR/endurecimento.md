@@ -91,7 +91,7 @@ motivo — e se mantém na mão.
 | `openwebui-ollama` | no | **none** |
 | `owncloud` | no | 6 (`chown`, `dac_override`, `fowner`, `net_bind_service`, `setgid`, `setuid`) |
 | `owntracks-frontend` | no | podman default |
-| `owntracks-mosquitto` | no | podman default |
+| `owntracks-mosquitto` | yes | **none** + `User=1883` |
 | `owntracks-recorder` | no | podman default |
 | `paperless-ngx` | yes | **none** |
 | `paperless-ngx-broker` | yes | **none** + `User=999` |
@@ -166,7 +166,7 @@ mensagem prova por que ele não vai além.
 | `filebrowser` | sem `UserNS=keep-id` | `could not open database: open /home/filebrowser/data/database.db: permission denied` |
 | `filebrowser` | porta interna 80 | `Server error: listen tcp 0.0.0.0:80: bind: permission denied` sob keep-id |
 | `filebrowser` | `ReadOnly=true` com o `cacheDir` padrão | `cacheDir failed to create cache directory: mkdir tmp: read-only file system` — resolvido apontando o `cacheDir` pro volume |
-| `vaultzap` | `Secret=` com `type=mount` | `make mountpoint: read-only file system` — `ReadOnly=true` impede; usar `type=env` |
+| `vaultzap` | `Secret=` com `type=mount` | `make mountpoint: read-only file system` — usar `type=env`. Não é regra geral: no mesmo Podman 6.0.2, o `owntracks-mosquitto` monta um secret `type=mount` sob `ReadOnly=true`, com e sem `UserNS=keep-id` |
 | `proxmox` | sem `--privileged` | `ERROR: Please start the container with the --privileged flag!` |
 | `toolbx` | instalar pacote com `UserNS=keep-id` | negado; usar `podman exec --user root` |
 | `postfix` | `ReadOnly=true` | sai com 1 — o `run.sh` reescreve `/etc/postfix/main.cf` a cada start |

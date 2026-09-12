@@ -31,6 +31,7 @@ done
 mkdir -p ~/.config/containers/volumes/owntracks/{mosquitto/config,mosquitto/data,store,config}
 wget -O ~/.config/containers/volumes/owntracks/mosquitto/config/mosquitto.conf \
   https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/owntracks/mosquitto.conf
+podman unshare chown -R 1883:1883 ~/.config/containers/volumes/owntracks/mosquitto   # the broker runs as User=1883
 wget -O ~/.config/containers/volumes/owntracks/frontend-config.js \
   https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/owntracks/frontend-config.js
 

@@ -28,7 +28,7 @@ wget -P ~/.config/containers/systemd/zigbee2mqtt/ \
 
 # 2. Data directories — a bind mount requires them to exist before the start
 mkdir -p ~/.config/containers/volumes/zigbee2mqtt/{data,mosquitto/config,mosquitto/data}
-podman unshare chown -R 1883:1883 ~/.config/containers/volumes/zigbee2mqtt/mosquitto   # o broker roda com User=1883
+podman unshare chown -R 1883:1883 ~/.config/containers/volumes/zigbee2mqtt/mosquitto   # the broker runs as User=1883
 
 # 3. Initial configs
 wget -O ~/.config/containers/volumes/zigbee2mqtt/data/configuration.yaml \
