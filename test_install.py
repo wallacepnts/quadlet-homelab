@@ -204,6 +204,51 @@ def scenario_backup_restore(home, out):
     return tgz
 
 
+def scenario_access(tmp):
+    """The mode a unit was installed with has to survive reading it back.
+
+    It was recovered by grepping for the comments the render leaves behind,
+    which only exist on a unit carrying tsdproxy labels or a proxied port — so
+    19 containers answered "both" however they were installed, `qh` reported 14
+    services as permanently out of compliance, and `--href-local` was not
+    representable at all. `unit_bytes` is pure, so the honest way to read the
+    settings back is to render the combinations and see which one matches.
+    """
+    fonte = Path(ROOT, "apps", "memos", "memos.container")
+    alvo = Path(tmp, "memos.container")
+    for modo in I.ACCESS_MODES:
+        alvo.write_bytes(I.unit_bytes(fonte, modo, False))
+        lido = I.installed_access(alvo, fonte)
+        check(lido[0] == modo, f"a unit written as --access {modo} reads back as {modo}")
+    alvo.write_bytes(I.unit_bytes(fonte, "both", True))
+    check(I.installed_access(alvo, fonte)[1] is True,
+          "--href-local is representable, not invisible")
+
+    # A unit the mode does not change says so, instead of guessing "both".
+    sidecar = Path(ROOT, "apps", "immich", "immich-postgres.container")
+    alvo.write_bytes(I.unit_bytes(sidecar, "local", False))
+    check(I.installed_access(alvo, sidecar) == (None, None),
+          "a unit with no tsdproxy label admits the mode cannot be told")
+
+    # And the two paths that were silently reverting it.
+    home = str(Path(tmp, "acc"))
+    run(APP, "--apply", "--access", "local", "--prefix", home)
+    unidade = path(home, "systemd", f"{APP}.container")
+    antes = unidade.read_bytes()
+    run(APP, "--reinstall", "--apply", "--prefix", home)
+    check(unidade.read_bytes() == antes,
+          "--reinstall keeps the mode the host already had")
+
+    casa = str(Path(tmp, "acc2"))
+    run(APP, "--apply", "--access", "both", "--href-local", "--prefix", casa)
+    u2 = path(casa, "systemd", f"{APP}.container")
+    href = [l for l in u2.read_text().splitlines() if "homepage.href" in l]
+    os.utime(u2, (0, 0))
+    run(APP, "--update", "--apply", "--prefix", casa)
+    check([l for l in u2.read_text().splitlines() if "homepage.href" in l] == href,
+          "and --update does not revert --href-local")
+
+
 def scenario_answers(tmp):
     """Six answers the tool gave wrong, each on its own.
 
@@ -474,6 +519,7 @@ def main():
         print("failure:");            scenario_failure(home, tmp)
         print("remove safety:");      scenario_remove_safety(tmp)
         print("archive safety:");     scenario_archive_safety(tmp)
+        print("access mode:");        scenario_access(tmp)
         print("answers:");            scenario_answers(tmp)
         print("update gaps:");        scenario_update_gaps(tmp)
         print("sandbox:");            scenario_sandbox(tmp)

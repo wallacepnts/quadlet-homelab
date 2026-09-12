@@ -387,6 +387,36 @@ def show_tailscale():
     say(loc("  Without a tailnet, install any service with --local."))
 
 
+def effective_access(s, cli=None, cli_href=False, unit=None):
+    """(mode, href_local) for this service: stated, then saved, then installed.
+
+    One definition instead of five. The chain was written out at every caller
+    and three of them disagreed: --reinstall left `installed_access` out, so a
+    service put on the LAN with --local was silently rewritten onto the tailnet
+    and then had its LAN address printed — the address the same run had just
+    commented out. --verify left it out too, and curled a tailnet name for a
+    node that was never registered.
+    """
+    if cli:
+        return cli, cli_href or cli == "local"
+    salvo = saved_access(s.home)
+    if salvo:
+        return salvo, cli_href or salvo == "local"
+    # The main unit, not whichever sorts first: a stack's first unit
+    # alphabetically is a label-less sidecar, and those answer None to
+    # everything.
+    alvo = unit or s.main_unit()
+    if alvo is not None:
+        lido = installed_access(s.unit_dest / alvo.name, alvo)
+        if lido:
+            modo, href = lido
+            if modo:
+                return modo, (href if href is not None else modo == "local")
+            if href is not None:
+                return "tailnet", href
+    return "tailnet", cli_href
+
+
 def access_drift(regra, prefix=None):
     """Installed services whose unit does not match the rule in force.
 
@@ -398,7 +428,12 @@ def access_drift(regra, prefix=None):
     for d in sorted(x.name for x in APPS.iterdir() if x.is_dir()):
         s = Service(d, prefix)
         for u in s.installed():
-            if installed_access(u) != regra:
+            lido = installed_access(u)
+            # A unit the mode does not change answers None, and None is not a
+            # disagreement. Counting it as one is what reported 14 of the 74
+            # services as out of compliance for good, offering an update that
+            # rewrote bytes already identical.
+            if lido and lido[0] and lido[0] != regra:
                 fora.append(u.stem)
                 break
     return fora
@@ -1070,22 +1105,43 @@ def save_access(mode, home=None):
     return f
 
 
-def installed_access(path):
-    """Which --access the unit on the host was installed with.
+def installed_access(path, source=None):
+    """(mode, href_local) the unit on the host was installed with, or None.
 
-    An update has to keep the mode it found, or a service installed with
-    --local silently rejoins the tailnet on the next version bump — and one
-    installed for the tailnet gets its port reopened on the LAN. The unit says
-    which it is: install commented the tsdproxy labels, or the proxied port.
+    `unit_bytes` is a pure function of (source, mode, href_local), so the way
+    to recover the settings is to render every combination and see which one
+    produced these bytes — not to grep for the comments the render happens to
+    leave behind. Those comments only appear on a unit that carries tsdproxy
+    labels or a proxied port: 19 containers have neither and are byte-identical
+    in all three modes, so grepping answered "both" for 14 of the 74 services
+    however they were installed. Bare `qh` reported them as out of compliance
+    for good, and offered an update that rewrote identical bytes. `--href-local`
+    leaves no comment at all, so it was not representable either.
+
+    Each half is None on its own when the renders disagree about it. A unit
+    with no tsdproxy label and no proxied port — immich's Postgres, every
+    toolbx — is byte-identical in all six combinations, so both halves come
+    back None: the mode makes no difference to that file, and saying "both"
+    was an answer the file never gave.
     """
     if not path.exists():
         return None
-    text = path.read_text()
-    if "# disabled by --access local:" in text:
-        return "local"
-    if "# reached over tsdproxy-net" in text:
-        return "tailnet"
-    return "both"
+    if source is None:
+        # Callers that have only the installed path: find the repository file
+        # it came from, by name, which rule 1 makes unambiguous.
+        hits = sorted(APPS.glob(f"*/{path.name}"))
+        if not hits:
+            return None
+        source = hits[0]
+    alvo = path.read_bytes()
+    casam = [(modo, href) for modo in ACCESS_MODES for href in (False, True)
+             if unit_bytes(source, modo, href) == alvo]
+    if not casam:
+        return None                      # edited by hand, or another version
+    modos = {m for m, _ in casam}
+    hrefs = {h for _, h in casam}
+    return (modos.pop() if len(modos) == 1 else None,
+            hrefs.pop() if len(hrefs) == 1 else None)
 
 
 # Not a warning: an update that finds everything in place did its job. `run_one`
@@ -1233,8 +1289,10 @@ def plan_update(s, access="tailnet", href_local=False):
         # installed.
         return [], ["does not look installed — use the normal install"]
 
-    modos = {u.name: access or saved_access(s.home)
-             or installed_access(dest / u.name) or "tailnet" for u in s.units}
+    modos = {u.name: effective_access(s, access, href_local, u)[0] for u in s.units}
+    # href_local follows the same chain: without it an update reverted a link
+    # deliberately pointed at the LAN, every time.
+    href_local = effective_access(s, access, href_local)[1]
     # The version-bump path: a changed tag means a new image, which is exactly
     # the download worth watching. Read before the skip, since a moving tag is
     # reason enough to go on even with every file already in place.
@@ -3245,8 +3303,13 @@ def show_status(apps=None, home=None):
             fonte = APPS / d / u.name
             deriva = ""
             if fonte.exists():
-                modo = installed_access(u) or "tailnet"
-                deriva = "changed" if unit_bytes(fonte, modo, modo == "local") != u.read_bytes() else ""
+                # Rendered with what the file itself says it was installed
+                # with: hard-coding href_local=(modo=="local") reported every
+                # service installed with --href-local as changed, forever.
+                lido = installed_access(u, fonte)
+                modo = (lido[0] if lido and lido[0] else "tailnet")
+                href = (lido[1] if lido and lido[1] is not None else modo == "local")
+                deriva = "changed" if unit_bytes(fonte, modo, href) != u.read_bytes() else ""
             # Louder than "changed", and reported even when the file the tool
             # looks at is in fact current: what runs may be the other copy.
             if any(p.name == u.name for p in s.strays()):
@@ -3435,7 +3498,7 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
         # Read-only, so it does not wait for --apply: the whole point is to be
         # cheap enough to run whenever you are unsure.
         return 0 if show_verify(s, find_tailnet(),
-                                access or saved_access(s.home) or "tailnet") else 1
+                                effective_access(s, access, href_local)[0]) else 1
 
     # A prerequisite that is not on the host is not a warning. The units would
     # copy, Quadlet would generate nothing from them, and the failure would
@@ -3488,9 +3551,7 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
     # Same precedence plan_update uses, so the address printed at the end is the
     # one the unit actually got: what you typed, then the saved rule, then what
     # the host already had.
-    primeira = s.installed()
-    modo_efetivo = (access or saved_access(s.home)
-                    or (installed_access(primeira[0]) if primeira else None) or "tailnet")
+    modo_efetivo, href_local = effective_access(s, access, href_local)
     for problem in preflight(s, tailnet, modo_efetivo == "local"):
         say(f"  !  {problem}")
     if a.update:
@@ -3509,7 +3570,7 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
             ap.error(loc("--ask-secrets needs a terminal and --apply"))
         steps, warnings = plan_install(s, tailnet, force=a.reinstall,
                                        interactive=interactive,
-                                       access=access or saved_access(s.home) or "tailnet",
+                                       access=modo_efetivo,
                                        href_local=href_local,
                                        ask_secrets=a.ask_secrets)
 
