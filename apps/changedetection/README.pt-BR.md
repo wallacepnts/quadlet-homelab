@@ -85,7 +85,7 @@ gigabyte de Chrome.
 qh changedetection --update --apply
 ```
 
-Fixado em `0.55.8`. Nada atualiza sozinho.
+Fixado em `0.60.4`. Nada atualiza sozinho.
 
 ## Backup
 

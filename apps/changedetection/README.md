@@ -85,7 +85,7 @@ of Chrome.
 qh changedetection --update --apply
 ```
 
-Pinned to `0.55.8`. Nothing updates on its own.
+Pinned to `0.60.4`. Nothing updates on its own.
 
 ## Backup
 

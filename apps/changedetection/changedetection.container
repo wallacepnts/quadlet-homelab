@@ -9,7 +9,7 @@ NoNewPrivileges=true
 User=1000
 PidsLimit=256
 
-Image=ghcr.io/dgtlmoon/changedetection.io:0.55.8
+Image=ghcr.io/dgtlmoon/changedetection.io:0.60.4
 ContainerName=changedetection
 Network=tsdproxy-net.network
 PublishPort=8109:5000
