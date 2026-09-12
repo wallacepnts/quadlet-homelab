@@ -6,7 +6,7 @@ ReadOnly=true
 Tmpfs=/tmp:size=64M
 DropCapability=ALL
 PidsLimit=256
-Image=ghcr.io/immich-app/immich-machine-learning:v3.1.0
+Image=ghcr.io/immich-app/immich-machine-learning:v3.2.0
 ContainerName=immich-machine-learning
 Network=immich-net.network
 NetworkAlias=immich-machine-learning

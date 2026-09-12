@@ -76,7 +76,7 @@ Units da stack:
 qh immich --update --apply
 ```
 
-Fixado em `8e8d64b405ce18f41b8e5ee20aa4687a8ed0022d1298f2ce31cdcf3a76e09411`, `bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23`, `v3.1.0`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `70739f85ad2ee01a726a965584a0f94895f01b0c60b3cc8b0aeef11eaa6888cf`, `bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23`, `v3.2.0`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup
