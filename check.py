@@ -489,6 +489,48 @@ def check_pinned(folders):
                     error("pinned", f"apps/{folder.name}/{readme.name}:{n}: "
                                     f"the README says {m.group(1)}, "
                                     f"the unit says {esperado}")
+        check_per_unit(folder)
+
+
+# A stack big enough to document each unit apart says the version twice more:
+# once in `docs/<unit>.md` and once in the Version column that links to it.
+# media-stack is the only one today, and it drifted in both at once.
+LINHA_UNIT = re.compile(r"^\| <img.*\]\(\./docs/(?:pt-BR/)?([a-z0-9._-]+)\.md\)"
+                        r".*\| `([^`]+)` \|$")
+
+
+def check_per_unit(folder):
+    """The per-unit page and Version column of a stack, against each unit."""
+    tags = {}
+    for unit in sorted(folder.glob("*.container")):
+        for key, value in directives(unit.read_text()):
+            if key == "Image":
+                tags[unit.stem.replace(f"{folder.name}-", "")] = (
+                    value.partition("@sha256:")[2] or value.rpartition(":")[2])
+    docs = sorted(folder.glob("docs/*.md")) + sorted(folder.glob("docs/*/*.md"))
+    for doc in docs:
+        esperado = tags.get(doc.stem)
+        if not esperado:
+            continue  # a page that is not named after a unit documents something else
+        for n, line in enumerate(doc.read_text().splitlines(), 1):
+            m = FIXADO.match(line)
+            if m and m.group(1) != f"`{esperado}`":
+                error("pinned", f"{doc.relative_to(ROOT)}:{n}: the README says "
+                                f"{m.group(1)}, the unit says `{esperado}`")
+    for readme in sorted(folder.glob("README*.md")):
+        for n, line in enumerate(readme.read_text().splitlines(), 1):
+            m = LINHA_UNIT.match(line)
+            if not m:
+                continue
+            esperado = tags.get(m.group(1))
+            if esperado is None or esperado == m.group(2):
+                continue
+            if m.group(2) == "digest" and re.fullmatch(r"[0-9a-f]{64}", esperado):
+                # toolbx's Arch row: the image is pinned by digest, and sixty-four
+                # hex characters in a table cell say less than the word does.
+                continue
+            error("pinned", f"apps/{folder.name}/{readme.name}:{n}: the README "
+                            f"says `{m.group(2)}`, the unit says `{esperado}`")
 
 
 # --------------------------------------------------------------------------
@@ -527,6 +569,13 @@ def selftest():
     assert FIXADO.match("Pinado em `0.6.0`. As duas imagens").group(1) == "`0.6.0`"
     assert FIXADO.match("Pinned to the tag above") is None, "a sentence with no tag is not the line"
     assert FIXADO.match("> Pinned to `v1`") is None, "the line is never quoted or indented"
+
+    # the Version column of a stack's per-unit table
+    linha = ('| <img src="https://x/jellyfin.svg" width="28" height="28" alt=""> | '
+             '[Jellyfin](./docs/jellyfin.md) | Plays the library | `12.0` |')
+    assert LINHA_UNIT.match(linha).groups() == ("jellyfin", "12.0")
+    assert LINHA_UNIT.match(linha.replace("./docs/", "./docs/pt-BR/")).group(1) == "jellyfin"
+    assert LINHA_UNIT.match(linha.replace(" | `12.0` |", " |")) is None, "no version, nothing to check"
 
     # o guarda de tailnet: pega nome real, aceita os placeholders
     lab = lambda t: re.findall(r"([A-Za-z0-9_${}<>-]*)\.ts\.net", t)

@@ -37,7 +37,7 @@ Dados em `~/.config/containers/volumes/media-stack/downtify/data`.
 qh media-stack-downtify --update --apply
 ```
 
-Pinado em `2.9.1`. Nada atualiza sozinho — a versão nova entra quando você roda
+Pinado em `2.11.0`. Nada atualiza sozinho — a versão nova entra quando você roda
 o comando acima.
 
 ## Backup

@@ -3,7 +3,7 @@ Description=Frigate (NVR with AI object detection)
 
 [Container]
 PidsLimit=256
-Image=ghcr.io/blakeblackshear/frigate:0.17.2
+Image=ghcr.io/blakeblackshear/frigate:0.18.0
 ContainerName=frigate
 Network=tsdproxy-net.network
 PublishPort=8971:8971

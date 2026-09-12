@@ -62,7 +62,7 @@ Data in `~/.config/containers/volumes/vm/macos/storage`.
 qh vm-macos --update --apply
 ```
 
-Pinned to `3.09`. Nothing updates on its own — a new version is applied when
+Pinned to `3.12`. Nothing updates on its own — a new version is applied when
 you run the command above.
 
 ## Backup

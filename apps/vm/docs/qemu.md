@@ -79,7 +79,7 @@ Data in `~/.config/containers/volumes/vm/qemu/storage`.
 qh vm-qemu --update --apply
 ```
 
-Pinned to `7.44`. Nothing updates on its own — a new version is applied when
+Pinned to `7.50`. Nothing updates on its own — a new version is applied when
 you run the command above.
 
 ## Backup

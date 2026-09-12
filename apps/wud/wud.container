@@ -10,7 +10,7 @@ DropCapability=ALL
 NoNewPrivileges=true
 PidsLimit=128
 
-Image=docker.io/getwud/wud:8.3.1
+Image=docker.io/getwud/wud:9.0.2
 ContainerName=wud
 Network=tsdproxy-net.network
 PublishPort=8085:3000
@@ -19,6 +19,8 @@ SecurityLabelType=container_runtime_t
 Volume=%t/podman/podman.sock:/var/run/docker.sock:ro,z
 Volume=%h/.config/containers/volumes/wud/store:/store:Z
 EnvironmentFile=%h/.config/containers/env/wud.env
+Environment=WUD_AUTH_ADMIN_USER=admin
+Secret=wud-admin-password,type=env,target=WUD_AUTH_ADMIN_PASSWORD
 
 HealthCmd=CMD-SHELL wget -q --spider http://127.0.0.1:3000/ || exit 1
 HealthInterval=30s

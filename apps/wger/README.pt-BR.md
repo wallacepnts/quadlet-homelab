@@ -63,7 +63,7 @@ install.ini
 qh wger --update --apply
 ```
 
-Fixado em `2.6.0`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `2.7`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

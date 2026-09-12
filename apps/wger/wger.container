@@ -8,7 +8,7 @@ DropCapability=ALL
 NoNewPrivileges=true
 PidsLimit=256
 
-Image=docker.io/wger/server:2.6.0
+Image=docker.io/wger/server:2.7
 ContainerName=wger
 Network=tsdproxy-net.network
 PublishPort=8102:8000

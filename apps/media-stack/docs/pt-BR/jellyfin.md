@@ -37,7 +37,7 @@ Dados em `~/.config/containers/volumes/media-stack/jellyfin/config`, `~/.config/
 qh media-stack-jellyfin --update --apply
 ```
 
-Pinado em `10.11.11`. Nada atualiza sozinho — a versão nova entra quando você roda
+Pinado em `12.0`. Nada atualiza sozinho — a versão nova entra quando você roda
 o comando acima.
 
 ## Backup

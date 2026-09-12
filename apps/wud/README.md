@@ -34,13 +34,21 @@ mkdir -p ~/.config/containers/env
 wget -O ~/.config/containers/env/wud.env \
   https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/wud/.env.example
 
-# 4. The Podman socket
+# 4. The admin password. WUD 9 dropped anonymous access and exits at
+#    startup when no administrator exists.
+openssl rand -base64 48 | tr -dc 'A-Za-z0-9' | head -c 20 \
+  | podman secret create wud-admin-password -
+
+# 5. The Podman socket
 systemctl --user enable --now podman.socket
 
-# 5. Start it
+# 6. Start it
 systemctl --user daemon-reload
 systemctl --user start wud
 ```
+
+Log in as `admin`. Read the password back with `podman secret inspect
+wud-admin-password --showsecret --format '{{.SecretData}}'`.
 
 </details>
 
@@ -49,6 +57,7 @@ systemctl --user start wud
 ```
 wud.container
 .env.example
+install.ini
 ```
 
 ## Update
@@ -57,7 +66,7 @@ wud.container
 qh wud --update --apply
 ```
 
-Pinned to `8.3.1`. Nothing updates on its own — a new version is applied
+Pinned to `9.0.2`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

@@ -79,7 +79,7 @@ frigate.container
 qh frigate --update --apply
 ```
 
-Fixado em `0.17.2`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `0.18.0`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

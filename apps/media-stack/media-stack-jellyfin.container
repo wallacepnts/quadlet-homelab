@@ -3,7 +3,7 @@ Description=Jellyfin (media server)
 
 [Container]
 PidsLimit=256
-Image=docker.io/jellyfin/jellyfin:10.11.11
+Image=docker.io/jellyfin/jellyfin:12.0
 ContainerName=jellyfin
 Network=tsdproxy-net.network
 PublishPort=8096:8096

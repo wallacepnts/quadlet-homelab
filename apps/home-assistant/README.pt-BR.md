@@ -53,7 +53,7 @@ install.ini
 qh home-assistant --update --apply
 ```
 
-Fixado em `2026.8.1`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `2026.9.2`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

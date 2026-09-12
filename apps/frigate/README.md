@@ -80,7 +80,7 @@ frigate.container
 qh frigate --update --apply
 ```
 
-Pinned to `0.17.2`. Nothing updates on its own — a new version is applied
+Pinned to `0.18.0`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

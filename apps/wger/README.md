@@ -63,7 +63,7 @@ install.ini
 qh wger --update --apply
 ```
 
-Pinned to `2.6.0`. Nothing updates on its own — a new version is applied
+Pinned to `2.7`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

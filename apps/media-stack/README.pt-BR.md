@@ -99,7 +99,7 @@ peça roda sozinha e serve sem as outras.
 
 | | App | Para que serve | Versão |
 | --- | --- | --- | --- |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/jellyfin.svg" width="28" height="28" alt=""> | [Jellyfin](./docs/pt-BR/jellyfin.md) | Reproduz a biblioteca — filmes, séries, música — no navegador, na TV ou no celular | `10.11.11` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/jellyfin.svg" width="28" height="28" alt=""> | [Jellyfin](./docs/pt-BR/jellyfin.md) | Reproduz a biblioteca — filmes, séries, música — no navegador, na TV ou no celular | `12.0` |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/navidrome.svg" width="28" height="28" alt=""> | [Navidrome](./docs/pt-BR/navidrome.md) | Toca a música que a corrente trouxe, por qualquer cliente Subsonic | `0.63.2` |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/seerr.svg" width="28" height="28" alt=""> | [Seerr](./docs/pt-BR/seerr.md) | Onde você pede um título. Repassa o pedido ao Sonarr ou ao Radarr | `v3.4.1` |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/prowlarr.svg" width="28" height="28" alt=""> | [Prowlarr](./docs/pt-BR/prowlarr.md) | Guarda a lista de indexadores e alimenta os outros *arr | `2.5.2` |
@@ -107,11 +107,11 @@ peça roda sozinha e serve sem as outras.
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/radarr.svg" width="28" height="28" alt=""> | [Radarr](./docs/pt-BR/radarr.md) | O mesmo, para filmes | `6.3.0` |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/lidarr.svg" width="28" height="28" alt=""> | [Lidarr](./docs/pt-BR/lidarr.md) | O mesmo, para músicas | `3.1.0` |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/bazarr.svg" width="28" height="28" alt=""> | [Bazarr](./docs/pt-BR/bazarr.md) | Busca legendas para o que o Sonarr e o Radarr trouxeram | `1.6.0` |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/sabnzbd.svg" width="28" height="28" alt=""> | [SABnzbd](./docs/pt-BR/sabnzbd.md) | Baixa da Usenet | `version-5.0.4` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/sabnzbd.svg" width="28" height="28" alt=""> | [SABnzbd](./docs/pt-BR/sabnzbd.md) | Baixa da Usenet | `version-5.1.3` |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/deluge.svg" width="28" height="28" alt=""> | [Deluge](./docs/pt-BR/deluge.md) | Baixa torrents | `2.2.0` |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/gluetun.svg" width="28" height="28" alt=""> | [Gluetun](./docs/pt-BR/gluetun.md) | **Opcional.** Túnel VPN para colocar o Deluge atrás | `latest` |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/dispatcharr.svg" width="28" height="28" alt=""> | [Dispatcharr](./docs/pt-BR/dispatcharr.md) | IPTV: canais, EPG e VOD, à parte da corrente acima | `latest` |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/downtify.png" width="28" height="28" alt=""> | [Downtify](./docs/pt-BR/downtify.md) | Baixa músicas do Spotify na raiz de mídia | `2.9.1` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/downtify.png" width="28" height="28" alt=""> | [Downtify](./docs/pt-BR/downtify.md) | Baixa músicas do Spotify na raiz de mídia | `2.11.0` |
 
 Cada página acima diz o que o app precisa no primeiro uso e como ele se liga
 aos outros. O Gluetun é a única peça opcional: o Deluge publica a porta dele e

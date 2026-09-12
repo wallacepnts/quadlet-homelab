@@ -37,7 +37,7 @@ Data in `~/.config/containers/volumes/media-stack/jellyfin/config`, `~/.config/c
 qh media-stack-jellyfin --update --apply
 ```
 
-Pinned to `10.11.11`. Nothing updates on its own — a new version is applied when
+Pinned to `12.0`. Nothing updates on its own — a new version is applied when
 you run the command above.
 
 ## Backup
