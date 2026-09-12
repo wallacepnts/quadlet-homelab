@@ -31,6 +31,65 @@ def ptbr_from(env):
 PTBR = ptbr_from(os.environ)
 
 
+# A tag that is not a version: the same name can point at different bytes
+# tomorrow. Shared, because install.py decides whether to re-pull from this and
+# updates.py decides whether a digest comparison is the only thing left — and
+# install.py's private copy was two entries shorter, so a `:release` image was
+# never re-pulled and `--update` kept running yesterday's build.
+FLOATING = frozenset({"latest", "main", "master", "stable", "edge", "develop",
+                      "nightly", "release"})
+
+
+def ref_parts(image):
+    """(tag, digest) of an image reference; either side can be empty.
+
+    An image can pin both, and then only the digest carries the version: the
+    valkey in immich's compose stayed at `9` from 3.1.0 to 3.2.0 while the
+    digest under it moved to a rebuild. Splitting on the last colon without
+    checking returns the 64-hex digest as if it were a tag.
+    """
+    caminho, _, digest = image.partition("@")
+    ultimo = caminho.rpartition("/")[2]
+    return (ultimo.rpartition(":")[2] if ":" in ultimo else ""), digest
+
+
+def directives(text):
+    """[(key, value)] for the directive lines, skipping comments and sections.
+
+    Quadlet has no line continuation, so a simple scan is enough. Here and not
+    in each tool because all three read the same files and have to agree about
+    what they say: the day this learns a repeated-key semantic or section
+    scoping, a copy left behind would make check.py certify a unit install.py
+    then installs differently.
+    """
+    out = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith(("#", ";", "[")):
+            continue
+        key, sep, value = line.partition("=")
+        if sep:
+            out.append((key.strip(), value.strip()))
+    return out
+
+
+def published_port(value):
+    """(host port, protocol) for a `PublishPort=`, or None when Podman picks it.
+
+    Forms: `port`, `host:cont`, `ip:host:cont`, each with an optional `/proto`.
+    A bare `port` is the container side with a random host side — nothing to
+    check. The host side stays a string: `${AGH_DNS_BIND}:53` is a real shape
+    in this repository, and the two copies of this disagreed about it — one
+    returned None, the other the variable name, so the same unit was a port
+    collision to check.py and no port at all to install.py's preflight.
+    """
+    value, _, proto = value.partition("/")
+    parts = value.split(":")
+    if len(parts) < 2:
+        return None
+    return parts[-2], proto or "tcp"
+
+
 def translator(phrases):
     """A loc(s) for this script's phrases, longest first.
 
@@ -150,6 +209,20 @@ def selftest():
         PTBR = antes
 
     # The environment, in the order the shell means it.
+    # The unit parser the three tools share.
+    assert directives("[Container]\n# c\nImage=x:1\n\nPublishPort=8080:80\n") == [
+        ("Image", "x:1"), ("PublishPort", "8080:80")]
+    assert directives("Label=homepage.name=Open WebUI") == [
+        ("Label", "homepage.name=Open WebUI")], "only the FIRST = splits"
+    assert directives("  Image=x:1") == [("Image", "x:1")], "indented still counts"
+
+    assert published_port("8099:8082") == ("8099", "tcp")
+    assert published_port("5056:5055/udp") == ("5056", "udp")
+    assert published_port("127.0.0.1:8082:80") == ("8082", "tcp")
+    assert published_port("69") is None, "a bare port is picked by Podman"
+    assert published_port("${VAR}:53/udp") == ("${VAR}", "udp"), \
+        "a variable host side is still a published port"
+
     assert ptbr_from({"QH_LANG": "pt_BR.UTF-8"}) is True
     assert ptbr_from({"QH_LANG": "en", "LANG": "pt_BR.UTF-8"}) is False, "QH_LANG wins"
     assert ptbr_from({"LC_ALL": "pt_BR.UTF-8", "LANG": "en_US"}) is True, "LC_ALL beats LANG"

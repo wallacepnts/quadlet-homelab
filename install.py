@@ -53,22 +53,13 @@ de diretório.
 
 Sem dependências: só a stdlib.
 """
-from qhui import translator, red, yellow, green, dim, bold
+from qhui import (translator, directives, published_port, ref_parts, FLOATING,
+                  red, yellow, green, dim, bold)
 
 ROOT = Path(__file__).resolve().parent
 APPS = ROOT / "apps"
 
 
-def directives(text):
-    out = []
-    for line in text.splitlines():
-        line = line.strip()
-        if not line or line.startswith(("#", ";", "[")):
-            continue
-        key, sep, value = line.partition("=")
-        if sep:
-            out.append((key.strip(), value.strip()))
-    return out
 
 
 # --------------------------------------------------------------------------
@@ -439,21 +430,6 @@ def access_drift(regra, prefix=None):
     return fora
 
 
-def published_port(value):
-    """The HOST port of a `PublishPort=`, or None when Podman picks it.
-
-    Forms: `port`, `host:cont`, `ip:host:cont`, each with an optional `/proto`.
-    A bare `port` is the container side with a random host side — nothing to
-    check. Mirrors check.py's parser, which cares about the same field.
-    """
-    value = value.partition("/")[0]
-    parts = value.split(":")
-    if len(parts) < 2:
-        return None
-    try:
-        return int(parts[-2])
-    except ValueError:
-        return None
 
 
 def preflight(s, tailnet, local=False):
@@ -477,8 +453,12 @@ def preflight(s, tailnet, local=False):
         floor = int(Path("/proc/sys/net/ipv4/ip_unprivileged_port_start").read_text())
     except (OSError, ValueError):
         pass
-    low = sorted({p for p in (published_port(v) for k, v in s.ds if k == "PublishPort")
-                  if p is not None and p < floor})
+    # published_port now returns (host, proto) and keeps the host side as a
+    # string, because `${AGH_DNS_BIND}:53` is a real shape here. Only a numeric
+    # one can be compared against the floor.
+    portas = (published_port(v) for k, v in s.ds if k == "PublishPort")
+    low = sorted({int(h) for h in (p[0] for p in portas if p)
+                  if h.isdigit() and int(h) < floor})
     if low:
         ports = ", ".join(str(p) for p in low)
         problems.append(f"host port {ports} is below this kernel's unprivileged floor "
@@ -2257,8 +2237,15 @@ def moving_tag(image):
     being current, so the pull gets skipped and `--update` silently keeps
     running yesterday's build.
     """
-    tag = image.rpartition(":")[2]
-    return "/" in tag or tag in ("latest", "main", "master", "edge", "nightly", "develop")
+    tag, digest = ref_parts(image)
+    # A digest pins the bytes: that one never moves, whatever the tag beside it
+    # says. rpartition(":") used to hand back the 64-hex digest as a tag.
+    if digest:
+        return False
+    # No tag at all is `:latest`. The old `"/" in tag` reached that answer by
+    # accident — for an untagged image rpartition returned the whole path, and
+    # the slash in it was what said "moving".
+    return not tag or tag in FLOATING
 
 
 def pull_steps(s):
@@ -2406,7 +2393,9 @@ def selftest():
         (dd / "w.container").write_text(
             "[Container]\nPublishPort=8080:8080\n"
             "Label=homepage.href=https://dash.${TAILNET}.ts.net\n")
-        fake = types.SimpleNamespace(dir=dd)
+        # .units, because addresses() now narrows to the picked unit like
+        # every other accessor instead of re-globbing the folder.
+        fake = types.SimpleNamespace(dir=dd, units=sorted(dd.glob("*.container")))
         r = {u: (l, t) for u, l, t in addresses(fake, "your-tailnet")}
         assert set(r) == {"x", "w"}, r
         assert r["x"][0].endswith(":8099"), r          # the web port, not OsmAnd's
@@ -2442,7 +2431,10 @@ def selftest():
         assert len(one.units) < len(full.units), (len(one.units), len(full.units))
         assert one.main_unit().stem == "media-stack-jellyfin", one.main_unit()
         assert one.unit_dest == full.unit_dest, "a picked unit stays in the stack's folder"
-        assert all("jellyfin" in p for p, _ in one.volumes()), one.volumes()
+        # The resolved ones are this unit's; the ${VAR} library is shared and
+        # now comes back classified (is_file None) instead of being dropped.
+        assert all("jellyfin" in p for p, t in one.volumes() if t is not None), one.volumes()
+        assert any(t is None for _, t in one.volumes()), "the ${VAR} volume is kept"
         assert all(t is not None for _, t in one.examples()), one.examples()
 
     # What --purge may delete is fenced to the volumes directory, the same way
@@ -2498,6 +2490,12 @@ def selftest():
     # no tag at all means :latest, and the registry port must not read as one
     assert moving_tag("ghcr.io/x/y")
     assert not moving_tag("registry:5000/x/y:2.1")
+    # One list now, shared with updates.py, which was two entries longer
+    assert moving_tag("ghcr.io/karakeep-app/karakeep-chrome:release")
+    assert moving_tag("docker.io/x/y:stable")
+    # a digest pins the bytes whatever the tag says
+    assert not moving_tag("quay.io/toolbx/arch-toolbox@sha256:" + "a" * 64)
+    assert not moving_tag("docker.io/valkey/valkey:9@sha256:" + "b" * 64)
 
     # what show_secrets() gates on: names when there are any, nothing otherwise
     assert Service("filebrowser").secrets() == ["filebrowser-admin-password",
@@ -2748,12 +2746,20 @@ def selftest():
     # an update keeps the mode it finds, unless --access says otherwise
     with tempfile.TemporaryDirectory() as d:
         src, alvo = APPS / "adguardhome" / "adguardhome.container", Path(d) / "a.container"
-        assert installed_access(alvo) is None                  # nada instalado
-        for modo in ("local", "tailnet"):
+        assert installed_access(alvo, src) is None             # nada instalado
+        # (mode, href_local), recovered by rendering the combinations and
+        # matching the bytes — not by grepping for the comments the render
+        # leaves, which 19 containers never receive.
+        for modo in ACCESS_MODES:
             write_unit(src, alvo, modo, False)
-            assert installed_access(alvo) == modo, modo
-        write_unit(src, alvo, "both", False)
-        assert installed_access(alvo) == "both"
+            assert installed_access(alvo, src)[0] == modo, modo
+        write_unit(src, alvo, "both", True)
+        assert installed_access(alvo, src)[1] is True, "--href-local is representable"
+        # A unit no mode changes says so, instead of guessing "both".
+        sidecar = APPS / "immich" / "immich-postgres.container"
+        write_unit(sidecar, alvo, "local", False)
+        assert installed_access(alvo, sidecar) == (None, None), \
+            "no tsdproxy label: the mode cannot be told from the bytes"
 
     # only the proxied port is hidden, and only on the tailnet: a unit that also
     # publishes DNS, MQTT or a torrent port keeps those in every mode
@@ -2838,11 +2844,14 @@ def selftest():
         assert waits_for_health(u) is False, "no Notify=healthy means no waiting to narrate"
 
     # published_port: the host side, and the forms that have no host side
-    assert published_port("445:445") == 445
-    assert published_port("8006:8006") == 8006
-    assert published_port("69:69/udp") == 69
-    assert published_port("127.0.0.1:8082:80") == 8082
+    # One parser now, shared with check.py: the two used to disagree about the
+    # return type AND about a variable host side.
+    assert published_port("445:445") == ("445", "tcp")
+    assert published_port("69:69/udp") == ("69", "udp")
+    assert published_port("127.0.0.1:8082:80") == ("8082", "tcp")
     assert published_port("69") is None, "a bare port is picked by Podman"
+    assert published_port("${AGH_DNS_BIND}:53/udp") == ("${AGH_DNS_BIND}", "udp"), \
+        "a variable host side is a port both tools have to see the same way"
 
     # find_tailnet: the placeholder is the value people actually paste, and
     # accepting it builds a homepage.href that looks right and resolves nowhere.

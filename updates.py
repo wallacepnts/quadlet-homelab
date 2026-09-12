@@ -33,7 +33,8 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import qhui
-from qhui import translator, red, yellow, green, dim
+from qhui import (translator, directives, ref_parts, FLOATING,
+                  red, yellow, green, dim)
 
 PT = {
     "also show what is up to date": "mostra também o que está em dia",
@@ -94,20 +95,8 @@ RAIZ = Path(__file__).resolve().parent
 APPS = RAIZ / "apps"
 
 # A tag that is not a version: there is nothing to compare between runs.
-FLOATING = {"latest", "main", "master", "stable", "edge", "develop", "nightly",
-            "release"}
 
 
-def directives(text):
-    out = []
-    for line in text.splitlines():
-        line = line.strip()
-        if not line or line.startswith(("#", ";", "[")):
-            continue
-        key, sep, value = line.partition("=")
-        if sep:
-            out.append((key.strip(), value.strip()))
-    return out
 
 
 def _repo_ref(image):
@@ -325,16 +314,6 @@ def image_name(image):
     return ultimo.rpartition(":")[0] if ":" in ultimo else ultimo
 
 
-def ref_parts(image):
-    """(tag, digest) of a reference; either side can be empty.
-
-    An image can pin both, and then only the digest carries the version: the
-    valkey in immich's compose stayed at `9` from 3.1.0 to 3.2.0 while the
-    digest under it moved to a rebuild.
-    """
-    caminho, _, digest = image.partition("@")
-    ultimo = caminho.rpartition("/")[2]
-    return (ultimo.rpartition(":")[2] if ":" in ultimo else ""), digest
 
 
 def compose_image(spec, ref, image):

@@ -20,7 +20,7 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-from qhui import translator, red, yellow, green, dim
+from qhui import translator, directives, published_port, red, yellow, green, dim
 
 PT = {
     "services,": "serviços,",
@@ -82,20 +82,6 @@ def warn(rule, msg):
 # parsing
 # --------------------------------------------------------------------------
 
-def directives(text):
-    """[(key, value)] for the directive lines, skipping comments and sections.
-
-    Quadlet has no line continuation, so a simple scan is enough.
-    """
-    out = []
-    for line in text.splitlines():
-        line = line.strip()
-        if not line or line.startswith(("#", ";", "[")):
-            continue
-        key, sep, value = line.partition("=")
-        if sep:
-            out.append((key.strip(), value.strip()))
-    return out
 
 
 def exemptions(text):
@@ -107,19 +93,6 @@ def exemptions(text):
     return {m.group(1) for m in re.finditer(r"^#\s*check:\s*ignore\s+(\S+)", text, re.M)}
 
 
-def published_port(value):
-    """('8099', 'tcp') for what the host opens, or None if it opens nothing.
-
-    Forms Quadlet accepts: `port`, `host:cont`, `ip:host:cont`, with an optional
-    `/proto`. A bare `port` lets Podman pick the host side at random — there is
-    no collision to check, so it is ignored.
-    """
-    value, _, proto = value.partition("/")
-    proto = proto or "tcp"
-    parts = value.split(":")
-    if len(parts) < 2:
-        return None
-    return parts[-2], proto
 
 
 def main_unit(folder):
@@ -338,6 +311,22 @@ def check_manifest(folders):
         for extra in sorted(recipes - declared):
             warn("manifest", f"apps/{folder.name}: install.ini has a recipe for {extra}, "
                              f"which no unit uses")
+        # `[choices.<unit>]` and `[login.<unit>]` target one unit of a folder.
+        # The suffix was validated by nobody: renaming [choices.vm-windows] to
+        # [choices.vm-windowss] left check.py at zero errors while `qh
+        # vm-windows` stopped asking VERSION and LANGUAGE — so the VM silently
+        # downloaded the default edition — and `qh vm-chromeos` stopped printing
+        # the password you need to log in. install.py skips a section whose
+        # suffix matches no unit, without a word. Same failure the [validate]
+        # check below was written to catch.
+        unidades = {f.stem for f in folder.glob("*.container")}
+        for secao in ini.sections():
+            prefixo, _, sufixo = secao.partition(".")
+            if not sufixo or prefixo not in ("choices", "login"):
+                continue
+            if sufixo not in unidades:
+                error("manifest", f"apps/{folder.name}: install.ini [{secao}] names "
+                                  f"{sufixo}, which is not a unit of this folder")
         # [login] names the secret the install prints as the credentials, in
         # either shape (`password` next to a literal user, or `credentials`
         # holding `user:password`). A typo here is silent — the footer would
@@ -652,14 +641,8 @@ def check_per_unit(folder):
 # --------------------------------------------------------------------------
 
 def selftest():
-    assert directives("[Container]\n# c\nImage=x:1\n\nPublishPort=8080:80\n") == [
-        ("Image", "x:1"), ("PublishPort", "8080:80")]
-    assert directives("Label=homepage.name=Open WebUI") == [("Label", "homepage.name=Open WebUI")]
-
-    assert published_port("8099:8082") == ("8099", "tcp")
-    assert published_port("5056:5055/udp") == ("5056", "udp")
-    assert published_port("127.0.0.1:8082:80") == ("8082", "tcp")
-    assert published_port("69") is None, "a bare port is picked by Podman"
+    # directives() and published_port() live in qhui.py now, tested there —
+    # one parser for the three tools, so a change cannot land in one of them.
 
     # $$ is the correct escape; a bare $ is the silent defect of rule 7
     bad = re.compile(r"(?<!\$)\$(?!\$)[A-Za-z{]")
