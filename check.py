@@ -447,6 +447,50 @@ def check_table(folders):
                            f"table says `{cell}`")
 
 
+# The "Pinned to `a`, `b`" line each service README opens its Update section
+# with. Both languages carry it, and Portuguese says it two ways.
+FIXADO = re.compile(r"^(?:Pinned to|Fixado em|Pinado em) ((?:`[^`]+`(?:, )?)+)")
+
+
+def pinned_tags(folder):
+    """Every tag the folder's units pin, sorted and deduplicated.
+
+    An image pinned by digest has no tag, and the READMEs quote the bare hex —
+    that is what the line has to match for immich's database and mdrop.
+    """
+    out = []
+    for unit in sorted(folder.glob("*.container")):
+        for key, value in directives(unit.read_text()):
+            if key == "Image":
+                out.append(value.partition("@sha256:")[2]
+                           or value.rpartition(":")[2])
+    return sorted(set(out))
+
+
+def check_pinned(folders):
+    """The service README's own version line, against the units beside it.
+
+    The version lives in five places: `Image=`, the two version tables, and
+    this line in each README. check_table covers the first two; this line had
+    no check at all, so 80 of them drifted across 40 services while CI stayed
+    green — the table was right and nobody reads the other file top to bottom.
+
+    A service may legitimately carry no such line (actual-budget follows a
+    floating tag), so only a line that exists is checked.
+    """
+    for folder in folders:
+        esperado = ", ".join(f"`{t}`" for t in pinned_tags(folder))
+        if not esperado:
+            continue
+        for readme in sorted(folder.glob("README*.md")):
+            for n, line in enumerate(readme.read_text().splitlines(), 1):
+                m = FIXADO.match(line)
+                if m and m.group(1) != esperado:
+                    error("pinned", f"apps/{folder.name}/{readme.name}:{n}: "
+                                    f"the README says {m.group(1)}, "
+                                    f"the unit says {esperado}")
+
+
 # --------------------------------------------------------------------------
 # selftest
 # --------------------------------------------------------------------------
@@ -476,6 +520,13 @@ def selftest():
         assert image_tag(p) is None, "an untagged image must not become a fake tag"
         p.write_text("[Container]\nImage=docker.io/a/b@sha256:" + "0" * 64 + "\n")
         assert image_tag(p) is None, "a digest is not a tag: nothing to compare against"
+
+    # the pinned-version line, in the three wordings the READMEs use
+    assert FIXADO.match("Pinned to `v1.2.3`. Nothing updates on its own").group(1) == "`v1.2.3`"
+    assert FIXADO.match("Fixado em `16-alpine`, `2026.5.6`. Nada").group(1) == "`16-alpine`, `2026.5.6`"
+    assert FIXADO.match("Pinado em `0.6.0`. As duas imagens").group(1) == "`0.6.0`"
+    assert FIXADO.match("Pinned to the tag above") is None, "a sentence with no tag is not the line"
+    assert FIXADO.match("> Pinned to `v1`") is None, "the line is never quoted or indented"
 
     # o guarda de tailnet: pega nome real, aceita os placeholders
     lab = lambda t: re.findall(r"([A-Za-z0-9_${}<>-]*)\.ts\.net", t)
@@ -509,6 +560,7 @@ def main():
     check_config_sources()
     check_counts(folders)
     check_table(folders)
+    check_pinned(folders)
     check_tailnet()
 
     conts = sum(len(list(p.glob("*.container"))) for p in folders)
