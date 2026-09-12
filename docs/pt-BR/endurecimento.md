@@ -51,7 +51,7 @@ motivo — e se mantém na mão.
 | `immich` | yes | **none** + `UserNS=keep-id` |
 | `immich-machine-learning` | yes | **none** + `UserNS=keep-id` |
 | `immich-postgres` | no | **none** + `User=999` |
-| `immich-redis` | no | podman default + `UserNS=keep-id` |
+| `immich-redis` | yes | **none** + `UserNS=keep-id` |
 | `invio` | no | **none** |
 | `karakeep` | yes | **none** |
 | `karakeep-chrome` | yes | **none** |
