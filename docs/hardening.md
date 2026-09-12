@@ -21,7 +21,7 @@ and is maintained by hand.
 | `any-sync-bundle` | no | 5 (`chown`, `dac_override`, `fowner`, `setgid`, `setuid`) |
 | `audiobookshelf` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
 | `authentik` | yes | **none** + `User=1000` |
-| `authentik-postgres` | no | 5 (`chown`, `dac_override`, `fowner`, `setgid`, `setuid`) |
+| `authentik-postgres` | yes | **none** + `User=70` |
 | `authentik-worker` | no | podman default + `User=0` |
 | `beaverhabits` | yes | **none** + `User=1000` |
 | `beszel` | yes | **none** |

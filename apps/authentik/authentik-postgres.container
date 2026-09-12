@@ -2,12 +2,11 @@
 Description=Authentik PostgreSQL
 
 [Container]
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+Tmpfs=/var/run/postgresql:size=16M
 DropCapability=ALL
-AddCapability=CHOWN
-AddCapability=SETUID
-AddCapability=SETGID
-AddCapability=DAC_OVERRIDE
-AddCapability=FOWNER
+User=70
 PidsLimit=256
 NoNewPrivileges=true
 Image=docker.io/library/postgres:16-alpine

@@ -29,6 +29,7 @@ wget -P ~/.config/containers/systemd/authentik/ \
 
 # 2. Data directories — a bind mount requires them to exist before the start
 mkdir -p ~/.config/containers/volumes/authentik/{postgres,data,certs}
+podman unshare chown -R 70:70 ~/.config/containers/volumes/authentik/postgres   # the database runs as User=70, the postgres uid in the alpine image
 
 # 3. Secrets — the Postgres password plus Authentik's signing key.
 #    IMPORTANT: no newline in the file (`print(..., end='')`, not a plain
