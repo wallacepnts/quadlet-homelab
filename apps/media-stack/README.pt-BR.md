@@ -25,7 +25,7 @@ saem no fim da instalação.
 #    media-stack-gluetun.container — só importa se for usar a seção de VPN abaixo,
 #    sem ativar fica parado sem nenhum custo)
 mkdir -p ~/.config/containers/systemd/media-stack
-for f in jellyfin dispatcharr downtify prowlarr sonarr radarr lidarr \
+for f in jellyfin dispatcharr downtify navidrome prowlarr sonarr radarr lidarr \
          bazarr seerr deluge sabnzbd gluetun; do
   wget -P ~/.config/containers/systemd/media-stack/ \
     "https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/media-stack/media-stack-$f.container"

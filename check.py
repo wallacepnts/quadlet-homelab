@@ -355,6 +355,36 @@ def upstream_problema(valor):
     return None
 
 
+def check_readme_units(folders):
+    """Every unit a folder ships is named in its README, in both languages.
+
+    The manual install is a list of `wget`s, and for a stack it is a shell loop
+    over the component names. media-stack grew a thirteenth unit and the loop
+    went on listing twelve: whoever followed the README got the stack without
+    navidrome, and nothing failed — the service simply was not there. The unit
+    table further down the same file did list it, which is how it went unseen.
+    """
+    for folder in folders:
+        unidades = sorted(folder.glob("*.container")) + sorted(folder.glob("*.network"))
+        for nome in ("README.md", "README.pt-BR.md"):
+            rd = folder / nome
+            if not rd.exists():
+                continue
+            texto = rd.read_text()
+            for c in unidades:
+                # A loop names the component, not the file: `for f in jellyfin
+                # navidrome ...` builds `media-stack-$f.container`, so the
+                # suffix counts as naming it.
+                sufixo = (c.stem[len(folder.name) + 1:]
+                          if c.stem.startswith(folder.name + "-") else None)
+                if c.stem in texto:
+                    continue
+                if sufixo and re.search(rf"\b{re.escape(sufixo)}\b", texto):
+                    continue
+                error("readme", f"apps/{folder.name}: {c.name} is named nowhere in "
+                                f"{nome} — the manual install cannot reach it")
+
+
 def check_manifest(folders):
     """Every Secret= has a recipe, and every .example has a known destination.
 
@@ -847,6 +877,7 @@ def main():
     check_units(folders)
     uses = check_ports(folders)
     check_manifest(folders)
+    check_readme_units(folders)
     check_socket_label()
     check_config_sources()
     check_counts(folders)

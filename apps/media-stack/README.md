@@ -26,7 +26,7 @@ printed at the end of the install.
 #    media-stack-gluetun.container — only used if you put Deluge behind the
 #    VPN; left alone it costs nothing)
 mkdir -p ~/.config/containers/systemd/media-stack
-for f in jellyfin dispatcharr downtify prowlarr sonarr radarr lidarr \
+for f in jellyfin dispatcharr downtify navidrome prowlarr sonarr radarr lidarr \
          bazarr seerr deluge sabnzbd gluetun; do
   wget -P ~/.config/containers/systemd/media-stack/ \
     "https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/media-stack/media-stack-$f.container"

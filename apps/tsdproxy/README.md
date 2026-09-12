@@ -19,10 +19,14 @@ Open `http://<host-ip>:8080` or `https://dash.<your-tailnet>.ts.net`.
 <summary><b>Manual install</b></summary>
 
 ```bash
-# 1. Download the unit (no need to clone the repository)
-mkdir -p ~/.config/containers/systemd
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/tsdproxy/tsdproxy.container
+# 1. Download the units (no need to clone the repository). Two Quadlet files,
+#    so they go in a folder of their own — and the .network is not optional:
+#    without it Quadlet generates nothing and the start says "Unit not found"
+#    without naming the file it could not convert.
+mkdir -p ~/.config/containers/systemd/tsdproxy
+wget -P ~/.config/containers/systemd/tsdproxy/ \
+  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/tsdproxy/tsdproxy.container \
+  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/tsdproxy/tsdproxy-net.network
 
 # 2. Data directories — a bind mount requires them to exist before the start.
 #    tsdproxy does not generate a default config by itself, so
