@@ -4,7 +4,7 @@ Description=n8n
 [Container]
 DropCapability=ALL
 PidsLimit=256
-Image=docker.io/n8nio/n8n:2.33.7
+Image=docker.io/n8nio/n8n:2.38.7
 ContainerName=n8n
 Network=tsdproxy-net.network
 PublishPort=5678:5678

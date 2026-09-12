@@ -79,7 +79,7 @@ Units in this stack:
 qh authentik --update --apply
 ```
 
-Pinned to `16-alpine`, `2026.5.6`. Nothing updates on its own — a new version is applied
+Pinned to `16-alpine`, `2026.8.2`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

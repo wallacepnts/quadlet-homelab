@@ -9,7 +9,7 @@ NoNewPrivileges=true
 User=1000
 PidsLimit=256
 
-Image=ghcr.io/amir20/dozzle:v10.7.1
+Image=ghcr.io/amir20/dozzle:v11.0.0
 ContainerName=dozzle
 Network=tsdproxy-net.network
 PublishPort=8117:8080

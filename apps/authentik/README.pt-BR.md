@@ -79,7 +79,7 @@ Units da stack:
 qh authentik --update --apply
 ```
 
-Fixado em `16-alpine`, `2026.5.6`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `16-alpine`, `2026.8.2`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

@@ -5,7 +5,7 @@ Requires=authentik-postgres.service podman.socket
 
 [Container]
 PidsLimit=256
-Image=ghcr.io/goauthentik/server:2026.5.6
+Image=ghcr.io/goauthentik/server:2026.8.2
 ContainerName=authentik-worker
 Network=authentik-net.network
 Exec=worker

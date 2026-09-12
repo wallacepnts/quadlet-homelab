@@ -84,7 +84,7 @@ Units da stack:
 qh paperless-ngx --update --apply
 ```
 
-Fixado em `3.0.5`, `3.3.1.0`, `8.34`, `9.1.1-alpine3.24`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `3.1.3`, `3.3.1.0`, `8.34`, `9.1.1-alpine3.24`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

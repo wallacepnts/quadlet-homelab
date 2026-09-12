@@ -61,7 +61,7 @@ install.ini
 qh n8n --update --apply
 ```
 
-Pinned to `2.33.7`. Nothing updates on its own — a new version is applied
+Pinned to `2.38.7`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup
