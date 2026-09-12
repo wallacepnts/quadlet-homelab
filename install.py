@@ -82,6 +82,13 @@ def make_secret(recipe):
     if kind == "manual":
         return None, rest
     if kind == "shell":
+        # Not under --prefix. `secret_ok` already guards the identical mechanism
+        # 1600 lines down; this one did not, and apps/tsdproxy/install.ini shows
+        # what a recipe can hold — `podman run ... tailscale up --authkey=...`.
+        # One line moved from [validate] to [secrets] and a rehearsal would pull
+        # an image and register a tailnet node on the real host.
+        if SANDBOX:
+            return "sandbox-placeholder", None
         out = subprocess.run(rest, shell=True, capture_output=True, text=True, check=True)
         return out.stdout.strip("\n"), None
     n = int(rest)
@@ -1580,8 +1587,16 @@ def _rmtree(path):
 
 
 def size(path):
-    r = subprocess.run(["podman", "unshare", "du", "-sh", str(path)],
-                       capture_output=True, text=True)
+    # The only podman call in the file with no SANDBOX guard: a plain dry-run of
+    # `--remove --prefix` died with FileNotFoundError where podman is absent —
+    # the podman-free runner the CI workflow and test_install.py both promise.
+    if SANDBOX:
+        return "?"
+    try:
+        r = subprocess.run(["podman", "unshare", "du", "-sh", str(path)],
+                           capture_output=True, text=True)
+    except OSError:
+        return "?"
     return r.stdout.split("\t")[0].strip() if r.returncode == 0 else "?"
 
 
@@ -1817,7 +1832,14 @@ def write_example(source, destination, tailnet):
     if tailnet:
         txt = txt.replace("<your-tailnet>", tailnet)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.write_text(txt)
+    # 0600 like the secret files: 54 apps ship a .env.example, several with a
+    # credential field the README tells you to fill in by hand, and
+    # `set_env_value` writes the answers to [choices] into the same file. It was
+    # being created world-readable while store_secret took care three lines of
+    # code away.
+    fd = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w") as fh:
+        fh.write(txt)
     if re.search(r"CHANGEME|<your-", txt):
         say(f"    ! {destination} still has a placeholder — edit it before using")
 
@@ -1992,12 +2014,17 @@ def create_secret(s, name, recipe):
 
 def store_secret(s, name, value):
     d = s.home / ".config/containers/secrets" / s.name
-    d.mkdir(parents=True, exist_ok=True)
+    d.mkdir(parents=True, exist_ok=True, mode=0o700)
     f = d / (name.removeprefix(s.name + "-") + ".txt")
+    # Opened 0600, not written and then chmod'd: between those two the file
+    # existed 0644 with the secret already in it, and the directory stayed
+    # world-traversable for good.
     # No trailing newline: several apps read the raw value, and the \n becomes
     # part of the password (vaultzap with type=env is the known case here).
-    f.write_text(value)
-    f.chmod(0o600)
+    fd = os.open(f, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w") as fh:
+        fh.write(value)
+    f.chmod(0o600)                 # an existing file keeps its old mode
     if secret_exists(name):
         run(["podman", "secret", "rm", name])
     run(["podman", "secret", "create", name, str(f)])
@@ -2188,6 +2215,14 @@ def find_tailnet():
     describes for homepage.href — better to warn loudly and leave the
     placeholder in place.
     """
+    # Under --prefix nothing real may be read: the sandbox is documented as
+    # "test without touching the real one", and this call reached the actual
+    # $HOME — writing the live tailnet name into the sandbox .env files and
+    # printing it to the terminal. CLAUDE.md records that exact leak, "num
+    # bloco que mostrava a saída do install.py", and CI builds one sandbox per
+    # app this way. The placeholder is also what a rehearsal should show.
+    if SANDBOX:
+        return ""
     value = os.environ.get("TAILNET", "").strip()
     if not value:
         conf = Path.home() / ".config/environment.d/tailnet.conf"
@@ -3065,7 +3100,7 @@ def est(v):
     return ESTADOS.get(v, v) if qhui.PTBR else v
 
 
-def show_status(apps=None):
+def show_status(apps=None, home=None):
     """What is installed, what is running, and what drifted from the repository.
 
     One row per service: a folder with several units collapses into `2/12`,
@@ -3097,7 +3132,7 @@ def show_status(apps=None):
     for d in sorted(x.name for x in APPS.iterdir() if x.is_dir()):
         if apps and d not in apps:
             continue
-        s = Service(d)
+        s = Service(d, home)
         units = [u for u in s.installed() if u.suffix == ".container"]
         if not units:
             continue
@@ -3542,8 +3577,11 @@ def main():
         selftest()
         return 0
 
+    global SANDBOX
+    SANDBOX = bool(a.prefix)
+
     if a.status:
-        return show_status(a.app or None)
+        return show_status(a.app or None, a.prefix)
 
 
     if a.set_access:
@@ -3559,7 +3597,7 @@ def main():
         # saying "not installed" bury the one service that is actually failing.
         # Naming a service is the opposite request, and still answers.
         if a.verify:
-            a.app = [x for x in a.app if Service(x).installed()]
+            a.app = [x for x in a.app if Service(x, a.prefix).installed()]
         elif not (a.remove or a.backup or a.restore):
             # Whoever owns a network goes before whoever needs it. Not on a
             # remove: there the right order is the reverse, and taking the
@@ -3587,6 +3625,11 @@ def main():
 
     if a.purge and not a.remove:
         ap.error(loc("--purge only makes sense with --remove"))
+    # --verify asks systemd, podman and the tailnet whether the service answers.
+    # A sandbox has none of the three, so every check fails by construction —
+    # and it was reaching the real host instead, curling the real tailnet.
+    if a.verify and a.prefix:
+        ap.error(loc("--verify asks the host, which is what --prefix is not"))
     # Check the names BEFORE starting: with several services, finding out
     # halfway through that the third does not exist leaves the job half done.
     unknown = [x for x in a.app
@@ -3614,8 +3657,6 @@ def main():
     if a.all and a.restore:
         ap.error(loc("--all does not work with --restore"))
 
-    global SANDBOX
-    SANDBOX = bool(a.prefix)
     # One flag, one meaning: --access decides the tailnet node, --href-local
     # decides the dashboard link. Before, --local did both things depending on
     # whether it came alone, which is the kind of behaviour nobody gets right

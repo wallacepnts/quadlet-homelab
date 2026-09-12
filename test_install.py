@@ -200,6 +200,40 @@ def scenario_backup_restore(home, out):
     return tgz
 
 
+def scenario_sandbox(tmp):
+    """--prefix promises not to touch the real host. It was touching it.
+
+    `find_tailnet` read the real $HOME, so a rehearsal wrote the live tailnet
+    name into the sandbox `.env` files and printed it — the leak CLAUDE.md
+    records as having already happened once, "num bloco que mostrava a saída do
+    install.py", and CI builds one sandbox per app exactly this way.
+    """
+    home = str(Path(tmp, "caixa"))
+    env = {**os.environ, "QH_LANG": "en", "TAILNET": "segredo-de-teste"}
+    r = subprocess.run([sys.executable, str(ROOT / "install.py"), APP,
+                        "--apply", "--prefix", home],
+                       capture_output=True, text=True, cwd=ROOT, env=env)
+    escrito = "".join(f.read_text(errors="replace")
+                      for f in Path(home).rglob("*") if f.is_file())
+    check("segredo-de-teste" not in (r.stdout + r.stderr),
+          "a sandbox run does not print the tailnet name")
+    check("segredo-de-teste" not in escrito,
+          "and does not write it into the files it creates")
+    check("${TAILNET}" in escrito, "the unit keeps the variable instead")
+
+    # Credentials are not world-readable, wherever they land.
+    for f in [path(home, "env", f"{APP}.env"),
+              *Path(path(home, "secrets", APP)).glob("*.txt")]:
+        check(oct(f.stat().st_mode)[-3:] == "600", f"{f.name} is 0600")
+    check(oct(path(home, "secrets", APP).stat().st_mode)[-3:] == "700",
+          "and the secrets directory is 0700")
+
+    # --verify consults systemd, podman and the tailnet; a sandbox has none.
+    r = run(APP, "--verify", "--prefix", home, expected=2)
+    check("--prefix" in (r.stdout + r.stderr),
+          "--verify refuses under --prefix instead of asking the real host")
+
+
 def scenario_archive_safety(tmp):
     """What a backup promises: it can be restored, and only over its own service.
 
@@ -336,6 +370,7 @@ def main():
         print("failure:");            scenario_failure(home, tmp)
         print("remove safety:");      scenario_remove_safety(tmp)
         print("archive safety:");     scenario_archive_safety(tmp)
+        print("sandbox:");            scenario_sandbox(tmp)
         print("backup and restore:"); tgz = scenario_backup_restore(home, out)
         if tgz:
             print("restore refuses:"); scenario_restore_refuses(home, tgz, out)
