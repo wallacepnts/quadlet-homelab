@@ -8,17 +8,27 @@ Translation runs over the composed line, not over each f-string. The keys are
 whole phrases, long enough that they cannot collide with a path or a service
 name, and adding a message costs one dictionary entry either way.
 
+Usage:
+    python3 qhui.py --selftest  # test the translation and the colour
+
 No dependencies: stdlib only.
 """
 
 import os
 import sys
 
-# QH_LANG wins, so a single run can be forced either way without touching the
-# locale; otherwise the environment decides.
-_lang = (os.environ.get("QH_LANG")
-         or os.environ.get("LC_ALL") or os.environ.get("LANG") or "")
-PTBR = _lang.lower().startswith("pt")
+def ptbr_from(env):
+    """Whether to speak Portuguese, from the environment.
+
+    QH_LANG wins, so a single run can be forced either way without touching the
+    locale; otherwise LC_ALL, then LANG. A variable set to the empty string is
+    not an answer — it falls through to the next, the way the shell means it.
+    """
+    lang = env.get("QH_LANG") or env.get("LC_ALL") or env.get("LANG") or ""
+    return lang.lower().startswith("pt")
+
+
+PTBR = ptbr_from(os.environ)
 
 
 def translator(phrases):
@@ -104,3 +114,68 @@ yellow = _c("33")
 blue = _c("34")
 dim = _c("2")
 bold = _c("1")
+
+
+def selftest():
+    """The three things here that can be wrong without anyone noticing.
+
+    Nothing tested this file, and it speaks for all three tools: a bug here is
+    a line half in one language, or escape codes written into a pipe.
+    """
+    global PTBR, COLOR
+
+    # Longest first. "the services" is inside "act on ALL the services", and
+    # replacing the short one first leaves the rest of the phrase English --
+    # the reason `translator` sorts at all.
+    antes = PTBR
+    PTBR = True
+    try:
+        loc = translator({"the services": "os serviços",
+                          "act on ALL the services": "age em TODOS os serviços"})
+        assert loc("act on ALL the services") == "age em TODOS os serviços"
+        assert loc("the services in apps/") == "os serviços in apps/"
+        # A key that is not in the line leaves it alone, and an unknown line
+        # comes back whole rather than half-translated.
+        assert loc("nothing to replace here") == "nothing to replace here"
+        # Substitution is on the composed line, so a path inside it survives.
+        assert loc("the services at /home/x") == "os serviços at /home/x"
+    finally:
+        PTBR = antes
+
+    PTBR = False
+    try:
+        loc = translator({"hello": "olá"})
+        assert loc("hello") == "hello", "English mode must not translate"
+    finally:
+        PTBR = antes
+
+    # The environment, in the order the shell means it.
+    assert ptbr_from({"QH_LANG": "pt_BR.UTF-8"}) is True
+    assert ptbr_from({"QH_LANG": "en", "LANG": "pt_BR.UTF-8"}) is False, "QH_LANG wins"
+    assert ptbr_from({"LC_ALL": "pt_BR.UTF-8", "LANG": "en_US"}) is True, "LC_ALL beats LANG"
+    assert ptbr_from({"QH_LANG": "", "LANG": "pt_BR"}) is True, "empty is not an answer"
+    assert ptbr_from({}) is False
+    assert ptbr_from({"LANG": "C.UTF-8"}) is False
+
+    # Colour only when a person is looking: piped or NO_COLOR, the escape codes
+    # are noise that breaks the matching the pipe was for.
+    cor = COLOR
+    try:
+        COLOR = True
+        assert red("x") == "\033[31mx\033[0m"
+        COLOR = False
+        assert red("x") == "x", "no colour must leave the string byte for byte"
+        assert dim("x") == "x"
+    finally:
+        COLOR = cor
+
+    print("selftest: ok")
+
+
+if __name__ == "__main__":
+    # The flag is required, like the other three: a bare `python3 qhui.py`
+    # running the tests would make the CI line read as something it is not.
+    if "--selftest" not in sys.argv:
+        print("usage: qhui.py --selftest", file=sys.stderr)
+        raise SystemExit(2)
+    selftest()

@@ -21,6 +21,7 @@ jobs:
       # of the check is worth nothing.
       - name: script selftests
         run: |
+          python3 qhui.py --selftest
           python3 check.py --selftest
           python3 install.py --selftest
           python3 updates.py --selftest
