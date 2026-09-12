@@ -204,6 +204,55 @@ def scenario_backup_restore(home, out):
     return tgz
 
 
+def scenario_answers(tmp):
+    """Six answers the tool gave wrong, each on its own.
+
+    The sharpest: `"unhealthy" in c` was tested before `"unhealthy"`, and
+    "unhealthy" contains "healthy" — so a failing container printed green,
+    never counted as needing attention, and `--status` exited 0.
+    """
+    # The real function, not a copy of its logic here: asserting a
+    # reimplementation is how the restart-order test passed while the call site
+    # was still wrong.
+    check(I.estado_do_container("Up 2 hours (unhealthy)") == "unhealthy",
+          "an unhealthy container does not read as healthy")
+    check(I.estado_do_container("Up 2 hours (healthy)") == "healthy",
+          "and a healthy one still does")
+    check(I.estado_do_container("Exited (1) 3 minutes ago") == "down",
+          "and a stopped one is down")
+
+    # addresses() narrows to the picked unit, like every other accessor.
+    s = I.Service("media-stack", None, "media-stack-jellyfin")
+    check(len(I.addresses(s, "exemplo")) == 1,
+          "a picked unit gets its own address, not the folder's twelve")
+
+    # ${VAR} volumes reach the branch written for them.
+    tipos = dict((f, t) for f, t in
+                 ((p, tipo) for p, tipo in I.Service("frigate").volumes()))
+    check(any(t is None for t in tipos.values()),
+          "a ${VAR} volume is classified, not dropped before the test for it")
+
+    # A typed value is data, not a regex replacement template.
+    env = Path(tmp, "v.env")
+    env.write_text("BOOT=alpine\n")
+    I.set_env_value(env, "BOOT", r"C:\Users\me\x.iso")
+    check(env.read_text().strip() == r"BOOT=C:\Users\me\x.iso",
+          "a backslash in a typed value is stored, not interpreted")
+    I.set_env_value(env, "BOOT", r"\g<0>")
+    check(env.read_text().strip() == r"BOOT=\g<0>",
+          "and neither is a group reference")
+
+    # --status resolves a unit basename, and says so on a typo.
+    home = str(Path(tmp, "st"))
+    run("vm-windows", "--apply", "--prefix", home)
+    # exit 1 because nothing is running in a sandbox, which is what --status is
+    # for; the question here is only whether the basename resolved at all.
+    r = run("--status", "vm-windows", "--prefix", home, expected=1)
+    check("vm-windows" in r.stdout, "--status accepts a unit basename")
+    r = run("--status", "vm-widnows", "--prefix", home, expected=1)
+    check("not found" in r.stdout, "and a typo is reported, not answered")
+
+
 def scenario_update_gaps(tmp):
     """An update is the weekly command, and it did less than an install.
 
@@ -425,6 +474,7 @@ def main():
         print("failure:");            scenario_failure(home, tmp)
         print("remove safety:");      scenario_remove_safety(tmp)
         print("archive safety:");     scenario_archive_safety(tmp)
+        print("answers:");            scenario_answers(tmp)
         print("update gaps:");        scenario_update_gaps(tmp)
         print("sandbox:");            scenario_sandbox(tmp)
         print("backup and restore:"); tgz = scenario_backup_restore(home, out)

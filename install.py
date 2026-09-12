@@ -526,6 +526,14 @@ class Service:
             if k != "Volume":
                 continue
             host = v.split(":")[0]
+            # The variable test comes first: `${MEDIA_DATA_DIR}` starts with `$`,
+            # not `%h`, so the filter below dropped it as if it were
+            # /etc/localtime — and with it the warning written for exactly this
+            # case, which no run has ever printed. Eleven real bind mounts
+            # (media-stack ×9, komga, frigate) got no mkdir and no word.
+            if "${" in host:
+                out.append((self._expand(host), None))
+                continue
             if not (host.startswith("%h") or host.startswith(str(self.home))):
                 continue        # bind of a system path (e.g. /etc/localtime)
             path = self._expand(host)
@@ -1930,7 +1938,11 @@ def set_env_value(path, key, value):
     commented = re.compile(rf"^#\s*{re.escape(key)}=.*$", re.M)
     for pattern in (active, commented):
         if pattern.search(text):
-            p.write_text(pattern.sub(line, text, count=1))
+            # A function, not the string: re.sub reads `\\` escapes and
+            # `\\g<...>` in the replacement, and this value came from input().
+            # A Windows path crashed with `bad escape \\U`; `\\g<0>` silently
+            # wrote `BOOT=BOOT=alpine`.
+            p.write_text(pattern.sub(lambda _m: line, text, count=1))
             return
     p.write_text(text.rstrip("\n") + f"\n{line}\n")
 
@@ -2241,7 +2253,12 @@ def addresses(service, tailnet):
     """
     ip = local_ip()
     out = []
-    for f in sorted(service.dir.glob("*.container")):
+    # service.units, not a fresh glob: every other accessor narrows to the
+    # picked unit and this one did not, so `qh media-stack-jellyfin --apply`
+    # printed twelve URLs and the auto-verify curled the eleven tailnet names
+    # that were never registered — eleven red crosses and exit 1 on an install
+    # that worked.
+    for f in sorted(u for u in service.units if u.suffix == ".container"):
         ds = directives(f.read_text())
         labels = {}
         for key, value in ds:
@@ -3060,10 +3077,7 @@ def verify_service(s, tailnet, modo="tailnet"):
     for u in conts:
         ativo = (run_read(["systemctl", "--user", "is-active", u.stem]) or "").strip()
         estado = saude.get(container_name(u), "")
-        # "unhealthy" contains "healthy": test the parenthesised word, not a
-        # substring, or a dying container reads as a passing check.
-        no_ar = ativo == "active" and estado.startswith("Up") \
-            and "(unhealthy)" not in estado
+        no_ar = ativo == "active" and estado_do_container(estado) in ("up", "healthy")
         out.append((no_ar, u.stem, estado.lower() if no_ar else
                     f"{ativo or 'inactive'}"
                     f"{', ' + estado.lower() if estado else ''}"
@@ -3168,6 +3182,23 @@ def est(v):
     return ESTADOS.get(v, v) if qhui.PTBR else v
 
 
+def estado_do_container(status):
+    """What `podman ps --format {{.Status}}` means, in one word.
+
+    "unhealthy" contains "healthy", so the parenthesised word is what decides —
+    testing the substring made the unhealthy branch unreachable, and a failing
+    container printed green in `--status` while the run exited 0. Read in two
+    places, written here once.
+    """
+    if "(unhealthy)" in status:
+        return "unhealthy"
+    if "(healthy)" in status:
+        return "healthy"
+    if status.startswith("Up"):
+        return "up"
+    return "—" if status == "—" else "down"
+
+
 def show_status(apps=None, home=None):
     """What is installed, what is running, and what drifted from the repository.
 
@@ -3188,14 +3219,19 @@ def show_status(apps=None, home=None):
         saude[nome] = estado
 
     def estado_container(u):
-        cont = next((v for k, v in directives(u.read_text())
-                     if k == "ContainerName"), u.stem)
-        c = saude.get(cont, "—")
-        return ("healthy" if "healthy" in c else
-                "unhealthy" if "unhealthy" in c else
-                "up" if c.startswith("Up") else
-                "—" if c == "—" else "down")
+        cont = container_name(u)
+        return estado_do_container(saude.get(cont, "—"))
 
+    # Through find_app, like every other path: `--status vm-windows` compared a
+    # unit basename against folder names and answered "nothing installed yet" —
+    # the same output a typo gets, so the two were indistinguishable.
+    if apps:
+        resolvidos = {find_app(x)[0] for x in apps}
+        desconhecidos = sorted(x for x in apps if find_app(x) == (None, None))
+        if desconhecidos:
+            say(loc("not found in apps/: ") + ", ".join(desconhecidos))
+            return 1
+        apps = resolvidos
     linhas, problemas, mudados, escondidas = [], 0, 0, 0
     for d in sorted(x.name for x in APPS.iterdir() if x.is_dir()):
         if apps and d not in apps:
@@ -3729,7 +3765,11 @@ def main():
     # decides the dashboard link. Before, --local did both things depending on
     # whether it came alone, which is the kind of behaviour nobody gets right
     # the first time.
-    if a.local and "--access" in " ".join(sys.argv):
+    # `a.access is not None` IS the record of "the user stated it" — scanning
+    # argv re-derives it and gets it wrong, because argparse accepts any
+    # unambiguous prefix: `--local --acce both` passed the guard and silently
+    # installed local. It also fired on an --out path containing the text.
+    if a.local and a.access is not None:
         ap.error("--local is shorthand for --access local; to change only the "
                  "link use --href-local")
     # None means "not stated": an update then keeps the mode the host already
