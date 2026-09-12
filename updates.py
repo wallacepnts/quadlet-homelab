@@ -13,6 +13,7 @@ spending API rate limit.
 
     python3 updates.py           # table of what is behind
     python3 updates.py --all     # include what is up to date
+    python3 updates.py --selftest  # test the parsing, no network
 
 No dependencies: stdlib only. Exits 0 even with an outdated service — being
 behind is information, not a defect; only an execution error fails.
@@ -35,6 +36,7 @@ from qhui import translator, red, yellow, green, dim
 
 PT = {
     "also show what is up to date": "mostra também o que está em dia",
+    "test the parsing, no network": "testa o parsing, sem rede",
     "OUTDATED (": "DESATUALIZADOS (",
     "floating tag, moved since your pull (": "tag flutuante, mudou desde o seu pull (",
     "novo digest": "digest novo",
@@ -72,6 +74,7 @@ limit da API.
 
     python3 updates.py           # tabela do que está atrasado
     python3 updates.py --all     # inclui o que está em dia
+    python3 updates.py --selftest  # testa o parsing, sem rede
 
 Sem dependências: só a stdlib. Sai 0 mesmo com serviço desatualizado — estar
 atrás é informação, não defeito; só erro de execução reprova.
@@ -86,7 +89,8 @@ RAIZ = Path(__file__).resolve().parent
 APPS = RAIZ / "apps"
 
 # A tag that is not a version: there is nothing to compare between runs.
-FLOATING = {"latest", "main", "master", "stable", "edge", "develop", "nightly"}
+FLOATING = {"latest", "main", "master", "stable", "edge", "develop", "nightly",
+            "release"}
 
 
 def directives(text):
@@ -305,8 +309,34 @@ def moved(image, tag):
     return remoto not in locais
 
 
-def compose_tag(spec, ref, image):
-    """The tag this image carries in the app's own compose, at version `ref`.
+def image_name(image):
+    """The last path segment of a reference, without its tag or digest.
+
+    `docker.io/valkey/valkey:9@sha256:70739f…` and `valkey/valkey@sha256:70739f…`
+    are both `valkey`: the tag is optional, and splitting on the last colon
+    without checking swallows the whole path when there is none.
+    """
+    ultimo = image.partition("@")[0].rpartition("/")[2]
+    return ultimo.rpartition(":")[0] if ":" in ultimo else ultimo
+
+
+def ref_parts(image):
+    """(tag, digest) of a reference; either side can be empty.
+
+    An image can pin both, and then only the digest carries the version: the
+    valkey in immich's compose stayed at `9` from 3.1.0 to 3.2.0 while the
+    digest under it moved to a rebuild.
+    """
+    caminho, _, digest = image.partition("@")
+    ultimo = caminho.rpartition("/")[2]
+    return (ultimo.rpartition(":")[2] if ":" in ultimo else ""), digest
+
+
+def compose_image(spec, ref, image):
+    """The whole reference this image carries in the app's own compose, at `ref`.
+
+    The reference and not just the tag, because a sidecar pinned by digest says
+    nothing in its tag — see ref_parts.
 
     A sidecar follows the version the app validates, not its own upstream: the
     Postgres in immich's compose moves when immich moves it, and reporting
@@ -320,7 +350,7 @@ def compose_tag(spec, ref, image):
     would be going to.
     """
     resto = spec.partition(":")[2]
-    nome = image.split("@")[0].rpartition(":")[0].split("/")[-1]
+    nome = image_name(image)
     if resto.startswith(("http://", "https://")):
         # Not every project keeps its compose in the repository: authentik
         # publishes it on its own site, and that is the file its docs tell you
@@ -344,8 +374,8 @@ def compose_tag(spec, ref, image):
             continue
         for m in re.finditer(r"image:\s*[\"\']?([^\s\"\']+)", texto):
             cand = m.group(1)
-            if cand.split("@")[0].rpartition(":")[0].split("/")[-1] == nome:
-                return cand.split("@")[0].rpartition(":")[2] or None
+            if image_name(cand) == nome:
+                return cand
         return None
     return None
 
@@ -469,15 +499,26 @@ def check(item):
         return (unit, image, tag, there, "up to date")
 
     if override and override.startswith("compose:"):
-        there = compose_tag(override, ref, image)
-        if not there:
+        la = compose_image(override, ref, image)
+        if not la:
             return (unit, image, tag, "?", "compose: image not found there")
-        if there in FLOATING or there.isdigit() and not version(tag):
-            return (unit, image, tag, there, "floating tag")
+        there, digest_la = ref_parts(la)
+        digest_aqui = ref_parts(image)[1]
+        if digest_la and digest_aqui:
+            # Both sides pin by digest, and then the tag carries nothing: the
+            # valkey in immich's compose read `9` in 3.1.0 and `9` in 3.2.0
+            # while the image under it changed. Comparing tags called that up
+            # to date, and the rebuild only surfaced by reading the compose.
+            if digest_la != digest_aqui:
+                return (unit, image, f"{tag}@{digest_aqui[7:15]}…",
+                        f"{there or tag}@{digest_la}", "BEHIND")
+            return (unit, image, tag, "mesmo digest", "up to date")
         if there in FLOATING:
             # The app does not pin it either: following the compose says
             # nothing, and calling that "up to date" would be a false comfort.
             return (unit, image, tag, there, "compose: not pinned there")
+        if there.isdigit() and not version(tag):
+            return (unit, image, tag, there, "floating tag")
         if version(there) and version(tag) and version(there) > version(tag):
             return (unit, image, tag, there, "BEHIND")
         return (unit, image, tag, there, "up to date")
@@ -524,12 +565,50 @@ def check(item):
     return (unit, image, tag, remote, "up to date")
 
 
+def selftest():
+    """The reference parsing, which is where this script gets things wrong.
+
+    Everything here is pure, so it runs in CI beside check.py's — the network
+    half cannot be tested there and is not the half that has broken.
+    """
+    assert image_name("docker.io/valkey/valkey:9@sha256:" + "a" * 64) == "valkey"
+    assert image_name("docker.io/valkey/valkey@sha256:" + "a" * 64) == "valkey"
+    assert image_name("ghcr.io/immich-app/immich-server:v3.2.0") == "immich-server"
+    assert image_name("registry.local:5000/foo/bar:1") == "bar", "the port is not a tag"
+    assert image_name("nginx") == "nginx"
+
+    assert ref_parts("a/b:9@sha256:" + "c" * 64) == ("9", "sha256:" + "c" * 64)
+    assert ref_parts("a/b@sha256:" + "c" * 64) == ("", "sha256:" + "c" * 64)
+    assert ref_parts("ghcr.io/a/b:v1.2.3") == ("v1.2.3", "")
+    assert ref_parts("registry.local:5000/foo/bar") == ("", ""), "the port is not a tag"
+
+    # A release name is not a tag: keep our own shape and swap the version.
+    assert target_tags("v0.107.78", "v0.107.79")[0] == "v0.107.79"
+    assert target_tags("version-5.0.4", "5.1.3-ls273")[0] == "version-5.1.3"
+    assert target_tags("1.29.1-alpine", "1.30.0")[0] == "1.30.0-alpine"
+    assert target_tags("2026.5.6", "version/2026.8.2")[0] == "2026.8.2"
+    assert target_tags("2.33.7", "n8n@2.38.7")[0] == "2.38.7"
+    # any-sync-bundle carries a date the version does not: the release name itself.
+    assert "1.6.0-2026-08-18" in target_tags("1.5.0-2026-07-17", "v1.6.0-2026-08-18")
+
+    assert version("1.30.0-alpine") == (1, 30, 0)
+    assert version("release") is None, "a name with no digits has no version"
+    assert "release" in FLOATING, "karakeep's chrome is pinned at `release` upstream"
+
+    print("selftest: ok")
+
+
 def main():
     qhui.argparse_ptbr()
     ap = argparse.ArgumentParser(description=AJUDA_PT if qhui.PTBR else __doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--all", action="store_true", help=loc("also show what is up to date"))
+    ap.add_argument("--selftest", action="store_true", help=loc("test the parsing, no network"))
     a = ap.parse_args()
+
+    if a.selftest:
+        selftest()
+        return 0
 
     items = list(services())
     with ThreadPoolExecutor(max_workers=8) as pool:

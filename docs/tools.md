@@ -57,6 +57,12 @@ The compose is read at the version the main unit is pinned at, which is the one
 you would be going to. A direct URL works too, for a project that publishes its
 compose on its site instead of in the repository.
 
+When both sides pin by digest, the digests are what get compared — a tag like
+immich's `valkey:9` reads the same across two releases while the image under it
+changes, and comparing tags there would only ever say "up to date". When the
+compose does not pin at all, that is reported as such instead of being called
+up to date, which would be a comparison that never happened.
+
 An image that does not version by GitHub release — a distro tag, a project
 that only publishes git tags, an image versioned apart from its repository —
 compares against the registry instead:

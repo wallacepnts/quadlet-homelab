@@ -57,6 +57,12 @@ O compose é lido na versão em que a unit principal está fixada, que é a vers
 pra qual você iria. URL direta também vale, pra projeto que publica o compose no
 site em vez de no repositório.
 
+Quando os dois lados fixam por digest, são os digests que se comparam — uma tag
+como a `valkey:9` do immich se lê igual em duas releases enquanto a imagem
+embaixo dela muda, e comparar tag ali só diria "em dia". Quando o compose não
+fixa nada, isso é reportado como tal em vez de virar "em dia", que seria uma
+comparação que nunca aconteceu.
+
 Imagem que não versiona por release do GitHub — tag de distribuição, projeto
 que só publica tags git, imagem versionada à parte do repositório — compara
 com o registry:

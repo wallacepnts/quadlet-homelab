@@ -23,6 +23,7 @@ jobs:
         run: |
           python3 check.py --selftest
           python3 install.py --selftest
+          python3 updates.py --selftest
 
       # Exits != 0 on an error; a warning does not fail it (it is a convention,
       # not an invariant).
