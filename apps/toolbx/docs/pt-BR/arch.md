@@ -15,8 +15,8 @@ Pinada por digest, não por tag. Arch é rolling release: a única tag dele é `
 Atualizar é trocar o digest na mão — `podman pull quay.io/toolbx/arch-toolbox:latest` e ler o novo no `podman inspect`. O `qh-updates` não tem como comparar com nada mais novo, e o `install.ini` marca `-` por isso.
 
 Digest fixado aqui tem prazo, e é essa a parte que surpreende. O quay coleta
-os manifests para os quais nenhuma tag aponta mais, e o que foi fixado em junho
-deixou de ser servido — `manifest unknown`. O container seguia rodando da cópia
+os manifests para os quais nenhuma tag aponta mais, e o que foi fixado aqui
+deixou de ser servido cinco semanas depois — `manifest unknown`. O container seguia rodando da cópia
 local enquanto toda instalação nova falhava. O `qh-updates` pega este caso: ele
 pergunta se a imagem fixada ainda existe antes de perguntar se há uma mais
 nova, e reporta como sumida.
