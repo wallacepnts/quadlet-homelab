@@ -227,6 +227,13 @@ def check_podman_args(text, ref):
                                     f"of its own — use {chave}")
 
 
+# systemd expands `$VAR`, so a literal dollar in HealthCmd is written `$$`
+# (rule 7). One expression, shared with the test that holds it to account: the
+# selftest used to rebuild it, so loosening this one — dropping the lookbehind
+# and condemning the correct `$$` too — still printed "selftest: ok".
+BARE_DOLLAR = re.compile(r"(?<!\$)\$(?!\$)[A-Za-z{]")
+
+
 def check_container(path, folder):
     text = path.read_text()
     ds = directives(text)
@@ -245,7 +252,7 @@ def check_container(path, folder):
                 error("rule 13", f"{ref} uses localhost in HealthCmd "
                                  f"(resolves IPv4+IPv6; use 127.0.0.1)")
             # systemd expands $VAR; a literal one needs $$.
-            if re.search(r"(?<!\$)\$(?!\$)[A-Za-z{]", value):
+            if BARE_DOLLAR.search(value):
                 error("rule 7", f"{ref} has a bare $ in HealthCmd (escape it as $$)")
 
         if key == "Label":
@@ -720,10 +727,16 @@ def selftest():
     # one parser for the three tools, so a change cannot land in one of them.
 
     # $$ is the correct escape; a bare $ is the silent defect of rule 7
-    bad = re.compile(r"(?<!\$)\$(?!\$)[A-Za-z{]")
+    bad = BARE_DOLLAR
     assert bad.search("test $$(date)") is None
     assert bad.search("echo $VAR") is not None
     assert bad.search("price is R$ 5") is None, "a lone dollar sign is not expansion"
+    # The correct escape itself, which nothing asserted: `$$(date)` above does
+    # not reach the lookbehind, because `(` is outside the character class. So
+    # dropping `(?<!\$)` left the selftest green while every properly escaped
+    # unit became an error — a check that condemns the fix it asks for.
+    assert bad.search("echo $$VAR") is None, "the escape rule 7 asks for is not a defect"
+    assert bad.search("test $${HOME}") is None, "the braced form escapes the same way"
 
     import tempfile
     with tempfile.TemporaryDirectory() as d:
