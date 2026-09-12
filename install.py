@@ -143,6 +143,10 @@ PT = {
     "has no obvious destination — declare it in install.ini [config]":
         "não tem destino óbvio — declare em install.ini [config]",
     "has no recipe in install.ini [secrets]": "não tem receita em install.ini [secrets]",
+    "(putting back what the failure stopped)": "(subindo de volta o que a falha parou)",
+    "this one failed too:": "este também falhou:",
+    "did not finish — what ran before the failure:":
+        "não terminou — o que rodou antes da falha:",
     "the copy on the host differs — this rewrites it, dropping ":
         "a cópia no host difere — isto reescreve ela, descartando ",
     " line(s) of its own": " linha(s) próprias",
@@ -1116,6 +1120,44 @@ def drift_warning(u, linhas, limite=10):
     return "\n".join([cabeca] + corpo)
 
 
+def undo(restantes):
+    """Runs the Recovery steps a failed plan never reached.
+
+    Announced, because a service coming back up is not a detail the person
+    reading a failure should have to assume. And each one is attempted even if
+    the one before it also failed: they are independent units, and the point is
+    to leave as little stopped as possible.
+    """
+    for desc, action in restantes:
+        if not isinstance(action, Recovery):
+            continue
+        say(f"  {yellow('->')} {desc}  " + loc("(putting back what the failure stopped)"),
+            file=sys.stderr)
+        try:
+            action()
+        except Exception as e:                     # noqa: BLE001 - reported, not hidden
+            say(f"     {red(loc('this one failed too:'))} {e}", file=sys.stderr)
+
+
+class Recovery:
+    """A step that has to run even when an earlier one failed.
+
+    The stop that makes a backup cold is only worth it if the start is
+    guaranteed. Without that, a typo in `--out` makes `tar` exit non-zero, the
+    plan gives up at that step, and the service stays down until someone
+    notices — the run having printed "backup ready". Marking the step is what
+    lets the executor tell a step that undoes the damage from one that causes
+    it, without reading the description back, which is how `classificar` gets
+    the summary wrong.
+    """
+
+    def __init__(self, action):
+        self.action = action
+
+    def __call__(self):
+        return self.action()
+
+
 def plan_update(s, access="tailnet", href_local=False):
     """Re-copies the units over the installed ones and restarts. Touches no
     data, env or secret.
@@ -1238,7 +1280,8 @@ def plan_backup(s, destination):
     restart = [main.stem] if main else units
     for unit in restart:
         steps.append((f"systemctl --user start {unit}",
-                      lambda unit=unit: run_lenient(["systemctl", "--user", "start", unit])))
+                      Recovery(lambda unit=unit:
+                               run_lenient(["systemctl", "--user", "start", unit]))))
     warnings.append(f"to restore: tar xzf {archive.name} -C {base}")
     return steps, warnings
 
@@ -1345,7 +1388,8 @@ def plan_restore(s, archive):
     main = s.main_unit()
     for unit in ([main.stem] if main else units):
         steps.append((f"systemctl --user start {unit}",
-                      lambda unit=unit: run(["systemctl", "--user", "start", unit])))
+                      Recovery(lambda unit=unit:
+                               run_lenient(["systemctl", "--user", "start", unit]))))
     return steps, warnings
 
 
@@ -3031,10 +3075,16 @@ def show_summary(feitos, verbos):
     if not feitos:
         return
     say("")
-    resumo = ", ".join(f"{n} {loc(SINGULAR[r] if n == 1 else r)}"
+    resumo = ", ".join(f"{n} {loc(SINGULAR.get(r, r) if n == 1 else r)}"
                        for r, n in sorted(feitos.items(), key=lambda kv: -kv[1]))
-    porverbo = ", ".join(f"{n} {verbo(v, n)}" for v, n in sorted(verbos.items()))
-    say(green(loc("done:")) + f" {porverbo}")
+    # `verbos` counts only what ran to the end. Empty means every service failed
+    # partway, and a green `done:` over a blank list reads as success — say what
+    # did happen instead, in the colour of a run that did not finish.
+    if verbos:
+        porverbo = ", ".join(f"{n} {verbo(v, n)}" for v, n in sorted(verbos.items()))
+        say(green(loc("done:")) + f" {porverbo}")
+    else:
+        say(yellow(loc("did not finish — what ran before the failure:")))
     say(f"  {resumo}")
 
 
@@ -3183,8 +3233,6 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
 
     say(f"{app}: {verbo(verb, 1)}, {len(steps)} " + loc("steps")
         + ("" if a.apply else "  " + loc("(dry-run)")))
-    if a.apply:
-        verbos[verb] = verbos.get(verb, 0) + 1
     for desc, _ in steps:
         say(f"  {'->' if a.apply else '  '} {desc}")
     for w in warnings:
@@ -3211,15 +3259,29 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
             say("\ncancelled.")
             return 1
 
-    for desc, action in steps:
+    for n, (desc, action) in enumerate(steps):
         try:
             action()
             rotulo = classificar(desc)
             if rotulo:
                 feitos[rotulo] = feitos.get(rotulo, 0) + 1
-        except subprocess.CalledProcessError as e:
-            say(f"\n{red('FAILED at:')} {desc}\n{(e.stderr or '').strip()}", file=sys.stderr)
+        # A step is not only a subprocess. `mkdir`, `unlink`, `write_bytes` and
+        # `write_text` raise OSError on a full or read-only disk; `set_env_value`
+        # raises re.error on a value the user typed; `getpass` raises EOFError on
+        # Ctrl-D. Catching only CalledProcessError turned each of those into a
+        # traceback with the service half installed and never restarted.
+        except (subprocess.CalledProcessError, OSError, EOFError,
+                KeyboardInterrupt, re.error) as e:
+            detalhe = (getattr(e, "stderr", None) or str(e)
+                       or type(e).__name__).strip()
+            say(f"\n{red(loc('FAILED at:'))} {desc}\n{detalhe}", file=sys.stderr)
+            undo(steps[n + 1:])
+            if isinstance(e, KeyboardInterrupt):
+                raise
             return 1
+    # Counted here and not before the loop: this is what drives the green
+    # `done:` line, and a run that failed at step 2 was still printing it.
+    verbos[verb] = verbos.get(verb, 0) + 1
     unit = (s.main_unit() or Path(app)).stem
     if a.restore:
         say(f"\n{app}: restored.")

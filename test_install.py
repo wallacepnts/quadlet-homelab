@@ -68,6 +68,37 @@ def scenario_no_overwrite(home):
           "--reinstall overwrites the .env")
 
 
+def scenario_failure(home, tmp):
+    """A plan that fails partway must not leave the service stopped, or lie.
+
+    The stop that makes a backup cold is only safe if the start is guaranteed:
+    a typo in `--out` used to stop the service, abort at `tar`, never reach the
+    start, and still print `done: 1 backup`.
+    """
+    r = run(APP, "--backup", "--apply", "--prefix", home,
+            "--out", str(Path(tmp, "nao-existe")), expected=1)
+    saida = r.stdout + r.stderr
+    check("FAILED at:" in saida, "a failed backup says where it failed")
+    check("putting back what the failure stopped" in saida,
+          "and runs the start the failure skipped")
+    check("done:" not in saida, "a failed run does NOT print the green done line")
+    check("Traceback" not in saida, "no traceback reaches the user")
+
+    # An OSError is not a CalledProcessError: the loop used to let it through.
+    # The target is the unit file, not its directory — a read-only directory
+    # still allows overwriting a file that is already in it.
+    alvo = path(home, "systemd", f"{APP}.container")
+    modo = alvo.stat().st_mode
+    alvo.chmod(0o400)
+    try:
+        r = run(APP, "--update", "--apply", "--prefix", home, expected=1)
+        saida = r.stdout + r.stderr
+        check("FAILED at:" in saida and "Traceback" not in saida,
+              "a read-only unit file is reported, not raised")
+    finally:
+        alvo.chmod(modo)
+
+
 def scenario_drift(home):
     """An edit made on the host has to survive being *named* before it is lost.
 
@@ -206,6 +237,7 @@ def main():
         print("install:");            scenario_install(home)
         print("user files:");         scenario_no_overwrite(home)
         print("drift:");              scenario_drift(home)
+        print("failure:");            scenario_failure(home, tmp)
         print("backup and restore:"); tgz = scenario_backup_restore(home, out)
         if tgz:
             print("restore refuses:"); scenario_restore_refuses(home, tgz, out)
