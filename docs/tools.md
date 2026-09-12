@@ -41,6 +41,12 @@ The GitHub repository is derived from the image name where that works, and
 `install.ini` carries an `[upstream]` override where it does not — the image is
 often not named like the repository (`dockurr/windows` against `dockur/windows`).
 
+Before asking whether a newer image exists, it asks whether the pinned one still
+does, and reports what does not as gone. Two got there by different roads: the
+Chrome image karakeep used was withdrawn from its registry, and the arch-toolbox
+digest was collected out from under a rolling image. Both kept running from the
+local copy while every fresh install failed.
+
 A GitHub release is not a published image: the release can land hours before the
 registry has the tag. That case is reported separately — the tag is checked in
 the registry before an update is called available.

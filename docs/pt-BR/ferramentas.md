@@ -41,6 +41,12 @@ O repositório no GitHub é derivado do nome da imagem quando dá, e o
 `install.ini` traz um override de `[upstream]` quando não dá — a imagem quase
 nunca tem o nome do repositório (`dockurr/windows` contra `dockur/windows`).
 
+Antes de perguntar se existe imagem mais nova, ele pergunta se a fixada ainda
+existe, e reporta como sumida a que não. Duas chegaram lá por caminhos
+diferentes: a imagem do Chrome que o karakeep usava foi retirada do registry, e
+o digest do arch-toolbox foi coletado debaixo de uma imagem rolling. As duas
+seguiam rodando da cópia local enquanto toda instalação nova falhava.
+
 Release no GitHub não é imagem publicada: a release pode sair horas antes de o
 registry ter a tag. Esse caso é reportado à parte — a tag é conferida no
 registry antes de a atualização ser dada como disponível.

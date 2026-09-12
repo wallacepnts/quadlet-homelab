@@ -39,9 +39,12 @@ PT = {
     "also show what is up to date": "mostra também o que está em dia",
     "test the parsing, no network": "testa o parsing, sem rede",
     "OUTDATED (": "DESATUALIZADOS (",
+    "PINNED IMAGE IS GONE (": "IMAGEM FIXADA SUMIU (",
+    "no longer pullable": "não baixa mais",
+    "gone from the registry": "sumiram do registry",
     "floating tag, moved since your pull (": "tag flutuante, mudou desde o seu pull (",
-    "novo digest": "digest novo",
-    "mesmo digest": "mesmo digest",
+    "new digest": "digest novo",
+    "same digest": "mesmo digest",
     "released, image not published yet (": "lançado, imagem ainda não publicada (",
     "cannot compare (": "sem comparação (",
     "up to date:": "em dia:",
@@ -487,6 +490,18 @@ def services():
 def check(item):
     app, unit, image, override, ref = item
     tag = image.split("@")[0].rpartition(":")[2]
+
+    # Before asking whether something newer exists, ask whether what is pinned
+    # still does. Nothing used to: the newer tag was checked in the registry and
+    # the current one never was, so an image that stopped being servable read as
+    # "up to date" forever. Two got there by different roads — the Zenika chrome
+    # karakeep used was withdrawn, and the arch-toolbox digest was collected out
+    # from under a rolling image. Both keep running from the local copy, and
+    # both fail the next install with nothing having warned.
+    marca, digest = ref_parts(image)
+    if registry_has(image, digest or marca or "latest") is False:
+        return (unit, image, tag, "no longer pullable", "GONE")
+
     if override and override.startswith("registry"):
         # For an image that does not version by GitHub release — a distro tag,
         # a project that only publishes git tags, an image versioned apart from
@@ -514,7 +529,7 @@ def check(item):
             if digest_la != digest_aqui:
                 return (unit, image, f"{tag}@{digest_aqui[7:15]}…",
                         f"{there or tag}@{digest_la}", "BEHIND")
-            return (unit, image, tag, "mesmo digest", "up to date")
+            return (unit, image, tag, "same digest", "up to date")
         if there in FLOATING:
             # The app does not pin it either: following the compose says
             # nothing, and calling that "up to date" would be a false comfort.
@@ -533,9 +548,9 @@ def check(item):
         # to compare against.
         m = moved(image, tag)
         if m is True:
-            return (unit, image, tag, "novo digest", "MOVED")
+            return (unit, image, tag, "new digest", "MOVED")
         if m is False:
-            return (unit, image, tag, "mesmo digest", "up to date")
+            return (unit, image, tag, "same digest", "up to date")
         return (unit, image, tag, "—", "floating tag")
     repo = github_repo(image, override)
     if not repo:
@@ -593,6 +608,14 @@ def selftest():
     # any-sync-bundle carries a date the version does not: the release name itself.
     assert "1.6.0-2026-08-18" in target_tags("1.5.0-2026-07-17", "v1.6.0-2026-08-18")
 
+    # The pinned image's own liveness, which is asked before "is there a newer
+    # one": both halves of a reference have to be checkable.
+    assert ref_parts("quay.io/toolbx/arch-toolbox@sha256:" + "3" * 64)[1] == \
+        "sha256:" + "3" * 64, "a digest-pinned image is checked by its digest"
+    assert ref_parts("gcr.io/zenika-hub/alpine-chrome:124")[0] == "124"
+    for chave in ("no longer pullable", "new digest", "same digest"):
+        assert chave in PT, f"{chave} is printed in the table and must translate"
+
     assert version("1.30.0-alpine") == (1, 30, 0)
     assert version("release") is None, "a name with no digits has no version"
     assert "release" in FLOATING, "karakeep's chrome is pinned at `release` upstream"
@@ -616,6 +639,7 @@ def main():
     with ThreadPoolExecutor(max_workers=8) as pool:
         rows = list(pool.map(check, items))
 
+    sumidas = [l for l in rows if l[4] == "GONE"]
     behind = [l for l in rows if l[4] == "BEHIND"]
     movidas = [l for l in rows if l[4] == "MOVED"]
     unclear = [l for l in rows if l[4].startswith(("unknown repo", "not comparable", "compose:"))
@@ -627,8 +651,9 @@ def main():
             return
         print("\n" + cor(loc(label)))
         for unit, _, here, there, _ in sorted(ls):
-            print(f"  {unit:<28} {here:<24} -> {there}")
+            print(f"  {unit:<28} {here:<24} -> {loc(there)}")
 
+    table(f"PINNED IMAGE IS GONE ({len(sumidas)}):", sumidas, red)
     table(f"OUTDATED ({len(behind)}):", behind, red)
     table(f"released, image not published yet ({len(pendente)}):", pendente)
     table(f"floating tag, moved since your pull ({len(movidas)}):", movidas)
@@ -642,6 +667,7 @@ def main():
     # of you: red acts now, yellow waits, the rest is background.
     partes = []
     for n, rotulo, cor in (
+            (len(sumidas), "gone from the registry", red),
             (len(behind), "outdated", red),
             (len(pendente), "waiting for the image", yellow),
             (sum(1 for l in rows if l[4] == "up to date"), "up to date", green),
@@ -650,7 +676,7 @@ def main():
         if n:
             partes.append(cor(f"{n} {loc(rotulo)}"))
     cabeca = dim(loc(f"{len(rows)} images"))
-    if not behind and not pendente:
+    if not behind and not pendente and not sumidas:
         print(f"\n{cabeca} {dim('·')} {green(loc('all up to date'))}")
     else:
         print("\n" + f" {dim('·')} ".join([cabeca] + partes))
