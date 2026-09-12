@@ -15,6 +15,31 @@ qh toolbx            # shows the plan
 qh toolbx --apply
 ```
 
+<details>
+<summary><b>Manual install (advanced)</b></summary>
+
+```bash
+# 1. Download the units (no need to clone the repository). Four Quadlet files,
+#    so they go in a folder of their own.
+mkdir -p ~/.config/containers/systemd/toolbx
+for f in arch fedora rhel ubuntu; do
+  wget -P ~/.config/containers/systemd/toolbx/ \
+    "https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/toolbx/toolbx-$f.container"
+done
+
+# 2. One work directory per shell — a bind mount fails if it does not exist.
+#    Do NOT chown them: they are yours, and the units' keep-id is precisely
+#    what makes the container accept that.
+mkdir -p ~/.config/containers/volumes/toolbx/{arch,fedora,rhel,ubuntu}
+
+# 3. There is no main unit here, so nothing starts on its own. Start the shell
+#    you want; the image is pulled on that first start.
+systemctl --user daemon-reload
+systemctl --user start toolbx-fedora
+```
+
+</details>
+
 ## Files
 
 ```
