@@ -42,6 +42,27 @@ The GitHub repository is derived from the image name where that works, and
 `install.ini` carries an `[upstream]` override where it does not — the image is
 often not named like the repository (`dockurr/windows` against `dockur/windows`).
 
+`--bump` takes what it found: it rewrites `Image=` and every place that mirrors
+it — the two version tables, the `Pinned to` line of each service README in both
+languages, and the per-unit page and Version column of a folder that documents
+its units apart. Without `--apply` it only shows the plan.
+
+```bash
+qh-updates --bump            # what it would take
+qh-updates --bump --apply    # take it
+```
+
+It refuses a major, listing them for you to take one at a time with `--major`.
+Rule 9 of the [conventions](./conventions.md) is that a version is chosen, not
+received: wud 9 exits at startup without an administrator that did not exist
+before, wger 2.7 converts old data with a setting that has to be right first and
+cannot be changed after. The refusal is a filter and not a guarantee — a
+calendar version has no major, so 2026.8 to 2026.9 reads as a minor and carried
+eight breaking changes. Reading the release notes is still the job.
+
+A sidecar tracked by `compose:` is bumped to what that compose declares,
+digest included.
+
 Before asking whether a newer image exists, it asks whether the pinned one still
 does, and reports what does not as gone. Two got there by different roads: the
 Chrome image karakeep used was withdrawn from its registry, and the arch-toolbox

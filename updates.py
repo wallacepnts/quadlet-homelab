@@ -15,6 +15,7 @@ spending API rate limit.
     python3 updates.py           # table of what is behind
     python3 updates.py --all     # include what is up to date
     python3 updates.py --selftest  # test the parsing, no network
+    python3 updates.py --bump --apply   # take it, in the unit and the docs
 
 No dependencies: stdlib only. Exits 0 even with an outdated service — being
 behind is information, not a defect; only an execution error fails.
@@ -42,6 +43,20 @@ PT = {
     "OUTDATED (": "DESATUALIZADOS (",
     "PINNED IMAGE IS GONE (": "IMAGEM FIXADA SUMIU (",
     "no longer pullable": "não baixa mais",
+    "MAJOR — read the release notes first (": "MAJOR — leia as notas da release antes (",
+    "  take them with --bump --major, one at a time":
+        "  pegue com --bump --major, um de cada vez",
+    "BUMP (": "SUBIR (",
+    "nothing to bump.": "nada a subir.",
+    "file(s) rewritten": "arquivo(s) reescrito(s)",
+    "  check it with:  python3 check.py": "  confira com:  python3 check.py",
+    "Image= did not match — left alone": "Image= não bateu — deixado como está",
+    "nothing was done. repeat with --apply": "nada foi feito. repita com --apply",
+    "rewrite Image= and every doc that mirrors it (without --apply, only show)":
+        "reescreve o Image= e todo doc que o espelha (sem --apply, só mostra)",
+    "execute (without it, only show)": "executa (sem ele, só mostra)",
+    "with --bump: include the major bumps it refuses by default":
+        "com --bump: inclui os majors que ele recusa por padrão",
     "gone from the registry": "sumiram do registry",
     "floating tag, moved since your pull (": "tag flutuante, mudou desde o seu pull (",
     "new digest": "digest novo",
@@ -81,6 +96,7 @@ limit da API.
     python3 updates.py           # tabela do que está atrasado
     python3 updates.py --all     # inclui o que está em dia
     python3 updates.py --selftest  # testa o parsing, sem rede
+    python3 updates.py --bump --apply   # pega, na unit e nos docs
 
 Sem dependências: só a stdlib. Sai 0 mesmo com serviço desatualizado — estar
 atrás é informação, não defeito; só erro de execução reprova.
@@ -595,11 +611,244 @@ def selftest():
     for chave in ("no longer pullable", "new digest", "same digest"):
         assert chave in PT, f"{chave} is printed in the table and must translate"
 
+    # What --bump refuses on its own. A version is chosen, not received.
+    assert major("1.37.1", "2.0.0"), "a first number that changes is never mechanical"
+    assert not major("1.37.1", "1.37.2")
+    assert not major("v11.0.0", "v11.0.1")
+    assert major("44", "46"), "a bare number is a version too (fedora-toolbox)"
+    assert not major("9", "9"), "a digest moving under the same tag is not a major"
+    assert not major("2026.8.1", "2026.9.2"), \
+        "a calendar version has no major — the filter cannot catch that one"
+
+    # The reference `--bump` writes, for both shapes the comparison produces.
+    import tempfile as _tf
+    with _tf.TemporaryDirectory() as d:
+        u = Path(d) / "x.container"
+        u.write_text("[Container]\nImage=ghcr.io/a/b:v1.0.0\n")
+        assert escrever_imagem(u, "ghcr.io/a/b:v1.0.0", "v1.0.1") == "ghcr.io/a/b:v1.0.1"
+        assert "Image=ghcr.io/a/b:v1.0.1" in u.read_text()
+        # a sidecar the app's compose pins by digest
+        velha = "docker.io/valkey/valkey:9@sha256:" + "a" * 64
+        u.write_text(f"[Container]\nImage={velha}\n")
+        nova = escrever_imagem(u, velha, "9@sha256:" + "b" * 64)
+        assert nova == "docker.io/valkey/valkey:9@sha256:" + "b" * 64, nova
+        # a reference that is not there is left alone rather than guessed at
+        assert escrever_imagem(u, "ghcr.io/nao/existe:1", "2") is None
+
     assert version("1.30.0-alpine") == (1, 30, 0)
     assert version("release") is None, "a name with no digits has no version"
     assert "release" in FLOATING, "karakeep's chrome is pinned at `release` upstream"
 
     print("selftest: ok")
+
+
+FIXADO = re.compile(r"^(?:Pinned to|Fixado em|Pinado em) ((?:`[^`]+`(?:, )?)+)")
+LINHA_UNIT = re.compile(r"^(\| <img.*\]\(\./docs/(?:pt-BR/)?([a-z0-9._-]+)\.md\).*\| `)([^`]+)(` \|)$")
+
+
+def major(aqui, la):
+    """True when the first number differs — the bump that is never mechanical.
+
+    wud 9 exits at startup without an administrator that did not exist before;
+    wger 2.7 converts old sessions with a timezone that has to be right BEFORE
+    and cannot be changed after; jellyfin 12 wants a backup and a full library
+    scan. Rule 9 of the conventions says a version is taken deliberately, and
+    an updater that takes majors on its own is that rule written and ignored.
+
+    A filter, not a guarantee. A calendar version has no major — home-assistant
+    2026.8 to 2026.9 reads as a minor here and carried eight integrations with
+    breaking changes. Reading the release notes is still the job; this only
+    keeps the obvious ones from going through unread.
+    """
+    if aqui == la:
+        return False                 # only the digest under the tag moved
+    n = lambda s: [int(x) for x in re.findall(r"\d+", s)]
+    a, b = n(aqui), n(la)
+    return not (a and b) or a[0] != b[0]
+
+
+def escrever_imagem(unit, atual, alvo):
+    """Rewrites `Image=`, keeping the registry and repository, taking the rest.
+
+    `alvo` is what the comparison produced: a tag (`v2.13.1`), or a tag with
+    the digest under it (`9@sha256:...`), which is the shape a sidecar tracked
+    by its app's own compose comes back with — immich's valkey kept reading `9`
+    across two releases while the image under it changed. Replacing the whole
+    reference is what makes that second shape work at all; substituting the tag
+    could not see it.
+    """
+    repo = atual.partition("@")[0]
+    if ":" in repo.rpartition("/")[2]:
+        repo = repo.rpartition(":")[0]
+    nova = f"{repo}:{alvo}"
+    texto = unit.read_text()
+    novo, n = re.subn(rf"^Image={re.escape(atual)}$", f"Image={nova}", texto, flags=re.M)
+    if n != 1:
+        return None
+    unit.write_text(novo)
+    return nova
+
+
+def tags_de(pasta):
+    """Every tag the folder's units pin, sorted and deduplicated.
+
+    An image pinned by digest has no tag and the docs quote the bare hex, which
+    is what immich's database and mdrop carry.
+    """
+    out = []
+    for unit in sorted(pasta.glob("*.container")):
+        for chave, valor in directives_of(unit):
+            if chave == "Image":
+                out.append(valor.partition("@sha256:")[2] or valor.rpartition(":")[2])
+    return sorted(set(out))
+
+
+def escrever_tabela(app, velha, nova):
+    """Swaps one tag in the version tables of both root READMEs.
+
+    Patched and not regenerated: the cell is prose in some rows — openwebui
+    carries `v0.11.0` (Open WebUI) + `0.32.6` (Ollama), and rebuilding it from
+    the units would keep the tags and lose the names.
+    """
+    mudados = []
+    for doc, padrao in ((RAIZ / "README.md", f"(./apps/{app})"),
+                        (RAIZ / "docs/pt-BR/README.md", f"(../../apps/{app}/README")):
+        if not doc.exists():
+            continue
+        linhas = doc.read_text().splitlines(keepends=True)
+        alvo = [i for i, l in enumerate(linhas) if padrao in l and f"`{velha}`" in l]
+        if len(alvo) != 1:
+            continue          # `—` for a stack with no single version, or already done
+        linhas[alvo[0]] = linhas[alvo[0]].replace(f"`{velha}`", f"`{nova}`")
+        doc.write_text("".join(linhas))
+        mudados.append(f"{doc.relative_to(RAIZ)}:{alvo[0] + 1}")
+    return mudados
+
+
+def sincronizar_docs():
+    """Rewrites every place that mirrors a tag, from the units themselves.
+
+    The version lives in six: `Image=`, the two version tables, the `Pinned to`
+    line of each service README in both languages, and — for a folder that
+    documents each unit apart — that unit's page and the Version column that
+    links to it. `check.py` fails on four of them, so this is what keeps a bump
+    from having to be typed six times and remembered six times.
+
+    Regenerated, not patched: it is derived data, and rebuilding it also
+    settles whatever drifted before.
+    """
+    mudados = []
+    for pasta in sorted(p for p in APPS.iterdir() if p.is_dir()):
+        esperado = ", ".join(f"`{x}`" for x in tags_de(pasta))
+        if not esperado:
+            continue
+        for doc in sorted(pasta.glob("README*.md")):
+            linhas = doc.read_text().splitlines(keepends=True)
+            for i, linha in enumerate(linhas):
+                m = FIXADO.match(linha)
+                if m and m.group(1) != esperado:
+                    linhas[i] = linha[:m.start(1)] + esperado + linha[m.end(1):]
+                    mudados.append(f"{doc.relative_to(RAIZ)}:{i + 1}")
+            doc.write_text("".join(linhas))
+        mudados += _sincronizar_por_unit(pasta)
+    return mudados
+
+
+def _sincronizar_por_unit(pasta):
+    """The per-unit pages and Version column of a folder that has them.
+
+    media-stack and vm document each unit on its own page; toolbx lists them in
+    a table. Those are a seventh and eighth place, and the sweep that found
+    them found 36 lines already stale.
+    """
+    mudados = []
+    tags = {}
+    for unit in sorted(pasta.glob("*.container")):
+        for chave, valor in directives_of(unit):
+            if chave == "Image":
+                tags[unit.stem.replace(f"{pasta.name}-", "")] = (
+                    valor.partition("@sha256:")[2] or valor.rpartition(":")[2])
+    for doc in sorted(pasta.glob("docs/*.md")) + sorted(pasta.glob("docs/*/*.md")):
+        alvo = tags.get(doc.stem)
+        if not alvo:
+            continue
+        linhas = doc.read_text().splitlines(keepends=True)
+        for i, linha in enumerate(linhas):
+            m = FIXADO.match(linha)
+            if m and m.group(1) != f"`{alvo}`":
+                linhas[i] = linha[:m.start(1)] + f"`{alvo}`" + linha[m.end(1):]
+                mudados.append(f"{doc.relative_to(RAIZ)}:{i + 1}")
+        doc.write_text("".join(linhas))
+    for doc in sorted(pasta.glob("README*.md")):
+        linhas = doc.read_text().splitlines(keepends=True)
+        for i, linha in enumerate(linhas):
+            m = LINHA_UNIT.match(linha.rstrip("\n"))
+            if not m:
+                continue
+            alvo = tags.get(m.group(2))
+            # `digest` is deliberate where the image is pinned by one: sixty-four
+            # hex characters in a table cell say less than the word.
+            if not alvo or alvo == m.group(3) or (
+                    m.group(3) == "digest" and re.fullmatch(r"[0-9a-f]{64}", alvo)):
+                continue
+            linhas[i] = m.group(1) + alvo + m.group(3) + "\n"
+            mudados.append(f"{doc.relative_to(RAIZ)}:{i + 1}")
+        doc.write_text("".join(linhas))
+    return mudados
+
+
+def bump(behind, items, apply, com_major):
+    """Takes the versions that are behind, in the unit and in every doc.
+
+    What it does NOT take is the point. Rule 9 of the conventions says a
+    version is chosen, not received: a major can need a secret created before
+    it starts (wud 9), a setting that has to be right before a migration and
+    cannot be changed after (wger 2.7), or a backup and a full library scan
+    (jellyfin 12). Those are listed and left, with the release page to read.
+    """
+    por_unit = {unit: (app, image) for (app, unit, image, _o, _r) in items}
+    fazer, segurar = [], []
+    for unit, imagem, _mostrado, la, _status in sorted(behind):
+        # From the unit's real `Image=`, not from the column the table printed:
+        # the digest case renders as `9@8e8d64b4…`, an ellipsis and all, which
+        # is a thing to read and not a thing to write.
+        tag_aqui = ref_parts(imagem)[0]
+        tag_la = la.partition("@")[0]
+        destino = (segurar if major(tag_aqui, tag_la) and not com_major else fazer)
+        destino.append((unit, imagem, tag_aqui, la))
+
+    if segurar:
+        print("\n" + yellow(loc("MAJOR — read the release notes first (")
+                            + f"{len(segurar)}):"))
+        for unit, _img, aqui, la in segurar:
+            print(f"  {unit:<28} {aqui:<24} -> {la}")
+        print(dim(loc("  take them with --bump --major, one at a time")))
+    if not fazer:
+        print("\n" + loc("nothing to bump."))
+        return 0
+
+    print("\n" + (green if apply else yellow)(
+        loc("BUMP (") + f"{len(fazer)}):" + ("" if apply else "  " + loc("(dry-run)"))))
+    tocados = []
+    for unit, imagem, aqui, la in fazer:
+        app, _ = por_unit[unit]
+        print(f"  {unit:<28} {aqui:<24} -> {la[:40]}")
+        if not apply:
+            continue
+        caminho = APPS / app / f"{unit}.container"
+        if not escrever_imagem(caminho, imagem, la):
+            print(dim(f"     {loc('Image= did not match — left alone')}"))
+            continue
+        tocados.append(f"{caminho.relative_to(RAIZ)}")
+        # The table cell carries the tag, never the digest under it.
+        tocados += escrever_tabela(app, aqui, la.partition("@")[0])
+    if not apply:
+        print("\n" + loc("nothing was done. repeat with --apply"))
+        return 0
+    tocados += sincronizar_docs()
+    print("\n" + green(loc("done:")) + f" {len(tocados)} " + loc("file(s) rewritten"))
+    print(dim(loc("  check it with:  python3 check.py")))
+    return 0
 
 
 def main():
@@ -608,6 +857,12 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--all", action="store_true", help=loc("also show what is up to date"))
     ap.add_argument("--selftest", action="store_true", help=loc("test the parsing, no network"))
+    ap.add_argument("--bump", action="store_true",
+                    help=loc("rewrite Image= and every doc that mirrors it "
+                             "(without --apply, only show)"))
+    ap.add_argument("--apply", action="store_true", help=loc("execute (without it, only show)"))
+    ap.add_argument("--major", action="store_true",
+                    help=loc("with --bump: include the major bumps it refuses by default"))
     a = ap.parse_args()
 
     if a.selftest:
@@ -620,6 +875,9 @@ def main():
 
     sumidas = [l for l in rows if l[4] == "GONE"]
     behind = [l for l in rows if l[4] == "BEHIND"]
+
+    if a.bump:
+        return bump(behind, items, a.apply, a.major)
     movidas = [l for l in rows if l[4] == "MOVED"]
     unclear = [l for l in rows if l[4].startswith(("unknown repo", "not comparable", "compose:"))
                or "no published release" in l[4]]

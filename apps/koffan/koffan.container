@@ -9,7 +9,7 @@ NoNewPrivileges=true
 User=1000
 PidsLimit=256
 
-Image=ghcr.io/pansalut/koffan:v2.13.0
+Image=ghcr.io/pansalut/koffan:v2.13.1
 ContainerName=koffan
 Network=tsdproxy-net.network
 PublishPort=8113:8080

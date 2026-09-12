@@ -42,6 +42,27 @@ O repositório no GitHub é derivado do nome da imagem quando dá, e o
 `install.ini` traz um override de `[upstream]` quando não dá — a imagem quase
 nunca tem o nome do repositório (`dockurr/windows` contra `dockur/windows`).
 
+O `--bump` pega o que ele encontrou: reescreve o `Image=` e todo lugar que o
+espelha — as duas tabelas de versão, a linha `Fixado em` do README de cada
+serviço nos dois idiomas, e a página por unit e a coluna Versão de uma pasta que
+documenta suas units em separado. Sem `--apply`, só mostra o plano.
+
+```bash
+qh-updates --bump            # o que ele pegaria
+qh-updates --bump --apply    # pegar
+```
+
+Ele recusa major, listando para você pegar um de cada vez com `--major`. A regra
+9 das [convenções](./convencoes.md) é que versão se escolhe, não se recebe: o wud
+9 sai no boot sem um administrador que antes não existia, o wger 2.7 converte
+dados antigos com uma configuração que precisa estar certa antes e não pode
+mudar depois. A recusa é filtro, não garantia — versão de calendário não tem
+major, então 2026.8 para 2026.9 lê como minor e trouxe oito mudanças
+incompatíveis. Ler as notas da release continua sendo o trabalho.
+
+Secundário rastreado por `compose:` sobe para o que aquele compose declara,
+digest incluído.
+
 Antes de perguntar se existe imagem mais nova, ele pergunta se a fixada ainda
 existe, e reporta como sumida a que não. Duas chegaram lá por caminhos
 diferentes: a imagem do Chrome que o karakeep usava foi retirada do registry, e

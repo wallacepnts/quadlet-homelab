@@ -87,7 +87,7 @@ Both containers are on `tsdproxy-net`, so `ntfy` resolves by name.
 qh koffan --update --apply
 ```
 
-Pinned to `v2.13.0`.
+Pinned to `v2.13.1`.
 
 ## Backup
 
