@@ -291,6 +291,54 @@ def check_ports(folders):
     return uses
 
 
+def upstream_problema(valor):
+    """What is wrong with an [upstream] value, or None when it parses.
+
+    updates.py reads four forms and nothing checked which one it got:
+
+        -                                  nothing to compare
+        registry                           the registry's tag list
+        registry:<pattern>                 that list, filtered
+        compose:<owner>/<repo>:<path>      the tag the app's own compose pins
+        compose:<url>                      the same, for a compose off GitHub
+        <owner>/<repo>                     that project's GitHub releases
+
+    A value outside them does not raise: it compares against the wrong thing
+    or against nothing, and the run reports "cannot compare" at best. The
+    grammar only grew a word recently — `registry:latest` — which is when a
+    stray space in it became a way to switch the mode off in silence.
+    """
+    if valor == "-":
+        return None
+    if valor.startswith("registry"):
+        resto = valor[len("registry"):]
+        if not resto:
+            return None
+        if not resto.startswith(":"):
+            return "expected `registry` or `registry:<pattern>`"
+        padrao = resto[1:]
+        if not padrao or padrao != padrao.strip():
+            return "the pattern after `registry:` is empty or padded with spaces"
+        try:
+            re.compile(padrao)
+        except re.error as e:
+            return f"the pattern after `registry:` is not a regex ({e})"
+        return None
+    if valor.startswith("compose:"):
+        resto = valor[len("compose:"):]
+        if resto.startswith(("http://", "https://")):
+            return None
+        if ":" not in resto:
+            return "expected `compose:<owner>/<repo>:<path>` or `compose:<url>`"
+        repo, path = resto.split(":", 1)
+        if repo.count("/") != 1 or not all(repo.split("/")) or not path:
+            return "expected `<owner>/<repo>:<path>` after `compose:`"
+        return None
+    if valor.count("/") != 1 or not all(valor.split("/")) or " " in valor:
+        return "expected `<owner>/<repo>`, `registry`, `compose:...` or `-`"
+    return None
+
+
 def check_manifest(folders):
     """Every Secret= has a recipe, and every .example has a known destination.
 
@@ -328,6 +376,19 @@ def check_manifest(folders):
             if sufixo not in unidades:
                 error("manifest", f"apps/{folder.name}: install.ini [{secao}] names "
                                   f"{sufixo}, which is not a unit of this folder")
+        # [upstream] keys are unit names too, and its values have a grammar
+        # (see upstream_problema). Neither was validated. A key naming no unit
+        # is dropped by updates.py without a word, and the image falls back to
+        # guessing its GitHub repository from the image name — the very guess
+        # the override exists to replace.
+        for key, valor in (ini.items("upstream") if ini.has_section("upstream") else []):
+            if key not in unidades:
+                error("manifest", f"apps/{folder.name}: install.ini [upstream] {key} "
+                                  f"is not a unit of this folder")
+            problema = upstream_problema(valor)
+            if problema:
+                error("manifest", f"apps/{folder.name}: install.ini [upstream] {key} = "
+                                  f"{valor} — {problema}")
         # [login] names the secret the install prints as the credentials, in
         # either shape (`password` next to a literal user, or `credentials`
         # holding `user:password`). A typo here is silent — the footer would
@@ -719,6 +780,19 @@ def selftest():
     assert all(x in TAILNET_PLACEHOLDERS for x in
                lab("https://a.${TAILNET}.ts.net https://b.<tailnet>.ts.net"))
     assert "some-real-name" not in TAILNET_PLACEHOLDERS  # check: ignore tailnet
+
+    # [upstream]: the four forms updates.py reads, and the ways a value looks
+    # right and means nothing. Calling upstream_problema rather than restating
+    # the grammar, so loosening the shipped one fails here.
+    for bom in ("-", "registry", "registry:latest", r"registry:^1\.2\..*$",
+                "compose:immich-app/immich:docker/docker-compose.yml",
+                "compose:https://goauthentik.io/docker-compose.yml",
+                "karakeep-app/karakeep"):
+        assert upstream_problema(bom) is None, bom
+    for ruim in ("registry: latest", "registry latest", "registry:", "registry:[",
+                 "compose:immich-app/immich", "compose:immich:docker/x.yml",
+                 "compose:", "karakeep", "karakeep/app/karakeep", ""):
+        assert upstream_problema(ruim), ruim
 
     print("selftest: ok")
 

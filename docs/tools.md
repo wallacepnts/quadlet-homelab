@@ -98,12 +98,35 @@ compares against the registry instead:
 
 ```ini
 [upstream]
-nginx = registry
+netbootxyz = registry
 ```
 
 It lists the registry's tags and takes the newest one shaped like ours: with
 `1.30.4-alpine` installed the candidates are `\d+.\d+.\d+-alpine`, so `-perl`
 and `latest` never win.
+
+A pattern after the colon narrows that list where the shape alone cannot —
+nginx keeps stable on even minors and mainline on odd, and publishes `-alpine`
+for both:
+
+```ini
+[upstream]
+nginx = registry:^1\.\d*[02468]\.\d+-alpine$
+```
+
+One value is special. `registry:latest` asks which numbered tag `latest`
+currently resolves to, and compares against that. It is for a project that
+numbers its prereleases too: Fedora publishes the stable release, the branched
+one and rawhide side by side, all numbered, so the highest number is always the
+wrong answer — `46` is byte-identical to `rawhide`, while `latest` is `44`.
+
+```ini
+[upstream]
+toolbx-fedora = registry:latest
+```
+
+And `-` says there is nothing to compare at all — toolbx's Arch image publishes
+only `latest`, so it is pinned by digest and no tag would answer for it.
 
 A floating tag (`latest`, a bare major) has no version to compare, so it is
 compared by digest instead: if the tag now points somewhere else than the image

@@ -98,12 +98,35 @@ com o registry:
 
 ```ini
 [upstream]
-nginx = registry
+netbootxyz = registry
 ```
 
 Ele lista as tags do registry e pega a mais nova com o mesmo formato da nossa:
 com `1.30.4-alpine` instalada, as candidatas são `\d+.\d+.\d+-alpine`, então
 `-perl` e `latest` nunca vencem.
+
+Um padrão depois dos dois-pontos estreita essa lista onde o formato sozinho não
+dá conta — o nginx deixa a stable nas minors pares e a mainline nas ímpares, e
+publica `-alpine` para as duas:
+
+```ini
+[upstream]
+nginx = registry:^1\.\d*[02468]\.\d+-alpine$
+```
+
+Um valor é especial. O `registry:latest` pergunta em qual tag numerada o
+`latest` resolve hoje, e compara com ela. Serve para projeto que numera também
+as prereleases: o Fedora publica lado a lado a release estável, a branched e a
+rawhide, todas numeradas, então o número mais alto é sempre a resposta errada —
+o `46` é idêntico byte a byte à `rawhide`, enquanto o `latest` é a `44`.
+
+```ini
+[upstream]
+toolbx-fedora = registry:latest
+```
+
+E `-` diz que não há o que comparar — a imagem Arch do toolbx só publica
+`latest`, então ela é fixada por digest e tag nenhuma responderia por ela.
 
 Tag flutuante (`latest`, major solto) não tem versão pra comparar, então a
 comparação é por digest: se a tag hoje aponta pra outro lugar que a imagem

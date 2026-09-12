@@ -203,6 +203,23 @@ def registry_tags(image, paginas=20):
     return todas or None
 
 
+def forma_de(tag):
+    """A regex matching the tags shaped like this one: digits become `\\d+`.
+
+    Shape is the whole of what keeps a name out of the comparison. `26.04`
+    must not be measured against `latest` or `rawhide`, and `1.31.1-alpine`
+    and `1.31.1-perl` are different images at the same version. This was
+    written three ways — twice in the code and once more in the selftest, so
+    the assertions held a copy rather than the shipped expression.
+    """
+    return re.compile(re.sub(r"\d+", r"\\d+", re.escape(tag)))
+
+
+def numeros(tag):
+    """The integers in a tag, in order — how two tags of a shape compare."""
+    return tuple(int(n) for n in re.findall(r"\d+", tag))
+
+
 def registry_stable(image, tag):
     """The numbered tag `latest` points at, which is the released one.
 
@@ -219,11 +236,10 @@ def registry_stable(image, tag):
     alvo = (h or {}).get("Docker-Content-Digest")
     if not alvo:
         return None
-    forma = re.sub(r"\d+", r"\\d+", re.escape(tag))
-    candidatos = [x for x in (registry_tags(image) or []) if re.fullmatch(forma, x)]
+    rx = forma_de(tag)
+    candidatos = [x for x in (registry_tags(image) or []) if rx.fullmatch(x)]
     # Newest first, so the usual case answers on the first request.
-    for cand in sorted(candidatos, key=lambda x: [int(v) for v in re.findall(r"\d+", x)],
-                       reverse=True)[:12]:
+    for cand in sorted(candidatos, key=numeros, reverse=True)[:12]:
         outro = _manifest_head(image, cand)
         if outro and outro.get("Docker-Content-Digest") == alvo:
             return cand
@@ -244,14 +260,10 @@ def registry_newest(image, tag, padrao=None):
         # An explicit pattern, for a project whose numbering carries meaning the
         # shape cannot: nginx puts stable on even minors and mainline on odd,
         # and both publish `-alpine`.
-        rx = re.compile(padrao)
+        bate = re.compile(padrao).match
     else:
-        forma = "".join(r"\d+" if p.isdigit() else re.escape(p)
-                        for p in re.findall(r"\d+|\D+", tag))
-        rx = re.compile("^" + forma + "$")
-    def numeros(x):
-        return tuple(int(n) for n in re.findall(r"\d+", x))
-    candidatas = [(numeros(x), x) for x in tags if rx.match(x)]
+        bate = forma_de(tag).fullmatch
+    candidatas = [(numeros(x), x) for x in tags if bate(x)]
     return max(candidatas)[1] if candidatas else None
 
 
@@ -537,13 +549,12 @@ def check(item):
                  else registry_newest(image, tag, padrao or None))
         if not there:
             return (unit, image, tag, "?", "registry: no comparable tag")
-        n = lambda x: tuple(int(v) for v in re.findall(r"\d+", x))
-        if n(there) > n(tag):
+        if numeros(there) > numeros(tag):
             return (unit, image, tag, there, "BEHIND")
         # Pinned *past* the released tag is the prerelease this mode exists to
         # catch — `46` outranks `44` by number and is rawhide. Asking only
         # whether we are behind would call that up to date and say nothing.
-        if n(there) < n(tag):
+        if numeros(there) < numeros(tag):
             return (unit, image, tag, there, "AHEAD")
         return (unit, image, tag, there, "up to date")
 
@@ -674,11 +685,17 @@ def selftest():
 
     # `registry:latest` builds the shape to look for from our own tag, so it
     # compares `44` against other bare numbers and never against `rawhide`.
-    forma = lambda tag: re.sub(r"\d+", r"\\d+", re.escape(tag))
-    import re as _re
-    assert _re.fullmatch(forma("44"), "46") and not _re.fullmatch(forma("44"), "rawhide")
-    assert _re.fullmatch(forma("26.04"), "25.10")
-    assert not _re.fullmatch(forma("26.04"), "latest")
+    # Calling forma_de, not a copy of it: the assertions used to rebuild the
+    # expression here, so loosening the shipped one still printed "ok".
+    assert forma_de("44").fullmatch("46")
+    for nao in ("rawhide", "latest", "44-beta", "f44"):
+        assert not forma_de("44").fullmatch(nao), nao
+    assert forma_de("26.04").fullmatch("25.10")
+    assert not forma_de("26.04").fullmatch("26")
+    assert forma_de("1.31.1-alpine").fullmatch("1.32.0-alpine")
+    assert not forma_de("1.31.1-alpine").fullmatch("1.32.0-perl")
+    assert numeros("1.31.1-alpine") == (1, 31, 1)
+    assert numeros("46") > numeros("44") and numeros("100") > numeros("99")
 
     assert version("1.30.0-alpine") == (1, 30, 0)
     assert version("release") is None, "a name with no digits has no version"
