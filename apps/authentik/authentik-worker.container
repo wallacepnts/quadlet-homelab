@@ -4,6 +4,14 @@ After=authentik-postgres.service podman.socket
 Requires=authentik-postgres.service podman.socket
 
 [Container]
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+AddCapability=CHOWN
+AddCapability=SETUID
+AddCapability=SETGID
+AddCapability=DAC_OVERRIDE
+AddCapability=FOWNER
 PidsLimit=256
 NoNewPrivileges=true
 Image=ghcr.io/goauthentik/server:2026.8.2

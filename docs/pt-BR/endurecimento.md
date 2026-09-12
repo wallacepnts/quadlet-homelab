@@ -22,7 +22,7 @@ motivo — e se mantém na mão.
 | `audiobookshelf` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
 | `authentik` | yes | **none** + `User=1000` |
 | `authentik-postgres` | yes | **none** + `User=70` |
-| `authentik-worker` | no | podman default + `User=0` |
+| `authentik-worker` | yes | 5 (`chown`, `dac_override`, `fowner`, `setgid`, `setuid`) + `User=0` |
 | `beaverhabits` | yes | **none** + `User=1000` |
 | `beszel` | yes | **none** |
 | `beszel-agent` | no | podman default |
@@ -166,6 +166,7 @@ mensagem prova por que ele não vai além.
 | `filebrowser` | sem `UserNS=keep-id` | `could not open database: open /home/filebrowser/data/database.db: permission denied` |
 | `filebrowser` | porta interna 80 | `Server error: listen tcp 0.0.0.0:80: bind: permission denied` sob keep-id |
 | `filebrowser` | `ReadOnly=true` com o `cacheDir` padrão | `cacheDir failed to create cache directory: mkdir tmp: read-only file system` — resolvido apontando o `cacheDir` pro volume |
+| `authentik-worker` | `DropCapability=ALL` sem nada adicionado | `chown: /data`, depois `chmod: /data`, depois `setpriv: setresuid failed` — o entrypoint ajusta os volumes como root e desce para o usuário do authentik, então precisa de cinco. O papel de **servidor** da mesma imagem não precisa de nenhuma, porque o `User=1000` faz o entrypoint pular esse trecho; o worker é `User=0` porque o socket do podman que ele monta pertence ao usuário do host, que mapeia para 0 |
 | `vaultzap` | `Secret=` com `type=mount` | `make mountpoint: read-only file system` — usar `type=env`. Não é regra geral: no mesmo Podman 6.0.2, o `owntracks-mosquitto` monta um secret `type=mount` sob `ReadOnly=true`, com e sem `UserNS=keep-id` |
 | `proxmox` | sem `--privileged` | `ERROR: Please start the container with the --privileged flag!` |
 | `toolbx` | instalar pacote com `UserNS=keep-id` | negado; usar `podman exec --user root` |
