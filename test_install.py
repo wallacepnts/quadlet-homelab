@@ -20,6 +20,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 APP = "homebox"          # volume + secret + .env + User=: covers all four cases
+STACK = "immich"         # 4 containers + a shared .network, in a subfolder
 
 failures = []
 
@@ -122,6 +123,45 @@ def scenario_drift(home):
     limpo = run(APP, "--update", "--prefix", home)
     check("differs" not in limpo.stdout,
           "a unit matching the repository raises no drift warning")
+
+
+def scenario_remove_safety(tmp):
+    """A removal has to take the units, and only this unit's.
+
+    Two ways it got that wrong. The flat layout — where a service sits whenever
+    it gained a `.network` after being installed — left every file on disk
+    while `--purge` deleted the data, and reported success: the next
+    daemon-reload brought the whole stack back against an empty volume. And
+    removing one unit of a stack took the shared `.network` with it, so the
+    siblings stopped generating at all.
+    """
+    home = str(Path(tmp, "stack"))
+    run(STACK, "--apply", "--prefix", home)
+    sub = path(home, "systemd", STACK)
+    check(sub.is_dir(), "the stack installs into its own subfolder")
+
+    r = run(f"{STACK}-postgres", "--remove", "--apply", "--prefix", home)
+    restantes = sorted(x.name for x in sub.iterdir())
+    check(f"{STACK}-postgres.container" not in restantes,
+          "removing one unit takes that unit")
+    check(f"{STACK}-net.network" in restantes,
+          "and leaves the .network its siblings still declare")
+    check("data deleted" not in r.stdout,
+          "a remove with no --purge does not claim data was deleted")
+
+    # The flat layout: every unit loose in systemd/, which Service.installed()
+    # and strays() both support and plan_remove used to walk straight past.
+    plano = str(Path(tmp, "flat"))
+    run(STACK, "--apply", "--prefix", plano)
+    origem = path(plano, "systemd", STACK)
+    for f in origem.iterdir():
+        f.rename(path(plano, "systemd", f.name))
+    origem.rmdir()
+    run(STACK, "--remove", "--purge", "--apply", "--prefix", plano, stdin=f"{STACK}\n")
+    sobraram = sorted(x.name for x in path(plano, "systemd").iterdir())
+    check(not sobraram, f"a purge on the flat layout takes the units too ({sobraram})")
+    check(not path(plano, "volumes", STACK).exists(),
+          "and the data, which it already did")
 
 
 def scenario_backup_restore(home, out):
@@ -238,6 +278,7 @@ def main():
         print("user files:");         scenario_no_overwrite(home)
         print("drift:");              scenario_drift(home)
         print("failure:");            scenario_failure(home, tmp)
+        print("remove safety:");      scenario_remove_safety(tmp)
         print("backup and restore:"); tgz = scenario_backup_restore(home, out)
         if tgz:
             print("restore refuses:"); scenario_restore_refuses(home, tgz, out)

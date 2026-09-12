@@ -1413,12 +1413,29 @@ def plan_remove(s, purge):
     # Only when the whole folder is being removed: with one unit picked, its
     # eleven siblings live in that same directory.
     if not s.only and dest.name == s.name and dest.is_dir():
-        steps.append((f"rm -rf {dest}", lambda: _rmtree(dest)))
+        steps.append((f"rm -rf {dest}",
+                      rotulado("units removed", lambda: _rmtree(dest))))
     else:
         for u in s.units:
+            # Service.units keeps the .network files when a unit is picked,
+            # because installing that unit needs them. Removing it does not:
+            # the siblings still carry `Network=`, and Quadlet generates
+            # nothing for a unit whose network file is gone — they keep running
+            # and never come back, with `systemctl start` naming no file.
+            if s.only and u.suffix == ".network":
+                continue
             target = dest / u.name
             if target.exists():
-                steps.append((f"rm {target}", lambda target=target: target.unlink()))
+                steps.append((f"rm {target}",
+                              rotulado("units removed",
+                                       lambda target=target: target.unlink())))
+    # The copy at the other address defines the same unit. plan_install and
+    # plan_update both clear it; leaving it here is what let a --purge delete
+    # the data while every file stayed on disk, and Quadlet went on generating
+    # from them — reported as a clean removal.
+    for velha in s.strays():
+        steps.append((f"rm {velha}  (old copy, same unit)",
+                      rotulado("units removed", lambda velha=velha: velha.unlink())))
     steps.append(("systemctl --user daemon-reload",
                   lambda: run(["systemctl", "--user", "daemon-reload"])))
 
@@ -2429,7 +2446,8 @@ def selftest():
     assert classificar("podman pull x") == "images pulled"
     assert classificar("systemctl --user restart x  (follows the log)") == "services restarted"
     assert classificar("systemctl --user daemon-reload") is None
-    assert set(SINGULAR) == {r for _, r in FEITO}, "every label needs a singular"
+    assert set(SINGULAR) == {r for _, r in FEITO} | ROTULOS, \
+        "every label — matched or stated — needs a singular"
 
     # the saved rule: command line beats it, it beats what the host has
     with tempfile.TemporaryDirectory() as d:
@@ -3056,10 +3074,33 @@ SINGULAR = {
     "archives written": "archive written",
     "data deleted": "data deleted",
     "secrets removed": "secret removed",
+    "units removed": "unit removed",
 }
 
 
-def classificar(desc):
+# Labels a step states outright, instead of leaving them to be read back out of
+# the description. Declared so the selftest can hold SINGULAR to the same
+# completeness it already holds FEITO to.
+ROTULOS = frozenset({"units removed"})
+
+
+def rotulado(rotulo, action):
+    """Tags what a step does, so the summary does not have to read it back.
+
+    Matching the description by prefix is how `rm -rf <unit dir>` — the units,
+    on a remove with no --purge — was counted as "data deleted" three lines
+    under a warning saying the data was kept. A step knows what it is at the
+    moment it is created; only the summary had to guess.
+    """
+    assert rotulo in ROTULOS, f"undeclared step label: {rotulo}"
+    action.rotulo = rotulo
+    return action
+
+
+def classificar(desc, action=None):
+    rotulo = getattr(action, "rotulo", None)
+    if rotulo:
+        return rotulo
     for prefixo, rotulo in FEITO:
         if desc.startswith(prefixo) or f" {prefixo}" in desc[:20]:
             return rotulo
@@ -3262,7 +3303,7 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
     for n, (desc, action) in enumerate(steps):
         try:
             action()
-            rotulo = classificar(desc)
+            rotulo = classificar(desc, action)
             if rotulo:
                 feitos[rotulo] = feitos.get(rotulo, 0) + 1
         # A step is not only a subprocess. `mkdir`, `unlink`, `write_bytes` and
