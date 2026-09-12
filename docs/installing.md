@@ -39,6 +39,20 @@ not change the file already on the host, and this is what fixes it. It touches
 no volume, no `.env` and no secret. A moving tag (`latest`) is always pulled; a
 pinned one only when the host does not have it.
 
+It re-copies the unit, so anything edited on the host goes away — and the plan
+says so before it does, line by line:
+
+```
+  !  ntfy.container: the copy on the host differs — this rewrites it, dropping 2 line(s) of its own
+       -# PublishPort left out on purpose: reached over the tailnet only
+       -PidsLimit=64
+```
+
+It warns, it does not refuse: run it without `--apply` first and read, which is
+the point of the dry run. Worth doing across the board with `qh --all --update`
+before a round of updates, since that is where an edit made months ago and
+forgotten turns up.
+
 **A plain install over an installed service refuses** and names the two ways
 forward:
 

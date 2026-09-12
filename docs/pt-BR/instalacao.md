@@ -38,6 +38,20 @@ arquivo já instalado no host, e é isso que ele resolve. Não toca em volume,
 `.env` nem secret. Tag móvel (`latest`) é sempre puxada; tag fixa só quando o
 host não a tem.
 
+Ele recopia a unit, então o que foi editado no host se perde — e o plano diz
+isso antes, linha por linha:
+
+```
+  !  ntfy.container: a cópia no host difere — isto reescreve ela, descartando 2 linha(s) próprias
+       -# PublishPort left out on purpose: reached over the tailnet only
+       -PidsLimit=64
+```
+
+Ele avisa, não recusa: rode sem `--apply` primeiro e leia, que é para isso que
+a simulação existe. Vale passar em todos com `qh --all --update` antes de uma
+rodada de atualizações, porque é aí que aparece a edição feita meses atrás e
+esquecida.
+
 **Instalação simples sobre serviço instalado recusa** e mostra os dois
 caminhos:
 
