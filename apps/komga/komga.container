@@ -2,24 +2,26 @@
 Description=Komga (comics and manga library)
 
 [Container]
-ReadOnly=true
-Tmpfs=/tmp:size=64M
-DropCapability=ALL
-NoNewPrivileges=true
-User=1000
-PidsLimit=512
-
 Image=ghcr.io/gotson/komga:1.26.3
 ContainerName=komga
+
 Network=tsdproxy-net.network
 PublishPort=8119:25600
+
+EnvironmentFile=%h/.config/containers/env/komga.env
 
 Volume=%h/.config/containers/volumes/komga/config:/config:Z
 # The library, read-only: Komga indexes and reads, and never has to write
 # where your files are. ${MEDIA_DATA_DIR} is the same root the media-stack
 # uses, from ~/.config/environment.d (rule 19 of the conventions).
 Volume=${MEDIA_DATA_DIR}/comics:/books:ro,Z
-EnvironmentFile=%h/.config/containers/env/komga.env
+
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+User=1000
+PidsLimit=512
+NoNewPrivileges=true
 
 HealthCmd=CMD-SHELL curl -fsS -o /dev/null http://127.0.0.1:25600/actuator/health || exit 1
 HealthInterval=30s
@@ -39,6 +41,7 @@ Label=homepage.name=Komga
 Label=homepage.icon=https://cdn.jsdelivr.net/gh/selfhst/icons/svg/komga.svg
 Label=homepage.href=https://komga.${TAILNET}.ts.net
 Label=homepage.description="Comics and manga, with reading progress that follows you between devices"
+
 Label=wud.watch=true
 Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+$
 

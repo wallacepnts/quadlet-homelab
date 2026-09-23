@@ -2,6 +2,18 @@
 Description=Gitea (Git self-hosted)
 
 [Container]
+Image=docker.io/gitea/gitea:1.27.3
+ContainerName=gitea
+
+Network=tsdproxy-net.network
+PublishPort=3002:3000
+
+EnvironmentFile=%h/.config/containers/env/gitea.env
+Secret=gitea-secret-key,type=env,target=GITEA__security__SECRET_KEY
+Secret=gitea-internal-token,type=env,target=GITEA__security__INTERNAL_TOKEN
+
+Volume=%h/.config/containers/volumes/gitea/data:/data:Z
+
 DropCapability=ALL
 AddCapability=CHOWN
 AddCapability=SETUID
@@ -9,15 +21,6 @@ AddCapability=SETGID
 AddCapability=NET_BIND_SERVICE
 PidsLimit=256
 NoNewPrivileges=true
-Image=docker.io/gitea/gitea:1.27.3
-ContainerName=gitea
-Network=tsdproxy-net.network
-PublishPort=3002:3000
-
-Volume=%h/.config/containers/volumes/gitea/data:/data:Z
-EnvironmentFile=%h/.config/containers/env/gitea.env
-Secret=gitea-secret-key,type=env,target=GITEA__security__SECRET_KEY
-Secret=gitea-internal-token,type=env,target=GITEA__security__INTERNAL_TOKEN
 
 HealthCmd=CMD-SHELL wget -q --spider http://127.0.0.1:3000/ || exit 1
 HealthInterval=30s

@@ -2,21 +2,23 @@
 Description=Koffan (shared groceries list)
 
 [Container]
-ReadOnly=true
-Tmpfs=/tmp:size=64M
-DropCapability=ALL
-NoNewPrivileges=true
-User=1000
-PidsLimit=256
-
 Image=ghcr.io/pansalut/koffan:v2.13.1
 ContainerName=koffan
+
 Network=tsdproxy-net.network
 PublishPort=8113:8080
 
-Volume=%h/.config/containers/volumes/koffan/data:/data:Z
 EnvironmentFile=%h/.config/containers/env/koffan.env
 Secret=koffan-password,type=env,target=APP_PASSWORD
+
+Volume=%h/.config/containers/volumes/koffan/data:/data:Z
+
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+User=1000
+PidsLimit=256
+NoNewPrivileges=true
 
 HealthCmd=CMD-SHELL wget -q --spider http://127.0.0.1:8080/login || exit 1
 HealthInterval=30s
@@ -36,6 +38,7 @@ Label=homepage.name=Koffan
 Label=homepage.icon=koffan.png
 Label=homepage.href=https://koffan.${TAILNET}.ts.net
 Label=homepage.description="The house's shopping list, shared by one password"
+
 Label=wud.watch=true
 Label=wud.tag.include=^v[0-9]+.[0-9]+.[0-9]+$
 

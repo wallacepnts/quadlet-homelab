@@ -2,18 +2,22 @@
 Description=Invio (self-hosted invoicing)
 
 [Container]
-DropCapability=ALL
-NoNewPrivileges=true
-PidsLimit=256
-
 Image=ghcr.io/kittendevv/invio:v2.2.0
 ContainerName=invio
+
 Network=tsdproxy-net.network
 PublishPort=8106:8000
-Volume=%h/.config/containers/volumes/invio/data:/app/data:Z
+
 EnvironmentFile=%h/.config/containers/env/invio.env
 Secret=invio-admin-pass,type=env,target=ADMIN_PASS
 Secret=invio-jwt-secret,type=env,target=JWT_SECRET
+
+Volume=%h/.config/containers/volumes/invio/data:/app/data:Z
+
+DropCapability=ALL
+PidsLimit=256
+NoNewPrivileges=true
+
 HealthCmd=CMD-SHELL curl -s -o /dev/null http://127.0.0.1:8000/ || exit 1
 HealthInterval=30s
 HealthTimeout=10s

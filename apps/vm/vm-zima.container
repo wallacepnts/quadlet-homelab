@@ -2,20 +2,22 @@
 Description=ZimaOS in a VM (NAS and home-server OS)
 
 [Container]
-PidsLimit=512
-
 Image=docker.io/dockurr/zima:1.7.1
 ContainerName=vm-zima
+
 Network=tsdproxy-net.network
 PublishPort=8011:80
 PublishPort=8012:8006
 
-AddDevice=/dev/kvm
-AddDevice=/dev/net/tun
-AddCapability=NET_ADMIN
+EnvironmentFile=%h/.config/containers/env/vm-zima.env
 
 Volume=%h/.config/containers/volumes/vm/zima/storage:/storage:Z
-EnvironmentFile=%h/.config/containers/env/vm-zima.env
+
+AddDevice=/dev/kvm
+AddDevice=/dev/net/tun
+
+AddCapability=NET_ADMIN
+PidsLimit=512
 
 HealthCmd=CMD-SHELL curl -fsS -o /dev/null http://127.0.0.1:8006/ || exit 1
 HealthInterval=60s

@@ -19,8 +19,13 @@ tabela de versões do README, README de serviço cuja linha de versão não bate
 mais com as units, `PodmanArgs=` levando o que o Quadlet já tem chave para ou um
 espaço que ele não sobrevive, linha do
 [`endurecimento.md`](./endurecimento.md) que não bate mais com a unit, `$` em
-`HealthCmd` sem o escape duplo, barra invertida em valor de `Label=`, valor com espaço sem aspas, e `Notify=healthy`
-sem `HealthCmd`.
+`HealthCmd` sem o escape duplo, barra invertida em valor de `Label=`, valor com espaço sem aspas, `Notify=healthy`
+sem `HealthCmd`, e unit fora do layout padrão — os blocos descritos na
+[referência](./referencia.md#anatomia-de-um-container). Esse ele também conserta:
+
+```bash
+qh-check --format      # reescreve todas as units no layout; só ordem e linhas em branco
+```
 
 Pra dispensar uma regra de propósito, a unit diz isso e o motivo é obrigatório:
 

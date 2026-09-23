@@ -2,6 +2,17 @@
 Description=ownCloud
 
 [Container]
+Image=docker.io/owncloud/server:11.0.0-20260802
+ContainerName=owncloud
+
+Network=tsdproxy-net.network
+PublishPort=8094:8080
+
+EnvironmentFile=%h/.config/containers/env/owncloud.env
+Secret=owncloud-admin-password,type=env,target=OWNCLOUD_ADMIN_PASSWORD
+
+Volume=%h/.config/containers/volumes/owncloud/data:/mnt/data:Z
+
 DropCapability=ALL
 AddCapability=CHOWN
 AddCapability=SETUID
@@ -11,14 +22,7 @@ AddCapability=DAC_OVERRIDE
 AddCapability=FOWNER
 PidsLimit=256
 NoNewPrivileges=true
-Image=docker.io/owncloud/server:11.0.0-20260802
-ContainerName=owncloud
-Network=tsdproxy-net.network
-PublishPort=8094:8080
 
-Volume=%h/.config/containers/volumes/owncloud/data:/mnt/data:Z
-EnvironmentFile=%h/.config/containers/env/owncloud.env
-Secret=owncloud-admin-password,type=env,target=OWNCLOUD_ADMIN_PASSWORD
 HealthCmd=CMD-SHELL /usr/bin/healthcheck || exit 1
 HealthInterval=30s
 HealthTimeout=10s

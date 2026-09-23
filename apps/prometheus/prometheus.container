@@ -2,20 +2,21 @@
 Description=Prometheus (metrics collection)
 
 [Container]
-ReadOnly=true
-Tmpfs=/tmp:size=64M
-DropCapability=ALL
-NoNewPrivileges=true
-User=65534
-PidsLimit=256
-
 Image=docker.io/prom/prometheus:v3.14.0
 ContainerName=prometheus
+
 Network=tsdproxy-net.network
 PublishPort=9090:9090
 
 Volume=%h/.config/containers/volumes/prometheus/config/prometheus.yml:/etc/prometheus/prometheus.yml:ro,Z
 Volume=%h/.config/containers/volumes/prometheus/data:/prometheus:Z
+
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+User=65534
+PidsLimit=256
+NoNewPrivileges=true
 
 HealthCmd=CMD-SHELL wget -q --spider http://127.0.0.1:9090/-/healthy || exit 1
 HealthInterval=30s

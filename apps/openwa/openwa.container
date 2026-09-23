@@ -2,19 +2,9 @@
 Description=OpenWA (WhatsApp API gateway)
 
 [Container]
-ReadOnly=true
-Tmpfs=/tmp:size=512M
-DropCapability=ALL
-AddCapability=CHOWN
-AddCapability=DAC_OVERRIDE
-AddCapability=FOWNER
-AddCapability=SETGID
-AddCapability=SETUID
-NoNewPrivileges=true
-PidsLimit=2048
-
 Image=ghcr.io/rmyndharis/openwa:0.23.4
 ContainerName=openwa
+
 Network=tsdproxy-net.network
 PublishPort=2785:2785
 
@@ -24,11 +14,22 @@ Environment=XDG_CACHE_HOME=/tmp/.cache
 Environment=DATABASE_TYPE=sqlite
 Environment=STORAGE_TYPE=local
 Environment=PLUGINS_DIR=/app/data/plugins
-
-Volume=%h/.config/containers/volumes/openwa/data:/app/data:Z
 EnvironmentFile=%h/.config/containers/env/openwa.env
 Secret=openwa-master-key,type=env,target=API_MASTER_KEY
 Secret=openwa-key-pepper,type=env,target=API_KEY_PEPPER
+
+Volume=%h/.config/containers/volumes/openwa/data:/app/data:Z
+
+ReadOnly=true
+Tmpfs=/tmp:size=512M
+DropCapability=ALL
+AddCapability=CHOWN
+AddCapability=DAC_OVERRIDE
+AddCapability=FOWNER
+AddCapability=SETGID
+AddCapability=SETUID
+PidsLimit=2048
+NoNewPrivileges=true
 
 HealthCmd=CMD-SHELL curl -fsS -o /dev/null http://127.0.0.1:2785/api/health/ready || exit 1
 HealthInterval=30s

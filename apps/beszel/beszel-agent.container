@@ -4,20 +4,23 @@ Requires=podman.socket
 After=podman.socket
 
 [Container]
-PidsLimit=256
-NoNewPrivileges=true
 Image=docker.io/henrygd/beszel-agent:0.19.0
 ContainerName=beszel-agent
+
 Network=host
 
-Volume=%h/.config/containers/volumes/beszel/agent-data:/var/lib/beszel-agent:Z
-Volume=%h/.config/containers/volumes/beszel/socket:/beszel_socket:Z
-# `:z` alone is not enough on SELinux: rule 16 of the conventions.
-SecurityLabelType=container_runtime_t
-Volume=%t/podman/podman.sock:/var/run/docker.sock:ro,z
 EnvironmentFile=%h/.config/containers/env/beszel.env
 Secret=beszel-agent-key,target=/run/secrets/beszel-key
 Secret=beszel-agent-token,target=/run/secrets/beszel-token
+
+# `:z` alone is not enough on SELinux: rule 16 of the conventions.
+SecurityLabelType=container_runtime_t
+Volume=%h/.config/containers/volumes/beszel/agent-data:/var/lib/beszel-agent:Z
+Volume=%h/.config/containers/volumes/beszel/socket:/beszel_socket:Z
+Volume=%t/podman/podman.sock:/var/run/docker.sock:ro,z
+
+PidsLimit=256
+NoNewPrivileges=true
 
 HealthCmd=CMD /agent health
 HealthInterval=30s

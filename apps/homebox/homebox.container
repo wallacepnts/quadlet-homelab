@@ -2,20 +2,24 @@
 Description=HomeBox (home inventory)
 
 [Container]
+Image=ghcr.io/sysadminsmedia/homebox:0.26.2
+ContainerName=homebox
+
+Network=tsdproxy-net.network
+PublishPort=7745:7745
+
+EnvironmentFile=%h/.config/containers/env/homebox.env
+Secret=homebox-api-key-pepper,type=env,target=HBOX_AUTH_API_KEY_PEPPER
+
+Volume=%h/.config/containers/volumes/homebox/data:/data:Z
+
 ReadOnly=true
 Tmpfs=/tmp:size=64M
 DropCapability=ALL
-NoNewPrivileges=true
-PidsLimit=256
 User=1000
+PidsLimit=256
+NoNewPrivileges=true
 
-Image=ghcr.io/sysadminsmedia/homebox:0.26.2
-ContainerName=homebox
-Network=tsdproxy-net.network
-PublishPort=7745:7745
-Volume=%h/.config/containers/volumes/homebox/data:/data:Z
-EnvironmentFile=%h/.config/containers/env/homebox.env
-Secret=homebox-api-key-pepper,type=env,target=HBOX_AUTH_API_KEY_PEPPER
 HealthCmd=CMD-SHELL wget -q -O /dev/null http://127.0.0.1:7745/api/v1/status || exit 1
 HealthInterval=30s
 HealthTimeout=10s

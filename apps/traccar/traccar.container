@@ -2,23 +2,26 @@
 Description=Traccar (GPS tracking)
 
 [Container]
-ReadOnly=true
-Tmpfs=/tmp:size=64M
-Tmpfs=/opt/traccar/override:size=8M
-DropCapability=ALL
-NoNewPrivileges=true
-PidsLimit=256
-User=1000
-
 Image=docker.io/traccar/traccar:6.15.3
 ContainerName=traccar
+
 Network=tsdproxy-net.network
 PublishPort=8099:8082
 PublishPort=5056:5055/tcp
 PublishPort=5056:5055/udp
+
 Volume=%h/.config/containers/volumes/traccar/data:/opt/traccar/data:Z
 Volume=%h/.config/containers/volumes/traccar/logs:/opt/traccar/logs:Z
 Volume=%h/.config/containers/volumes/traccar/conf/traccar.xml:/opt/traccar/conf/traccar.xml:ro,Z
+
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+Tmpfs=/opt/traccar/override:size=8M
+DropCapability=ALL
+User=1000
+PidsLimit=256
+NoNewPrivileges=true
+
 HealthCmd=CMD-SHELL wget -q -O /dev/null http://127.0.0.1:8082/ || exit 1
 HealthInterval=30s
 HealthTimeout=10s

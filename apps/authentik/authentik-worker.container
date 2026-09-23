@@ -4,6 +4,26 @@ After=authentik-postgres.service podman.socket
 Requires=authentik-postgres.service podman.socket
 
 [Container]
+Image=ghcr.io/goauthentik/server:2026.8.2
+ContainerName=authentik-worker
+Exec=worker
+
+Network=authentik-net.network
+
+Environment=AUTHENTIK_POSTGRESQL__HOST=postgresql
+Environment=AUTHENTIK_POSTGRESQL__NAME=authentik
+Environment=AUTHENTIK_POSTGRESQL__USER=authentik
+Secret=authentik-postgres-password,type=env,target=AUTHENTIK_POSTGRESQL__PASSWORD
+Secret=authentik-secret-key,type=env,target=AUTHENTIK_SECRET_KEY
+
+# `:z` alone is not enough on SELinux: rule 16 of the conventions.
+SecurityLabelType=container_runtime_t
+Volume=%h/.config/containers/volumes/authentik/data:/data:Z
+Volume=%h/.config/containers/volumes/authentik/certs:/certs:Z
+Volume=%t/podman/podman.sock:/var/run/docker.sock:z
+
+ShmSize=512m
+
 ReadOnly=true
 Tmpfs=/tmp:size=64M
 DropCapability=ALL
@@ -12,27 +32,9 @@ AddCapability=SETUID
 AddCapability=SETGID
 AddCapability=DAC_OVERRIDE
 AddCapability=FOWNER
+User=0
 PidsLimit=256
 NoNewPrivileges=true
-Image=ghcr.io/goauthentik/server:2026.8.2
-ContainerName=authentik-worker
-Network=authentik-net.network
-Exec=worker
-User=0
-
-Environment=AUTHENTIK_POSTGRESQL__HOST=postgresql
-Environment=AUTHENTIK_POSTGRESQL__NAME=authentik
-Environment=AUTHENTIK_POSTGRESQL__USER=authentik
-Secret=authentik-postgres-password,type=env,target=AUTHENTIK_POSTGRESQL__PASSWORD
-Secret=authentik-secret-key,type=env,target=AUTHENTIK_SECRET_KEY
-
-Volume=%h/.config/containers/volumes/authentik/data:/data:Z
-Volume=%h/.config/containers/volumes/authentik/certs:/certs:Z
-# `:z` alone is not enough on SELinux: rule 16 of the conventions.
-SecurityLabelType=container_runtime_t
-Volume=%t/podman/podman.sock:/var/run/docker.sock:z
-
-ShmSize=512m
 
 [Service]
 Restart=always

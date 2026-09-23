@@ -2,21 +2,23 @@
 Description=Grafana (dashboards over your metrics)
 
 [Container]
-ReadOnly=true
-Tmpfs=/tmp:size=64M
-DropCapability=ALL
-NoNewPrivileges=true
-User=472
-PidsLimit=256
-
 Image=docker.io/grafana/grafana:13.2.1
 ContainerName=grafana
+
 Network=tsdproxy-net.network
 PublishPort=3004:3000
 
-Volume=%h/.config/containers/volumes/grafana/data:/var/lib/grafana:Z
 EnvironmentFile=%h/.config/containers/env/grafana.env
 Secret=grafana-admin-password,type=env,target=GF_SECURITY_ADMIN_PASSWORD
+
+Volume=%h/.config/containers/volumes/grafana/data:/var/lib/grafana:Z
+
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+User=472
+PidsLimit=256
+NoNewPrivileges=true
 
 HealthCmd=CMD-SHELL wget -q --spider http://127.0.0.1:3000/api/health || exit 1
 HealthInterval=30s

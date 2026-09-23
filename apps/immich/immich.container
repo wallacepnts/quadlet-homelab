@@ -5,24 +5,28 @@ Requires=immich-redis.service immich-postgres.service
 Wants=immich-machine-learning.service
 
 [Container]
-PidsLimit=256
 Image=ghcr.io/immich-app/immich-server:v3.2.0
 ContainerName=immich
+
 Network=tsdproxy-net.network
 Network=immich-net.network
 PublishPort=2283:2283
-Volume=%h/.config/containers/volumes/immich/upload:/data:Z
-Volume=/etc/localtime:/etc/localtime:ro
-EnvironmentFile=%h/.config/containers/env/immich.env
+
 Environment=DB_USERNAME=postgres
 Environment=DB_DATABASE_NAME=immich
+EnvironmentFile=%h/.config/containers/env/immich.env
 Secret=immich-db-password,type=env,target=DB_PASSWORD
 
-UserNS=keep-id
-NoNewPrivileges=true
+Volume=%h/.config/containers/volumes/immich/upload:/data:Z
+Volume=/etc/localtime:/etc/localtime:ro
+
 ReadOnly=true
 Tmpfs=/tmp:size=512M
 DropCapability=ALL
+UserNS=keep-id
+PidsLimit=256
+NoNewPrivileges=true
+
 HealthCmd=CMD-SHELL curl -fsS -o /dev/null http://127.0.0.1:2283/api/server/ping || exit 1
 HealthInterval=30s
 HealthTimeout=10s

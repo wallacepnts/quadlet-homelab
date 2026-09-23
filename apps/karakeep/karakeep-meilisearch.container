@@ -2,19 +2,22 @@
 Description=Karakeep Meilisearch
 
 [Container]
-ReadOnly=true
-Tmpfs=/tmp:size=64M
-DropCapability=ALL
-PidsLimit=256
-NoNewPrivileges=true
 Image=docker.io/getmeili/meilisearch:v1.41.0
 ContainerName=karakeep-meilisearch
+
 Network=karakeep-net.network
 NetworkAlias=meilisearch
 
 Environment=MEILI_NO_ANALYTICS=true
 Secret=karakeep-meili-key,type=env,target=MEILI_MASTER_KEY
+
 Volume=%h/.config/containers/volumes/karakeep/meilisearch:/meili_data:Z
+
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+PidsLimit=256
+NoNewPrivileges=true
 
 HealthCmd=CMD-SHELL wget -q --spider http://127.0.0.1:7700/health || exit 1
 HealthInterval=5s

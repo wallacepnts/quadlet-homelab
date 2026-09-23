@@ -2,6 +2,16 @@
 Description=FreshRSS (RSS/Atom feed aggregator)
 
 [Container]
+Image=ghcr.io/freshrss/freshrss:1.30.0-alpine
+ContainerName=freshrss
+
+Network=tsdproxy-net.network
+PublishPort=8104:80
+
+EnvironmentFile=%h/.config/containers/env/freshrss.env
+
+Volume=%h/.config/containers/volumes/freshrss/data:/var/www/FreshRSS/data:Z
+
 ReadOnly=true
 Tmpfs=/tmp:size=64M
 DropCapability=ALL
@@ -11,13 +21,7 @@ AddCapability=SETGID
 AddCapability=NET_BIND_SERVICE
 PidsLimit=256
 NoNewPrivileges=true
-Image=ghcr.io/freshrss/freshrss:1.30.0-alpine
-ContainerName=freshrss
-Network=tsdproxy-net.network
-PublishPort=8104:80
 
-Volume=%h/.config/containers/volumes/freshrss/data:/var/www/FreshRSS/data:Z
-EnvironmentFile=%h/.config/containers/env/freshrss.env
 HealthCmd=CMD-SHELL php cli/health.php || exit 1
 HealthInterval=30s
 HealthTimeout=10s

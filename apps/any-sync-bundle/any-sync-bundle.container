@@ -2,6 +2,17 @@
 Description=Any-Sync-Bundle server — AIO mode (Mongo + Redis embedded)
 
 [Container]
+Image=ghcr.io/grishy/any-sync-bundle:1.6.0-2026-08-18
+ContainerName=any-sync-bundle
+
+Network=tsdproxy-net.network
+PublishPort=33010:33010
+PublishPort=33020:33020/udp
+
+EnvironmentFile=%h/.config/containers/env/any-sync-bundle.env
+
+Volume=%h/.config/containers/volumes/any-sync-bundle/data:/data:Z
+
 DropCapability=ALL
 AddCapability=CHOWN
 AddCapability=SETUID
@@ -10,13 +21,7 @@ AddCapability=DAC_OVERRIDE
 AddCapability=FOWNER
 PidsLimit=512
 NoNewPrivileges=true
-Image=ghcr.io/grishy/any-sync-bundle:1.6.0-2026-08-18
-ContainerName=any-sync-bundle
-Network=tsdproxy-net.network
-PublishPort=33010:33010
-PublishPort=33020:33020/udp
-Volume=%h/.config/containers/volumes/any-sync-bundle/data:/data:Z
-EnvironmentFile=%h/.config/containers/env/any-sync-bundle.env
+
 HealthCmd=CMD-SHELL bash -c '</dev/tcp/127.0.0.1/33010' || exit 1
 HealthInterval=15s
 HealthTimeout=5s
@@ -35,6 +40,7 @@ Label=homepage.group=Productivity
 Label=homepage.name=Any-Sync-Bundle
 Label=homepage.icon=anytype.svg
 Label=homepage.description="Self-hosted Anytype backend"
+
 Label=wud.watch=true
 Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+-[0-9]+-[0-9]+-[0-9]+$
 

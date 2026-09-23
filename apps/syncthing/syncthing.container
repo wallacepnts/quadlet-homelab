@@ -2,23 +2,27 @@
 Description=Syncthing
 
 [Container]
-ReadOnly=true
-Tmpfs=/tmp:size=64M
-DropCapability=ALL
-User=1000
-PidsLimit=256
-NoNewPrivileges=true
 Image=docker.io/syncthing/syncthing:2.1.5
 ContainerName=syncthing
+
 Network=tsdproxy-net.network
 PublishPort=8384:8384
 PublishPort=22000:22000
 PublishPort=22000:22000/udp
 PublishPort=21027:21027/udp
 
-Volume=%h/.config/containers/volumes/syncthing/data:/var/syncthing:Z
-EnvironmentFile=%h/.config/containers/env/syncthing.env
 Environment=STGUIADDRESS=0.0.0.0:8384
+EnvironmentFile=%h/.config/containers/env/syncthing.env
+
+Volume=%h/.config/containers/volumes/syncthing/data:/var/syncthing:Z
+
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+User=1000
+PidsLimit=256
+NoNewPrivileges=true
+
 HealthCmd=CMD-SHELL curl -fkLsS -m 2 127.0.0.1:8384/rest/noauth/health | grep -o --color=never OK || exit 1
 HealthInterval=1m
 HealthTimeout=10s

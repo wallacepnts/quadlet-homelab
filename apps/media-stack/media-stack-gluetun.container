@@ -2,14 +2,10 @@
 Description=Gluetun (optional VPN tunnel for Deluge)
 
 [Container]
-PidsLimit=256
 Image=docker.io/qmcgaw/gluetun:latest
 ContainerName=gluetun
-Network=tsdproxy-net.network
-AddDevice=/dev/net/tun:/dev/net/tun
-PodmanArgs=--privileged
-EnvironmentFile=%h/.config/containers/env/media-stack-gluetun.env
 
+Network=tsdproxy-net.network
 # Deluge runs on its own by default and this container does nothing until you
 # ask for it. To put Deluge behind the VPN, uncomment everything below and
 # comment the ports and the labels in media-stack-deluge.container — the two
@@ -27,6 +23,13 @@ EnvironmentFile=%h/.config/containers/env/media-stack-gluetun.env
 #Label=homepage.icon=deluge.svg
 #Label=homepage.href=https://deluge.${TAILNET}.ts.net
 #Label=homepage.description="Torrent client, behind the VPN"
+
+EnvironmentFile=%h/.config/containers/env/media-stack-gluetun.env
+
+AddDevice=/dev/net/tun:/dev/net/tun
+PodmanArgs=--privileged
+
+PidsLimit=256
 
 HealthCmd=CMD-SHELL wget -q --spider http://127.0.0.1:9999/ || exit 1
 HealthInterval=30s

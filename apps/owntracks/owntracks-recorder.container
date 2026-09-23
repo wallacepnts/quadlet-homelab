@@ -4,18 +4,22 @@ After=owntracks-mosquitto.service
 Requires=owntracks-mosquitto.service
 
 [Container]
-PidsLimit=256
-NoNewPrivileges=true
 Image=docker.io/owntracks/recorder:1.0.4
 ContainerName=owntracks-recorder
+
 Network=tsdproxy-net.network
 Network=owntracks-net.network
 PublishPort=8086:8083
 
-Volume=%h/.config/containers/volumes/owntracks/store:/store:Z
-Volume=%h/.config/containers/volumes/owntracks/config:/config:Z
 EnvironmentFile=%h/.config/containers/env/owntracks-recorder.env
 Secret=owntracks-mqtt-password,type=env,target=OTR_PASS
+
+Volume=%h/.config/containers/volumes/owntracks/store:/store:Z
+Volume=%h/.config/containers/volumes/owntracks/config:/config:Z
+
+PidsLimit=256
+NoNewPrivileges=true
+
 HealthCmd=CMD-SHELL curl --silent --fail http://127.0.0.1:8083/ || exit 1
 HealthInterval=30s
 HealthTimeout=5s
@@ -34,6 +38,7 @@ Label=homepage.name=OwnTracks
 Label=homepage.icon=owntracks.svg
 Label=homepage.href=https://owntracks.${TAILNET}.ts.net
 Label=homepage.description="Self-hosted location tracking"
+
 Label=wud.watch=true
 Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+$
 

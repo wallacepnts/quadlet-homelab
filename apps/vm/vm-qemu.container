@@ -2,19 +2,21 @@
 Description=QEMU (any OS in a VM, viewed in the browser)
 
 [Container]
-PidsLimit=512
-
 Image=docker.io/qemux/qemu:7.50
 ContainerName=vm-qemu
+
 Network=tsdproxy-net.network
 PublishPort=8007:8006
 
-AddDevice=/dev/kvm
-AddDevice=/dev/net/tun
-AddCapability=NET_ADMIN
+EnvironmentFile=%h/.config/containers/env/vm-qemu.env
 
 Volume=%h/.config/containers/volumes/vm/qemu/storage:/storage:Z
-EnvironmentFile=%h/.config/containers/env/vm-qemu.env
+
+AddDevice=/dev/kvm
+AddDevice=/dev/net/tun
+
+AddCapability=NET_ADMIN
+PidsLimit=512
 
 HealthCmd=CMD-SHELL curl -fsS -o /dev/null http://127.0.0.1:8006/ || exit 1
 HealthInterval=60s

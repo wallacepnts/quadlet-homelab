@@ -2,18 +2,21 @@
 Description=Immich Redis
 
 [Container]
+Image=docker.io/valkey/valkey:9@sha256:70739f85ad2ee01a726a965584a0f94895f01b0c60b3cc8b0aeef11eaa6888cf
+ContainerName=immich-redis
+
+Network=immich-net.network
+NetworkAlias=redis
+
+Volume=%h/.config/containers/volumes/immich/redis:/data:Z
+
 ReadOnly=true
 Tmpfs=/tmp:size=64M
 DropCapability=ALL
-PidsLimit=256
-Image=docker.io/valkey/valkey:9@sha256:70739f85ad2ee01a726a965584a0f94895f01b0c60b3cc8b0aeef11eaa6888cf
-ContainerName=immich-redis
-Network=immich-net.network
-NetworkAlias=redis
 UserNS=keep-id
-Volume=%h/.config/containers/volumes/immich/redis:/data:Z
-
+PidsLimit=256
 NoNewPrivileges=true
+
 HealthCmd=CMD-SHELL redis-cli ping | grep -q PONG || exit 1
 HealthInterval=10s
 HealthTimeout=5s

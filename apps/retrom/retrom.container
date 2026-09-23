@@ -2,22 +2,24 @@
 Description=Retrom (game library and emulation)
 
 [Container]
-NoNewPrivileges=true
-PidsLimit=512
-DropCapability=ALL
-AddCapability=CHOWN
-AddCapability=SETGID
-AddCapability=SETUID
-
 Image=ghcr.io/jmberesford/retrom-service:0.8.4
 ContainerName=retrom
+
 Network=tsdproxy-net.network
 PublishPort=5101:5101
+
+EnvironmentFile=%h/.config/containers/env/retrom.env
 
 Volume=%h/.config/containers/volumes/retrom/config:/app/config:Z
 Volume=%h/.config/containers/volumes/retrom/data:/app/data:Z
 Volume=%h/.config/containers/volumes/retrom/library:/app/library:Z
-EnvironmentFile=%h/.config/containers/env/retrom.env
+
+DropCapability=ALL
+AddCapability=CHOWN
+AddCapability=SETGID
+AddCapability=SETUID
+PidsLimit=512
+NoNewPrivileges=true
 
 HealthCmd=CMD-SHELL curl -fsS -o /dev/null http://127.0.0.1:5101/ || exit 1
 HealthInterval=30s

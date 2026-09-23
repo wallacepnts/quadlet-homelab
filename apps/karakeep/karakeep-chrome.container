@@ -2,16 +2,19 @@
 Description=Karakeep Chrome (headless browser for the crawler)
 
 [Container]
+Image=ghcr.io/karakeep-app/karakeep-chrome:151.0.7922.47-r1
+ContainerName=karakeep-chrome
+Exec=--disable-gpu --disable-dev-shm-usage --hide-scrollbars --disable-blink-features=AutomationControlled --window-size=1440,900
+
+Network=karakeep-net.network
+NetworkAlias=chrome
+
 ReadOnly=true
 Tmpfs=/tmp:size=512M
 DropCapability=ALL
-NoNewPrivileges=true
 PidsLimit=256
-Image=ghcr.io/karakeep-app/karakeep-chrome:151.0.7922.47-r1
-ContainerName=karakeep-chrome
-Network=karakeep-net.network
-NetworkAlias=chrome
-Exec=--disable-gpu --disable-dev-shm-usage --hide-scrollbars --disable-blink-features=AutomationControlled --window-size=1440,900
+NoNewPrivileges=true
+
 HealthCmd=CMD-SHELL bash -c 'exec 3<>/dev/tcp/127.0.0.1/9222; printf "GET /json/version HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n" >&3; head -c 15 <&3 | grep -q "200 OK"'
 HealthInterval=15s
 HealthTimeout=5s

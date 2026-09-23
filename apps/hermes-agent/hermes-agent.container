@@ -2,14 +2,11 @@
 Description=Hermes Agent (personal AI agent, OpenAI-compatible gateway)
 
 [Container]
-NoNewPrivileges=true
-PidsLimit=2048
-ShmSize=1g
-
 Image=docker.io/nousresearch/hermes-agent:v2026.9.11
 ContainerName=hermes-agent
-Network=tsdproxy-net.network
 Exec=gateway run
+
+Network=tsdproxy-net.network
 PublishPort=8642:8642
 PublishPort=9119:9119
 
@@ -19,12 +16,17 @@ Environment=API_SERVER_PORT=8642
 Environment=HERMES_DASHBOARD=1
 Environment=HERMES_DASHBOARD_HOST=0.0.0.0
 Environment=HERMES_DASHBOARD_PORT=9119
-
-Volume=%h/.config/containers/volumes/hermes-agent/data:/opt/data:Z
 EnvironmentFile=%h/.config/containers/env/hermes-agent.env
 Secret=hermes-agent-api-key,type=env,target=API_SERVER_KEY
 Secret=hermes-agent-dashboard-password,type=env,target=HERMES_DASHBOARD_BASIC_AUTH_PASSWORD
 Secret=hermes-agent-dashboard-secret,type=env,target=HERMES_DASHBOARD_BASIC_AUTH_SECRET
+
+Volume=%h/.config/containers/volumes/hermes-agent/data:/opt/data:Z
+
+ShmSize=1g
+
+PidsLimit=2048
+NoNewPrivileges=true
 
 HealthCmd=CMD-SHELL curl -fsS -o /dev/null http://127.0.0.1:8642/health || exit 1
 HealthInterval=30s

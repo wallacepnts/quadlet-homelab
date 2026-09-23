@@ -4,23 +4,26 @@ Requires=podman.socket
 After=podman.socket
 
 [Container]
-ReadOnly=true
-Tmpfs=/tmp:size=64M
-DropCapability=ALL
-NoNewPrivileges=true
-PidsLimit=128
-
 Image=ghcr.io/gethomepage/homepage:latest
-AutoUpdate=registry
 ContainerName=homepage
+AutoUpdate=registry
+
 Network=tsdproxy-net.network
 PublishPort=3000:3000
+
+EnvironmentFile=%h/.config/containers/env/homepage.env
+
 # `:z` alone is not enough on SELinux: rule 16 of the conventions.
 SecurityLabelType=container_runtime_t
 Volume=%t/podman/podman.sock:/var/run/docker.sock:ro,z
 Volume=%h/.config/containers/volumes/homepage/config:/app/config:ro,Z
 Volume=%h/.config/containers/volumes/homepage/icons:/app/public/icons:ro,Z
-EnvironmentFile=%h/.config/containers/env/homepage.env
+
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+PidsLimit=128
+NoNewPrivileges=true
 
 HealthCmd=CMD-SHELL wget -q --spider http://127.0.0.1:3000/ || exit 1
 HealthInterval=10s

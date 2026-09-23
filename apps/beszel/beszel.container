@@ -3,20 +3,24 @@ Description=Beszel Hub (monitoring dashboard)
 Wants=beszel-agent.service
 
 [Container]
+Image=docker.io/henrygd/beszel:0.19.0
+ContainerName=beszel
+
+Network=tsdproxy-net.network
+Network=beszel-net.network
+PublishPort=8090:8090
+
+EnvironmentFile=%h/.config/containers/env/beszel.env
+
+Volume=%h/.config/containers/volumes/beszel/hub-data:/beszel_data:Z
+Volume=%h/.config/containers/volumes/beszel/socket:/beszel_socket:Z
+
 ReadOnly=true
 Tmpfs=/tmp:size=64M
 DropCapability=ALL
 PidsLimit=256
 NoNewPrivileges=true
-Image=docker.io/henrygd/beszel:0.19.0
-ContainerName=beszel
-Network=tsdproxy-net.network
-Network=beszel-net.network
-PublishPort=8090:8090
 
-Volume=%h/.config/containers/volumes/beszel/hub-data:/beszel_data:Z
-Volume=%h/.config/containers/volumes/beszel/socket:/beszel_socket:Z
-EnvironmentFile=%h/.config/containers/env/beszel.env
 HealthCmd=CMD /beszel health --url http://127.0.0.1:8090
 HealthInterval=30s
 HealthTimeout=5s

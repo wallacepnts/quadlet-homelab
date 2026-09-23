@@ -2,21 +2,23 @@
 Description=macOS in a container (QEMU/KVM)
 
 [Container]
-PidsLimit=512
-
 Image=docker.io/dockurr/macos:3.12
 ContainerName=vm-macos
+
 Network=tsdproxy-net.network
 PublishPort=8008:8006
 PublishPort=5900:5900/tcp
 PublishPort=5900:5900/udp
 
-AddDevice=/dev/kvm
-AddDevice=/dev/net/tun
-AddCapability=NET_ADMIN
+EnvironmentFile=%h/.config/containers/env/vm-macos.env
 
 Volume=%h/.config/containers/volumes/vm/macos/storage:/storage:Z
-EnvironmentFile=%h/.config/containers/env/vm-macos.env
+
+AddDevice=/dev/kvm
+AddDevice=/dev/net/tun
+
+AddCapability=NET_ADMIN
+PidsLimit=512
 
 HealthCmd=CMD-SHELL curl -fsS -o /dev/null http://127.0.0.1:8006/ || exit 1
 HealthInterval=60s

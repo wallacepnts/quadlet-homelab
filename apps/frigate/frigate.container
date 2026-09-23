@@ -2,16 +2,20 @@
 Description=Frigate (NVR with AI object detection)
 
 [Container]
-PidsLimit=256
-NoNewPrivileges=true
 Image=ghcr.io/blakeblackshear/frigate:0.18.0
 ContainerName=frigate
+
 Network=tsdproxy-net.network
 PublishPort=8971:8971
+
 Volume=%h/.config/containers/volumes/frigate/config:/config:Z
 Volume=${FRIGATE_MEDIA_DIR}:/media/frigate:Z
-Tmpfs=/tmp/cache:size=1g
+
 ShmSize=128m
+
+Tmpfs=/tmp/cache:size=1g
+PidsLimit=256
+NoNewPrivileges=true
 
 HealthCmd=CMD-SHELL curl -fsSk https://127.0.0.1:8971/ || exit 1
 HealthInterval=30s

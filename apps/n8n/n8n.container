@@ -2,19 +2,24 @@
 Description=n8n
 
 [Container]
-DropCapability=ALL
-PidsLimit=256
-NoNewPrivileges=true
 Image=docker.io/n8nio/n8n:2.38.7
 ContainerName=n8n
+
 Network=tsdproxy-net.network
 PublishPort=5678:5678
-UserNS=keep-id
-Volume=%h/.config/containers/volumes/n8n/data:/home/node/.n8n:Z
-EnvironmentFile=%h/.config/containers/env/n8n.env
+
 Environment=N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
 Environment=N8N_RUNNERS_ENABLED=true
+EnvironmentFile=%h/.config/containers/env/n8n.env
 Secret=n8n-encryption-key,type=env,target=N8N_ENCRYPTION_KEY
+
+Volume=%h/.config/containers/volumes/n8n/data:/home/node/.n8n:Z
+
+DropCapability=ALL
+UserNS=keep-id
+PidsLimit=256
+NoNewPrivileges=true
+
 HealthCmd=CMD-SHELL wget -q -O- http://127.0.0.1:5678/healthz > /dev/null || exit 1
 HealthInterval=30s
 HealthTimeout=5s

@@ -2,16 +2,21 @@
 Description=LubeLogger
 
 [Container]
+Image=ghcr.io/hargata/lubelogger:v1.7.3
+ContainerName=lubelogger
+
+Network=tsdproxy-net.network
+PublishPort=8083:8080
+
+EnvironmentFile=%h/.config/containers/env/lubelogger.env
+
+Volume=%h/.config/containers/volumes/lubelogger/data:/App/data:Z
+Volume=%h/.config/containers/volumes/lubelogger/keys:/root/.aspnet/DataProtection-Keys:Z
+
 DropCapability=ALL
 PidsLimit=256
 NoNewPrivileges=true
-Image=ghcr.io/hargata/lubelogger:v1.7.3
-ContainerName=lubelogger
-Network=tsdproxy-net.network
-PublishPort=8083:8080
-Volume=%h/.config/containers/volumes/lubelogger/data:/App/data:Z
-Volume=%h/.config/containers/volumes/lubelogger/keys:/root/.aspnet/DataProtection-Keys:Z
-EnvironmentFile=%h/.config/containers/env/lubelogger.env
+
 HealthCmd=CMD-SHELL timeout 3 bash -c "echo > /dev/tcp/127.0.0.1/8080" || exit 1
 HealthInterval=30s
 HealthTimeout=5s

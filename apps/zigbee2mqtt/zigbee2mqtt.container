@@ -4,22 +4,25 @@ After=zigbee2mqtt-mosquitto.service
 Requires=zigbee2mqtt-mosquitto.service
 
 [Container]
-ReadOnly=true
-Tmpfs=/tmp:size=64M
-DropCapability=ALL
-NoNewPrivileges=true
-PidsLimit=256
-
 Image=ghcr.io/koenkk/zigbee2mqtt:2.14.1
 ContainerName=zigbee2mqtt
+
 Network=tsdproxy-net.network
 Network=zigbee2mqtt-net.network
 PublishPort=8097:8080
+
 Volume=%h/.config/containers/volumes/zigbee2mqtt/data:/app/data:Z
 Volume=/etc/localtime:/etc/localtime:ro
 
 # USB coordinator: uncomment and use a /dev/serial/by-id/ path (see README).
 #AddDevice=/dev/serial/by-id/usb-XXXX:/dev/ttyACM0
+
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+PidsLimit=256
+NoNewPrivileges=true
+
 HealthCmd=CMD-SHELL wget -q -O - http://127.0.0.1:8080/ >/dev/null || exit 1
 HealthInterval=30s
 HealthTimeout=10s

@@ -2,19 +2,23 @@
 Description=Actual Budget Server
 
 [Container]
+Image=docker.io/actualbudget/actual-server:latest
+ContainerName=actual
+AutoUpdate=registry
+
+Network=tsdproxy-net.network
+PublishPort=5006:5006
+
+EnvironmentFile=%h/.config/containers/env/actual.env
+
+Volume=%h/.config/containers/volumes/actual/data:/data:Z
+
 ReadOnly=true
 Tmpfs=/tmp:size=64M
 DropCapability=ALL
 User=1000
 PidsLimit=256
 NoNewPrivileges=true
-Image=docker.io/actualbudget/actual-server:latest
-AutoUpdate=registry
-ContainerName=actual
-Network=tsdproxy-net.network
-PublishPort=5006:5006
-EnvironmentFile=%h/.config/containers/env/actual.env
-Volume=%h/.config/containers/volumes/actual/data:/data:Z
 
 HealthCmd=CMD-SHELL node /app/src/scripts/health-check.js
 HealthInterval=60s

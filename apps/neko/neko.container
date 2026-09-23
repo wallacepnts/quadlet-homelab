@@ -2,16 +2,9 @@
 Description=neko (a browser in a container, streamed over WebRTC)
 
 [Container]
-NoNewPrivileges=true
-PidsLimit=1024
-DropCapability=ALL
-AddCapability=CHOWN
-AddCapability=SETGID
-AddCapability=SETUID
-ShmSize=2g
-
 Image=ghcr.io/m1k1o/neko/firefox:3.1.5
 ContainerName=neko
+
 Network=tsdproxy-net.network
 PublishPort=8018:8080
 PublishPort=59000:59000/udp
@@ -20,6 +13,15 @@ PublishPort=59000:59000/tcp
 EnvironmentFile=%h/.config/containers/env/neko.env
 Secret=neko-user-password,type=env,target=NEKO_MEMBER_MULTIUSER_USER_PASSWORD
 Secret=neko-admin-password,type=env,target=NEKO_MEMBER_MULTIUSER_ADMIN_PASSWORD
+
+ShmSize=2g
+
+DropCapability=ALL
+AddCapability=CHOWN
+AddCapability=SETGID
+AddCapability=SETUID
+PidsLimit=1024
+NoNewPrivileges=true
 
 HealthCmd=CMD-SHELL wget -q --spider http://127.0.0.1:8080/health || exit 1
 HealthInterval=30s

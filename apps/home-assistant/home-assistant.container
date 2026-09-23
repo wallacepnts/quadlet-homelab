@@ -2,18 +2,21 @@
 Description=Home Assistant
 
 [Container]
+Image=ghcr.io/home-assistant/home-assistant:2026.9.2
+ContainerName=home-assistant
+
+Network=tsdproxy-net.network
+PublishPort=8123:8123
+
+EnvironmentFile=%h/.config/containers/env/home-assistant.env
+
+Volume=%h/.config/containers/volumes/home-assistant/config:/config:Z
+
 ReadOnly=true
 Tmpfs=/tmp:size=256M
 DropCapability=ALL
 PidsLimit=256
 NoNewPrivileges=true
-Image=ghcr.io/home-assistant/home-assistant:2026.9.2
-ContainerName=home-assistant
-Network=tsdproxy-net.network
-PublishPort=8123:8123
-
-Volume=%h/.config/containers/volumes/home-assistant/config:/config:Z
-EnvironmentFile=%h/.config/containers/env/home-assistant.env
 
 HealthCmd=CMD-SHELL wget -q --spider http://127.0.0.1:8123/ || exit 1
 HealthInterval=30s
@@ -32,6 +35,7 @@ Label=homepage.name="Home Assistant"
 Label=homepage.icon=home-assistant.svg
 Label=homepage.href=https://home-assistant.${TAILNET}.ts.net
 Label=homepage.description="Self-hosted home automation"
+
 Label=wud.watch=true
 Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+$
 

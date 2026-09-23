@@ -2,16 +2,12 @@
 Description=wger (workout planning and tracking)
 
 [Container]
-ReadOnly=true
-Tmpfs=/tmp:size=64M
-DropCapability=ALL
-NoNewPrivileges=true
-PidsLimit=256
-
 Image=docker.io/wger/server:2.7
 ContainerName=wger
+
 Network=tsdproxy-net.network
 PublishPort=8102:8000
+
 Environment=USE_CELERY=False
 Environment=DJANGO_CACHE_BACKEND=django.core.cache.backends.locmem.LocMemCache
 Environment=DJANGO_CACHE_LOCATION=wger-cache
@@ -22,6 +18,13 @@ Secret=wger-secret-key,type=env,target=SECRET_KEY
 Volume=%h/.config/containers/volumes/wger/db:/home/wger/db:Z
 Volume=%h/.config/containers/volumes/wger/static:/home/wger/static:Z
 Volume=%h/.config/containers/volumes/wger/media:/home/wger/media:Z
+
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+PidsLimit=256
+NoNewPrivileges=true
+
 HealthCmd=CMD-SHELL wget -q -O /dev/null http://127.0.0.1:8000/ || exit 1
 HealthInterval=30s
 HealthTimeout=15s

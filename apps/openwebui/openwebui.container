@@ -4,18 +4,21 @@ After=openwebui-ollama.service
 Requires=openwebui-ollama.service
 
 [Container]
-DropCapability=ALL
-PidsLimit=256
-NoNewPrivileges=true
 Image=ghcr.io/open-webui/open-webui:v0.11.3
 ContainerName=openwebui
+
 Network=tsdproxy-net.network
 Network=openwebui-net.network
 PublishPort=3003:8080
 
-Volume=%h/.config/containers/volumes/openwebui/webui:/app/backend/data:Z
 EnvironmentFile=%h/.config/containers/env/openwebui.env
 Secret=openwebui-secret-key,type=env,target=WEBUI_SECRET_KEY
+
+Volume=%h/.config/containers/volumes/openwebui/webui:/app/backend/data:Z
+
+DropCapability=ALL
+PidsLimit=256
+NoNewPrivileges=true
 
 HealthCmd=CMD-SHELL curl -fsS http://127.0.0.1:8080/health || exit 1
 HealthInterval=30s

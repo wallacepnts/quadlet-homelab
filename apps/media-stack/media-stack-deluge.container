@@ -2,6 +2,25 @@
 Description=Deluge (torrent client)
 
 [Container]
+Image=lscr.io/linuxserver/deluge:2.2.0
+ContainerName=deluge
+
+Network=tsdproxy-net.network
+PublishPort=8112:8112
+PublishPort=6881:6881
+PublishPort=6881:6881/udp
+# To send Deluge's traffic through the VPN instead: comment Network= and the
+# three PublishPort= above, uncomment the line below, then do the mirror image
+# in media-stack-gluetun.container, which then publishes and proxies on
+# Deluge's behalf. Deluge cannot keep its own ports in that mode — it stops
+# having an interface of its own.
+#Network=media-stack-gluetun.container
+
+EnvironmentFile=%h/.config/containers/env/media-stack.env
+
+Volume=%h/.config/containers/volumes/media-stack/deluge/config:/config:Z
+Volume=${MEDIA_DATA_DIR}:/data:Z
+
 DropCapability=ALL
 AddCapability=CHOWN
 AddCapability=SETUID
@@ -9,23 +28,6 @@ AddCapability=SETGID
 AddCapability=NET_BIND_SERVICE
 PidsLimit=256
 NoNewPrivileges=true
-Image=lscr.io/linuxserver/deluge:2.2.0
-ContainerName=deluge
-Network=tsdproxy-net.network
-PublishPort=8112:8112
-PublishPort=6881:6881
-PublishPort=6881:6881/udp
-
-# To send Deluge's traffic through the VPN instead: comment the four lines
-# above and uncomment the one below, then do the mirror image in
-# media-stack-gluetun.container, which then publishes and proxies on Deluge's
-# behalf. Deluge cannot keep its own ports in that mode — it stops having an
-# interface of its own.
-#Network=media-stack-gluetun.container
-
-Volume=%h/.config/containers/volumes/media-stack/deluge/config:/config:Z
-Volume=${MEDIA_DATA_DIR}:/data:Z
-EnvironmentFile=%h/.config/containers/env/media-stack.env
 
 HealthCmd=CMD-SHELL curl --silent --fail http://127.0.0.1:8112/ || exit 1
 HealthInterval=30s

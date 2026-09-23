@@ -2,24 +2,27 @@
 Description=Stirling-PDF (PDF manipulation)
 
 [Container]
+Image=docker.io/stirlingtools/stirling-pdf:2.14.3
+ContainerName=stirling-pdf
+
+Network=tsdproxy-net.network
+PublishPort=8095:8080
+
+EnvironmentFile=%h/.config/containers/env/stirling-pdf.env
+
+Volume=%h/.config/containers/volumes/stirling-pdf/config:/configs:Z
+Volume=%h/.config/containers/volumes/stirling-pdf/tessdata:/usr/share/tessdata:Z
+Volume=%h/.config/containers/volumes/stirling-pdf/logs:/logs:Z
+
 DropCapability=ALL
 AddCapability=CHOWN
 AddCapability=SETUID
 AddCapability=SETGID
 AddCapability=DAC_OVERRIDE
 AddCapability=FOWNER
-NoNewPrivileges=true
 PidsLimit=256
+NoNewPrivileges=true
 
-Image=docker.io/stirlingtools/stirling-pdf:2.14.3
-ContainerName=stirling-pdf
-Network=tsdproxy-net.network
-PublishPort=8095:8080
-
-Volume=%h/.config/containers/volumes/stirling-pdf/config:/configs:Z
-Volume=%h/.config/containers/volumes/stirling-pdf/tessdata:/usr/share/tessdata:Z
-Volume=%h/.config/containers/volumes/stirling-pdf/logs:/logs:Z
-EnvironmentFile=%h/.config/containers/env/stirling-pdf.env
 HealthCmd=CMD-SHELL curl -fs http://127.0.0.1:8080/api/v1/info/status | grep -q UP || exit 1
 HealthInterval=30s
 HealthTimeout=10s

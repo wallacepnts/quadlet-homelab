@@ -2,18 +2,20 @@
 Description=Ferdium Server (sync for the Ferdium desktop app)
 
 [Container]
-DropCapability=ALL
-NoNewPrivileges=true
-PidsLimit=256
-
 Image=docker.io/ferdium/ferdium-server:2.0.13
 ContainerName=ferdium-server
+
 Network=tsdproxy-net.network
 PublishPort=8110:3333
 
+EnvironmentFile=%h/.config/containers/env/ferdium-server.env
+
 Volume=%h/.config/containers/volumes/ferdium-server/data:/data:Z
 Volume=%h/.config/containers/volumes/ferdium-server/recipes:/app/recipes:Z
-EnvironmentFile=%h/.config/containers/env/ferdium-server.env
+
+DropCapability=ALL
+PidsLimit=256
+NoNewPrivileges=true
 
 HealthCmd=CMD-SHELL curl -fsS -o /dev/null http://127.0.0.1:3333/ || exit 1
 HealthInterval=30s
@@ -33,6 +35,7 @@ Label=homepage.name=Ferdium
 Label=homepage.icon=ferdium.svg
 Label=homepage.href=https://ferdium.${TAILNET}.ts.net
 Label=homepage.description="Keeps the Ferdium desktop app in sync, in place of a Franz account"
+
 Label=wud.watch=true
 Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+$
 

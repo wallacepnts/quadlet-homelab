@@ -2,18 +2,20 @@
 Description=Paperless-ngx Broker (Valkey)
 
 [Container]
+Image=docker.io/valkey/valkey:9.1.1-alpine3.24
+ContainerName=paperless-ngx-broker
+
+Network=paperless-ngx-net.network
+NetworkAlias=broker
+
+Volume=%h/.config/containers/volumes/paperless-ngx/broker:/data:Z
+
 ReadOnly=true
 Tmpfs=/tmp:size=64M
 DropCapability=ALL
 User=999
 PidsLimit=256
 NoNewPrivileges=true
-Image=docker.io/valkey/valkey:9.1.1-alpine3.24
-ContainerName=paperless-ngx-broker
-Network=paperless-ngx-net.network
-NetworkAlias=broker
-
-Volume=%h/.config/containers/volumes/paperless-ngx/broker:/data:Z
 
 HealthCmd=CMD-SHELL valkey-cli ping | grep -q PONG || exit 1
 HealthInterval=5s

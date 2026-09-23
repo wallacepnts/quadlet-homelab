@@ -2,15 +2,19 @@
 Description=Ollama (local LLMs, Open WebUI's backend)
 
 [Container]
-DropCapability=ALL
-PidsLimit=256
-NoNewPrivileges=true
 Image=docker.io/ollama/ollama:0.34.0
 ContainerName=ollama
+
 Network=tsdproxy-net.network
 Network=openwebui-net.network
 PublishPort=11434:11434
+
 Volume=%h/.config/containers/volumes/openwebui/ollama:/root/.ollama:Z
+
+DropCapability=ALL
+PidsLimit=256
+NoNewPrivileges=true
+
 HealthCmd=CMD-SHELL ollama list || exit 1
 HealthInterval=30s
 HealthTimeout=10s

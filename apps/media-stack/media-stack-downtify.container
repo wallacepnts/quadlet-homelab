@@ -2,16 +2,19 @@
 Description=Downtify (self-hosted Spotify music downloader)
 
 [Container]
-PidsLimit=256
-NoNewPrivileges=true
 Image=ghcr.io/henriquesebastiao/downtify:2.11.0
 ContainerName=downtify
+
 Network=tsdproxy-net.network
-PublishPort=8000:8000
 DNS=1.1.1.1
 DNS=1.0.0.1
+PublishPort=8000:8000
+
 Volume=${MEDIA_DATA_DIR}/downloads:/downloads:Z
 Volume=%h/.config/containers/volumes/media-stack/downtify/data:/data:Z
+
+PidsLimit=256
+NoNewPrivileges=true
 
 HealthCmd=CMD-SHELL wget --no-verbose --tries=1 --spider http://127.0.0.1:8000/ || exit 1
 HealthInterval=30s

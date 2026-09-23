@@ -2,21 +2,23 @@
 Description=Navidrome (music server)
 
 [Container]
-ReadOnly=true
-Tmpfs=/tmp:size=64M
-DropCapability=ALL
-NoNewPrivileges=true
-User=1000
-PidsLimit=256
-
 Image=ghcr.io/navidrome/navidrome:0.63.2
 ContainerName=navidrome
+
 Network=tsdproxy-net.network
 PublishPort=4533:4533
 
+EnvironmentFile=%h/.config/containers/env/media-stack.env
+
 Volume=%h/.config/containers/volumes/media-stack/navidrome/data:/data:Z
 Volume=${MEDIA_DATA_DIR}:/music:ro,Z
-EnvironmentFile=%h/.config/containers/env/media-stack.env
+
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+User=1000
+PidsLimit=256
+NoNewPrivileges=true
 
 HealthCmd=CMD-SHELL wget -q --spider http://127.0.0.1:4533/ping || exit 1
 HealthInterval=30s

@@ -2,17 +2,18 @@
 Description=Toolbx Ubuntu 26.04 (interactive shell)
 
 [Container]
-NoNewPrivileges=true
-PidsLimit=1024
-
 Image=quay.io/toolbx/ubuntu-toolbox:26.04
 ContainerName=toolbx-ubuntu
 Exec=sleep infinity
-UserNS=keep-id
+WorkingDir=/work
 
 Environment=HOME=/work
-WorkingDir=/work
+
 Volume=%h/.config/containers/volumes/toolbx/ubuntu:/work:Z
+
+UserNS=keep-id
+PidsLimit=1024
+NoNewPrivileges=true
 
 [Service]
 Restart=always

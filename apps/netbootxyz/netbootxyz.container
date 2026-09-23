@@ -2,6 +2,19 @@
 Description=netboot.xyz — network PXE boot server
 
 [Container]
+Image=ghcr.io/netbootxyz/netbootxyz:0.7.6-nbxyz24
+ContainerName=netbootxyz
+
+Network=tsdproxy-net.network
+PublishPort=69:69/udp
+PublishPort=8088:3000
+PublishPort=8089:80
+
+EnvironmentFile=%h/.config/containers/env/netbootxyz.env
+
+Volume=%h/.config/containers/volumes/netbootxyz/config:/config:Z
+Volume=%h/.config/containers/volumes/netbootxyz/assets:/assets:Z
+
 DropCapability=ALL
 AddCapability=CHOWN
 AddCapability=SETUID
@@ -11,16 +24,7 @@ AddCapability=DAC_OVERRIDE
 AddCapability=FOWNER
 PidsLimit=256
 NoNewPrivileges=true
-Image=ghcr.io/netbootxyz/netbootxyz:0.7.6-nbxyz24
-ContainerName=netbootxyz
-Network=tsdproxy-net.network
-PublishPort=69:69/udp
-PublishPort=8088:3000
-PublishPort=8089:80
 
-Volume=%h/.config/containers/volumes/netbootxyz/config:/config:Z
-Volume=%h/.config/containers/volumes/netbootxyz/assets:/assets:Z
-EnvironmentFile=%h/.config/containers/env/netbootxyz.env
 HealthCmd=CMD-SHELL nc -z -u -w2 127.0.0.1 69 && curl -fs http://127.0.0.1:80/ && curl -fs http://127.0.0.1:3000/ || exit 1
 HealthInterval=30s
 HealthTimeout=15s
@@ -39,6 +43,7 @@ Label=homepage.name=netboot.xyz
 Label=homepage.icon=netbootxyz.svg
 Label=homepage.href=https://netbootxyz.${TAILNET}.ts.net
 Label=homepage.description="Network PXE boot server"
+
 Label=wud.watch=true
 Label=wud.tag.transform="nbxyz([0-9])$ => nbxyz0$$1"
 

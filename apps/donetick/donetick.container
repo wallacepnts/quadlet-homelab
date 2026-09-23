@@ -2,22 +2,24 @@
 Description=Donetick (recurring household chores)
 
 [Container]
-ReadOnly=true
-Tmpfs=/tmp:size=64M
-DropCapability=ALL
-NoNewPrivileges=true
-PidsLimit=256
-User=1000
-
 Image=docker.io/donetick/donetick:v0.1.79
 ContainerName=donetick
+
 Network=tsdproxy-net.network
 PublishPort=2021:2021
 
 Environment=DT_ENV=selfhosted
 Environment=DT_SQLITE_PATH=/donetick-data/donetick.db
+
 Volume=%h/.config/containers/volumes/donetick/config:/config:Z
 Volume=%h/.config/containers/volumes/donetick/data:/donetick-data:Z
+
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+User=1000
+PidsLimit=256
+NoNewPrivileges=true
 
 HealthCmd=CMD-SHELL wget -q -O /dev/null http://127.0.0.1:2021/ || exit 1
 HealthInterval=30s

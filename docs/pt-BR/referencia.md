@@ -41,17 +41,20 @@ Description=<app>
 [Container]
 Image=<registry>/<imagem>:<tag>
 ContainerName=<app>
+
+Network=tsdproxy-net.network
 PublishPort=<host>:<container>
 
-Volume=%h/.config/containers/volumes/<app>/data:/data:Z
 EnvironmentFile=%h/.config/containers/env/<app>.env
 Secret=<app>-<nome>,type=env,target=<VAR>
 
-NoNewPrivileges=true
-PidsLimit=256
-DropCapability=ALL
+Volume=%h/.config/containers/volumes/<app>/data:/data:Z
+
 ReadOnly=true
 Tmpfs=/tmp:size=64M
+DropCapability=ALL
+PidsLimit=256
+NoNewPrivileges=true
 
 HealthCmd=CMD-SHELL curl -fsS -o /dev/null http://127.0.0.1:<porta>/ || exit 1
 HealthInterval=30s
@@ -61,6 +64,7 @@ Notify=healthy
 Label=tsdproxy.enable=true
 Label=tsdproxy.name=<app>
 Label=tsdproxy.port.web=443/https:<porta>/http
+
 Label=homepage.group=<group>
 Label=homepage.name=<App>
 Label=homepage.icon=<url>
@@ -73,6 +77,27 @@ Restart=always
 [Install]
 WantedBy=default.target
 ```
+
+Dentro do `[Container]` toda unit mantém os mesmos blocos, na mesma ordem,
+separados por uma linha em branco: **identidade** (`Image`, `ContainerName`,
+`Exec`), **rede** (`Network`, `PublishPort`), **configuração** (`Environment`,
+`EnvironmentFile`, `Secret`), **dados** (`SecurityLabel*`, `Volume`), **host**
+(`AddDevice`, `ShmSize`, `PodmanArgs`), **endurecimento** (`ReadOnly`, `Tmpfs`,
+capabilities, `User`, `PidsLimit`, `NoNewPrivileges`), **saúde** (`Health*`,
+`Notify`) e os **labels**, um bloco por prefixo. A lista vive em `LAYOUT`, no
+`qhui.py`.
+
+É exigido, não sugerido: o `check.py` reprova unit fora dele, e
+
+```bash
+python3 check.py --format
+```
+
+reescreve todas as units (e o `_template/`) nele. Só muda ordem e linha em
+branco — um comentário viaja com a linha abaixo dele, um bloco comentado (um
+"interruptor" como o do `media-stack-gluetun`) viaja inteiro e depois das linhas
+ativas de que fala, e chaves repetidas mantêm a ordem. Foi conferido contra o
+que o Quadlet gera para cada unit: os argumentos do podman saem os mesmos.
 
 O `homepage.group` é um de AI, Automation, Downloads, Files, Home, Media,
 Monitoring, `"Network & Security"`, Personal, Productivity, Tools e

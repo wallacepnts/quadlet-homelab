@@ -2,19 +2,22 @@
 Description=Seerr (media requests, the unified successor to Overseerr/Jellyseerr)
 
 [Container]
+Image=ghcr.io/seerr-team/seerr:v3.4.1
+ContainerName=seerr
+
+Network=tsdproxy-net.network
+PublishPort=5055:5055
+
+EnvironmentFile=%h/.config/containers/env/media-stack.env
+
+Volume=%h/.config/containers/volumes/media-stack/seerr/config:/app/config:Z
+
 ReadOnly=true
 Tmpfs=/tmp:size=64M
 DropCapability=ALL
+UserNS=keep-id
 PidsLimit=256
 NoNewPrivileges=true
-Image=ghcr.io/seerr-team/seerr:v3.4.1
-ContainerName=seerr
-Network=tsdproxy-net.network
-PublishPort=5055:5055
-UserNS=keep-id
-
-Volume=%h/.config/containers/volumes/media-stack/seerr/config:/app/config:Z
-EnvironmentFile=%h/.config/containers/env/media-stack.env
 
 HealthCmd=CMD-SHELL wget --no-verbose --tries=1 --spider http://127.0.0.1:5055/api/v1/settings/public || exit 1
 HealthInterval=15s

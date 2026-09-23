@@ -2,24 +2,28 @@
 Description=Radicale (CalDAV/CardDAV)
 
 [Container]
-PidsLimit=50
 Image=docker.io/christf/docker-radicale-birthday:v0.27.0
 ContainerName=radicale
+RunInit=true
+
 Network=tsdproxy-net.network
 PublishPort=5232:5232
+
+Environment=PYTHONPATH=/data/python-libs
+EnvironmentFile=%h/.config/containers/env/radicale.env
+
+Volume=%h/.config/containers/volumes/radicale/data:/data:Z
+Volume=%h/.config/containers/volumes/radicale/config:/config:ro,Z
+
 ReadOnly=true
-RunInit=true
-NoNewPrivileges=true
 DropCapability=all
 AddCapability=chown
 AddCapability=setuid
 AddCapability=setgid
 AddCapability=kill
+PidsLimit=50
+NoNewPrivileges=true
 
-Volume=%h/.config/containers/volumes/radicale/data:/data:Z
-Volume=%h/.config/containers/volumes/radicale/config:/config:ro,Z
-EnvironmentFile=%h/.config/containers/env/radicale.env
-Environment=PYTHONPATH=/data/python-libs
 HealthCmd=CMD-SHELL curl -fs http://127.0.0.1:5232 || exit 1
 HealthInterval=30s
 HealthTimeout=5s

@@ -2,6 +2,17 @@
 Description=Lidarr (music automation)
 
 [Container]
+Image=lscr.io/linuxserver/lidarr:3.1.0
+ContainerName=lidarr
+
+Network=tsdproxy-net.network
+PublishPort=8686:8686
+
+EnvironmentFile=%h/.config/containers/env/media-stack.env
+
+Volume=%h/.config/containers/volumes/media-stack/lidarr/config:/config:Z
+Volume=${MEDIA_DATA_DIR}:/data:Z
+
 DropCapability=ALL
 AddCapability=CHOWN
 AddCapability=SETUID
@@ -9,14 +20,6 @@ AddCapability=SETGID
 AddCapability=NET_BIND_SERVICE
 PidsLimit=256
 NoNewPrivileges=true
-Image=lscr.io/linuxserver/lidarr:3.1.0
-ContainerName=lidarr
-Network=tsdproxy-net.network
-PublishPort=8686:8686
-
-Volume=%h/.config/containers/volumes/media-stack/lidarr/config:/config:Z
-Volume=${MEDIA_DATA_DIR}:/data:Z
-EnvironmentFile=%h/.config/containers/env/media-stack.env
 
 HealthCmd=CMD-SHELL curl --silent --fail http://127.0.0.1:8686/ || exit 1
 HealthInterval=30s

@@ -2,18 +2,23 @@
 Description=Memos (self-hosted quick notes)
 
 [Container]
+Image=docker.io/neosmemo/memos:0.30.0
+ContainerName=memos
+
+Network=tsdproxy-net.network
+PublishPort=5230:5230
+
+EnvironmentFile=%h/.config/containers/env/memos.env
+
+Volume=%h/.config/containers/volumes/memos/data:/var/opt/memos:Z
+
 ReadOnly=true
 Tmpfs=/tmp:size=64M
 DropCapability=ALL
 User=1000
 PidsLimit=256
 NoNewPrivileges=true
-Image=docker.io/neosmemo/memos:0.30.0
-ContainerName=memos
-Network=tsdproxy-net.network
-PublishPort=5230:5230
-Volume=%h/.config/containers/volumes/memos/data:/var/opt/memos:Z
-EnvironmentFile=%h/.config/containers/env/memos.env
+
 HealthCmd=CMD-SHELL wget -q --spider http://127.0.0.1:5230/healthz || exit 1
 HealthInterval=30s
 HealthTimeout=10s

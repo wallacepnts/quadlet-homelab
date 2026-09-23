@@ -19,6 +19,7 @@ No dependencies: stdlib only.
 """
 
 import argparse
+import collections
 import configparser
 import difflib
 import importlib.util
@@ -1197,8 +1198,22 @@ def unit_drift(u, target, modo, href_local):
         return []
     novo = unit_bytes(u, modo, href_local).decode("utf-8", "replace").splitlines()
     velho = target.read_bytes().decode("utf-8", "replace").splitlines()
-    return [l for l in difflib.unified_diff(velho, novo, lineterm="", n=0)
-            if not l.startswith(("---", "+++", "@@"))]
+    # Content, not position. Units are laid out by qhui.format_unit, and a
+    # line that only moved to its block is not a line of yours that goes away:
+    # a positional diff reported the whole vaultwarden unit as eight lines
+    # "dropped" the day the layout came in, which trains people to skim past
+    # the one warning that exists to catch a hand-commented PublishPort.
+    fica = collections.Counter(l.rstrip() for l in novo if l.strip())
+    tinha = collections.Counter(l.rstrip() for l in velho if l.strip())
+    perde, ganha = tinha - fica, fica - tinha
+    saida = []
+    for linhas, sinal, conta in ((velho, "-", perde), (novo, "+", ganha)):
+        for l in linhas:
+            l = l.rstrip()
+            if conta[l] > 0:
+                saida.append(sinal + l)
+                conta[l] -= 1
+    return saida
 
 
 def drift_warning(u, linhas, limite=10):
@@ -3041,6 +3056,17 @@ def selftest():
         got = verify_service(fake, "")
         assert len(got) == 1 and got[0][0] is False, got
         assert "not installed" in got[0][2], got
+
+    # unit_drift compares content: a unit the layout only reordered loses
+    # nothing of the user's, and a hand-commented PublishPort still shows.
+    with tempfile.TemporaryDirectory() as d:
+        u = APPS / "memos" / "memos.container"
+        alvo = Path(d) / "memos.container"
+        base = unit_bytes(u, "tailnet", False).decode()
+        alvo.write_text("\n".join(sorted(l for l in base.splitlines() if l.strip())) + "\n")
+        assert unit_drift(u, alvo, "tailnet", False) == [], "reordering is not a loss"
+        alvo.write_text(base + "# PublishPort=5230:5230\n")
+        assert unit_drift(u, alvo, "tailnet", False) == ["-# PublishPort=5230:5230"]
 
     say("selftest: ok")
 

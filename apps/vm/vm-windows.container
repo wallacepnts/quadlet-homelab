@@ -2,24 +2,26 @@
 Description=Windows in a container (QEMU/KVM)
 
 [Container]
-PidsLimit=512
-
 Image=docker.io/dockurr/windows:6.05
 ContainerName=vm-windows
+
 Network=tsdproxy-net.network
 PublishPort=8006:8006
 PublishPort=3389:3389/tcp
 PublishPort=3389:3389/udp
 
-AddDevice=/dev/kvm
-AddDevice=/dev/net/tun
-AddCapability=NET_ADMIN
+EnvironmentFile=%h/.config/containers/env/vm-windows.env
+Secret=vm-windows-password,type=env,target=PASSWORD
 
 Volume=%h/.config/containers/volumes/vm/windows/storage:/storage:Z
 Volume=%h/.config/containers/volumes/vm/windows/oem:/oem:Z
 Volume=%h/.config/containers/volumes/vm/windows/shared:/shared:Z
-EnvironmentFile=%h/.config/containers/env/vm-windows.env
-Secret=vm-windows-password,type=env,target=PASSWORD
+
+AddDevice=/dev/kvm
+AddDevice=/dev/net/tun
+
+AddCapability=NET_ADMIN
+PidsLimit=512
 
 HealthCmd=CMD-SHELL curl -fsS -o /dev/null http://127.0.0.1:8006/ || exit 1
 HealthInterval=60s

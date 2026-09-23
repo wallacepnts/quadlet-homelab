@@ -15,6 +15,7 @@ No dependencies: stdlib only.
 """
 
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -198,6 +199,120 @@ dim = _c("2")
 bold = _c("1")
 
 
+# The layout every .container follows, in [Container]: one block per concern,
+# separated by a blank line, in this order. A reader finds the image, the ports
+# or the hardening in the same place in all of them — before this, the hardening
+# sat at the top of some units and at the bottom of others, and the SELinux
+# label that belongs to a socket mount floated among the ports.
+# Reordering does not change what runs. Checked against Quadlet's generated
+# services for all 122 units: 108 came out byte for byte the same, and in the
+# other 14 the podman arguments were the same set, each flag's own values in
+# the same order — only distinct flags traded places (--env with --label,
+# --pids-limit with --shm-size), which podman does not care about. What would
+# matter, repeated keys, keeps its order: they are never reordered here.
+LAYOUT = (
+    ("identity", ("Image", "ContainerName", "HostName", "Exec", "Entrypoint",
+                  "WorkingDir", "RunInit", "AutoUpdate", "Pull")),
+    ("network", ("Network", "NetworkAlias", "IP", "DNS", "AddHost", "PublishPort")),
+    ("config", ("Environment", "EnvironmentFile", "Secret")),
+    ("data", ("SecurityLabelDisable", "SecurityLabelType", "SecurityLabelLevel",
+              "Volume", "Mount")),
+    ("host", ("AddDevice", "ShmSize", "PodmanArgs")),
+    ("hardening", ("ReadOnly", "Tmpfs", "DropCapability", "AddCapability", "User",
+                   "Group", "UserNS", "PidsLimit", "NoNewPrivileges")),
+    ("health", ("HealthCmd", "HealthInterval", "HealthTimeout", "HealthRetries",
+                "HealthStartPeriod", "Notify")),
+    ("labels", ("Label",)),
+)
+_LAYOUT_POS = {k: (g, i) for g, (_, ks) in enumerate(LAYOUT) for i, k in enumerate(ks)}
+_DIRETIVA = re.compile(r"^#?\s*([A-Za-z]+)=")
+
+
+def format_unit(text):
+    """The unit laid out in LAYOUT's blocks. Only whitespace and order change.
+
+    Comments travel with the line under them — a `# check: ignore` or the
+    instruction above a commented-out `# PublishPort=` stays attached to what it
+    is about, and a commented-out directive is placed as the directive it would
+    be. Repeated keys keep their relative order, which is the only order Quadlet
+    honours. A key LAYOUT does not know goes in a block of its own after the
+    host one, so a new key is never lost, only unplaced. Labels get a block per
+    prefix (tsdproxy, homepage, wud), in the order the unit first used them.
+    Sections other than [Container] keep their lines, minus inner blank lines.
+    """
+    preambulo, secoes, atual = [], [], None
+    for linha in text.splitlines():
+        if linha.startswith("["):
+            atual = (linha.strip(), [])
+            secoes.append(atual)
+        elif atual is None:
+            preambulo.append(linha)
+        else:
+            atual[1].append(linha)
+
+    def itens(linhas):
+        """[(key or None, [lines])] — comment lines attached to what follows."""
+        out, pendente, anterior_desligada = [], [], False
+        for linha in linhas:
+            if not linha.strip():
+                anterior_desligada = False
+                continue
+            m = _DIRETIVA.match(linha)
+            comentario = linha.lstrip().startswith(("#", ";"))
+            desligada = comentario and bool(m and m.group(1) in _LAYOUT_POS)
+            if comentario and not desligada:
+                pendente.append(linha.rstrip())
+                anterior_desligada = False
+                continue
+            # Commented-out directives in a row are one switch: media-stack-
+            # gluetun's "uncomment everything below" covers three ports and ten
+            # labels, and splitting them between the network and label blocks
+            # would leave half of what has to be turned on somewhere else.
+            if desligada and anterior_desligada and not pendente:
+                out[-1][1].append(linha.rstrip())
+                continue
+            chave = m.group(1) if m else None
+            out.append((chave, pendente + [linha.rstrip()]))
+            pendente, anterior_desligada = [], desligada
+        return out, pendente
+
+    blocos_saida = []
+    for cabecalho, linhas in secoes:
+        corpo, sobra = itens(linhas)
+        if cabecalho != "[Container]":
+            texto = [l for _, ls in corpo for l in ls] + sobra
+            blocos_saida.append("\n".join([cabecalho] + texto))
+            continue
+        grupos = {}
+        prefixos = []
+        for n, (chave, ls) in enumerate(corpo):
+            g, i = _LAYOUT_POS.get(chave, (len(LAYOUT) - 3.5, 0))  # unknown: after host
+            sub = 0
+            if chave == "Label":
+                valor = ls[-1].split("=", 1)[1].strip().strip('"')
+                pre = valor.split(".", 1)[0].split("=", 1)[0]
+                if pre not in prefixos:
+                    prefixos.append(pre)
+                sub = prefixos.index(pre)
+            # A commented-out switch goes after the active lines of its block:
+            # the instruction above one is about those lines ("comment the
+            # four lines above" in media-stack-deluge), and moving it among
+            # them would make it point at the wrong ones.
+            desligada = ls[-1].lstrip().startswith(("#", ";"))
+            grupos.setdefault((g, sub), []).append((desligada, i, n, ls))
+        partes = []
+        for chave_g in sorted(grupos):
+            itens_g = sorted(grupos[chave_g])
+            partes.append("\n".join(l for *_, ls in itens_g for l in ls))
+        if sobra:
+            partes.append("\n".join(sobra))
+        blocos_saida.append(cabecalho + "\n" + "\n\n".join(partes))
+
+    cabeca = "\n".join(preambulo).strip("\n")
+    corpo = "\n\n".join(blocos_saida)
+    return (cabeca + "\n" + corpo if cabeca else corpo) + "\n"
+
+
 def selftest():
     """The three things here that can be wrong without anyone noticing.
 
@@ -264,6 +379,44 @@ def selftest():
         assert dim("x") == "x"
     finally:
         COLOR = cor
+
+    # format_unit: the blocks in order, a blank line apart, and the three cases
+    # that would have broken a unit silently when this was written.
+    bagunca = """[Unit]
+Description=x
+[Container]
+Label=wud.watch=true
+PidsLimit=256
+Image=a/b:1
+Label=tsdproxy.enable=true
+PublishPort=1:1
+# comment ports and the two lines above, then uncomment below
+#Network=outra.network
+#Label=tsdproxy.name=y
+Network=n.network
+# about the volume
+Volume=/a:/b:Z
+FutureKey=kept
+Label=homepage.name=X
+[Service]
+Restart=always
+"""
+    f = format_unit(bagunca)
+    assert format_unit(f) == f, "idempotent"
+    blocos = f.split("[Container]\n")[1].split("\n\n[Service]")[0].split("\n\n")
+    assert blocos[0] == "Image=a/b:1", blocos[0]
+    # the switch stays whole — its label too, as in media-stack-gluetun — and
+    # after the active lines it talks about, even though it starts with Network=,
+    # which alone would sort ahead of the ports (media-stack-deluge's case)
+    assert blocos[1] == ("Network=n.network\nPublishPort=1:1\n"
+                         "# comment ports and the two lines above, then uncomment below\n"
+                         "#Network=outra.network\n#Label=tsdproxy.name=y"), blocos[1]
+    assert blocos[2] == "# about the volume\nVolume=/a:/b:Z", "a comment travels with its line"
+    assert blocos[3] == "FutureKey=kept", "an unknown key is placed, never dropped"
+    assert blocos[4] == "PidsLimit=256"
+    assert blocos[5:] == ["Label=wud.watch=true", "Label=tsdproxy.enable=true",
+                          "Label=homepage.name=X"], "one block per label prefix, first-seen order"
+    assert "\n\n[Service]\nRestart=always\n" in f and f.endswith("always\n")
 
     print("selftest: ok")
 

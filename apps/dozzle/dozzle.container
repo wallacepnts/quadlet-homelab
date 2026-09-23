@@ -2,24 +2,26 @@
 Description=Dozzle (live container logs in the browser)
 
 [Container]
-ReadOnly=true
-Tmpfs=/tmp:size=32M
-DropCapability=ALL
-NoNewPrivileges=true
-User=1000
-PidsLimit=256
-
 Image=ghcr.io/amir20/dozzle:v11.0.1
 ContainerName=dozzle
+
 Network=tsdproxy-net.network
 PublishPort=8117:8080
+
+EnvironmentFile=%h/.config/containers/env/dozzle.env
 
 # Read-only, and the only thing this service needs: the socket is where the
 # logs come from. It is also everything Podman can do, so see the README.
 # `:z` alone is not enough on SELinux: rule 16 of the conventions.
 SecurityLabelType=container_runtime_t
 Volume=%t/podman/podman.sock:/var/run/docker.sock:ro
-EnvironmentFile=%h/.config/containers/env/dozzle.env
+
+ReadOnly=true
+Tmpfs=/tmp:size=32M
+DropCapability=ALL
+User=1000
+PidsLimit=256
+NoNewPrivileges=true
 
 HealthCmd=["CMD", "/dozzle", "healthcheck"]
 HealthInterval=30s
@@ -39,6 +41,7 @@ Label=homepage.name=Dozzle
 Label=homepage.icon=dozzle.svg
 Label=homepage.href=https://dozzle.${TAILNET}.ts.net
 Label=homepage.description="Live logs of every container, without opening a terminal"
+
 Label=wud.watch=true
 Label=wud.tag.include=^v[0-9]+.[0-9]+.[0-9]+$
 

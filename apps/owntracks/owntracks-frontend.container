@@ -4,17 +4,20 @@ After=owntracks-recorder.service
 Requires=owntracks-recorder.service
 
 [Container]
-PidsLimit=256
-NoNewPrivileges=true
 Image=docker.io/owntracks/frontend:2.15.3
 ContainerName=owntracks-frontend
+
 Network=tsdproxy-net.network
 Network=owntracks-net.network
 PublishPort=8087:80
+
 Environment=SERVER_HOST=owntracks-recorder
 Environment=SERVER_PORT=8083
 
 Volume=%h/.config/containers/volumes/owntracks/frontend-config.js:/usr/share/nginx/html/config/config.js:Z
+
+PidsLimit=256
+NoNewPrivileges=true
 
 HealthCmd=CMD-SHELL curl --silent --fail http://127.0.0.1:80/ || exit 1
 HealthInterval=30s

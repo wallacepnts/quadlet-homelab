@@ -2,22 +2,24 @@
 Description=Mailpit (SMTP server and email viewer for testing)
 
 [Container]
-ReadOnly=true
-Tmpfs=/tmp:size=64M
-DropCapability=ALL
-NoNewPrivileges=true
-User=1000
-PidsLimit=256
-
 Image=docker.io/axllent/mailpit:v1.31.1
 ContainerName=mailpit
+
 Network=tsdproxy-net.network
 PublishPort=8025:8025
 PublishPort=1025:1025
 
-Volume=%h/.config/containers/volumes/mailpit/data:/data:Z
 EnvironmentFile=%h/.config/containers/env/mailpit.env
 Secret=mailpit-ui-auth,type=env,target=MP_UI_AUTH
+
+Volume=%h/.config/containers/volumes/mailpit/data:/data:Z
+
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+User=1000
+PidsLimit=256
+NoNewPrivileges=true
 
 HealthCmd=["/mailpit", "readyz"]
 HealthInterval=30s

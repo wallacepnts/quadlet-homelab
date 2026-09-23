@@ -2,20 +2,22 @@
 Description=Beaver Habit Tracker
 
 [Container]
-ReadOnly=true
-Tmpfs=/tmp:size=64M
-DropCapability=ALL
-NoNewPrivileges=true
-User=1000
-PidsLimit=256
-
 Image=docker.io/daya0576/beaverhabits:0.10.0
 ContainerName=beaverhabits
+
 Network=tsdproxy-net.network
 PublishPort=8015:8080
 
-Volume=%h/.config/containers/volumes/beaverhabits/data:/app/.user:Z
 EnvironmentFile=%h/.config/containers/env/beaverhabits.env
+
+Volume=%h/.config/containers/volumes/beaverhabits/data:/app/.user:Z
+
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+User=1000
+PidsLimit=256
+NoNewPrivileges=true
 
 HealthCmd=CMD-SHELL python -c "import urllib.request as u; u.urlopen('http://127.0.0.1:8080/health', timeout=5)" || exit 1
 HealthInterval=30s

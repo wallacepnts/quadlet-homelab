@@ -2,21 +2,23 @@
 Description=Vikunja (tasks and projects)
 
 [Container]
-ReadOnly=true
-Tmpfs=/tmp:size=64M
-DropCapability=ALL
-NoNewPrivileges=true
-User=1000
-PidsLimit=256
-
 Image=docker.io/vikunja/vikunja:2.6.0
 ContainerName=vikunja
+
 Network=tsdproxy-net.network
 PublishPort=8121:3456
 
+EnvironmentFile=%h/.config/containers/env/vikunja.env
+
 Volume=%h/.config/containers/volumes/vikunja/db:/db:Z
 Volume=%h/.config/containers/volumes/vikunja/files:/files:Z
-EnvironmentFile=%h/.config/containers/env/vikunja.env
+
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+User=1000
+PidsLimit=256
+NoNewPrivileges=true
 
 # The binary's own subcommand, in exec form: the image is distroless — the
 # whole of it is /app/vikunja/vikunja and a CA bundle — so CMD-SHELL has no
@@ -39,6 +41,7 @@ Label=homepage.name=Vikunja
 Label=homepage.icon=https://cdn.jsdelivr.net/gh/selfhst/icons/svg/vikunja.svg
 Label=homepage.href=https://vikunja.${TAILNET}.ts.net
 Label=homepage.description="Tasks with a deadline and a project behind them"
+
 Label=wud.watch=true
 Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+$
 

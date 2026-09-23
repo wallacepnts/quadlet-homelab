@@ -5,17 +5,12 @@ Requires=authentik-postgres.service
 Wants=authentik-worker.service
 
 [Container]
-ReadOnly=true
-Tmpfs=/tmp:size=64M
-DropCapability=ALL
-User=1000
-PidsLimit=256
-NoNewPrivileges=true
 Image=ghcr.io/goauthentik/server:2026.8.2
 ContainerName=authentik
+Exec=server
+
 Network=tsdproxy-net.network
 Network=authentik-net.network
-Exec=server
 PublishPort=9000:9000
 
 Environment=AUTHENTIK_POSTGRESQL__HOST=postgresql
@@ -25,7 +20,15 @@ Secret=authentik-postgres-password,type=env,target=AUTHENTIK_POSTGRESQL__PASSWOR
 Secret=authentik-secret-key,type=env,target=AUTHENTIK_SECRET_KEY
 
 Volume=%h/.config/containers/volumes/authentik/data:/data:Z
+
 ShmSize=512m
+
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+User=1000
+PidsLimit=256
+NoNewPrivileges=true
 
 HealthCmd=CMD-SHELL ak healthcheck || exit 1
 HealthInterval=30s

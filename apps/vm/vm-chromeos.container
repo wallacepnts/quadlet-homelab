@@ -2,23 +2,25 @@
 Description=ChromeOS Flex in a VM
 
 [Container]
-PidsLimit=512
-
 Image=docker.io/dockurr/chromeos:1.05
 ContainerName=vm-chromeos
+
 Network=tsdproxy-net.network
 PublishPort=8013:8006
 PublishPort=5901:5900/tcp
 PublishPort=5901:5900/udp
 
+EnvironmentFile=%h/.config/containers/env/vm-chromeos.env
+Secret=vm-chromeos-password,type=env,target=PASSWORD
+
+Volume=%h/.config/containers/volumes/vm/chromeos/storage:/storage:Z
+
 AddDevice=/dev/kvm
 AddDevice=/dev/net/tun
 AddDevice=/dev/dri
-AddCapability=NET_ADMIN
 
-Volume=%h/.config/containers/volumes/vm/chromeos/storage:/storage:Z
-EnvironmentFile=%h/.config/containers/env/vm-chromeos.env
-Secret=vm-chromeos-password,type=env,target=PASSWORD
+AddCapability=NET_ADMIN
+PidsLimit=512
 
 HealthCmd=CMD-SHELL curl -fsS -o /dev/null http://127.0.0.1:8006/ || exit 1
 HealthInterval=60s

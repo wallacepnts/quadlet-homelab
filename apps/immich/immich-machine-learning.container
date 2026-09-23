@@ -2,22 +2,25 @@
 Description=Immich Machine Learning (face recognition, smart search)
 
 [Container]
-ReadOnly=true
-Tmpfs=/tmp:size=64M
-DropCapability=ALL
-PidsLimit=256
 Image=ghcr.io/immich-app/immich-machine-learning:v3.2.0
 ContainerName=immich-machine-learning
+
 Network=immich-net.network
 NetworkAlias=immich-machine-learning
 
-UserNS=keep-id
+EnvironmentFile=%h/.config/containers/env/immich.env
+
 Volume=%h/.config/containers/volumes/immich/ml-cache:/cache:Z
 Volume=%h/.config/containers/volumes/immich/ml-dotcache:/.cache:Z
 Volume=%h/.config/containers/volumes/immich/ml-config:/.config:Z
-EnvironmentFile=%h/.config/containers/env/immich.env
 
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+UserNS=keep-id
+PidsLimit=256
 NoNewPrivileges=true
+
 HealthCmd=CMD-SHELL python3 healthcheck.py || exit 1
 HealthInterval=30s
 HealthTimeout=10s

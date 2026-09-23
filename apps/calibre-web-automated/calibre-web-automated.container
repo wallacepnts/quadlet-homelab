@@ -2,6 +2,18 @@
 Description=Calibre-Web-Automated
 
 [Container]
+Image=docker.io/crocodilestick/calibre-web-automated:v4.0.6
+ContainerName=calibre-web-automated
+
+Network=tsdproxy-net.network
+PublishPort=8105:8083
+
+EnvironmentFile=%h/.config/containers/env/calibre-web-automated.env
+
+Volume=%h/.config/containers/volumes/calibre-web-automated/config:/config:Z
+Volume=%h/.config/containers/volumes/calibre-web-automated/ingest:/cwa-book-ingest:Z
+Volume=%h/.config/containers/volumes/calibre-web-automated/library:/calibre-library:Z
+
 ReadOnly=true
 Tmpfs=/tmp:size=64M
 DropCapability=ALL
@@ -11,14 +23,7 @@ AddCapability=SETGID
 AddCapability=NET_BIND_SERVICE
 PidsLimit=256
 NoNewPrivileges=true
-Image=docker.io/crocodilestick/calibre-web-automated:v4.0.6
-ContainerName=calibre-web-automated
-Network=tsdproxy-net.network
-PublishPort=8105:8083
-Volume=%h/.config/containers/volumes/calibre-web-automated/config:/config:Z
-Volume=%h/.config/containers/volumes/calibre-web-automated/ingest:/cwa-book-ingest:Z
-Volume=%h/.config/containers/volumes/calibre-web-automated/library:/calibre-library:Z
-EnvironmentFile=%h/.config/containers/env/calibre-web-automated.env
+
 HealthCmd=CMD-SHELL curl -f http://127.0.0.1:8083/ || curl -f -k https://127.0.0.1:8083/ || exit 1
 HealthInterval=30s
 HealthTimeout=3s

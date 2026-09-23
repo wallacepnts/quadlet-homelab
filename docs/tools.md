@@ -20,7 +20,13 @@ pinned-version line no longer matches its units, a `PodmanArgs=` carrying what
 Quadlet has a key for or a space it will not survive, a row in
 [`hardening.md`](./hardening.md) that no longer matches its unit, `$` in
 `HealthCmd` without the double escape, a backslash in a `Label=` value, an unquoted value with
-spaces, and `Notify=healthy` without a `HealthCmd`.
+spaces, `Notify=healthy` without a `HealthCmd`, and a unit out of the standard
+layout — the blocks described in [the reference](./reference.md#anatomy-of-a-container).
+That one it also fixes:
+
+```bash
+qh-check --format      # rewrites every unit into the layout; order and blank lines only
+```
 
 To waive a rule deliberately, the unit says so and the reason is required:
 

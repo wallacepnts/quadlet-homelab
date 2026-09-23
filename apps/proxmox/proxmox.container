@@ -4,19 +4,21 @@ Description=Proxmox VE (hypervisor management, in a container)
 [Container]
 Image=docker.io/dockurr/proxmox:9.2.10
 ContainerName=proxmox
-Network=tsdproxy-net.network
 HostName=pve
+
+Network=tsdproxy-net.network
 PublishPort=8010:8006
+
+Secret=proxmox-root-password,type=env,target=PASSWORD
+
+Volume=%h/.config/containers/volumes/proxmox/data:/var/lib/vz:Z
+Volume=%h/.config/containers/volumes/proxmox/config:/var/lib/pve-cluster:Z
 
 # Upstream's entrypoint refuses to start without it, by design: Proxmox runs
 # systemd as PID 1 and manages bridges, storage and KVM from inside.
 # check: ignore hardening — the image refuses to start without --privileged,
 # and no-new-privileges contradicts what --privileged exists to grant.
 PodmanArgs=--privileged
-
-Volume=%h/.config/containers/volumes/proxmox/data:/var/lib/vz:Z
-Volume=%h/.config/containers/volumes/proxmox/config:/var/lib/pve-cluster:Z
-Secret=proxmox-root-password,type=env,target=PASSWORD
 
 # -k because Proxmox serves its own self-signed certificate; plain http here
 # answers 301 rather than proving the UI is up.

@@ -2,20 +2,21 @@
 Description=CookCLI (plain-text recipes, CookLang format)
 
 [Container]
-UserNS=keep-id
+Image=ghcr.io/cooklang/cookcli:0.35.0
+ContainerName=cookcli
+WorkingDir=/recipes
+
+Network=tsdproxy-net.network
+PublishPort=9080:9080
+
+Volume=%h/.config/containers/volumes/cookcli/recipes:/recipes:Z
 
 ReadOnly=true
 Tmpfs=/tmp:size=64M
 DropCapability=ALL
-NoNewPrivileges=true
+UserNS=keep-id
 PidsLimit=256
-
-Image=ghcr.io/cooklang/cookcli:0.35.0
-ContainerName=cookcli
-Network=tsdproxy-net.network
-PublishPort=9080:9080
-Volume=%h/.config/containers/volumes/cookcli/recipes:/recipes:Z
-WorkingDir=/recipes
+NoNewPrivileges=true
 
 Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true

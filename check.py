@@ -20,10 +20,11 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-from qhui import (translator, directives, directives_of, published_port,
+from qhui import (translator, directives, directives_of, published_port, format_unit,
                   red, yellow, green, dim)
 
 PT = {
+    "unit(s) reformatted": "unit(s) reformatada(s)",
     "services,": "serviços,",
     "containers,": "containers,",
     "published ports": "portas publicadas",
@@ -383,6 +384,26 @@ def check_readme_units(folders):
                     continue
                 error("readme", f"apps/{folder.name}: {c.name} is named nowhere in "
                                 f"{nome} — the manual install cannot reach it")
+
+
+def layout_targets(folders):
+    """Every .container the layout applies to: the apps and the template."""
+    return [c for f in folders for c in sorted(f.glob("*.container"))] + \
+        sorted((ROOT / "_template").glob("*.container"))
+
+
+def check_layout(folders):
+    """Every unit in the shared layout — the blocks of qhui.LAYOUT, a blank line apart.
+
+    A convention nobody enforces lasts until the next unit is copied from an old
+    one. Reordering never changes what runs (see qhui.LAYOUT), so this is an
+    error and not a warning: the fix is mechanical, `python3 check.py --format`.
+    """
+    for c in layout_targets(folders):
+        texto = c.read_text()
+        if format_unit(texto) != texto:
+            error("layout", f"{c.relative_to(ROOT)} is not in the standard layout — "
+                            f"run: python3 check.py --format")
 
 
 def check_manifest(folders):
@@ -874,7 +895,19 @@ def main():
         return 2
 
     folders = sorted(p for p in APPS.iterdir() if p.is_dir())
+    if "--format" in sys.argv:
+        feitos = 0
+        for c in layout_targets(folders):
+            texto = c.read_text()
+            novo_texto = format_unit(texto)
+            if novo_texto != texto:
+                c.write_text(novo_texto)
+                print(f"  {c.relative_to(ROOT)}")
+                feitos += 1
+        print(loc(f"{feitos} unit(s) reformatted"))
+        return 0
     check_units(folders)
+    check_layout(folders)
     uses = check_ports(folders)
     check_manifest(folders)
     check_readme_units(folders)

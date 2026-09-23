@@ -2,18 +2,12 @@
 Description=ntfy (push notification server)
 
 [Container]
-ReadOnly=true
-Tmpfs=/tmp:size=64M
-DropCapability=ALL
-NoNewPrivileges=true
-PidsLimit=256
-User=1000
-
 Image=docker.io/binwiederhier/ntfy:v2.28.0
 ContainerName=ntfy
+Exec=serve
+
 Network=tsdproxy-net.network
 PublishPort=2586:2586
-Exec=serve
 
 Environment=NTFY_LISTEN_HTTP=:2586
 Environment=NTFY_BEHIND_PROXY=true
@@ -25,6 +19,14 @@ EnvironmentFile=%h/.config/containers/env/ntfy.env
 
 Volume=%h/.config/containers/volumes/ntfy/cache:/var/cache/ntfy:Z
 Volume=%h/.config/containers/volumes/ntfy/lib:/var/lib/ntfy:Z
+
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+User=1000
+PidsLimit=256
+NoNewPrivileges=true
+
 HealthCmd=CMD-SHELL wget -q -O /dev/null http://127.0.0.1:2586/v1/health || exit 1
 HealthInterval=30s
 HealthTimeout=10s

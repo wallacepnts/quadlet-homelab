@@ -2,16 +2,15 @@
 Description=Zerobyte (backup automation, Restic)
 
 [Container]
-ReadOnly=true
-Tmpfs=/tmp:size=64M
-DropCapability=ALL
-AddCapability=DAC_READ_SEARCH
-PidsLimit=256
-NoNewPrivileges=true
 Image=ghcr.io/nicotsx/zerobyte:v0.42.0
 ContainerName=zerobyte
+
 Network=tsdproxy-net.network
 PublishPort=4096:4096
+
+EnvironmentFile=%h/.config/containers/env/zerobyte.env
+Secret=zerobyte-app-secret,type=env,target=APP_SECRET
+
 SecurityLabelDisable=true
 Volume=%h/.config/containers/volumes/zerobyte:/var/lib/zerobyte:Z
 Volume=/etc/localtime:/etc/localtime:ro
@@ -20,8 +19,12 @@ Volume=%h/.config/containers/volumes:/sources/volumes:ro
 Volume=%h/.config/containers/secrets:/sources/secrets:ro
 Volume=%h/backups/zerobyte-local:/repositories/local:Z
 
-EnvironmentFile=%h/.config/containers/env/zerobyte.env
-Secret=zerobyte-app-secret,type=env,target=APP_SECRET
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+AddCapability=DAC_READ_SEARCH
+PidsLimit=256
+NoNewPrivileges=true
 
 HealthCmd=CMD-SHELL wget -q --spider http://127.0.0.1:4096/ || exit 1
 HealthInterval=30s
