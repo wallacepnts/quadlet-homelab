@@ -497,6 +497,15 @@ def target_tags(tag, remote):
     aqui, la = (re.search(r"\d+(?:\.\d+)+", s) for s in (tag, remote))
     saida = []
     if aqui and la:
+        # LinuxServer names a release `2.6.5.5623-ls161` for an app this
+        # repository pins as `2.5.2`, and publishes the short `2.6.5` too. The
+        # version cut to as many parts as ours is the tag that keeps the shape;
+        # without it the bump wrote the four-part build number into prowlarr,
+        # radarr and sonarr while their siblings stayed short.
+        partes = aqui.group().count(".") + 1
+        curta = ".".join(la.group().split(".")[:partes])
+        if curta != la.group():
+            saida.append(tag[:aqui.start()] + curta + tag[aqui.end():])
         saida.append(tag[:aqui.start()] + la.group() + tag[aqui.end():])
     saida.append(remote)
     if remote[:1] == "v" and remote[1:2].isdigit():
@@ -648,6 +657,9 @@ def selftest():
     assert target_tags("1.29.1-alpine", "1.30.0")[0] == "1.30.0-alpine"
     assert target_tags("2026.5.6", "version/2026.8.2")[0] == "2026.8.2"
     assert target_tags("2.33.7", "n8n@2.38.7")[0] == "2.38.7"
+    # LinuxServer's four-part build name, for an app pinned short: the short tag
+    # comes first, so the bump keeps the shape its siblings use.
+    assert target_tags("2.5.2", "2.6.5.5623-ls161")[0] == "2.6.5"
     # any-sync-bundle carries a date the version does not: the release name itself.
     assert "1.6.0-2026-08-18" in target_tags("1.5.0-2026-07-17", "v1.6.0-2026-08-18")
 
