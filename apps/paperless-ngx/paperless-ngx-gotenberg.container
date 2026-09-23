@@ -2,7 +2,7 @@
 Description=Paperless-ngx Gotenberg (Office-to-PDF conversion)
 
 [Container]
-Image=docker.io/gotenberg/gotenberg:8.34
+Image=docker.io/gotenberg/gotenberg:8.37
 ContainerName=paperless-ngx-gotenberg
 Exec=gotenberg --chromium-disable-javascript=true --chromium-allow-list=file:///tmp/.*
 

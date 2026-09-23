@@ -121,7 +121,7 @@ peça roda sozinha e serve sem as outras.
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/deluge.svg" width="28" height="28" alt=""> | [Deluge](./docs/pt-BR/deluge.md) | Baixa torrents | `2.2.0` |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/gluetun.svg" width="28" height="28" alt=""> | [Gluetun](./docs/pt-BR/gluetun.md) | **Opcional.** Túnel VPN para colocar o Deluge atrás | `latest` |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/dispatcharr.svg" width="28" height="28" alt=""> | [Dispatcharr](./docs/pt-BR/dispatcharr.md) | IPTV: canais, EPG e VOD, à parte da corrente acima | `latest` |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/downtify.png" width="28" height="28" alt=""> | [Downtify](./docs/pt-BR/downtify.md) | Baixa músicas do Spotify na raiz de mídia | `2.11.0` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/downtify.png" width="28" height="28" alt=""> | [Downtify](./docs/pt-BR/downtify.md) | Baixa músicas do Spotify na raiz de mídia | `3.1.02.11.0
 
 Cada página acima diz o que o app precisa no primeiro uso e como ele se liga
 aos outros. O Gluetun é a única peça opcional: o Deluge publica a porta dele e
