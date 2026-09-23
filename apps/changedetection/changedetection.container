@@ -2,7 +2,7 @@
 Description=changedetection.io (website change monitor)
 
 [Container]
-Image=ghcr.io/dgtlmoon/changedetection.io:0.60.4
+Image=ghcr.io/dgtlmoon/changedetection.io:0.60.7
 ContainerName=changedetection
 
 Network=tsdproxy-net.network

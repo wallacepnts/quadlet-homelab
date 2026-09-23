@@ -109,14 +109,14 @@ peça roda sozinha e serve sem as outras.
 
 | | App | Para que serve | Versão |
 | --- | --- | --- | --- |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/jellyfin.svg" width="28" height="28" alt=""> | [Jellyfin](./docs/pt-BR/jellyfin.md) | Reproduz a biblioteca — filmes, séries, música — no navegador, na TV ou no celular | `12.0` |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/navidrome.svg" width="28" height="28" alt=""> | [Navidrome](./docs/pt-BR/navidrome.md) | Toca a música que a corrente trouxe, por qualquer cliente Subsonic | `0.63.2` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/jellyfin.svg" width="28" height="28" alt=""> | [Jellyfin](./docs/pt-BR/jellyfin.md) | Reproduz a biblioteca — filmes, séries, música — no navegador, na TV ou no celular | `12.112.0
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/navidrome.svg" width="28" height="28" alt=""> | [Navidrome](./docs/pt-BR/navidrome.md) | Toca a música que a corrente trouxe, por qualquer cliente Subsonic | `0.64.10.63.2
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/seerr.svg" width="28" height="28" alt=""> | [Seerr](./docs/pt-BR/seerr.md) | Onde você pede um título. Repassa o pedido ao Sonarr ou ao Radarr | `v3.4.1` |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/prowlarr.svg" width="28" height="28" alt=""> | [Prowlarr](./docs/pt-BR/prowlarr.md) | Guarda a lista de indexadores e alimenta os outros *arr | `2.5.2` |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/sonarr.svg" width="28" height="28" alt=""> | [Sonarr](./docs/pt-BR/sonarr.md) | Séries: acompanha episódios novos, baixa e arquiva | `4.0.19` |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/radarr.svg" width="28" height="28" alt=""> | [Radarr](./docs/pt-BR/radarr.md) | O mesmo, para filmes | `6.3.0` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/prowlarr.svg" width="28" height="28" alt=""> | [Prowlarr](./docs/pt-BR/prowlarr.md) | Guarda a lista de indexadores e alimenta os outros *arr | `2.6.52.5.2
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/sonarr.svg" width="28" height="28" alt=""> | [Sonarr](./docs/pt-BR/sonarr.md) | Séries: acompanha episódios novos, baixa e arquiva | `4.0.204.0.19
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/radarr.svg" width="28" height="28" alt=""> | [Radarr](./docs/pt-BR/radarr.md) | O mesmo, para filmes | `6.4.46.3.0
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/lidarr.svg" width="28" height="28" alt=""> | [Lidarr](./docs/pt-BR/lidarr.md) | O mesmo, para músicas | `3.1.0` |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/bazarr.svg" width="28" height="28" alt=""> | [Bazarr](./docs/pt-BR/bazarr.md) | Busca legendas para o que o Sonarr e o Radarr trouxeram | `1.6.0` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/bazarr.svg" width="28" height="28" alt=""> | [Bazarr](./docs/pt-BR/bazarr.md) | Busca legendas para o que o Sonarr e o Radarr trouxeram | `1.6.11.6.0
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/sabnzbd.svg" width="28" height="28" alt=""> | [SABnzbd](./docs/pt-BR/sabnzbd.md) | Baixa da Usenet | `version-5.1.3` |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/deluge.svg" width="28" height="28" alt=""> | [Deluge](./docs/pt-BR/deluge.md) | Baixa torrents | `2.2.0` |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/gluetun.svg" width="28" height="28" alt=""> | [Gluetun](./docs/pt-BR/gluetun.md) | **Opcional.** Túnel VPN para colocar o Deluge atrás | `latest` |

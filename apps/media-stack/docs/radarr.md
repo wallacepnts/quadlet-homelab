@@ -38,7 +38,7 @@ Data in `~/.config/containers/volumes/media-stack/radarr/config`.
 qh media-stack-radarr --update --apply
 ```
 
-Pinned to `6.3.0`. Nothing updates on its own — a new version is applied when
+Pinned to `6.4.4`. Nothing updates on its own — a new version is applied when
 you run the command above.
 
 ## Backup

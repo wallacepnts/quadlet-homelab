@@ -3,7 +3,7 @@ Description=Beszel Hub (monitoring dashboard)
 Wants=beszel-agent.service
 
 [Container]
-Image=docker.io/henrygd/beszel:0.19.0
+Image=docker.io/henrygd/beszel:0.20.0
 ContainerName=beszel
 
 Network=tsdproxy-net.network

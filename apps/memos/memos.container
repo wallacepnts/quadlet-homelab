@@ -2,7 +2,7 @@
 Description=Memos (self-hosted quick notes)
 
 [Container]
-Image=docker.io/neosmemo/memos:0.30.0
+Image=docker.io/neosmemo/memos:0.31.0
 ContainerName=memos
 
 Network=tsdproxy-net.network

@@ -4,7 +4,7 @@ After=authentik-postgres.service podman.socket
 Requires=authentik-postgres.service podman.socket
 
 [Container]
-Image=ghcr.io/goauthentik/server:2026.8.2
+Image=ghcr.io/goauthentik/server:2026.8.3
 ContainerName=authentik-worker
 Exec=worker
 

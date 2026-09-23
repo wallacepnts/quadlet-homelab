@@ -95,7 +95,7 @@ respondendo —, não só com o container de pé.
 qh docuseal --update --apply
 ```
 
-Fixado em `3.2.4`.
+Fixado em `3.2.6`.
 
 ## Backup
 

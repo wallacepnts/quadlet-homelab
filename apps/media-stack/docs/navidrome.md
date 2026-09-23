@@ -44,7 +44,7 @@ Data in `~/.config/containers/volumes/media-stack/navidrome/data`.
 qh media-stack-navidrome --update --apply
 ```
 
-Pinned to `0.63.2`. Nothing updates on its own — a new version is applied when
+Pinned to `0.64.1`. Nothing updates on its own — a new version is applied when
 you run the command above.
 
 ## Backup

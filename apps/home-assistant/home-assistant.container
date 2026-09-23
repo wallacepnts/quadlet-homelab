@@ -2,7 +2,7 @@
 Description=Home Assistant
 
 [Container]
-Image=ghcr.io/home-assistant/home-assistant:2026.9.2
+Image=ghcr.io/home-assistant/home-assistant:2026.9.3
 ContainerName=home-assistant
 
 Network=tsdproxy-net.network

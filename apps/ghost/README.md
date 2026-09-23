@@ -55,7 +55,7 @@ install.ini
 qh ghost --update --apply
 ```
 
-Pinned to `6.63.0-alpine`. Nothing updates on its own — a new version is applied
+Pinned to `6.65.0-alpine`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

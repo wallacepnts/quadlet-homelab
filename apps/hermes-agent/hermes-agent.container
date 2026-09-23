@@ -2,7 +2,7 @@
 Description=Hermes Agent (personal AI agent, OpenAI-compatible gateway)
 
 [Container]
-Image=docker.io/nousresearch/hermes-agent:v2026.9.11
+Image=docker.io/nousresearch/hermes-agent:v2026.9.21
 ContainerName=hermes-agent
 Exec=gateway run
 

@@ -38,7 +38,7 @@ Data in `~/.config/containers/volumes/media-stack/prowlarr/config`.
 qh media-stack-prowlarr --update --apply
 ```
 
-Pinned to `2.5.2`. Nothing updates on its own — a new version is applied when
+Pinned to `2.6.5`. Nothing updates on its own — a new version is applied when
 you run the command above.
 
 ## Backup

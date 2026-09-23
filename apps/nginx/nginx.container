@@ -2,7 +2,7 @@
 Description=nginx (static file server)
 
 [Container]
-Image=docker.io/library/nginx:1.30.4-alpine
+Image=docker.io/library/nginx:1.30.5-alpine
 ContainerName=nginx
 
 Network=tsdproxy-net.network

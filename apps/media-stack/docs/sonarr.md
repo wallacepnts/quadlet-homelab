@@ -38,7 +38,7 @@ Data in `~/.config/containers/volumes/media-stack/sonarr/config`.
 qh media-stack-sonarr --update --apply
 ```
 
-Pinned to `4.0.19`. Nothing updates on its own — a new version is applied when
+Pinned to `4.0.20`. Nothing updates on its own — a new version is applied when
 you run the command above.
 
 ## Backup

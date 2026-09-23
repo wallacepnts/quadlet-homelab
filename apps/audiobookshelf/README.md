@@ -52,7 +52,7 @@ audiobookshelf.container
 qh audiobookshelf --update --apply
 ```
 
-Pinned to `2.36.0`. Nothing updates on its own — a new version is applied
+Pinned to `2.36.1`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

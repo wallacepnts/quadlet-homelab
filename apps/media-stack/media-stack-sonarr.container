@@ -2,7 +2,7 @@
 Description=Sonarr (TV series automation)
 
 [Container]
-Image=lscr.io/linuxserver/sonarr:4.0.19
+Image=lscr.io/linuxserver/sonarr:4.0.20
 ContainerName=sonarr
 
 Network=tsdproxy-net.network

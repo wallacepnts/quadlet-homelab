@@ -66,7 +66,7 @@ install.ini
 qh wud --update --apply
 ```
 
-Fixado em `9.0.2`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `9.1.0`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

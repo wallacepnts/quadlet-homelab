@@ -50,7 +50,7 @@ install.ini
 qh nginx --update --apply
 ```
 
-Fixado em `1.30.4-alpine`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `1.30.5-alpine`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

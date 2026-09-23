@@ -2,7 +2,7 @@
 Description=CookCLI (plain-text recipes, CookLang format)
 
 [Container]
-Image=ghcr.io/cooklang/cookcli:0.35.0
+Image=ghcr.io/cooklang/cookcli:0.36.0
 ContainerName=cookcli
 WorkingDir=/recipes
 

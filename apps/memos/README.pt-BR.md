@@ -52,7 +52,7 @@ Dados em `~/.config/containers/volumes/memos/data` na porta **5230**.
 qh memos --update --apply
 ```
 
-Fixado em `0.30.0`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `0.31.0`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

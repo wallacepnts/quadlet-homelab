@@ -108,14 +108,14 @@ on its own and is useful without the rest.
 
 | | App | What it does | Version |
 | --- | --- | --- | --- |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/jellyfin.svg" width="28" height="28" alt=""> | [Jellyfin](./docs/jellyfin.md) | Plays the library — films, series, music — to a browser, a TV or a phone | `12.0` |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/navidrome.svg" width="28" height="28" alt=""> | [Navidrome](./docs/navidrome.md) | Plays the music the chain brought in, through any Subsonic client | `0.63.2` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/jellyfin.svg" width="28" height="28" alt=""> | [Jellyfin](./docs/jellyfin.md) | Plays the library — films, series, music — to a browser, a TV or a phone | `12.112.0
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/navidrome.svg" width="28" height="28" alt=""> | [Navidrome](./docs/navidrome.md) | Plays the music the chain brought in, through any Subsonic client | `0.64.10.63.2
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/seerr.svg" width="28" height="28" alt=""> | [Seerr](./docs/seerr.md) | Where you ask for a title. Passes the request to Sonarr or Radarr | `v3.4.1` |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/prowlarr.svg" width="28" height="28" alt=""> | [Prowlarr](./docs/prowlarr.md) | Holds the indexer list and feeds it to the other *arr apps | `2.5.2` |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/sonarr.svg" width="28" height="28" alt=""> | [Sonarr](./docs/sonarr.md) | Series: watches for new episodes, downloads and files them | `4.0.19` |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/radarr.svg" width="28" height="28" alt=""> | [Radarr](./docs/radarr.md) | The same, for films | `6.3.0` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/prowlarr.svg" width="28" height="28" alt=""> | [Prowlarr](./docs/prowlarr.md) | Holds the indexer list and feeds it to the other *arr apps | `2.6.52.5.2
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/sonarr.svg" width="28" height="28" alt=""> | [Sonarr](./docs/sonarr.md) | Series: watches for new episodes, downloads and files them | `4.0.204.0.19
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/radarr.svg" width="28" height="28" alt=""> | [Radarr](./docs/radarr.md) | The same, for films | `6.4.46.3.0
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/lidarr.svg" width="28" height="28" alt=""> | [Lidarr](./docs/lidarr.md) | The same, for music | `3.1.0` |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/bazarr.svg" width="28" height="28" alt=""> | [Bazarr](./docs/bazarr.md) | Fetches subtitles for what Sonarr and Radarr brought in | `1.6.0` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/bazarr.svg" width="28" height="28" alt=""> | [Bazarr](./docs/bazarr.md) | Fetches subtitles for what Sonarr and Radarr brought in | `1.6.11.6.0
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/sabnzbd.svg" width="28" height="28" alt=""> | [SABnzbd](./docs/sabnzbd.md) | Downloads from Usenet | `version-5.1.3` |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/deluge.svg" width="28" height="28" alt=""> | [Deluge](./docs/deluge.md) | Downloads torrents | `2.2.0` |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/gluetun.svg" width="28" height="28" alt=""> | [Gluetun](./docs/gluetun.md) | **Optional.** A VPN tunnel to put Deluge behind | `latest` |

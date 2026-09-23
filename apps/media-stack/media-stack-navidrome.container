@@ -2,7 +2,7 @@
 Description=Navidrome (music server)
 
 [Container]
-Image=ghcr.io/navidrome/navidrome:0.63.2
+Image=ghcr.io/navidrome/navidrome:0.64.1
 ContainerName=navidrome
 
 Network=tsdproxy-net.network

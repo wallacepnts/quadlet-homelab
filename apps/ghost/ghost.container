@@ -2,7 +2,7 @@
 Description=Ghost (blog/newsletter, SQLite in development mode)
 
 [Container]
-Image=docker.io/library/ghost:6.63.0-alpine
+Image=docker.io/library/ghost:6.65.0-alpine
 ContainerName=ghost
 
 Network=tsdproxy-net.network

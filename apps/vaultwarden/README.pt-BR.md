@@ -90,7 +90,7 @@ install.ini
 qh vaultwarden --update --apply
 ```
 
-Fixado em `1.37.2-alpine`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `1.37.3-alpine`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

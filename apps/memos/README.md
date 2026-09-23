@@ -52,7 +52,7 @@ Data in `~/.config/containers/volumes/memos/data` on port **5230**.
 qh memos --update --apply
 ```
 
-Pinned to `0.30.0`. Nothing updates on its own — a new version is applied
+Pinned to `0.31.0`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

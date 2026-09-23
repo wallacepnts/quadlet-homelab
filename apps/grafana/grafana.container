@@ -2,7 +2,7 @@
 Description=Grafana (dashboards over your metrics)
 
 [Container]
-Image=docker.io/grafana/grafana:13.2.1
+Image=docker.io/grafana/grafana:13.2.2
 ContainerName=grafana
 
 Network=tsdproxy-net.network

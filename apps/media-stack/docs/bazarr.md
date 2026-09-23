@@ -38,7 +38,7 @@ Data in `~/.config/containers/volumes/media-stack/bazarr/config`.
 qh media-stack-bazarr --update --apply
 ```
 
-Pinned to `1.6.0`. Nothing updates on its own — a new version is applied when
+Pinned to `1.6.1`. Nothing updates on its own — a new version is applied when
 you run the command above.
 
 ## Backup

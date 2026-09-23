@@ -2,7 +2,7 @@
 Description=Collabora Online (document editing for ownCloud)
 
 [Container]
-Image=docker.io/collabora/code:26.04.3.2.1
+Image=docker.io/collabora/code:26.04.4.1.1
 ContainerName=collabora
 
 Network=tsdproxy-net.network

@@ -2,7 +2,7 @@
 Description=Komga (comics and manga library)
 
 [Container]
-Image=ghcr.io/gotson/komga:1.26.3
+Image=ghcr.io/gotson/komga:1.27.1
 ContainerName=komga
 
 Network=tsdproxy-net.network

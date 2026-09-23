@@ -2,7 +2,7 @@
 Description=Prowlarr (indexer manager)
 
 [Container]
-Image=lscr.io/linuxserver/prowlarr:2.5.2
+Image=lscr.io/linuxserver/prowlarr:2.6.5
 ContainerName=prowlarr
 
 Network=tsdproxy-net.network
