@@ -461,6 +461,13 @@ def check_manifest(folders):
         # holding `user:password`). A typo here is silent — the footer would
         # just skip the block.
         for secao in [s for s in ini.sections() if s == "login" or s.startswith("login.")]:
+            # install.py reads `password` (with or without `user`) or
+            # `credentials`. A section with neither is printed by nobody, and
+            # that went unseen: koffan's password-only form was once in this
+            # state, and the install showed no password at all.
+            if not (ini.has_option(secao, "password") or ini.has_option(secao, "credentials")):
+                error("manifest", f"apps/{folder.name}: install.ini [{secao}] has neither "
+                                  f"`password` nor `credentials` — install.py prints nothing")
             for key in ("password", "credentials"):
                 name = ini.get(secao, key, fallback=None)
                 if name and name not in declared:

@@ -636,6 +636,11 @@ class Service:
             user = admin
             password = filebrowser-admin-password
 
+        or there is no username at all, and `user` is simply left out:
+
+            [login]
+            password = koffan-password
+
         or one secret holds both as `user:password`, because that is the form
         the app itself reads (vaultzap's basic auth). Then the username comes
         back as None and the caller splits at the first `:`, where the app
@@ -658,7 +663,11 @@ class Service:
             return (None, both)
         user = self.ini.get(secao, "user", fallback=None)
         secret = self.ini.get(secao, "password", fallback=None)
-        return (user, secret) if user and secret else None
+        # A third shape: a password and no username at all — koffan's app has
+        # none, and fmd-server's is a registration token the phone asks for.
+        # Requiring `user` made both return None, and the install that exists
+        # to show you the password showed nothing, without a word.
+        return (user or "", secret) if secret else None
 
     def installed(self):
         """The unit files of this service already on the host, in either layout.
@@ -2620,6 +2629,9 @@ def selftest():
     assert _login("vm-windows") == ("Docker", "vm-windows-password")
     assert _login("vm-chromeos") == ("admin", "vm-chromeos-password")
     assert _login("vm-macos") is None                  # essa não tem senha
+    # a password with no username: koffan and fmd-server returned None before
+    assert Service("koffan").login() == ("", "koffan-password")
+    assert Service("fmd-server").login() == ("", "fmd-server-registration-token")
     assert Service("proxmox").login() == ("root", "proxmox-root-password")
 
     # drift: a unit installed under one rule is the others' drift. In a sandbox,
@@ -3068,6 +3080,20 @@ def selftest():
         alvo.write_text(base + "# PublishPort=5230:5230\n")
         assert unit_drift(u, alvo, "tailnet", False) == ["-# PublishPort=5230:5230"]
 
+    # sonda_tailnet: silence is waited out, an answer ends the wait, a 5xx is
+    # final — a node getting its first certificate is not a node that failed.
+    real = globals()["sonda_http"]
+    try:
+        respostas = iter(["", "000", "", "200"])
+        globals()["sonda_http"] = lambda url: next(respostas)
+        assert sonda_tailnet("x", prazo=60, intervalo=0) == "200", "waits for a node being born"
+        respostas = iter(["502", "200"])
+        assert sonda_tailnet("x", prazo=60, intervalo=0) == "502", "a 5xx is not waited on"
+        globals()["sonda_http"] = lambda url: ""
+        assert sonda_tailnet("x", prazo=0, intervalo=0) == "", "the deadline still ends it"
+    finally:
+        globals()["sonda_http"] = real
+
     say("selftest: ok")
 
 
@@ -3216,6 +3242,25 @@ def sonda_http(url):
                       "--max-time", "10", url]) or "").strip()
 
 
+def sonda_tailnet(url, prazo=150, intervalo=5):
+    """The status `url` answers with, waiting out a tailnet node still being born.
+
+    A service installed for the first time gets a node tsdproxy creates on the
+    spot: it logs in, then asks for its first TLS certificate, and that last
+    step took a minute for fmd-server. The check ran the moment the container
+    turned healthy and reported "the node did not register" for a node that
+    answered 200 forty seconds later. Only silence is retried — a 5xx is the
+    proxy answering that the target is missing, and waiting does not fix that.
+    The deadline is what a node that truly never registers still costs.
+    """
+    fim = time.monotonic() + prazo
+    while True:
+        code = sonda_http(url)
+        if code and code != "000" or time.monotonic() + intervalo > fim:
+            return code
+        time.sleep(intervalo)
+
+
 def verify_service(s, tailnet, modo="tailnet"):
     """Checks that the service EXISTS and answers — not that the plan ran.
 
@@ -3304,7 +3349,7 @@ def verify_service(s, tailnet, modo="tailnet"):
         # twelve, at the moment something is already broken. `map` keeps the
         # results in the order of the list, so the output does not shuffle.
         with ThreadPoolExecutor(max_workers=8) as pool:
-            codes = list(pool.map(lambda alvo: sonda_http(alvo[1]), alvos))
+            codes = list(pool.map(lambda alvo: sonda_tailnet(alvo[1]), alvos))
         for (unit, tail), code in zip(alvos, codes):
             # 4xx is an answer: a login wall is the service working. 5xx is the
             # proxy answering for a target that is not there.
@@ -3313,8 +3358,8 @@ def verify_service(s, tailnet, modo="tailnet"):
                         f"HTTP {code}" if respondeu else
                         (f"HTTP {code} — the node is up but the target is not"
                          if code[:1] == "5" else
-                         f"no answer at {tail} — the node did not register "
-                         f"(podman logs tsdproxy)")))
+                         f"no answer at {tail} after 150s — the node did not "
+                         f"register (podman logs tsdproxy)")))
     return out
 
 
@@ -3601,7 +3646,10 @@ def show_secrets(s):
     if user is None:
         # one secret holding `user:password` — split where the app splits
         user, _, password = password.partition(":")
-    say(f"\n  user:     {user}\n  password: {password}")
+    if user:
+        say(f"\n  user:     {user}\n  password: {password}")
+    else:
+        say(f"\n  password: {password}")
 
 
 def find_app(name):
