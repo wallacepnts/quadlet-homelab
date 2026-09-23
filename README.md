@@ -2,7 +2,7 @@
 
 **[🇧🇷 Leia em português](./docs/pt-BR/README.md)**
 
-75 self-hosted services as [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)
+76 self-hosted services as [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)
 units, rootless, one service per folder.
 
 ## Quick start
@@ -70,7 +70,7 @@ pulled. To go through anyway, use `--reinstall`.
 ## Requirements
 
 - **Podman 5.0 or newer.** This is the real floor: `Notify=healthy` arrived
-  there, and 103 of the 111 units use it. On 4.x the start returns before the app
+  there, and 104 of the 112 units use it. On 4.x the start returns before the app
   is ready, and the install reports a success it cannot know about.
 - **systemd with a user session** and cgroups v2.
 - **`network-online.target` reached at boot.** Quadlet orders every unit it
@@ -146,6 +146,7 @@ Leap 15's problem — it publishes no container image and was not measured here.
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/filebrowser-quantum.svg" width="48" height="48" alt=""> | [FileBrowser Quantum](./apps/filebrowser) | `1.5.6-stable` | A web file manager — search, thumbnails, WebDAV, and a shell over a directory you pick |
 | <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/faved.svg" width="48" height="48" alt=""> | [Faved](./apps/faved) | `2.10.0` | Bookmarks with nested tags — a lighter shelf than an archiver, kept on your server |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/ferdium.svg" width="48" height="48" alt=""> | [Ferdium Server](./apps/ferdium-server) | `2.0.13` | Sync for the Ferdium desktop app — your service list on your own server, not Franz's |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/fmd.svg" width="48" height="48" alt=""> | [FMD Server](./apps/fmd-server) | `0.17.0-alpine` | Find, ring and lock your Android phone from the browser, end-to-end encrypted, without Google |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/freshrss.svg" width="48" height="48" alt=""> | [FreshRSS](./apps/freshrss) | `1.30.0-alpine` | A self-hosted RSS/Atom feed aggregator, with a compatible API for mobile apps |
 | <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/frigate.svg" width="48" height="48" alt=""> | [Frigate](./apps/frigate) | `0.18.0` | An NVR with AI object detection — CPU-only by default, no camera configured yet (see the README) |
 | <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/ghost.webp" width="48" height="48" alt=""> | [Ghost](./apps/ghost) | `6.63.0-alpine` | A self-hosted blog/newsletter (SQLite, development mode — see the README) |

@@ -1,0 +1,42 @@
+[Unit]
+Description=FMD Server (find, locate and control your Android phone)
+
+[Container]
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+User=1000
+PidsLimit=256
+NoNewPrivileges=true
+Image=registry.gitlab.com/fmd-foss/fmd-server:0.17.0-alpine
+ContainerName=fmd-server
+Network=tsdproxy-net.network
+PublishPort=8124:8080
+Environment=FMD_DATABASEDIR=/var/lib/fmd-server/db
+Secret=fmd-server-registration-token,type=env,target=FMD_REGISTRATIONTOKEN
+Volume=%h/.config/containers/volumes/fmd-server/db:/var/lib/fmd-server/db:Z
+HealthCmd=CMD-SHELL wget -q -O /dev/null http://127.0.0.1:8080/api/v2/version || exit 1
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=5
+HealthStartPeriod=20s
+Notify=healthy
+Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
+Label=tsdproxy.name=fmd
+Label=tsdproxy.port.web=443/https:8080/http
+Label=tsdproxy.dash.icon=mdi/cellphone-marker
+Label=homepage.group=Home
+Label=homepage.name=FMD
+Label=homepage.icon=https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/fmd.svg
+Label=homepage.href=https://fmd.${TAILNET}.ts.net
+Label=homepage.description="Locate, ring and lock your Android phone, end-to-end encrypted"
+Label=wud.watch=true
+Label=wud.tag.include=^[0-9]+[.][0-9]+[.][0-9]+-alpine$
+
+[Service]
+Restart=always
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target

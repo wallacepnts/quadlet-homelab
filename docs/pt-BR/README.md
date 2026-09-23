@@ -2,7 +2,7 @@
 
 **[🇺🇸 Read in English](../../README.md)**
 
-75 serviços self-hosted como units do [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html),
+76 serviços self-hosted como units do [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html),
 rootless, um serviço por pasta.
 
 ## Início rápido
@@ -70,7 +70,7 @@ use `--reinstall`.
 ## Requisitos
 
 - **Podman 5.0 ou mais novo.** É a régua de verdade: o `Notify=healthy` chegou
-  nessa versão, e 103 das 111 units usam. No 4.x o start volta antes de o app
+  nessa versão, e 104 das 112 units usam. No 4.x o start volta antes de o app
   estar pronto, e a instalação relata um sucesso que ela não tem como saber.
 - **systemd com sessão de usuário** e cgroups v2.
 - **`network-online.target` alcançado no boot.** O Quadlet ordena toda unit que
@@ -147,6 +147,7 @@ aqui.
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/filebrowser-quantum.svg" width="48" height="48" alt=""> | [FileBrowser Quantum](../../apps/filebrowser/README.pt-BR.md) | `1.5.6-stable` | Gerenciador de arquivos web — busca, miniaturas, WebDAV e um shell sobre um diretório que você escolhe |
 | <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/faved.svg" width="48" height="48" alt=""> | [Faved](../../apps/faved/README.pt-BR.md) | `2.10.0` | Favoritos com tags aninhadas — prateleira mais leve que um arquivador, no seu servidor |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/ferdium.svg" width="48" height="48" alt=""> | [Ferdium Server](../../apps/ferdium-server/README.pt-BR.md) | `2.0.13` | Sincronização do Ferdium desktop — sua lista de serviços no seu servidor, não no do Franz |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/fmd.svg" width="48" height="48" alt=""> | [FMD Server](../../apps/fmd-server/README.pt-BR.md) | `0.17.0-alpine` | Localizar, tocar e bloquear seu celular Android pelo navegador, com criptografia ponta a ponta, sem o Google |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/freshrss.svg" width="48" height="48" alt=""> | [FreshRSS](../../apps/freshrss/README.pt-BR.md) | `1.30.0-alpine` | Agregador de feeds RSS/Atom self-hosted, com API compatível pra apps móveis |
 | <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/frigate.svg" width="48" height="48" alt=""> | [Frigate](../../apps/frigate/README.pt-BR.md) | `0.18.0` | NVR com detecção de objetos por IA — CPU-only por padrão, sem câmera configurada ainda (ver README) |
 | <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/ghost.webp" width="48" height="48" alt=""> | [Ghost](../../apps/ghost/README.pt-BR.md) | `6.63.0-alpine` | Blog/newsletter self-hosted (SQLite, modo development — ver README) |

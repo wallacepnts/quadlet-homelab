@@ -39,6 +39,7 @@ motivo — e se mantém na mão.
 | `faved` | yes | 1 (`net_bind_service`) + `User=33` |
 | `ferdium-server` | no | **none** |
 | `filebrowser` | yes | **none** + `UserNS=keep-id` |
+| `fmd-server` | yes | **none** + `User=1000` |
 | `freshrss` | yes | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
 | `frigate` | no | podman default |
 | `ghost` | yes | **none** + `User=1000` |
