@@ -13,7 +13,7 @@ PublishPort=8090:8090
 EnvironmentFile=%h/.config/containers/env/beszel.env
 
 Volume=%h/.config/containers/volumes/beszel/hub-data:/beszel_data:Z
-Volume=%h/.config/containers/volumes/beszel/socket:/beszel_socket:Z
+Volume=%h/.config/containers/volumes/beszel/socket:/beszel_socket:z
 
 ReadOnly=true
 Tmpfs=/tmp:size=64M

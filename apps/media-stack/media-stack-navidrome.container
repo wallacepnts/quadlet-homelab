@@ -11,7 +11,7 @@ PublishPort=4533:4533
 EnvironmentFile=%h/.config/containers/env/media-stack.env
 
 Volume=%h/.config/containers/volumes/media-stack/navidrome/data:/data:Z
-Volume=${MEDIA_DATA_DIR}:/music:ro,Z
+Volume=${MEDIA_DATA_DIR}:/music:ro,z
 
 ReadOnly=true
 Tmpfs=/tmp:size=64M

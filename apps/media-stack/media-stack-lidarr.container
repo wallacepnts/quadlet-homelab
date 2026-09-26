@@ -11,7 +11,7 @@ PublishPort=8686:8686
 EnvironmentFile=%h/.config/containers/env/media-stack.env
 
 Volume=%h/.config/containers/volumes/media-stack/lidarr/config:/config:Z
-Volume=${MEDIA_DATA_DIR}:/data:Z
+Volume=${MEDIA_DATA_DIR}:/data:z
 
 DropCapability=ALL
 AddCapability=CHOWN

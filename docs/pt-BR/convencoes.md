@@ -148,6 +148,17 @@ containers ao mesmo tempo (ex.: backup, ver [zerobyte](../../apps/zerobyte/READM
 precisam desligar a confinação SELinux pra esse container específico.
 Trade-off consciente, não usar por padrão.
 
+**Duas units que compartilham uma pasta usam `:z`, não `:Z`.** O rótulo privado é
+privado por container: cada um que sobe reetiqueta o caminho com as próprias
+categorias, e o que subiu antes perde o acesso. Medido — dois containers numa
+pasta com `:Z`, o primeiro lê, o segundo sobe, o primeiro recebe
+`Permission denied`. Foi assim que o media-stack montava `${MEDIA_DATA_DIR}` em
+nove units, e só o último a subir enxergava a mídia; as duas units do authentik
+e as duas do beszel compartilhavam uma pasta do mesmo jeito. O `:z` é o rótulo
+compartilhado: continua confinado, legível pelos containers, e não obriga a
+reetiquetar uma biblioteca inteira a cada start. O `check.py` reprova caminho
+compartilhado ou aninhado montado com `:Z`.
+
 **Montar o socket do próprio Podman é outro caso, e o `:z` não cobre.** O
 rótulo cai no arquivo, mas o processo do container continua `container_t`, que
 a política não autoriza a falar com o runtime. O serviço sobe, o health check

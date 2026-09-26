@@ -10,7 +10,7 @@ PublishPort=8096:8096
 
 Volume=%h/.config/containers/volumes/media-stack/jellyfin/config:/config:Z
 Volume=%h/.config/containers/volumes/media-stack/jellyfin/cache:/cache:Z
-Volume=${MEDIA_DATA_DIR}:/data:ro,Z
+Volume=${MEDIA_DATA_DIR}:/data:ro,z
 
 UserNS=keep-id
 PidsLimit=256

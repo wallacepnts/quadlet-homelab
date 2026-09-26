@@ -10,7 +10,7 @@ DNS=1.1.1.1
 DNS=1.0.0.1
 PublishPort=8000:8000
 
-Volume=${MEDIA_DATA_DIR}/downloads:/downloads:Z
+Volume=${MEDIA_DATA_DIR}/downloads:/downloads:z
 Volume=%h/.config/containers/volumes/media-stack/downtify/data:/data:Z
 
 PidsLimit=256

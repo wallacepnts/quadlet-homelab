@@ -14,7 +14,7 @@ Volume=%h/.config/containers/volumes/komga/config:/config:Z
 # The library, read-only: Komga indexes and reads, and never has to write
 # where your files are. ${MEDIA_DATA_DIR} is the same root the media-stack
 # uses, from ~/.config/environment.d (rule 19 of the conventions).
-Volume=${MEDIA_DATA_DIR}/comics:/books:ro,Z
+Volume=${MEDIA_DATA_DIR}/comics:/books:ro,z
 
 ReadOnly=true
 Tmpfs=/tmp:size=64M

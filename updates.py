@@ -729,6 +729,20 @@ def selftest():
             vistos.add(status)
     assert len(vistos) >= 10, f"only {len(vistos)} statuses found — did check() move?"
 
+    # _sincronizar_por_unit writes a Version cell that is still a row: the new
+    # tag, closed. It once wrote the old version where the closing tick goes.
+    import tempfile
+    with tempfile.TemporaryDirectory(dir=RAIZ) as d:
+        pasta = Path(d) / "stack"
+        (pasta / "docs").mkdir(parents=True)
+        (pasta / "stack-app.container").write_text("[Container]\nImage=r/app:2.1\n")
+        linha = '| <img src="x.svg" alt=""> | [App](./docs/app.md) | Does it | `2.0` |\n'
+        (pasta / "README.md").write_text(linha)
+        _sincronizar_por_unit(pasta)
+        nova = (pasta / "README.md").read_text()
+        assert nova == linha.replace("`2.0` |", "`2.1` |"), nova
+        assert LINHA_UNIT.match(nova.rstrip("\n")).group(3) == "2.1"
+
     print("selftest: ok")
 
 
@@ -881,7 +895,11 @@ def _sincronizar_por_unit(pasta):
             if not alvo or alvo == m.group(3) or (
                     m.group(3) == "digest" and re.fullmatch(r"[0-9a-f]{64}", alvo)):
                 continue
-            linhas[i] = m.group(1) + alvo + m.group(3) + "\n"
+            # group(4) is the closing "` |". Writing group(3) there — the OLD
+            # version — produced `12.112.0` with no closing tick: new and old
+            # glued together, and a row the regex no longer matched, so neither
+            # check.py nor the next bump ever looked at it again.
+            linhas[i] = m.group(1) + alvo + m.group(4) + "\n"
             mudados.append(f"{doc.relative_to(RAIZ)}:{i + 1}")
         doc.write_text("".join(linhas))
     return mudados

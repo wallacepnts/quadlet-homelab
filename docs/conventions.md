@@ -146,6 +146,17 @@ exclusive by design. Tools that need to see several containers' data at once
 SELinux confinement off for that specific container. A deliberate trade-off,
 not something to use by default.
 
+**Two units that share a folder use `:z`, not `:Z`.** The private label is
+private per container: each one that starts relabels the path to its own
+categories, and the one that started before loses it. Measured — two containers
+on one folder with `:Z`, the first reads it, the second starts, the first gets
+`Permission denied`. That is how media-stack mounted `${MEDIA_DATA_DIR}` in nine
+units, with only the last one up able to see the media; authentik's two units
+and beszel's two shared a folder the same way. `:z` is the shared label: still
+confined, readable by containers, and it does not force a relabel of a whole
+media library on every start. `check.py` fails a shared or nested path mounted
+with `:Z`.
+
 **Mounting Podman's own socket is a different case, and `:z` does not cover
 it.** The label lands on the file, but the container's process stays
 `container_t`, which the policy does not allow to talk to the runtime. The

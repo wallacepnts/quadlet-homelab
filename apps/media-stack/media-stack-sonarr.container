@@ -11,7 +11,7 @@ PublishPort=8989:8989
 EnvironmentFile=%h/.config/containers/env/media-stack.env
 
 Volume=%h/.config/containers/volumes/media-stack/sonarr/config:/config:Z
-Volume=${MEDIA_DATA_DIR}:/data:Z
+Volume=${MEDIA_DATA_DIR}:/data:z
 
 DropCapability=ALL
 AddCapability=CHOWN

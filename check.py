@@ -406,6 +406,46 @@ def check_layout(folders):
                             f"run: python3 check.py --format")
 
 
+def check_shared_labels(folders):
+    """A host path two units mount — the same one, or one inside the other — is `:z`.
+
+    `:Z` is a private SELinux label: each container that starts relabels the
+    path to its own categories, and the one that started before loses it.
+    Measured: two containers on one folder with `:Z`, the first reads it, the
+    second starts, the first gets `Permission denied`. media-stack mounted
+    ${MEDIA_DATA_DIR} that way in nine units — only the last one up could see
+    the media — and authentik and beszel shared a folder the same way. `:z` is
+    the shared label; a container with SecurityLabelDisable (zerobyte, which
+    reads everyone's volumes) is out of the question and skipped.
+    """
+    montagens = []   # (host, unit, private)
+    for folder in folders:
+        for c in folder.glob("*.container"):
+            texto = c.read_text()
+            if re.search(r"^SecurityLabelDisable=true", texto, re.M):
+                continue
+            for k, v in directives_of(c):
+                if k != "Volume":
+                    continue
+                partes = v.split(":")
+                host = partes[0].rstrip("/")
+                if len(partes) < 2 or host.startswith(("/etc/", "%t/")) or not partes[1].startswith("/"):
+                    continue
+                opcoes = partes[2].split(",") if len(partes) > 2 else []
+                montagens.append((host, c.stem, "Z" in opcoes))
+    ditos = set()
+    for i, (a, ua, za) in enumerate(montagens):
+        for b, ub, zb in montagens[i + 1:]:
+            if ua == ub or not (a == b or b.startswith(a + "/") or a.startswith(b + "/")):
+                continue
+            for host, unit, privado in ((a, ua, za), (b, ub, zb)):
+                if privado and (unit, host) not in ditos:
+                    ditos.add((unit, host))
+                    outro = ub if unit == ua else ua
+                    error("rule 16", f"{unit} mounts {host} with :Z, and {outro} mounts it too — "
+                                     f"the private label locks one of them out; use :z")
+
+
 def check_manifest(folders):
     """Every Secret= has a recipe, and every .example has a known destination.
 
@@ -762,6 +802,8 @@ def check_pinned(folders):
 # A stack big enough to document each unit apart says the version twice more:
 # once in `docs/<unit>.md` and once in the Version column that links to it.
 # media-stack is the only one today, and it drifted in both at once.
+# Any row that links to a unit page, well formed or not.
+RE_LINHA_DE_UNIT = re.compile(r"^\| <img.*\]\(\./docs/(?:pt-BR/)?[a-z0-9._-]+\.md\)")
 LINHA_UNIT = re.compile(r"^\| <img.*\]\(\./docs/(?:pt-BR/)?([a-z0-9._-]+)\.md\)"
                         r".*\| `([^`]+)` \|$")
 
@@ -788,6 +830,14 @@ def check_per_unit(folder):
         for n, line in enumerate(readme.read_text().splitlines(), 1):
             m = LINHA_UNIT.match(line)
             if not m:
+                # A row of the unit table that the pattern does not match is not
+                # "something else": it is a row nobody checks. The bump once wrote
+                # `12.112.0` with no closing tick into seven of them, and this
+                # skipped all seven while the table read wrong for two releases.
+                if RE_LINHA_DE_UNIT.match(line):
+                    error("pinned", f"apps/{folder.name}/{readme.name}:{n}: a row of the "
+                                    f"unit table is malformed — the Version cell must "
+                                    f"read `<tag>` |")
                 continue
             esperado = tags.get(m.group(1))
             if esperado is None or esperado == m.group(2):
@@ -932,6 +982,7 @@ def main():
     check_layout(folders)
     uses = check_ports(folders)
     check_manifest(folders)
+    check_shared_labels(folders)
     check_readme_units(folders)
     check_socket_label()
     check_config_sources()
