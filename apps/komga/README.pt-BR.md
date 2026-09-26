@@ -49,6 +49,7 @@ systemctl --user start komga
 ```
 komga.container   unit
 .env.example      ambiente
+install.ini       o padrão do MEDIA_DATA_DIR, oferecido quando ele falta
 ```
 
 O `config/` guarda dois bancos SQLite — a biblioteca e a fila de tarefas —

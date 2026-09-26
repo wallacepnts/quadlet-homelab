@@ -456,6 +456,21 @@ def check_manifest(folders):
             if problema:
                 error("manifest", f"apps/{folder.name}: install.ini [upstream] {key} = "
                                   f"{valor} — {problema}")
+        # [vars]: every ${VAR} a Volume= of this folder names needs a default
+        # here, because it is what the install offers when it asks — and a
+        # variable left unset turns `${MEDIA_DATA_DIR}/downloads` into
+        # `/downloads`, which is how media-stack-downtify failed to start.
+        usadas = set()
+        for c in folder.glob("*.container"):
+            for k, v in directives_of(c):
+                if k == "Volume":
+                    usadas |= set(re.findall(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}", v.split(":")[0]))
+        declaradas = set(ini["vars"]) if ini.has_section("vars") else set()
+        for nome in sorted(usadas - {d.upper() for d in declaradas} - declaradas):
+            error("manifest", f"apps/{folder.name}: Volume= uses ${{{nome}}} with no default "
+                              f"in install.ini [vars] — the install has nothing to offer")
+        for nome in sorted(declaradas - usadas - {u.lower() for u in usadas}):
+            warn("manifest", f"apps/{folder.name}: install.ini [vars] {nome} is used by no Volume=")
         # [login] names the secret the install prints as the credentials, in
         # either shape (`password` next to a literal user, or `credentials`
         # holding `user:password`). A typo here is silent — the footer would

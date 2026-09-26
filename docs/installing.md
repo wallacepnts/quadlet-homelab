@@ -199,6 +199,14 @@ name it once and the install splits it at the first `:`:
 credentials = vaultzap-basic-auth
 ```
 
+When the app has no username at all, leave `user` out and only the password is
+printed — koffan's, and fmd-server's registration token:
+
+```ini
+[login]
+password = koffan-password
+```
+
 `check.py` fails the build if any of those names is not a `Secret=` some unit
 declares.
 
@@ -244,6 +252,26 @@ and `--prefix` skips the whole thing, because rehearsing an install is not the
 moment to reach the network. `check.py` fails the build if a `[validate]` key
 is not a declared `Secret=`, does not start with `shell `, or has no `manual`
 recipe next to it.
+
+### Paths the install cannot guess
+
+A `Volume=` can name a variable of the systemd --user manager instead of a path
+— `${MEDIA_DATA_DIR}` in media-stack and komga, `${FRIGATE_MEDIA_DIR}` in
+frigate — because where the media lives is yours to decide. Unset, systemd
+substitutes an empty string: `${MEDIA_DATA_DIR}/downloads` becomes `/downloads`
+and the container does not start.
+
+So the install checks first. With `--apply` in a terminal it asks, offering the
+default from `[vars]` in the folder's `install.ini`, and writes the answer to
+`~/.config/environment.d/<app>.conf`; then it creates the folders under it.
+Without a terminal it stops before writing anything and prints the line to add.
+
+```ini
+[vars]
+MEDIA_DATA_DIR = ~/data
+```
+
+`check.py` fails the build if a `Volume=` uses a variable with no default here.
 
 ## Questions during the install
 

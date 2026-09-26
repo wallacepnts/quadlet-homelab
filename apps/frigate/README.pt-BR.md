@@ -71,6 +71,7 @@ systemctl --user restart frigate
 
 ```
 frigate.container
+install.ini         o padrão do FRIGATE_MEDIA_DIR, oferecido quando ele falta
 ```
 
 ## Atualizar

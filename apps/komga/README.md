@@ -49,6 +49,7 @@ systemctl --user start komga
 ```
 komga.container   unit
 .env.example      environment
+install.ini       the default for MEDIA_DATA_DIR, offered when it is unset
 ```
 
 `config/` holds two SQLite databases — the library and the task queue — plus

@@ -198,6 +198,14 @@ basta nomear uma vez e a instalação divide no primeiro `:`:
 credentials = vaultzap-basic-auth
 ```
 
+Quando o app não tem usuário nenhum, deixe o `user` de fora e só a senha é
+impressa — a do koffan, e o token de registro do fmd-server:
+
+```ini
+[login]
+password = koffan-password
+```
+
 O `check.py` reprova o build se algum desses nomes não for um `Secret=`
 declarado por alguma unit.
 
@@ -242,6 +250,27 @@ Só secret `manual` é validado — um gerado não tem o que conferir — e o
 rede. O `check.py` reprova o build se a chave do `[validate]` não for um
 `Secret=` declarado, não começar com `shell `, ou não tiver receita `manual`
 ao lado.
+
+### Caminhos que a instalação não adivinha
+
+Um `Volume=` pode citar uma variável do systemd --user em vez de um caminho —
+`${MEDIA_DATA_DIR}` no media-stack e no komga, `${FRIGATE_MEDIA_DIR}` no
+frigate — porque onde a mídia fica é decisão sua. Sem valor, o systemd a troca
+por texto vazio: `${MEDIA_DATA_DIR}/downloads` vira `/downloads` e o container
+não sobe.
+
+Então a instalação confere antes. Com `--apply` num terminal ela pergunta,
+oferecendo o padrão do `[vars]` no `install.ini` da pasta, e grava a resposta
+em `~/.config/environment.d/<app>.conf`; depois cria as pastas debaixo dela.
+Sem terminal, ela para antes de escrever qualquer coisa e mostra a linha a
+acrescentar.
+
+```ini
+[vars]
+MEDIA_DATA_DIR = ~/data
+```
+
+O `check.py` reprova o build se um `Volume=` usa variável sem padrão aqui.
 
 ## Perguntas durante a instalação
 

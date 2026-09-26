@@ -269,6 +269,9 @@ PT = {
     'verifying:': 'verificando:',
     'missing prerequisite': 'falta um pré-requisito',
     'is not set, and Volume= needs it:': 'não está definida, e o Volume= precisa dela:',
+    '  or run it with --apply in a terminal, and it asks': '  ou rode com --apply num terminal, e ele pergunta',
+    '  path': '  caminho',
+    '  no spaces: Volume= would cut the path there': '  sem espaços: o Volume= cortaria o caminho ali',
     '  set it, then run the install again:': '  defina, e rode a instalação de novo:',
     '  checking the value — this pulls an image and reaches the network...':
         '  conferindo o valor — isto baixa uma imagem e acessa a rede...',
@@ -2469,6 +2472,45 @@ def missing_vars(s):
     return faltam
 
 
+def var_default(s, nome):
+    """The default `[vars]` in install.ini gives for a variable, `~` expanded, or ""."""
+    if not s.ini.has_section("vars"):
+        return ""
+    bruto = s.ini.get("vars", nome, fallback="").strip()
+    return os.path.expanduser(bruto) if bruto else ""
+
+
+def ask_vars(s, faltam):
+    """Asks for each missing Volume= variable and writes it to environment.d.
+
+    Where the media lives is the one path decision media-stack leaves to you,
+    so it is asked, not assumed — with the default its README already gives
+    one Enter away. Written as an absolute path: a Volume= with a space in it
+    is cut at the space, and a relative one resolves against nothing useful.
+    Returns False when the answer was left empty, so the install stops.
+    """
+    conf = Path.home() / ".config/environment.d" / f"{s.dir.name}.conf"
+    for nome in sorted({n for n, _ in faltam}):
+        usos = ", ".join(p for n, p in faltam if n == nome)
+        padrao = var_default(s, nome)
+        say(f"\n  {nome}  ({usos})")
+        while True:
+            # loc() by hand: input() does not go through say()
+            valor = input(loc("  path") + (f" [{padrao}]" if padrao else "") + ": ").strip() or padrao
+            if not valor:
+                return False
+            valor = os.path.abspath(os.path.expanduser(valor))
+            if any(c.isspace() for c in valor):
+                say(loc("  no spaces: Volume= would cut the path there"))
+                continue
+            break
+        conf.parent.mkdir(parents=True, exist_ok=True)
+        with conf.open("a") as f:
+            f.write(f"{nome}={valor}\n")
+        say(f"  -> {conf}: {nome}={valor}")
+    return True
+
+
 def find_tailnet():
     """$TAILNET, or environment.d if the session has not reloaded yet.
 
@@ -3769,6 +3811,9 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
             say(loc("  install it first:") + f"  qh {donos} --apply")
             return 1
         sem_valor = missing_vars(s)
+        if sem_valor and a.apply and sys.stdin.isatty():
+            if ask_vars(s, sem_valor):
+                sem_valor = missing_vars(s)
         if sem_valor:
             say(f"{app}: {red(loc('missing prerequisite'))}")
             for nome, path in sem_valor:
@@ -3776,8 +3821,10 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
             nomes = sorted({n for n, _ in sem_valor})
             say(loc("  set it, then run the install again:"))
             for nome in nomes:
-                say(f"    echo '{nome}=/path/to/it' >> ~/.config/environment.d/{s.dir.name}.conf")
+                sugestao = var_default(s, nome).replace(str(Path.home()), "$HOME") or "/path/to/it"
+                say(f"    echo \"{nome}={sugestao}\" >> ~/.config/environment.d/{s.dir.name}.conf")
             say("    systemctl --user daemon-reload")
+            say(loc("  or run it with --apply in a terminal, and it asks"))
             return 1
 
     # A plain install over an installed service is never what someone means:

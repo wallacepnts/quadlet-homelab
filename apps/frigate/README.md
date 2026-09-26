@@ -72,6 +72,7 @@ systemctl --user restart frigate
 
 ```
 frigate.container
+install.ini         the default for FRIGATE_MEDIA_DIR, offered when it is unset
 ```
 
 ## Update
