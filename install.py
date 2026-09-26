@@ -979,13 +979,11 @@ def plan_install(s, tailnet, force=False, interactive=False, access="tailnet",
 
     for path, is_file in s.volumes():
         if is_file is None:
-            nomes = re.findall(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}", path)
-            valores = {n: manager_var(n) for n in nomes}
-            if not all(valores.values()):
+            real = resolve_vars(path)
+            if real is None:
                 warnings.append(f"{path} has a systemd variable — create it by hand once the "
                                 f"variable is set")
                 continue
-            real = re.sub(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}", lambda m: valores[m.group(1)], path)
             d = Path(real)
             steps.append((f"mkdir -p {d}  ({path})",
                           lambda d=d: d.mkdir(parents=True, exist_ok=True)))
@@ -1356,6 +1354,13 @@ def plan_update(s, access="tailnet", href_local=False):
     # sixty directories that already exist on every weekly update is noise.
     for path, is_file in s.volumes():
         if is_file is None:
+            # A ${VAR} path too: skipping it made the update that fixed an unset
+            # MEDIA_DATA_DIR restart media-stack-downtify into a downloads/
+            # folder nobody had created — the same statfs, one step later.
+            real = resolve_vars(path)
+            if real is not None and not Path(real).exists():
+                steps.append((f"mkdir -p {real}  ({path})",
+                              lambda d=Path(real): d.mkdir(parents=True, exist_ok=True)))
             continue
         d = Path(path).parent if is_file else Path(path)
         if not d.exists():
@@ -2246,6 +2251,11 @@ def restart_unit(unit, container=None):
     if SANDBOX:
         say(f"       (sandbox, not executed: {' '.join(cmd)})")
         return
+    # Clear the start limit first. A few failed starts — the install that ran
+    # before its folder existed — leave systemd refusing *any* start with
+    # `start-limit-hit`, the fixed one included, and the fix then looks broken.
+    # CLAUDE.md warns about exactly this; harmless when nothing failed.
+    run_lenient(["systemctl", "--user", "reset-failed", unit])
     if container is None:
         run(cmd)
         return
@@ -2453,6 +2463,15 @@ def manager_var(nome):
         if m and m.group(1).strip():
             return os.path.expandvars(m.group(1).strip().strip('"'))
     return ""
+
+
+def resolve_vars(path):
+    """`path` with every ${VAR} replaced by the manager's value, or None if one is unset."""
+    nomes = re.findall(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}", path)
+    valores = {n: manager_var(n) for n in nomes}
+    if not all(valores.values()):
+        return None
+    return re.sub(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}", lambda m: valores[m.group(1)], path)
 
 
 def missing_vars(s):
@@ -3199,6 +3218,16 @@ def selftest():
             assert missing_vars(dl) == []
             feitos = [t for t, _ in plan_install(dl, "")[0]]
             assert any(t.startswith(f"mkdir -p {d}/downloads") for t in feitos), feitos
+    finally:
+        globals()["manager_var"] = real_mv
+
+    # resolve_vars: what both the install and the update plan create for a
+    # Volume= that names a variable; the update used to skip these entirely.
+    real_mv = globals()["manager_var"]
+    try:
+        globals()["manager_var"] = lambda n: "/m" if n == "A" else ""
+        assert resolve_vars("${A}/downloads") == "/m/downloads"
+        assert resolve_vars("${A}/${B}") is None, "one unset variable leaves nothing to create"
     finally:
         globals()["manager_var"] = real_mv
 
