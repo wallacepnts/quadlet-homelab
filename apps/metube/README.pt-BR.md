@@ -47,7 +47,7 @@ metube.container
 qh metube --update --apply
 ```
 
-Fixado em `2026.09.20`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `2026.09.26`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

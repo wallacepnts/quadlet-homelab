@@ -2,7 +2,7 @@
 Description=SearXNG (metasearch engine)
 
 [Container]
-Image=docker.io/searxng/searxng:2026.9.22-019460e07
+Image=docker.io/searxng/searxng:2026.9.25-487f51922
 ContainerName=searxng
 
 Network=tsdproxy-net.network

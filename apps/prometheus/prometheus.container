@@ -2,7 +2,7 @@
 Description=Prometheus (metrics collection)
 
 [Container]
-Image=docker.io/prom/prometheus:v3.14.0
+Image=docker.io/prom/prometheus:v3.15.0
 ContainerName=prometheus
 
 Network=tsdproxy-net.network

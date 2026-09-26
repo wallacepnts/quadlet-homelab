@@ -76,7 +76,7 @@ Units in this stack:
 qh openwebui --update --apply
 ```
 
-Pinned to `0.34.3`, `v0.11.4`. Nothing updates on its own — a new version is applied
+Pinned to `0.34.4`, `v0.11.4`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

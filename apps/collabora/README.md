@@ -101,7 +101,7 @@ no shell and no `curl` or `wget` — `coolwsd`, `coolmount`, `coolforkit` and
 qh collabora --update --apply
 ```
 
-Pinned to `26.04.4.1.1`. Collabora publishes no GitHub releases, so
+Pinned to `26.04.4.2.1`. Collabora publishes no GitHub releases, so
 `qh-updates` compares against the registry's tag list.
 
 ## Backup

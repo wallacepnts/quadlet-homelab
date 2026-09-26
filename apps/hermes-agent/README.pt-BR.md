@@ -75,7 +75,7 @@ ls /sys/fs/cgroup/user.slice/user-$(id -u).slice/user@$(id -u).service/ | grep m
 qh hermes-agent --update --apply
 ```
 
-Fixado em `v2026.9.21`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `v2026.9.24`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

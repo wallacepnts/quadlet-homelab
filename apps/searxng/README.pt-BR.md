@@ -90,7 +90,7 @@ Open WebUI volta vazia em silêncio.
 qh searxng --update --apply
 ```
 
-Fixado em `2026.9.22-019460e07`. O SearXNG não publica release no GitHub e
+Fixado em `2026.9.25-487f51922`. O SearXNG não publica release no GitHub e
 marca por data mais commit, então o `qh-updates` compara com a lista de tags do
 registry, e não com o redirect de release de sempre.
 

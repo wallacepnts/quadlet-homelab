@@ -2,7 +2,7 @@
 Description=Bazarr (subtitles)
 
 [Container]
-Image=lscr.io/linuxserver/bazarr:1.6.1
+Image=lscr.io/linuxserver/bazarr:1.6.2
 ContainerName=bazarr
 
 Network=tsdproxy-net.network
