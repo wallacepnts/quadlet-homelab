@@ -114,7 +114,7 @@ medidos e não adivinhados:
 qh gitea-runner --update --apply
 ```
 
-Fixado em `3.5.0`. Nada atualiza sozinho — uma versão nova é aplicada quando
+Fixado em `4.0.0`. Nada atualiza sozinho — uma versão nova é aplicada quando
 você roda o comando acima.
 
 O projeto mudou de nome: era publicado como `gitea/act_runner`, que parou na

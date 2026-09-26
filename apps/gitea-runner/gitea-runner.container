@@ -2,7 +2,7 @@
 Description=Gitea Actions runner (CI for the Gitea next door)
 
 [Container]
-Image=docker.io/gitea/runner:3.5.0
+Image=docker.io/gitea/runner:4.0.0
 ContainerName=gitea-runner
 
 Network=tsdproxy-net.network
