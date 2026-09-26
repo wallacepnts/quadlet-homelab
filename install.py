@@ -268,6 +268,8 @@ PT = {
     'Check with:': 'Confira com:',
     'verifying:': 'verificando:',
     'missing prerequisite': 'falta um pré-requisito',
+    'is not set, and Volume= needs it:': 'não está definida, e o Volume= precisa dela:',
+    '  set it, then run the install again:': '  defina, e rode a instalação de novo:',
     '  checking the value — this pulls an image and reaches the network...':
         '  conferindo o valor — isto baixa uma imagem e acessa a rede...',
     'the service refused this value:': 'o serviço recusou este valor:',
@@ -974,8 +976,16 @@ def plan_install(s, tailnet, force=False, interactive=False, access="tailnet",
 
     for path, is_file in s.volumes():
         if is_file is None:
-            warnings.append(f"{path} has a systemd variable — create it by hand once the "
-                            f"variable is set")
+            nomes = re.findall(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}", path)
+            valores = {n: manager_var(n) for n in nomes}
+            if not all(valores.values()):
+                warnings.append(f"{path} has a systemd variable — create it by hand once the "
+                                f"variable is set")
+                continue
+            real = re.sub(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}", lambda m: valores[m.group(1)], path)
+            d = Path(real)
+            steps.append((f"mkdir -p {d}  ({path})",
+                          lambda d=d: d.mkdir(parents=True, exist_ok=True)))
             continue
         d = Path(path).parent if is_file else Path(path)
         steps.append((f"mkdir -p {d}", lambda d=d: d.mkdir(parents=True, exist_ok=True)))
@@ -2418,6 +2428,47 @@ def addresses(service, tailnet):
     return out
 
 
+def manager_var(nome):
+    """A variable of the systemd --user manager's environment, or "".
+
+    That is where Quadlet expands `${VAR}` in `Volume=`, not this process's
+    environment. `show-environment` answers for the manager as it is now; a
+    file just written to environment.d only reaches it on the daemon-reload
+    the install is about to run, so those files are read too.
+    """
+    if SANDBOX:
+        return ""
+    saida = run_read(["systemctl", "--user", "show-environment"]) or ""
+    m = re.search(rf"^{re.escape(nome)}=(.*)$", saida, re.M)
+    if m and m.group(1).strip():
+        return m.group(1).strip()
+    for conf in sorted((Path.home() / ".config/environment.d").glob("*.conf")):
+        try:
+            m = re.search(rf"^{re.escape(nome)}=(.*)$", conf.read_text(), re.M)
+        except OSError:
+            continue
+        if m and m.group(1).strip():
+            return os.path.expandvars(m.group(1).strip().strip('"'))
+    return ""
+
+
+def missing_vars(s):
+    """[(variable, host path)] for Volume= paths naming a variable nobody set.
+
+    Unset, systemd substitutes an empty string: media-stack-downtify's
+    `${MEDIA_DATA_DIR}/downloads` became `/downloads`, podman answered
+    `statfs /downloads: no such file or directory`, and the install had already
+    copied the unit, pulled the image and restarted into that.
+    """
+    faltam = []
+    for path, is_file in s.volumes():
+        if is_file is None:
+            for nome in re.findall(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}", path):
+                if not manager_var(nome):
+                    faltam.append((nome, path))
+    return faltam
+
+
 def find_tailnet():
     """$TAILNET, or environment.d if the session has not reloaded yet.
 
@@ -3094,6 +3145,21 @@ def selftest():
     finally:
         globals()["sonda_http"] = real
 
+    # Volume= with a systemd variable: refused when unset, created when set.
+    real_mv = globals()["manager_var"]
+    try:
+        dl = Service("media-stack", None, "media-stack-downtify")
+        globals()["manager_var"] = lambda n: ""
+        assert missing_vars(dl) == [("MEDIA_DATA_DIR", "${MEDIA_DATA_DIR}/downloads")], \
+            "an unset variable must stop the install, not become /downloads"
+        with tempfile.TemporaryDirectory() as d:
+            globals()["manager_var"] = lambda n: d
+            assert missing_vars(dl) == []
+            feitos = [t for t, _ in plan_install(dl, "")[0]]
+            assert any(t.startswith(f"mkdir -p {d}/downloads") for t in feitos), feitos
+    finally:
+        globals()["manager_var"] = real_mv
+
     say("selftest: ok")
 
 
@@ -3701,6 +3767,17 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
                     + loc("which is not installed"))
             donos = " ".join(sorted({d for d, _ in faltando}))
             say(loc("  install it first:") + f"  qh {donos} --apply")
+            return 1
+        sem_valor = missing_vars(s)
+        if sem_valor:
+            say(f"{app}: {red(loc('missing prerequisite'))}")
+            for nome, path in sem_valor:
+                say(f"  {nome} " + loc("is not set, and Volume= needs it:") + f" {path}")
+            nomes = sorted({n for n, _ in sem_valor})
+            say(loc("  set it, then run the install again:"))
+            for nome in nomes:
+                say(f"    echo '{nome}=/path/to/it' >> ~/.config/environment.d/{s.dir.name}.conf")
+            say("    systemctl --user daemon-reload")
             return 1
 
     # A plain install over an installed service is never what someone means:
