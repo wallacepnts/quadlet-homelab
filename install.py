@@ -1790,6 +1790,8 @@ def size(path):
 # units — and `unit_bytes` swaps it in as the unit is written, the same place
 # `--access local` rewrites `homepage.href`.
 DESCRICOES = {
+    "Sync server for Anki flashcards, in place of AnkiWeb":
+        "Servidor de sincronização dos cartões do Anki, no lugar do AnkiWeb",
     "Locate, ring and lock your Android phone, end-to-end encrypted":
         "Localiza, toca e bloqueia seu celular Android, com criptografia ponta a ponta",
     "A bridge between Zigbee devices and MQTT, with no proprietary hub": "Ponte entre dispositivos Zigbee e MQTT, sem hub proprietário",

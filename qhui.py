@@ -212,7 +212,7 @@ bold = _c("1")
 # matter, repeated keys, keeps its order: they are never reordered here.
 LAYOUT = (
     ("identity", ("Image", "ContainerName", "HostName", "Exec", "Entrypoint",
-                  "WorkingDir", "RunInit", "AutoUpdate", "Pull")),
+                  "WorkingDir", "RunInit", "StopSignal", "AutoUpdate", "Pull")),
     ("network", ("Network", "NetworkAlias", "IP", "DNS", "AddHost", "PublishPort")),
     ("config", ("Environment", "EnvironmentFile", "Secret")),
     ("data", ("SecurityLabelDisable", "SecurityLabelType", "SecurityLabelLevel",

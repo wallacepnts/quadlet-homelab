@@ -2,7 +2,7 @@
 
 **[🇧🇷 Leia em português](./docs/pt-BR/README.md)**
 
-76 self-hosted services as [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)
+77 self-hosted services as [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)
 units, rootless, one service per folder.
 
 ## Quick start
@@ -70,7 +70,7 @@ pulled. To go through anyway, use `--reinstall`.
 ## Requirements
 
 - **Podman 5.0 or newer.** This is the real floor: `Notify=healthy` arrived
-  there, and 104 of the 112 units use it. On 4.x the start returns before the app
+  there, and 105 of the 113 units use it. On 4.x the start returns before the app
   is ready, and the install reports a success it cannot know about.
 - **systemd with a user session** and cgroups v2.
 - **`network-online.target` reached at boot.** Quadlet orders every unit it
@@ -129,6 +129,7 @@ Leap 15's problem — it publishes no container image and was not measured here.
 | --- | --- | --- | --- |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/actual-budget.svg" width="48" height="48" alt=""> | [Actual Budget](./apps/actual-budget) | `latest` (auto-update) | Fast, privacy-focused personal finance management using the envelope budgeting method |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/adguard-home.svg" width="48" height="48" alt=""> | [AdGuard Home](./apps/adguardhome) | `v0.107.79` | A recursive DNS server that blocks ads and trackers for the whole network |
+| <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/anki.svg" width="48" height="48" alt=""> | [Anki](./apps/anki) | `26.08-distroless` | The sync server from Anki itself, so flashcards, reviews and media sync without AnkiWeb |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/anytype.svg" width="48" height="48" alt=""> | [any-sync-bundle](./apps/any-sync-bundle) | `1.6.0-2026-08-18` | The Any-Sync protocol backend, which syncs Anytype's data across devices without relying on the company's cloud |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/audiobookshelf.svg" width="48" height="48" alt=""> | [Audiobookshelf](./apps/audiobookshelf) | `2.36.1` | An audiobook and podcast server, with progress synced across devices |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/authentik.svg" width="48" height="48" alt=""> | [Authentik](./apps/authentik) | `2026.8.3` | An identity server (SSO, MFA, OIDC/SAML) — only the core is deployed, no forward-auth via tsdproxy yet (see the README) |

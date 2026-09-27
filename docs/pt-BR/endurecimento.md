@@ -18,6 +18,7 @@ motivo — e se mantém na mão.
 | --- | --- | --- |
 | `actual` | yes | **none** + `User=1000` |
 | `adguardhome` | yes | 1 (`net_bind_service`) |
+| `anki` | yes | **none** + `User=65532` |
 | `any-sync-bundle` | no | 5 (`chown`, `dac_override`, `fowner`, `setgid`, `setuid`) |
 | `audiobookshelf` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
 | `authentik` | yes | **none** + `User=1000` |
