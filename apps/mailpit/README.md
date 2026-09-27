@@ -72,6 +72,36 @@ invoices.
 Both come from one secret, `mailpit-ui-auth`, in the `user:password` form
 Mailpit reads.
 
+## Your own password
+
+The install generates one. To choose it, at install time or any time after:
+
+```bash
+qh mailpit --reinstall --ask-secrets --apply
+```
+
+and type **user and password together**, the way Mailpit reads them:
+
+```
+admin:your-password
+```
+
+Measured on v1.31.2, two ways to get it wrong without an error:
+
+- **No space in the password.** Mailpit splits the value at whitespace to allow
+  several users, so `admin:my password` makes the password just `my` — and
+  `password` a second entry. The service is up and the password you typed is
+  refused.
+- **Only the password alone**, with no `admin:` in front, and the service still
+  comes up, with authentication on and no one able to log in.
+
+A `:` in the password is fine — it splits at the first one. Enter with nothing
+typed generates a random one again. `--reinstall` recreates the secret and
+restarts the service, and leaves the stored mail alone — but it also puts
+`.env.example` back over `~/.config/containers/env/mailpit.env`, so save any
+change of yours there first. `qh mailpit` prints the
+user and password in use.
+
 ## Update
 
 ```bash

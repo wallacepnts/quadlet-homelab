@@ -72,6 +72,34 @@ confirmação, fatura.
 As duas vêm de um segredo só, `mailpit-ui-auth`, no formato `usuário:senha`
 que o Mailpit lê.
 
+## Senha sua
+
+A instalação gera uma. Para escolher a sua, na instalação ou depois dela:
+
+```bash
+qh mailpit --reinstall --ask-secrets --apply
+```
+
+e digite **usuário e senha juntos**, como o Mailpit os lê:
+
+```
+admin:sua-senha
+```
+
+Medido na v1.31.2, dois jeitos de errar sem erro nenhum:
+
+- **Nada de espaço na senha.** O Mailpit separa o valor em espaços para aceitar
+  vários usuários, então `admin:minha senha` deixa a senha só como `minha` — e
+  `senha` vira uma segunda entrada. O serviço sobe e a senha que você digitou é
+  recusada.
+- **Só a senha**, sem o `admin:` na frente, e o serviço sobe mesmo assim, com
+  autenticação ligada e ninguém conseguindo entrar.
+
+`:` na senha pode — ele separa no primeiro. Enter sem nada digitado gera outra
+aleatória. O `--reinstall` recria o segredo e reinicia o serviço, sem tocar nas
+mensagens guardadas — mas também põe o `.env.example` de volta por cima de
+`~/.config/containers/env/mailpit.env`, então guarde antes o que você mudou ali. O `qh mailpit` mostra o usuário e a senha em uso.
+
 ## Atualizar
 
 ```bash
