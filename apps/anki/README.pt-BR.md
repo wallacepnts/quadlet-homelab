@@ -77,6 +77,33 @@ para chegar a um servidor da sua própria rede.
 O `SYNC_HOST=0.0.0.0` está na unit porque o servidor escuta em `localhost` por
 padrão, o que dentro de um container fica inalcançável de fora dele.
 
+## Senha sua
+
+A instalação gera uma. Para escolher a sua, na instalação ou depois dela:
+
+```bash
+qh anki --reinstall --ask-secrets --apply
+```
+
+e digite **usuário e senha juntos**, como o servidor os lê:
+
+```
+anki:sua-senha
+```
+
+Só a senha, sem o `anki:` na frente, e o serviço não sobe — medido: o container
+sai na hora, com código 0 e nenhuma linha no log, então nada aponta para o
+segredo. Digite de novo com o comando acima.
+
+Enter sem nada digitado gera outra aleatória. A senha pode ter `:` — o servidor
+separa no primeiro. O `--reinstall` recria o segredo e reinicia o serviço, sem tocar nas
+coleções; depois, cada cliente entra de novo com a senha nova.
+
+Mantenha o nome de usuário. As coleções ficam numa pasta com o nome dele, então
+`maria:…` no lugar de `anki:…` começa de uma coleção vazia — a antiga continua
+no disco, sem aparecer, e a próxima sincronização oferece enviar a cópia de um
+cliente. O `qh anki` mostra o usuário e a senha em uso.
+
 ## Mais de um usuário
 
 Cada conta é uma variável `SYNC_USERn` (`SYNC_USER1`, `SYNC_USER2`, …), cada uma

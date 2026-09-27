@@ -77,6 +77,34 @@ server on your own network.
 `SYNC_HOST=0.0.0.0` is set because the server listens on `localhost` by
 default, which inside a container is unreachable from outside it.
 
+## Your own password
+
+The install generates one. To choose it, at install time or any time after:
+
+```bash
+qh anki --reinstall --ask-secrets --apply
+```
+
+and type **user and password together**, the way the server reads them:
+
+```
+anki:your-password
+```
+
+Only the password alone, with no `anki:` in front, and the server does not come
+up — measured: the container exits at once, with code 0 and not one line in the
+log, so nothing points at the secret. Retype it with the command above.
+
+Enter with nothing typed generates a random one again. The password may hold
+`:` — the server splits at the first one. `--reinstall` recreates the secret and
+restarts the service, and leaves the collections alone; each client then logs in
+again with the new password.
+
+Keep the user name. Collections are stored in a folder named after it, so
+`maria:…` in place of `anki:…` starts from an empty collection — the old one
+stays on disk, unseen, and the next sync offers to upload a client's copy.
+`qh anki` prints the user and password in use.
+
 ## More than one user
 
 Each account is a `SYNC_USERn` variable (`SYNC_USER1`, `SYNC_USER2`, …), each
