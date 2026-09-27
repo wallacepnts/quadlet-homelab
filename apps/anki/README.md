@@ -60,6 +60,10 @@ Data in `~/.config/containers/volumes/anki/data`, one folder per user. Port
 
 ## Reaching it
 
+**There is no web page.** Opened in a browser, the address shows an empty
+`404 Not Found` — that is the server running; it only answers the Anki apps,
+under `/sync/`. To see it work, sync from a client.
+
 The server speaks **plain HTTP** only. On the tailnet, tsdproxy puts HTTPS in
 front of it, and that is the address to give the clients: **AnkiMobile refuses
 a server without TLS**, and a password sent over plain HTTP crosses the network

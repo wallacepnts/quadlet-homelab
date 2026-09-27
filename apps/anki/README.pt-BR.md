@@ -61,6 +61,10 @@ Dados em `~/.config/containers/volumes/anki/data`, uma pasta por usuário. Porta
 
 ## Acesso
 
+**Não há página web.** Aberto no navegador, o endereço mostra um `404 Not Found`
+vazio — é o servidor funcionando; ele só responde aos apps do Anki, em `/sync/`.
+Para ver que funciona, sincronize a partir de um cliente.
+
 O servidor fala só **HTTP puro**. Na tailnet, o tsdproxy põe HTTPS na frente, e
 é esse o endereço para dar aos clientes: **o AnkiMobile recusa servidor sem
 TLS**, e uma senha enviada por HTTP puro atravessa a rede legível. A porta

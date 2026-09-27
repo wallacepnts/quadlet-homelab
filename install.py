@@ -1216,8 +1216,19 @@ def unit_drift(u, target, modo, href_local):
     """
     if not target.exists():
         return []
-    novo = unit_bytes(u, modo, href_local).decode("utf-8", "replace").splitlines()
     velho = target.read_bytes().decode("utf-8", "replace").splitlines()
+    # Measured against the closest render, not just the one about to be written.
+    # A switch of --access rewrites the tsdproxy labels by design: the anki unit
+    # installed with --local and moved to the tailnet reported the five labels
+    # the switch adds as the host's own lines, and closed a finished update
+    # with "not done". The requested mode goes first, so a tie keeps it.
+    combos = [(modo, href_local)] + [(m, h) for m in ACCESS_MODES
+                                     for h in (False, True) if (m, h) != (modo, href_local)]
+    return min((_drift(unit_bytes(u, m, h).decode("utf-8", "replace").splitlines(), velho)
+                for m, h in combos), key=len)
+
+
+def _drift(novo, velho):
     # Content, not position. Units are laid out by qhui.format_unit, and a
     # line that only moved to its block is not a line of yours that goes away:
     # a positional diff reported the whole vaultwarden unit as eight lines
@@ -3192,6 +3203,12 @@ def selftest():
         alvo.write_text("\n".join(sorted(l for l in base.splitlines() if l.strip())) + "\n")
         assert unit_drift(u, alvo, "tailnet", False) == [], "reordering is not a loss"
         alvo.write_text(base + "# PublishPort=5230:5230\n")
+        assert unit_drift(u, alvo, "tailnet", False) == ["-# PublishPort=5230:5230"]
+        # Installed with --local, now going to the tailnet: the labels that
+        # change are the switch the person asked for, not lines of theirs.
+        alvo.write_bytes(unit_bytes(u, "local", False))
+        assert unit_drift(u, alvo, "tailnet", False) == [], "an access switch is not a loss"
+        alvo.write_bytes(unit_bytes(u, "local", False) + b"# PublishPort=5230:5230\n")
         assert unit_drift(u, alvo, "tailnet", False) == ["-# PublishPort=5230:5230"]
 
     # sonda_tailnet: silence is waited out, an answer ends the wait, a 5xx is
