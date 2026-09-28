@@ -1801,6 +1801,8 @@ def size(path):
 # units — and `unit_bytes` swaps it in as the unit is written, the same place
 # `--access local` rewrites `homepage.href`.
 DESCRICOES = {
+    "Pokémon storage across every game's saves, with a shared Pokédex":
+        "Armazenamento de Pokémon entre os saves de todos os jogos, com uma Pokédex única",
     "Sync server for Anki flashcards, in place of AnkiWeb":
         "Servidor de sincronização dos cartões do Anki, no lugar do AnkiWeb",
     "Locate, ring and lock your Android phone, end-to-end encrypted":

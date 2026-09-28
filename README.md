@@ -2,7 +2,7 @@
 
 **[🇧🇷 Leia em português](./docs/pt-BR/README.md)**
 
-77 self-hosted services as [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)
+78 self-hosted services as [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)
 units, rootless, one service per folder.
 
 ## Quick start
@@ -70,7 +70,7 @@ pulled. To go through anyway, use `--reinstall`.
 ## Requirements
 
 - **Podman 5.0 or newer.** This is the real floor: `Notify=healthy` arrived
-  there, and 105 of the 113 units use it. On 4.x the start returns before the app
+  there, and 106 of the 114 units use it. On 4.x the start returns before the app
   is ready, and the install reports a success it cannot know about.
 - **systemd with a user session** and cgroups v2.
 - **`network-online.target` reached at boot.** Quadlet orders every unit it
@@ -184,6 +184,7 @@ Leap 15's problem — it publishes no container image and was not measured here.
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/owncloud.svg" width="48" height="48" alt=""> | [ownCloud](./apps/owncloud) | `11.0.0-20260802` | File sync and sharing on a cloud of your own |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/owntracks.svg" width="48" height="48" alt=""> | [OwnTracks](./apps/owntracks) | `1.0.4` | Personal location tracking through a phone app, with its own MQTT broker and a position history |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/paperless-ngx.svg" width="48" height="48" alt=""> | [Paperless-ngx](./apps/paperless-ngx) | `3.2.1` | Scans, OCRs and indexes documents automatically, with full-text search so you never hunt for paper again |
+| <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/pkvault.svg" width="48" height="48" alt=""> | [PKVault](./apps/pkvault) | `2.3.3` | Pokémon storage and save editing across every generation, based on PKHeX, with a Pokédex built from all your saves |
 | <img src="https://api.iconify.design/mdi/email-fast.svg?color=%23888888" width="48" height="48" alt=""> | [Postfix](./apps/postfix) | `v5.1.0` | An SMTP relay for the other containers — they hand mail to one place, and the credentials of the provider live here only |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/prometheus.svg" width="48" height="48" alt=""> | [Prometheus](./apps/prometheus) | `v3.15.0` | Scrapes metrics on a schedule and keeps the history — the data source Grafana draws from |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/proxmox.svg" width="48" height="48" alt=""> | [Proxmox VE](./apps/proxmox) | `9.2.10` | The Proxmox hypervisor in a container, for trying it without dedicating a machine — runs privileged |

@@ -100,6 +100,7 @@ motivo — e se mantém na mão.
 | `paperless-ngx-broker` | yes | **none** + `User=999` |
 | `paperless-ngx-gotenberg` | yes | **none** |
 | `paperless-ngx-tika` | yes | **none** |
+| `pkvault` | yes | 4 (`chown`, `dac_override`, `setgid`, `setuid`) |
 | `postfix` | no | 6 (`chown`, `dac_override`, `fowner`, `net_bind_service`, `setgid`, `setuid`) |
 | `prometheus` | yes | **none** + `User=65534` |
 | `proxmox` | no | podman default |
@@ -173,6 +174,9 @@ mensagem prova por que ele não vai além.
 | `vaultzap` | `Secret=` com `type=mount` | `make mountpoint: read-only file system` — usar `type=env`. Não é regra geral: no mesmo Podman 6.0.2, o `owntracks-mosquitto` monta um secret `type=mount` sob `ReadOnly=true`, com e sem `UserNS=keep-id` |
 | `proxmox` | sem `--privileged` | `ERROR: Please start the container with the --privileged flag!` |
 | `toolbx` | instalar pacote com `UserNS=keep-id` | negado; usar `podman exec --user root` |
+| `pkvault` | `DropCapability=ALL` sozinho | o container fica `Up` com o app morto: o supervisord segue rodando enquanto o nginx sai com `mkdir() "/var/lib/nginx/tmp/client_body" failed (13: Permission denied)` — o nginx roda como root sobre uma pasta do usuário `nginx`. Sem `CHOWN`: `chown("/var/lib/nginx/tmp/client_body", 100) failed`; sem `DAC_OVERRIDE`: o mesmo `mkdir` |
+| `pkvault` | `Tmpfs=/var/lib/nginx/tmp` sem `mode=1777` | enviar um save responde 500: `open() "/var/lib/nginx/tmp/client_body/0000000001" failed (13: Permission denied)` — o nginx guarda ali todo corpo acima de 16 KB, e o tmpfs nasce com dono root. O `--tmpfs` do podman não tem `uid=`; as subpastas que o nginx cria dentro continuam `0700 nginx` |
+| `pkvault` | `User=100` | `Error: Can't drop privilege as nonroot user` — o `supervisord.conf` da imagem declara `user=root` |
 | `postfix` | `ReadOnly=true` | sai com 1 — o `run.sh` reescreve `/etc/postfix/main.cf` a cada start |
 | `postfix` | `User=1000` | `chmod: changing permissions of '/scripts/common.sh': Operation not permitted` |
 | `postfix` | `DropCapability=ALL` sozinho | container fica `Up` com o app morto: `chown: /var/spool/postfix/private: Operation not permitted` |
