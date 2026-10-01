@@ -66,7 +66,10 @@ major, então 2026.8 para 2026.9 lê como minor e trouxe oito mudanças
 incompatíveis. Ler as notas da release continua sendo o trabalho.
 
 Secundário rastreado por `compose:` sobe para o que aquele compose declara,
-digest incluído.
+digest incluído. Quando o compose roda duas imagens de mesmo nome — o do Postiz tem
+`postgres:17-alpine` para o app e `postgres:16` para o Temporal — compara-se a que
+tem a tag com a mesma forma da fixada. Pegar a primeira fazia o banco do Temporal
+aparecer como um major atrasado.
 
 Antes de perguntar se existe imagem mais nova, ele pergunta se a fixada ainda
 existe, e reporta como sumida a que não. Duas chegaram lá por caminhos

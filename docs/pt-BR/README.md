@@ -2,7 +2,7 @@
 
 **[🇺🇸 Read in English](../../README.md)**
 
-78 serviços self-hosted como units do [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html),
+79 serviços self-hosted como units do [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html),
 rootless, um serviço por pasta.
 
 ## Início rápido
@@ -70,7 +70,7 @@ use `--reinstall`.
 ## Requisitos
 
 - **Podman 5.0 ou mais novo.** É a régua de verdade: o `Notify=healthy` chegou
-  nessa versão, e 106 das 114 units usam. No 4.x o start volta antes de o app
+  nessa versão, e 111 das 119 units usam. No 4.x o start volta antes de o app
   estar pronto, e a instalação relata um sucesso que ela não tem como saber.
 - **systemd com sessão de usuário** e cgroups v2.
 - **`network-online.target` alcançado no boot.** O Quadlet ordena toda unit que
@@ -187,6 +187,7 @@ aqui.
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/paperless-ngx.svg" width="48" height="48" alt=""> | [Paperless-ngx](../../apps/paperless-ngx/README.pt-BR.md) | `3.2.1` | Digitaliza, faz OCR e indexa documentos automaticamente, com busca full-text pra nunca mais procurar papel |
 | <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/pkvault.svg" width="48" height="48" alt=""> | [PKVault](../../apps/pkvault/README.pt-BR.md) | `2.3.3` | Armazenamento de Pokémon e edição de saves de todas as gerações, baseado no PKHeX, com uma Pokédex montada a partir de todos os seus saves |
 | <img src="https://api.iconify.design/mdi/email-fast.svg?color=%23888888" width="48" height="48" alt=""> | [Postfix](../../apps/postfix/README.pt-BR.md) | `v5.1.0` | Relay SMTP para os outros containers — eles entregam num lugar só, e a credencial do provedor fica só aqui |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/postiz.svg" width="48" height="48" alt=""> | [Postiz](../../apps/postiz/README.pt-BR.md) | `v2.24.0` | Agenda posts no Instagram e em outras redes sociais, com calendário e um só lugar para todos os canais |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/prometheus.svg" width="48" height="48" alt=""> | [Prometheus](../../apps/prometheus/README.pt-BR.md) | `v3.15.0` | Coleta métricas em intervalo e guarda o histórico — a fonte de dados que o Grafana desenha |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/proxmox.svg" width="48" height="48" alt=""> | [Proxmox VE](../../apps/proxmox/README.pt-BR.md) | `9.2.10` | O hypervisor Proxmox num container, pra experimentar sem dedicar uma máquina — roda privileged |
 | <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/retrom.webp" width="48" height="48" alt=""> | [Retrom](../../apps/retrom/README.pt-BR.md) | `0.8.4` | Biblioteca de jogos para emulação — uma coleção só, jogada no navegador ou pelo cliente de desktop |

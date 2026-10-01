@@ -102,6 +102,11 @@ motivo — e se mantém na mão.
 | `paperless-ngx-tika` | yes | **none** |
 | `pkvault` | yes | 4 (`chown`, `dac_override`, `setgid`, `setuid`) |
 | `postfix` | no | 6 (`chown`, `dac_override`, `fowner`, `net_bind_service`, `setgid`, `setuid`) |
+| `postiz` | yes | **none** + `User=33` |
+| `postiz-postgres` | yes | **none** + `User=70` |
+| `postiz-redis` | yes | **none** + `User=999` |
+| `postiz-temporal` | no | **none** |
+| `postiz-temporal-postgres` | yes | **none** + `User=999` |
 | `prometheus` | yes | **none** + `User=65534` |
 | `proxmox` | no | podman default |
 | `radicale` | yes | 4 (`chown`, `kill`, `setgid`, `setuid`) |
@@ -177,6 +182,12 @@ mensagem prova por que ele não vai além.
 | `pkvault` | `DropCapability=ALL` sozinho | o container fica `Up` com o app morto: o supervisord segue rodando enquanto o nginx sai com `mkdir() "/var/lib/nginx/tmp/client_body" failed (13: Permission denied)` — o nginx roda como root sobre uma pasta do usuário `nginx`. Sem `CHOWN`: `chown("/var/lib/nginx/tmp/client_body", 100) failed`; sem `DAC_OVERRIDE`: o mesmo `mkdir` |
 | `pkvault` | `Tmpfs=/var/lib/nginx/tmp` sem `mode=1777` | enviar um save responde 500: `open() "/var/lib/nginx/tmp/client_body/0000000001" failed (13: Permission denied)` — o nginx guarda ali todo corpo acima de 16 KB, e o tmpfs nasce com dono root. O `--tmpfs` do podman não tem `uid=`; as subpastas que o nginx cria dentro continuam `0700 nginx` |
 | `pkvault` | `User=100` | `Error: Can't drop privilege as nonroot user` — o `supervisord.conf` da imagem declara `user=root` |
+| `postiz-temporal` | `ReadOnly=true` | `unable to create open /etc/temporal/config/docker.yaml: read-only file system` — o entrypoint renderiza a configuração ali a cada start |
+| `postiz` | `DropCapability=ALL` sendo root | o container fica `Up` com o app morto: o nginx sai com `mkdir() "/var/lib/nginx/body" failed (13: Permission denied)`. Como root precisa de quatro para rodar o nginx, e cada falta falha de um jeito: sem `CHOWN` → `chown("/var/lib/nginx/body", 100) failed (1)`; sem `DAC_OVERRIDE` → o mesmo `mkdir`; sem `SETGID` ou `SETUID` → `worker process exited with fatal code 2`. O `User=33` não precisa de nenhuma |
+| `postiz` | `User=1000` | `open() "/var/log/nginx/access.log" failed (13: Permission denied)` — um tmpfs sobre `/var/log/nginx` recebe uma cópia do `access.log` da imagem, do `www-data` com modo 0640. Use `User=33` |
+| `postiz` | `HOME=/root` sem ser root | `EACCES: permission denied, mkdir '/root/.pm2/logs'` — `/root` é 0700, então nenhum tmpfs dentro dele é alcançável. A unit aponta o `HOME` para um tmpfs próprio |
+| `postiz` | `ReadOnly=true` com `/root/.cache` em volume | o backend às vezes nunca abre a porta 3000, sem erro em log nenhum: 2 de 9 partidas, contra 0 de 18 com o cache em tmpfs. `pm2 restart backend` o levantava. O cache tem 244 MB, que o `pnpm dlx prisma` baixa a cada start |
+| `postiz` | `PidsLimit=256` | o padrão do repositório é apertado demais aqui: 197 em repouso, pico de 202. A unit usa 512 |
 | `postfix` | `ReadOnly=true` | sai com 1 — o `run.sh` reescreve `/etc/postfix/main.cf` a cada start |
 | `postfix` | `User=1000` | `chmod: changing permissions of '/scripts/common.sh': Operation not permitted` |
 | `postfix` | `DropCapability=ALL` sozinho | container fica `Up` com o app morto: `chown: /var/spool/postfix/private: Operation not permitted` |

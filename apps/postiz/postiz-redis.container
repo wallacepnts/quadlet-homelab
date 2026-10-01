@@ -1,0 +1,31 @@
+[Unit]
+Description=Postiz Redis (Valkey)
+
+[Container]
+Image=docker.io/valkey/valkey:9.1.1-alpine3.24
+ContainerName=postiz-redis
+
+Network=postiz-net.network
+
+Volume=%h/.config/containers/volumes/postiz/redis:/data:Z
+
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+User=999
+PidsLimit=256
+NoNewPrivileges=true
+
+HealthCmd=CMD-SHELL valkey-cli ping | grep -q PONG || exit 1
+HealthInterval=10s
+HealthTimeout=5s
+HealthRetries=12
+HealthStartPeriod=10s
+Notify=healthy
+
+[Service]
+Restart=always
+TimeoutStartSec=60
+
+[Install]
+WantedBy=default.target

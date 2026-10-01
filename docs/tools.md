@@ -67,7 +67,10 @@ calendar version has no major, so 2026.8 to 2026.9 reads as a minor and carried
 eight breaking changes. Reading the release notes is still the job.
 
 A sidecar tracked by `compose:` is bumped to what that compose declares,
-digest included.
+digest included. When the compose runs two images of the same name — Postiz's has
+`postgres:17-alpine` for the app and `postgres:16` for Temporal — the one whose tag
+is shaped like the pinned one is the one compared. Taking the first made the
+Temporal database read as a major behind.
 
 Before asking whether a newer image exists, it asks whether the pinned one still
 does, and reports what does not as gone. Two got there by different roads: the

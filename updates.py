@@ -413,12 +413,27 @@ def compose_image(spec, ref, image):
                 texto = f.read().decode("utf-8", "replace")
         except Exception:
             continue
-        for m in re.finditer(r"image:\s*[\"\']?([^\s\"\']+)", texto):
-            cand = m.group(1)
-            if image_name(cand) == nome:
-                return cand
-        return None
+        return pick_compose_image(texto, nome, image)
     return None
+
+
+def pick_compose_image(texto, nome, image):
+    """The image called `nome` in a compose file, and which one when there are two.
+
+    Postiz's compose runs `postgres:17-alpine` for the app and `postgres:16` for
+    Temporal. Taking the first match by name measured the Temporal database
+    against the app's, called it behind, and `--bump` would have moved it a major.
+    Among candidates of one name the tag shaped like ours wins: `16` is a bare
+    number and `17-alpine` is not.
+    """
+    cands = [m.group(1) for m in re.finditer(r"image:\s*[\"\']?([^\s\"\']+)", texto)
+             if image_name(m.group(1)) == nome]
+    if len(cands) > 1:
+        forma = forma_de(ref_parts(image)[0] or "")
+        for cand in cands:
+            if forma.fullmatch(ref_parts(cand)[0] or ""):
+                return cand
+    return cands[0] if cands else None
 
 
 def github_repo(image, override):
@@ -641,6 +656,14 @@ def selftest():
     half cannot be tested there and is not the half that has broken.
     """
     assert image_name("docker.io/valkey/valkey:9@sha256:" + "a" * 64) == "valkey"
+    # Two images of one name in a compose: the one shaped like ours is chosen.
+    dois = "image: postgres:17-alpine\n  image: 'postgres:16'\n  image: redis:7.2\n"
+    assert pick_compose_image(dois, "postgres", "docker.io/library/postgres:16") == "postgres:16"
+    assert pick_compose_image(dois, "postgres", "docker.io/library/postgres:17-alpine") == "postgres:17-alpine"
+    assert pick_compose_image(dois, "postgres", "docker.io/library/postgres:15") == "postgres:16"
+    assert pick_compose_image(dois, "postgres", "postgres:latest") == "postgres:17-alpine", "no shape matches: the first"
+    assert pick_compose_image(dois, "redis", "redis:7.0") == "redis:7.2"
+    assert pick_compose_image(dois, "nginx", "nginx:1") is None
     assert image_name("docker.io/valkey/valkey@sha256:" + "a" * 64) == "valkey"
     assert image_name("ghcr.io/immich-app/immich-server:v3.2.0") == "immich-server"
     assert image_name("registry.local:5000/foo/bar:1") == "bar", "the port is not a tag"

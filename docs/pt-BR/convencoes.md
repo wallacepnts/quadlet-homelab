@@ -305,6 +305,10 @@ PidsLimit=256
 NoNewPrivileges=true
 ```
 
+256 sobra em tudo aqui, menos no Postiz, que fica em 197 threads em repouso (pico
+de 202) e usa 512. Para um app Node com vários workers, leia o `pids.current`
+antes de copiar o número.
+
 O `check.py` avisa quando uma unit está sem `NoNewPrivileges=true`. Por não
 custar nada, é justamente a que ninguém nota faltando: 54 units haviam
 derivado sem ela, 16 delas já com `ReadOnly` e `DropCapability=ALL` — a trava

@@ -1,0 +1,36 @@
+[Unit]
+Description=Postiz Temporal
+After=postiz-temporal-postgres.service
+Requires=postiz-temporal-postgres.service
+
+[Container]
+Image=docker.io/temporalio/auto-setup:1.28.1
+ContainerName=postiz-temporal
+
+Network=postiz-net.network
+
+Environment=DB=postgres12
+Environment=DB_PORT=5432
+Environment=POSTGRES_USER=temporal
+Environment=POSTGRES_SEEDS=postiz-temporal-postgres
+Environment=TEMPORAL_NAMESPACE=default
+Environment=SKIP_ADD_CUSTOM_SEARCH_ATTRIBUTES=true
+Secret=postiz-temporal-db-password,type=env,target=POSTGRES_PWD
+
+DropCapability=ALL
+PidsLimit=256
+NoNewPrivileges=true
+
+HealthCmd=CMD-SHELL temporal operator cluster health --address $$(hostname -i):7233 || exit 1
+HealthInterval=10s
+HealthTimeout=10s
+HealthRetries=12
+HealthStartPeriod=60s
+Notify=healthy
+
+[Service]
+Restart=always
+TimeoutStartSec=180
+
+[Install]
+WantedBy=default.target
