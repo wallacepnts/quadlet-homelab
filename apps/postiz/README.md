@@ -46,12 +46,15 @@ wget -O ~/.config/containers/env/postiz.env \
   https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/postiz/.env.example
 chmod 600 ~/.config/containers/env/postiz.env
 
-# 2. The data directories, each owned by the user its image runs as
+# 2. The data directories, each owned by the user its image runs as, and the
+#    nginx.conf (see "Signing in")
 V=~/.config/containers/volumes/postiz
-mkdir -p $V/postgres $V/redis $V/temporal-postgres $V/uploads
+mkdir -p $V/postgres $V/redis $V/temporal-postgres $V/uploads $V/config
+wget -O $V/config/nginx.conf \
+  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/postiz/nginx.conf
 podman unshare chown -R 70:70   $V/postgres
 podman unshare chown -R 999:999 $V/redis $V/temporal-postgres
-podman unshare chown -R 33:33   $V/uploads
+podman unshare chown -R 33:33   $V/uploads $V/config/nginx.conf
 
 # 3. The secrets. The database URL is built from the password, so it comes second.
 mkdir -p ~/.config/containers/secrets/postiz
@@ -77,12 +80,34 @@ postiz-redis.container              queues and cache (Valkey)
 postiz-temporal.container           runs the scheduled publishing
 postiz-temporal-postgres.container  Temporal's own database (Postgres 16)
 postiz-net.network
+nginx.conf                          the image's own, with the session cookie fixed
 .env.example                        sign-up switch, Meta keys, media storage
 install.ini                         the secrets' recipes
 ```
 
 Data in `~/.config/containers/volumes/postiz/`: `postgres/`, `temporal-postgres/`,
 `redis/` and `uploads/`.
+
+## Signing in
+
+**Postiz does not work behind a `*.ts.net` address as it ships.** It sets the session
+cookie with `Domain=.ts.net`, the registrable domain it computes from `FRONTEND_URL`.
+`ts.net` is on the Public Suffix List, so every browser refuses a cookie for it. What
+you see: the password is accepted (`POST /api/auth/login` answers `200`) and the page
+returns to the login form, again and again. Nothing in any log says why.
+
+It did not show in the tests of this service, which ran on `localhost`.
+
+The fix is in the `nginx.conf` this folder installs over the image's own: one line,
+`proxy_cookie_domain .ts.net $host;`, in each of the two proxied locations, which
+rewrites that `Domain` to the host the browser used. A cookie for any other domain
+passes untouched. It is the project's `var/docker/nginx.conf` of `v2.24.0` and nothing
+else, so **on a version bump, compare them** and carry the two lines over:
+
+```bash
+diff <(curl -s https://raw.githubusercontent.com/gitroomhq/postiz-app/v2.24.0/var/docker/nginx.conf) \
+     <(sed -n '/^user /,$p' ~/.config/containers/volumes/postiz/config/nginx.conf)
+```
 
 ## Instagram needs a public media URL
 

@@ -38,6 +38,10 @@ arquivo já instalado no host, e é isso que ele resolve. Não toca em volume,
 `.env` nem secret. Tag móvel (`latest`) é sempre puxada; tag fixa só quando o
 host não a tem.
 
+Uma coisa ele acrescenta: um arquivo de `[config]` que a unit nova monta e que o
+host nunca teve é criado, com o dono do `User=` da unit. Um que já existe nunca é
+reescrito — depois da primeira instalação ele é seu.
+
 Ele recopia a unit, então o que foi editado no host se perde — e o plano diz
 isso antes, linha por linha:
 

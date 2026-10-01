@@ -39,6 +39,10 @@ not change the file already on the host, and this is what fixes it. It touches
 no volume, no `.env` and no secret. A moving tag (`latest`) is always pulled; a
 pinned one only when the host does not have it.
 
+One thing it does add: a `[config]` file the new unit mounts and the host has never
+had is created, owned by the unit's `User=`. One that is already there is never
+rewritten — it is yours after the first install.
+
 It re-copies the unit, so anything edited on the host goes away — and the plan
 says so before it does, line by line:
 

@@ -1378,6 +1378,20 @@ def plan_update(s, access="tailnet", href_local=False):
             steps.append((f"mkdir -p {d}  (new in this version)",
                           lambda d=d: d.mkdir(parents=True, exist_ok=True)))
 
+    # A [config] file the new version mounts and this host has never had: the
+    # unit would point at nothing and the container fail at start. Postiz's
+    # nginx.conf is the case. Created, never overwritten — these files became the
+    # user's after the first install — and owned by the unit's `User=`, because
+    # `write_example` writes them 0600 and that user is not the one who owns it.
+    donos = {str(d): u for d, u in s.chowns()}
+    for ex, target in s.examples():
+        if target is None or target not in s.config_dests() or Path(target).exists():
+            continue
+        uid = donos.get(str(target))
+        steps.append((f"cp {ex.relative_to(ROOT)} -> {target}  (new in this version)"
+                      + (f", chown {uid}:{uid}" if uid else ""),
+                      lambda ex=ex, target=Path(target), uid=uid: novo_config(ex, target, uid)))
+
     # And the chown, for the same reason — but only where it changed. `chown -R`
     # on immich's library every week would cost minutes for nothing, so this
     # compares the installed unit's `User=` against the one about to be written.
@@ -2029,6 +2043,13 @@ def unit_bytes(source, access, href_local):
 
 def write_unit(source, destination, access, href_local):
     destination.write_bytes(unit_bytes(source, access, href_local))
+
+
+def novo_config(source, destination, uid):
+    """Writes a [config] file the host lacks, owned by the unit's user if it has one."""
+    write_example(source, destination, find_tailnet())
+    if uid:
+        run(["podman", "unshare", "chown", f"{uid}:{uid}", str(destination)])
 
 
 def write_example(source, destination, tailnet):
@@ -2969,6 +2990,24 @@ def selftest():
     with tempfile.TemporaryDirectory() as d:
         passos, avisos = plan_update(Service("freshrss", d))
         assert passos == [] and avisos, (passos, avisos)
+
+    # --update creates a [config] file the host lacks — Postiz's nginx.conf, which
+    # the new unit mounts — owned by the unit's User=, and never rewrites one it has
+    with tempfile.TemporaryDirectory() as d:
+        h = Path(d)
+        un = h / ".config/containers/systemd/postiz"
+        un.mkdir(parents=True)
+        for u in (APPS / "postiz").glob("*.container"):
+            (un / u.name).write_text(u.read_text())
+        alvo = h / ".config/containers/volumes/postiz/config/nginx.conf"
+        passos, _ = plan_update(Service("postiz", h))
+        cps = [t for t, _ in passos if "nginx.conf" in t and t.startswith("cp ")]
+        assert len(cps) == 1 and "(new in this version)" in cps[0] and "chown 33:33" in cps[0], cps
+        alvo.parent.mkdir(parents=True)
+        alvo.write_text("do usuário\n")
+        passos, _ = plan_update(Service("postiz", h))
+        assert not [t for t, _ in passos if "nginx.conf" in t and t.startswith("cp ")], \
+            "an existing config is the user's: --update must not touch it"
 
     # the summary classifies the steps it already prints; a step that no rule
     # matches would vanish from it silently

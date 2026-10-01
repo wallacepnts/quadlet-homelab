@@ -47,12 +47,15 @@ wget -O ~/.config/containers/env/postiz.env \
   https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/postiz/.env.example
 chmod 600 ~/.config/containers/env/postiz.env
 
-# 2. As pastas de dados, cada uma do usuário com que a imagem roda
+# 2. As pastas de dados, cada uma do usuário com que a imagem roda, e o
+#    nginx.conf (veja "Entrando")
 V=~/.config/containers/volumes/postiz
-mkdir -p $V/postgres $V/redis $V/temporal-postgres $V/uploads
+mkdir -p $V/postgres $V/redis $V/temporal-postgres $V/uploads $V/config
+wget -O $V/config/nginx.conf \
+  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/postiz/nginx.conf
 podman unshare chown -R 70:70   $V/postgres
 podman unshare chown -R 999:999 $V/redis $V/temporal-postgres
-podman unshare chown -R 33:33   $V/uploads
+podman unshare chown -R 33:33   $V/uploads $V/config/nginx.conf
 
 # 3. Os segredos. A URL do banco é montada a partir da senha, então vem em segundo.
 mkdir -p ~/.config/containers/secrets/postiz
@@ -78,12 +81,35 @@ postiz-redis.container              filas e cache (Valkey)
 postiz-temporal.container           executa a publicação agendada
 postiz-temporal-postgres.container  o banco do próprio Temporal (Postgres 16)
 postiz-net.network
+nginx.conf                          o da própria imagem, com o cookie de sessão corrigido
 .env.example                        chave de cadastro, chaves da Meta, armazenamento de mídia
 install.ini                         a receita dos segredos
 ```
 
 Dados em `~/.config/containers/volumes/postiz/`: `postgres/`, `temporal-postgres/`,
 `redis/` e `uploads/`.
+
+## Entrando
+
+**O Postiz não funciona atrás de um endereço `*.ts.net` do jeito que vem.** Ele grava o
+cookie de sessão com `Domain=.ts.net`, o domínio registrável que calcula a partir do
+`FRONTEND_URL`. O `ts.net` está na Public Suffix List, então todo navegador recusa um
+cookie para ele. O que você vê: a senha é aceita (`POST /api/auth/login` responde
+`200`) e a página volta para o formulário de login, de novo e de novo. Nenhum log diz
+o porquê.
+
+Isso não apareceu nos testes deste serviço, que rodaram em `localhost`.
+
+A correção está no `nginx.conf` que esta pasta instala por cima do da própria imagem:
+uma linha, `proxy_cookie_domain .ts.net $host;`, em cada um dos dois locais com proxy,
+que reescreve esse `Domain` para o host que o navegador usou. Cookie de qualquer outro
+domínio passa intacto. É o `var/docker/nginx.conf` do projeto na `v2.24.0` e nada
+mais, então **ao subir de versão, compare os dois** e leve as duas linhas:
+
+```bash
+diff <(curl -s https://raw.githubusercontent.com/gitroomhq/postiz-app/v2.24.0/var/docker/nginx.conf) \
+     <(sed -n '/^user /,$p' ~/.config/containers/volumes/postiz/config/nginx.conf)
+```
 
 ## O Instagram precisa de uma URL pública para a mídia
 
