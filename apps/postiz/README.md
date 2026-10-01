@@ -140,9 +140,18 @@ Both ways use one Meta app, made at [developers.facebook.com](https://developers
 | Redirect URI | `https://postiz.<your-tailnet>.ts.net/integrations/social/instagram` | `https://postiz.<your-tailnet>.ts.net/integrations/social/instagram-standalone` |
 | Meta product | Facebook Login for Business | Instagram Business Login |
 
-The Postiz docs ask for business verification only for **public** apps; for your
-own accounts, add them under the app's *App Roles* as *Instagram Tester*. The
-scopes to request, step by step, are in the
+The Postiz docs ask for business verification only for **public** apps. Until the
+app's advanced permissions are approved, only people with a role on it can connect
+and publish, so add the account under *App Roles → Add People → Instagram Tester*
+**and accept the invitation in Instagram**, at *Settings → Apps and Websites*
+([instagram.com/accounts/manage_access](https://www.instagram.com/accounts/manage_access/)).
+Two errors this prevents:
+
+- `Insufficient developer role`, when connecting: the account was never added as a tester.
+- A channel that connects, but whose posts fail with permission errors: the permissions
+  are not approved and the account has no role on the app.
+
+The scopes to request, step by step, are in the
 [official guide](https://docs.postiz.com/self-host/providers/instagram).
 
 ## What runs, and why it is five containers

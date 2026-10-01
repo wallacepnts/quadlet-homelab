@@ -144,8 +144,18 @@ Os dois jeitos usam um app da Meta só, criado em
 | URI de redirecionamento | `https://postiz.<your-tailnet>.ts.net/integrations/social/instagram` | `https://postiz.<your-tailnet>.ts.net/integrations/social/instagram-standalone` |
 | Produto da Meta | Facebook Login for Business | Instagram Business Login |
 
-A documentação do Postiz pede a verificação da empresa só para apps **públicos**;
-para as suas contas, acrescente-as em *App Roles* do app como *Instagram Tester*.
+A documentação do Postiz pede a verificação da empresa só para apps **públicos**.
+Enquanto as permissões avançadas do app não são aprovadas, só quem tem função nele
+consegue conectar e publicar; então acrescente a conta em *Funções do app →
+Adicionar pessoas → Instagram Tester* **e aceite o convite no Instagram**, em
+*Configurações → Apps e sites*
+([instagram.com/accounts/manage_access](https://www.instagram.com/accounts/manage_access/)).
+Dois erros que isso evita:
+
+- `Insufficient developer role`, ao conectar: a conta nunca foi adicionada como testadora.
+- Um canal que conecta, mas cujos posts falham com erro de permissão: as permissões
+  não estão aprovadas e a conta não tem função no app.
+
 As permissões a pedir, passo a passo, estão no
 [guia oficial](https://docs.postiz.com/self-host/providers/instagram).
 
