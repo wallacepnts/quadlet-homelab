@@ -195,6 +195,18 @@ run by the Temporal worker, on a fresh database and on one already in use.
 - **Temporal is not read-only.** It renders its configuration into
   `/etc/temporal/config` on every start.
 
+**Sometimes the page does not load after a start.** The backend can come up without ever opening
+port 3000, with nothing in any log: the nginx answers `502`, the container stays
+`starting`, and `pm2 list` shows `backend online`. Measured in the installed unit: 1 start
+in 4 (and 2 in 9 in the lab with the cache on a volume). Without help, systemd gives up
+at `TimeoutStartSec` (7 minutes) and starts it again; to skip the wait:
+
+```bash
+podman exec postiz pm2 restart backend      # opens :3000 in about 13 seconds
+```
+
+The cause is not found: the process is idle, with its Redis and Temporal connections open.
+
 Every refusal, with its error, is in
 [the refusals](../../docs/hardening.md#refusals-on-record). One of them is easy to
 undo by accident: the pnpm cache must stay a tmpfs. Measured with it as a volume,

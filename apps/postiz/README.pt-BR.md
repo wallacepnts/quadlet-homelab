@@ -199,6 +199,18 @@ executado pelo worker do Temporal, num banco novo e num já em uso.
 - **O Temporal não é somente leitura.** Ele renderiza a configuração em
   `/etc/temporal/config` a cada partida.
 
+**Às vezes a página não carrega depois de uma partida.** O backend pode subir sem nunca
+abrir a porta 3000, sem nada em log nenhum: o nginx responde `502`, o container fica
+`starting` e o `pm2 list` mostra `backend online`. Medido na unit instalada: 1 partida em
+4 (e 2 em 9 no laboratório com o cache em volume). Sem ajuda, o systemd desiste em
+`TimeoutStartSec` (7 minutos) e parte de novo; para não esperar:
+
+```bash
+podman exec postiz pm2 restart backend      # abre a :3000 em uns 13 segundos
+```
+
+A causa não foi encontrada: o processo fica ocioso, com as conexões ao Redis e ao Temporal abertas.
+
 Toda recusa, com o erro, está em
 [as recusas](../../docs/pt-BR/endurecimento.md#recusas-registradas). Uma delas é fácil
 de desfazer sem querer: o cache do pnpm tem que continuar em tmpfs. Medido com ele
