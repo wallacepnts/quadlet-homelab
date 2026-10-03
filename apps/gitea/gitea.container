@@ -2,7 +2,7 @@
 Description=Gitea (Git self-hosted)
 
 [Container]
-Image=docker.io/gitea/gitea:1.27.3
+Image=docker.io/gitea/gitea:28.0.0
 ContainerName=gitea
 
 Network=tsdproxy-net.network

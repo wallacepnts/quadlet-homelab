@@ -69,7 +69,7 @@ install.ini
 qh gitea --update --apply
 ```
 
-Pinned to `1.27.3`. Nothing updates on its own — a new version is applied
+Pinned to `28.0.0`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup
