@@ -218,7 +218,7 @@ otherwise one by one through the interface.
 qh zerobyte --update --apply
 ```
 
-Pinned to `v0.43.0`. Nothing updates on its own — a new version is applied
+Pinned to `v0.43.2`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

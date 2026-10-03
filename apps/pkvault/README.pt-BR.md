@@ -103,7 +103,7 @@ Duas coisas na unit vêm daí:
 qh pkvault --update --apply
 ```
 
-Fixado em `2.3.3`. Nada atualiza sozinho. A imagem é marcada sem o `v` que a
+Fixado em `2.3.4`. Nada atualiza sozinho. A imagem é marcada sem o `v` que a
 release tem. O PKVault traz o próprio PKHeX (26.8.26 na 2.3.3), então o suporte a
 um jogo novo chega com uma release do PKVault. A página consulta o GitHub em busca
 de release nova a partir do seu navegador; é a única chamada para fora.

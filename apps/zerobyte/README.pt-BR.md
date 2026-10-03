@@ -218,7 +218,7 @@ pela interface isso seria um a um.
 qh zerobyte --update --apply
 ```
 
-Fixado em `v0.43.0`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `v0.43.2`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

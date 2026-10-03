@@ -87,7 +87,7 @@ Units da stack:
 qh beszel --update --apply
 ```
 
-Fixado em `0.20.0`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `0.21.0`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

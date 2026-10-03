@@ -2,7 +2,7 @@
 Description=Vikunja (tasks and projects)
 
 [Container]
-Image=docker.io/vikunja/vikunja:2.6.0
+Image=docker.io/vikunja/vikunja:2.7.0
 ContainerName=vikunja
 
 Network=tsdproxy-net.network

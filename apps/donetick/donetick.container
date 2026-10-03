@@ -2,7 +2,7 @@
 Description=Donetick (recurring household chores)
 
 [Container]
-Image=docker.io/donetick/donetick:v0.1.79
+Image=docker.io/donetick/donetick:v0.1.80
 ContainerName=donetick
 
 Network=tsdproxy-net.network

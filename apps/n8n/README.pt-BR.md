@@ -61,7 +61,7 @@ install.ini
 qh n8n --update --apply
 ```
 
-Fixado em `2.40.7`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `2.41.6`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

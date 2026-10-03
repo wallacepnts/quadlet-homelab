@@ -4,7 +4,7 @@ After=excalidash-backend.service
 Requires=excalidash-backend.service
 
 [Container]
-Image=docker.io/zimengxiong/excalidash-frontend:0.6.0
+Image=docker.io/zimengxiong/excalidash-frontend:0.6.5
 ContainerName=excalidash
 
 Network=excalidash-net.network

@@ -92,7 +92,7 @@ boot here before the first scan, and a cold library takes longer.
 qh komga --update --apply
 ```
 
-Pinned to `1.27.1`.
+Pinned to `1.28.1`.
 
 ## Backup
 

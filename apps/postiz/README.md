@@ -228,7 +228,7 @@ qh postiz --backup --apply --out ~/backups    # first: see "Starting"
 qh postiz --update --apply
 ```
 
-Pinned to `1.28.1`, `16`, `17-alpine`, `9.1.1-alpine3.24`, `v2.24.0`. Nothing updates
+Pinned to `1.28.1`, `16`, `17-alpine`, `9.1.1-alpine3.24`, `v2.25.0`. Nothing updates
 on its own. Postgres follows the compose of the Postiz version you are going to,
 so a major jump of its image is its own migration.
 

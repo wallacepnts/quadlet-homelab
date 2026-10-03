@@ -88,7 +88,7 @@ Units in this stack:
 qh beszel --update --apply
 ```
 
-Pinned to `0.20.0`. Nothing updates on its own — a new version is applied
+Pinned to `0.21.0`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

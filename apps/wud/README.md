@@ -66,7 +66,7 @@ install.ini
 qh wud --update --apply
 ```
 
-Pinned to `9.2.0`. Nothing updates on its own — a new version is applied
+Pinned to `9.2.1`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

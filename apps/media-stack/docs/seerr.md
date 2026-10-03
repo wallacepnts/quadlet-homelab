@@ -38,7 +38,7 @@ Data in `~/.config/containers/volumes/media-stack/seerr/config`.
 qh media-stack-seerr --update --apply
 ```
 
-Pinned to `v3.4.1`. Nothing updates on its own — a new version is applied when
+Pinned to `v3.5.0`. Nothing updates on its own — a new version is applied when
 you run the command above.
 
 ## Backup

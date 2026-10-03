@@ -108,7 +108,7 @@ user and password in use.
 qh mailpit --update --apply
 ```
 
-Pinned to `v1.31.2`. Nothing updates on its own — a new version is applied
+Pinned to `v1.31.4`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

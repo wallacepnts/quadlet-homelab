@@ -2,7 +2,7 @@
 Description=DocuSeal (documents signed at home)
 
 [Container]
-Image=docker.io/docuseal/docuseal:3.2.6
+Image=docker.io/docuseal/docuseal:3.3.0
 ContainerName=docuseal
 
 Network=tsdproxy-net.network

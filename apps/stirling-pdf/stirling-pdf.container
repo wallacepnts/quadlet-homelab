@@ -2,7 +2,7 @@
 Description=Stirling-PDF (PDF manipulation)
 
 [Container]
-Image=docker.io/stirlingtools/stirling-pdf:3.0.0
+Image=docker.io/stirlingtools/stirling-pdf:3.0.2
 ContainerName=stirling-pdf
 
 Network=tsdproxy-net.network

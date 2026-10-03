@@ -2,7 +2,7 @@
 Description=Radicale (CalDAV/CardDAV)
 
 [Container]
-Image=docker.io/christf/docker-radicale-birthday:v0.27.0
+Image=docker.io/christf/docker-radicale-birthday:v0.28.0
 ContainerName=radicale
 RunInit=true
 

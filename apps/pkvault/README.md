@@ -102,7 +102,7 @@ Two things in the unit follow from that:
 qh pkvault --update --apply
 ```
 
-Pinned to `2.3.3`. Nothing updates on its own. The image is tagged without the
+Pinned to `2.3.4`. Nothing updates on its own. The image is tagged without the
 `v` the release carries. PKVault bundles its own PKHeX (26.8.26 in 2.3.3), so
 support for a new game arrives with a PKVault release. The page checks GitHub
 for a newer release from your browser; that is the only outside call.

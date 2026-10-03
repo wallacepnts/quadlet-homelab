@@ -2,7 +2,7 @@
 Description=ExcaliDash backend (API and SQLite)
 
 [Container]
-Image=docker.io/zimengxiong/excalidash-backend:0.6.0
+Image=docker.io/zimengxiong/excalidash-backend:0.6.5
 ContainerName=excalidash-backend
 
 Network=excalidash-net.network

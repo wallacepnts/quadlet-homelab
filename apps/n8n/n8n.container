@@ -2,7 +2,7 @@
 Description=n8n
 
 [Container]
-Image=docker.io/n8nio/n8n:2.40.7
+Image=docker.io/n8nio/n8n:2.41.6
 ContainerName=n8n
 
 Network=tsdproxy-net.network

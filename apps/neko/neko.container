@@ -2,7 +2,7 @@
 Description=neko (a browser in a container, streamed over WebRTC)
 
 [Container]
-Image=ghcr.io/m1k1o/neko/firefox:3.1.5
+Image=ghcr.io/m1k1o/neko/firefox:3.1.6
 ContainerName=neko
 
 Network=tsdproxy-net.network

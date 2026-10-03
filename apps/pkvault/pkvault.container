@@ -2,7 +2,7 @@
 Description=PKVault (Pokémon storage and save editor, based on PKHeX)
 
 [Container]
-Image=ghcr.io/chnapy/pkvault:2.3.3
+Image=ghcr.io/chnapy/pkvault:2.3.4
 ContainerName=pkvault
 
 Network=tsdproxy-net.network

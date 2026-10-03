@@ -65,7 +65,7 @@ Units da stack:
 qh zigbee2mqtt --update --apply
 ```
 
-Fixado em `2.1.2-alpine`, `2.14.1`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `2.1.2-alpine`, `2.14.2`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

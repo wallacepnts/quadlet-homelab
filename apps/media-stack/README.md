@@ -110,7 +110,7 @@ on its own and is useful without the rest.
 | --- | --- | --- | --- |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/jellyfin.svg" width="28" height="28" alt=""> | [Jellyfin](./docs/jellyfin.md) | Plays the library — films, series, music — to a browser, a TV or a phone | `12.1` |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/navidrome.svg" width="28" height="28" alt=""> | [Navidrome](./docs/navidrome.md) | Plays the music the chain brought in, through any Subsonic client | `0.64.2` |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/seerr.svg" width="28" height="28" alt=""> | [Seerr](./docs/seerr.md) | Where you ask for a title. Passes the request to Sonarr or Radarr | `v3.4.1` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/seerr.svg" width="28" height="28" alt=""> | [Seerr](./docs/seerr.md) | Where you ask for a title. Passes the request to Sonarr or Radarr | `v3.5.0` |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/prowlarr.svg" width="28" height="28" alt=""> | [Prowlarr](./docs/prowlarr.md) | Holds the indexer list and feeds it to the other *arr apps | `2.6.5` |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/sonarr.svg" width="28" height="28" alt=""> | [Sonarr](./docs/sonarr.md) | Series: watches for new episodes, downloads and files them | `4.0.20` |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/radarr.svg" width="28" height="28" alt=""> | [Radarr](./docs/radarr.md) | The same, for films | `6.4.4` |
@@ -120,7 +120,7 @@ on its own and is useful without the rest.
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/deluge.svg" width="28" height="28" alt=""> | [Deluge](./docs/deluge.md) | Downloads torrents | `2.2.0` |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/gluetun.svg" width="28" height="28" alt=""> | [Gluetun](./docs/gluetun.md) | **Optional.** A VPN tunnel to put Deluge behind | `latest` |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/dispatcharr.svg" width="28" height="28" alt=""> | [Dispatcharr](./docs/dispatcharr.md) | IPTV: channels, EPG and VOD, apart from the chain above | `latest` |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/downtify.png" width="28" height="28" alt=""> | [Downtify](./docs/downtify.md) | Downloads music from Spotify into the media root | `3.1.0` |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/downtify.png" width="28" height="28" alt=""> | [Downtify](./docs/downtify.md) | Downloads music from Spotify into the media root | `3.4.0` |
 
 Each page above says what its app needs on the first run and how it connects to
 the others. Gluetun is the only optional piece: Deluge publishes its own port

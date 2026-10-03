@@ -90,7 +90,7 @@ WebUI's search silently returns nothing.
 qh searxng --update --apply
 ```
 
-Pinned to `2026.9.25-487f51922`. SearXNG publishes no GitHub releases and tags
+Pinned to `2026.10.2-a5659a536`. SearXNG publishes no GitHub releases and tags
 by date plus commit, so `qh-updates` compares against the registry's tag list
 instead of the usual release redirect.
 

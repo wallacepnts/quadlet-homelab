@@ -115,7 +115,7 @@ measured rather than guessed:
 qh gitea-runner --update --apply
 ```
 
-Pinned to `4.0.0`. Nothing updates on its own — a new version is applied when
+Pinned to `4.1.0`. Nothing updates on its own — a new version is applied when
 you run the command above.
 
 The project moved: it used to be published as `gitea/act_runner`, which stopped

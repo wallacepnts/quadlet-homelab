@@ -55,7 +55,7 @@ calibre-web-automated.container
 qh calibre-web-automated --update --apply
 ```
 
-Fixado em `v4.0.6`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `v4.0.8`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

@@ -2,7 +2,7 @@
 Description=Zerobyte (backup automation, Restic)
 
 [Container]
-Image=ghcr.io/nicotsx/zerobyte:v0.43.0
+Image=ghcr.io/nicotsx/zerobyte:v0.43.2
 ContainerName=zerobyte
 
 Network=tsdproxy-net.network

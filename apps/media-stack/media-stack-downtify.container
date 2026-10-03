@@ -2,7 +2,7 @@
 Description=Downtify (self-hosted Spotify music downloader)
 
 [Container]
-Image=ghcr.io/henriquesebastiao/downtify:3.1.0
+Image=ghcr.io/henriquesebastiao/downtify:3.4.0
 ContainerName=downtify
 
 Network=tsdproxy-net.network

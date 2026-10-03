@@ -64,7 +64,7 @@ it used to recover, so check the flows that call this API.
 qh openwa --update --apply
 ```
 
-Pinned to `0.23.7`. Nothing updates on its own — a new version is applied
+Pinned to `0.24.0`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

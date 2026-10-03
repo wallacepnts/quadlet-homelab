@@ -84,7 +84,7 @@ form: the image ships no shell, so `CMD-SHELL` would fail.
 qh dozzle --update --apply
 ```
 
-Pinned to `v11.1.1`.
+Pinned to `v11.2.0`.
 
 ## Backup
 

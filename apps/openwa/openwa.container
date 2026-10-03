@@ -2,7 +2,7 @@
 Description=OpenWA (WhatsApp API gateway)
 
 [Container]
-Image=ghcr.io/rmyndharis/openwa:0.23.7
+Image=ghcr.io/rmyndharis/openwa:0.24.0
 ContainerName=openwa
 
 Network=tsdproxy-net.network

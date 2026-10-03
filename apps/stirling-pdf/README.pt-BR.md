@@ -53,7 +53,7 @@ install.ini
 qh stirling-pdf --update --apply
 ```
 
-Fixado em `3.0.0`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `3.0.2`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## O que mudou na 3.0

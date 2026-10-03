@@ -75,7 +75,7 @@ generous, but that is the knob if a tab dies.
 qh neko --update --apply
 ```
 
-Pinned to `3.1.5`. Nothing updates on its own — a new version is applied when
+Pinned to `3.1.6`. Nothing updates on its own — a new version is applied when
 you run the command above.
 
 ## Backup

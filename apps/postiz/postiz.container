@@ -4,7 +4,7 @@ After=postiz-postgres.service postiz-redis.service postiz-temporal.service
 Requires=postiz-postgres.service postiz-redis.service postiz-temporal.service
 
 [Container]
-Image=ghcr.io/gitroomhq/postiz-app:v2.24.0
+Image=ghcr.io/gitroomhq/postiz-app:v2.25.0
 ContainerName=postiz
 
 Network=tsdproxy-net.network
