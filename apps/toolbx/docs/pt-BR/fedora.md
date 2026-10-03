@@ -57,8 +57,12 @@ sem porta: esta não é um serviço.
 qh toolbx-fedora --update --apply
 ```
 
-Fixado em `44`. Nada atualiza sozinho — a versão nova entra quando você
+Fixado em `034cb7c472038e2d879ddc19568106a1342aa24403f0d641a0f73dda638707ad`. Nada atualiza sozinho — a versão nova entra quando você
 roda o comando acima.
+
+Por digest, porque o registry do Fedora só publica `44`, reconstruída a cada
+atualização. Como na imagem do Arch, o registry pode recolher um digest antigo; o
+`qh-updates` então o mostra como sumido, e a correção é um digest novo.
 
 ## Backup
 

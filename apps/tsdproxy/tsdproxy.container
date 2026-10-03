@@ -4,7 +4,7 @@ Requires=podman.socket
 After=podman.socket
 
 [Container]
-Image=docker.io/almeidapaulopt/tsdproxy:2
+Image=docker.io/almeidapaulopt/tsdproxy:2.3.4
 ContainerName=tsdproxy
 
 # check: ignore structure — this .network is not tsdproxy's own, it is the one

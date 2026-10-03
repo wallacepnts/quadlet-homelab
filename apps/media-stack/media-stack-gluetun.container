@@ -2,7 +2,7 @@
 Description=Gluetun (optional VPN tunnel for Deluge)
 
 [Container]
-Image=docker.io/qmcgaw/gluetun:latest
+Image=docker.io/qmcgaw/gluetun:v3.41.3
 ContainerName=gluetun
 
 Network=tsdproxy-net.network

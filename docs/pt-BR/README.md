@@ -158,7 +158,7 @@ aqui.
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/homebox.svg" width="48" height="48" alt=""> | [HomeBox](../../apps/homebox/README.pt-BR.md) | `0.26.2` | Inventário doméstico — o que você tem, onde está, nota fiscal, manual e garantia, com busca e etiquetas |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/grafana.svg" width="48" height="48" alt=""> | [Grafana](../../apps/grafana/README.pt-BR.md) | `13.2.3` | Painéis sobre o que você apontar — ele não traz dado nenhum próprio |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/home-assistant.svg" width="48" height="48" alt=""> | [Home Assistant](../../apps/home-assistant/README.pt-BR.md) | `2026.9.4` | Hub central de automação residencial, integra dispositivos de qualquer fabricante num painel só |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/homepage.png" width="48" height="48" alt=""> | [homepage](../../apps/homepage/README.pt-BR.md) | `latest` (auto-update) | Dashboard que descobre e organiza os outros containers sozinho via labels, sem editar config a cada serviço novo |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/homepage.png" width="48" height="48" alt=""> | [homepage](../../apps/homepage/README.pt-BR.md) | `v2.4.0` | Dashboard que descobre e organiza os outros containers sozinho via labels, sem editar config a cada serviço novo |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/immich.svg" width="48" height="48" alt=""> | [Immich](../../apps/immich/README.pt-BR.md) | `v3.2.4` | Backup e organização de fotos/vídeos, com reconhecimento facial e busca smart |
 | <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/invio.svg" width="48" height="48" alt=""> | [Invio](../../apps/invio/README.pt-BR.md) | `v2.2.0` | Emissão e controle de faturas self-hosted, com SQLite e sem depender de serviço externo |
 | <img src="https://api.iconify.design/mdi/microphone-variant.svg?color=%23888888" width="48" height="48" alt=""> | [Karaoke Eternal](../../apps/karaoke-eternal/README.pt-BR.md) | `2.0.2` | Karaokê com a sua própria biblioteca — cada um enfileira do celular, uma tela reproduz |
@@ -172,7 +172,7 @@ aqui.
 | <img src="https://api.iconify.design/mdi/multimedia.svg?color=%23888888" width="48" height="48" alt=""> | [Media Stack](../../apps/media-stack/README.pt-BR.md) | — | Jellyfin, Navidrome, Seerr, Prowlarr, Sonarr, Radarr, Lidarr, Bazarr, SABnzbd, Deluge, Dispatcharr, Downtify e um Gluetun opcional — servidor de mídia + automação, raiz de dados compartilhada, cada app com sua própria versão |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/memos.svg" width="48" height="48" alt=""> | [Memos](../../apps/memos/README.pt-BR.md) | `0.31.0` | Notas rápidas, self-hosted e markdown-nativo |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/metube.svg" width="48" height="48" alt=""> | [MeTube](../../apps/metube/README.pt-BR.md) | `2026.09.29` | Interface web do yt-dlp — cola a URL e o vídeo cai no disco |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/monica.svg" width="48" height="48" alt=""> | [Monica](../../apps/monica/README.pt-BR.md) | `main` (sem tag fixa, ver README) | CRM pessoal — histórico de relacionamentos, contatos, lembretes |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/monica.svg" width="48" height="48" alt=""> | [Monica](../../apps/monica/README.pt-BR.md) | `main` (fixado por digest, ver README) | CRM pessoal — histórico de relacionamentos, contatos, lembretes |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/n8n.svg" width="48" height="48" alt=""> | [n8n](../../apps/n8n/README.pt-BR.md) | `2.41.6` | Automação de workflows via editor visual de nós |
 | <img src="https://api.iconify.design/mdi/web-box.svg?color=%23888888" width="48" height="48" alt=""> | [neko](../../apps/neko/README.pt-BR.md) | `3.1.6` | Um navegador rodando no servidor, transmitido para o seu — controle compartilhado, e nada do que ele abre toca a sua máquina |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/netbootxyz.svg" width="48" height="48" alt=""> | [netboot.xyz](../../apps/netbootxyz/README.pt-BR.md) | `0.7.6-nbxyz24` | Menu de boot pela rede (PXE) pra instalar ou testar distros e ferramentas sem gravar pendrive |
@@ -195,21 +195,22 @@ aqui.
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/searxng.png" width="48" height="48" alt=""> | [SearXNG](../../apps/searxng/README.pt-BR.md) | `2026.10.2-a5659a536` | Metabusca que consulta dezenas de motores de uma vez, sem guardar perfil seu |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/stirling-pdf.svg" width="48" height="48" alt=""> | [Stirling-PDF](../../apps/stirling-pdf/README.pt-BR.md) | `3.0.2` | Manipulação de PDF local — juntar, dividir, converter, OCR e assinar, no lugar dos sites de "PDF online" |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/syncthing.svg" width="48" height="48" alt=""> | [Syncthing](../../apps/syncthing/README.pt-BR.md) | `2.1.5` | Sincronização de arquivos P2P entre dispositivos, sem servidor central |
-| <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/tsdproxy.svg" width="48" height="48" alt=""> | [tsdproxy](../../apps/tsdproxy/README.pt-BR.md) | `2` | Publica containers na tailnet automaticamente, só com labels — sem configurar proxy manualmente por serviço |
+| <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/tsdproxy.svg" width="48" height="48" alt=""> | [tsdproxy](../../apps/tsdproxy/README.pt-BR.md) | `2.3.4` | Publica containers na tailnet automaticamente, só com labels — sem configurar proxy manualmente por serviço |
 | <img src="https://cdn.jsdelivr.net/gh/containers/containertoolbx.org@main/apple-touch-icon.png" width="48" height="48" alt=""> | [Toolbx](../../apps/toolbx/README.pt-BR.md) | — | Shells descartáveis de Arch, Fedora, RHEL e Ubuntu, nas imagens oficiais do Toolbx — um lugar pra instalar ferramenta avulsa que não é o host |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/traccar.svg" width="48" height="48" alt=""> | [Traccar](../../apps/traccar/README.pt-BR.md) | `6.16.0` | Rastreamento de GPS — mapa ao vivo, histórico, geocercas e relatórios, com app no celular |
 | <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/vikunja.svg" width="48" height="48" alt=""> | [Vikunja](../../apps/vikunja/README.pt-BR.md) | `2.7.0` | Tarefas com prazo e projeto por trás, em lista, kanban ou gantt |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/qemu.svg" width="48" height="48" alt=""> | [VM](../../apps/vm/README.pt-BR.md) | — | Windows, macOS, ChromeOS Flex, ZimaOS e 23 distros Linux como VMs em containers, vistas pelo navegador — exige KVM no host |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/uptime-kuma.svg" width="48" height="48" alt=""> | [Uptime Kuma](../../apps/uptime-kuma/README.pt-BR.md) | `2.5.5` | Monitor de disponibilidade dos outros serviços e da tailnet, com histórico e notificação |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/vaultwarden.png" width="48" height="48" alt=""> | [Vaultwarden](../../apps/vaultwarden/README.pt-BR.md) | `1.37.3-alpine` | Cofre de senhas compatível com o protocolo do Bitwarden, leve o bastante pra rodar em qualquer lugar |
-| <img src="https://raw.githubusercontent.com/wallacepnts/vaultzap/main/internal/web/static/img/favicon.svg" width="48" height="48" alt=""> | [VaultZap](../../apps/vaultzap/README.pt-BR.md) | `latest` (auto-update) | Arquivo local e navegável de conversas exportadas do WhatsApp — busca, galeria e calendário, 100% offline |
+| <img src="https://raw.githubusercontent.com/wallacepnts/vaultzap/main/internal/web/static/img/favicon.svg" width="48" height="48" alt=""> | [VaultZap](../../apps/vaultzap/README.pt-BR.md) | `v1.0.2` | Arquivo local e navegável de conversas exportadas do WhatsApp — busca, galeria e calendário, 100% offline |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/wger.svg" width="48" height="48" alt=""> | [wger](../../apps/wger/README.pt-BR.md) | `2.7` | Planejamento e acompanhamento de treinos, com banco de exercícios e medidas corporais |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/zigbee2mqtt.svg" width="48" height="48" alt=""> | [Zigbee2MQTT](../../apps/zigbee2mqtt/README.pt-BR.md) | `2.14.2` | Ponte entre dispositivos Zigbee e MQTT, sem hub proprietário — sem coordenador ligado ainda (ver README) |
 | <img src="https://cdn.jsdelivr.net/gh/getwud/wud@main/ui/public/img/icons/android-chrome-512x512.png" width="48" height="48" alt=""> | [WUD (What's Up Docker)](../../apps/wud/README.pt-BR.md) | `9.2.1` | Monitora as atualizações de imagem disponíveis pros containers, sem aplicar nada sozinho — só avisa |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/zerobyte.png" width="48" height="48" alt=""> | [Zerobyte](../../apps/zerobyte/README.pt-BR.md) | `v0.43.2` | Automatiza backup (via Restic) dos dados de todos os outros serviços deste repositório |
 
-**AutoUpdate ligado**: homepage, VaultZap. Todo o resto tem tag
-fixa e é atualizado na mão.
+**Nada atualiza sozinho.** Toda imagem é fixada — numa versão, ou num digest
+onde o projeto não publica versão — e atualizada na mão; ver
+[auto-update](./auto-update.md).
 
 ## Opcional: a tailnet
 
@@ -270,6 +271,6 @@ convidado da mesma arquitetura. O `apps/vm` traz `vm-windows` pra x86_64 e
 | [Instalando e operando](./instalacao.md) | instalar, atualizar, backup, restaurar, remover |
 | [Recuperação e migração](./recuperacao.md) | a máquina morreu, ou você está mudando de host |
 | [Referência](./referencia.md) | onde cada arquivo mora, e um `.container` anotado |
-| [Auto-update](./auto-update.md) | por que quase tudo atualiza na mão |
+| [Auto-update](./auto-update.md) | por que nada atualiza sozinho |
 | [Endurecimento, o que foi medido](./endurecimento.md) | o que cada imagem aceitou, e os erros do que ela recusou |
 | [Ferramentas](./ferramentas.md) | `qh-check` e `qh-updates` |

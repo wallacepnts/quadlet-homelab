@@ -112,7 +112,7 @@ um nome que responde 502 — e a maioria dos hosts não roda Cockpit.
 qh tsdproxy --update --apply
 ```
 
-Fixado em `2`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `2.3.4`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

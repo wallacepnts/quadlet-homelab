@@ -429,9 +429,17 @@ def pick_compose_image(texto, nome, image):
     cands = [m.group(1) for m in re.finditer(r"image:\s*[\"\']?([^\s\"\']+)", texto)
              if image_name(m.group(1)) == nome]
     if len(cands) > 1:
-        forma = forma_de(ref_parts(image)[0] or "")
+        aqui = ref_parts(image)[0] or ""
+        forma = forma_de(aqui)
         for cand in cands:
             if forma.fullmatch(ref_parts(cand)[0] or ""):
+                return cand
+        # Pinned past the compose's own form — `16.15` here against `16` there,
+        # since the repository stopped carrying floating tags. The variant is what
+        # still tells the two Postgres apart: the part after the version.
+        variante = re.sub(r"^v?[\d.]+", "", aqui)
+        for cand in cands:
+            if re.sub(r"^v?[\d.]+", "", ref_parts(cand)[0] or "") == variante:
                 return cand
     return cands[0] if cands else None
 
@@ -664,6 +672,9 @@ def selftest():
     assert pick_compose_image(dois, "postgres", "postgres:latest") == "postgres:17-alpine", "no shape matches: the first"
     assert pick_compose_image(dois, "redis", "redis:7.0") == "redis:7.2"
     assert pick_compose_image(dois, "nginx", "nginx:1") is None
+    # pinned to a minor while the compose floats: the variant still decides
+    assert pick_compose_image(dois, "postgres", "docker.io/library/postgres:16.15") == "postgres:16"
+    assert pick_compose_image(dois, "postgres", "docker.io/library/postgres:17.11-alpine") == "postgres:17-alpine"
     assert image_name("docker.io/valkey/valkey@sha256:" + "a" * 64) == "valkey"
     assert image_name("ghcr.io/immich-app/immich-server:v3.2.0") == "immich-server"
     assert image_name("registry.local:5000/foo/bar:1") == "bar", "the port is not a tag"

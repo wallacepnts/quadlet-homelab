@@ -58,8 +58,12 @@ no port: this one is not a service.
 qh toolbx-fedora --update --apply
 ```
 
-Pinned to `44`. Nothing updates on its own — a new version is applied
+Pinned to `034cb7c472038e2d879ddc19568106a1342aa24403f0d641a0f73dda638707ad`. Nothing updates on its own — a new version is applied
 when you run the command above.
+
+By digest, because Fedora's registry publishes only `44`, rebuilt with every
+update. As with the Arch image, the registry can collect an old digest;
+`qh-updates` then reports it as gone, and the fix is a new digest.
 
 ## Backup
 

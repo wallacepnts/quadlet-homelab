@@ -68,8 +68,11 @@ install.ini
 qh monica --update --apply
 ```
 
-Pinned to `main`. Nothing updates on its own — a new version is applied
+Pinned to `8a02508cbdcfcc44d5bb3b456ba30cdc9fe9c0a17b2702043a4dbbd0c55300ed`. Nothing updates on its own — a new version is applied
 when you run the command above.
+
+By digest, because `monica-next` publishes no versioned image — only `main` and
+`main-fpm`, rebuilt as the branch moves. The digest freezes one build of it.
 
 ## Backup
 

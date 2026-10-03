@@ -44,7 +44,12 @@ PT = {
         "Label com barra invertida — o Quadlet descarta a linha inteira",
     "Label with an unquoted space, truncates at the first one":
         "Label com espaço sem aspas, corta no primeiro",
-    "has neither AutoUpdate= nor wud.watch —": "não tem AutoUpdate= nem wud.watch —",
+    "has no wud.watch —": "não tem wud.watch —",
+    "has AutoUpdate= — nothing in this repository updates on its own, pin the image and remove it":
+        "tem AutoUpdate= — nada neste repositório atualiza sozinho, fixe a imagem e remova-o",
+    "is on a floating tag": "está em tag flutuante",
+    "pin a version, or a digest where upstream publishes none":
+        "fixe uma versão, ou um digest onde o projeto não publica versão",
     "nothing will report a new version": "nada vai reportar versão nova",
     "published by": "publicada por",
     "has no recipe in install.ini [secrets] — install.py cannot generate it":
@@ -232,6 +237,23 @@ def check_podman_args(text, ref):
 # (rule 7). One expression, shared with the test that holds it to account: the
 # selftest used to rebuild it, so loosening this one — dropping the lookbehind
 # and condemning the correct `$$` too — still printed "selftest: ok".
+# Rule 9: every image is pinned. A tag with no `x.y` in it — `latest`, `main`, a
+# bare major like `16` or `17-alpine` — is rebuilt under the same name, so the
+# host runs whatever was pushed last. A digest pins the content even on such a
+# tag, which is how images that publish no version stay fixed (monica-next, the
+# Fedora toolbox).
+PINNED_TAG = re.compile(r"\d+\.\d+")
+
+
+def floating_tag(image):
+    """The tag when the image is not pinned to one build, else None."""
+    if "@sha256:" in image:
+        return None
+    nome = image.rsplit("/", 1)[-1]
+    tag = nome.partition(":")[2] or "latest"
+    return None if PINNED_TAG.search(tag) else tag
+
+
 BARE_DOLLAR = re.compile(r"(?<!\$)\$(?!\$)[A-Za-z{]")
 
 
@@ -242,6 +264,17 @@ def check_container(path, folder):
     ref = f"apps/{folder.name}/{path.name}"
 
     check_podman_args(text, ref)
+
+    # Rule 9. The repository dropped auto-update on 2026-10-03: the version on the
+    # host is the version in the repository, and an update is a commit.
+    if "AutoUpdate" in keys:
+        error("rule 9", f"{ref} has AutoUpdate= — nothing in this repository updates on "
+                        f"its own, pin the image and remove it")
+    if "floating" not in exemptions(text):
+        for key, value in ds:
+            if key == "Image" and (tag := floating_tag(value)):
+                error("rule 9", f"{ref} is on a floating tag (`{tag}`) — pin a version, "
+                                f"or a digest where upstream publishes none")
 
     if ("Notify", "healthy") in ds and "HealthCmd" not in keys:
         error("rule 14", f"{ref} uses Notify=healthy without HealthCmd= "
@@ -274,10 +307,8 @@ def check_container(path, folder):
     # Main container only: a sidecar (database, broker, worker) usually follows
     # the version the app's own compose validates, not its own upstream.
     if path == main_unit(folder) and "wud" not in exemptions(text):
-        if "AutoUpdate" not in keys and not any(
-                c == "Label" and v.startswith("wud.watch") for c, v in ds):
-            warn("wud", f"{ref} has neither AutoUpdate= nor wud.watch — "
-                        f"nothing will report a new version")
+        if not any(c == "Label" and v.startswith("wud.watch") for c, v in ds):
+            warn("wud", f"{ref} has no wud.watch — nothing will report a new version")
 
     # Rule 20 applies this one without testing, and nothing tracked it: 54 of
     # the 110 units had drifted without it, 16 already carrying ReadOnly and
@@ -855,6 +886,18 @@ def check_per_unit(folder):
 # --------------------------------------------------------------------------
 
 def selftest():
+    # rule 9: a version or a digest pins the image; anything else floats
+    assert floating_tag("docker.io/library/postgres:16") == "16"
+    assert floating_tag("docker.io/library/postgres:17-alpine") == "17-alpine"
+    assert floating_tag("ghcr.io/gethomepage/homepage:latest") == "latest"
+    assert floating_tag("ghcr.io/x/y") == "latest", "no tag at all is latest"
+    assert floating_tag("localhost:5000/y") == "latest", "a registry port is not a tag"
+    assert floating_tag("docker.io/library/postgres:16.15") is None
+    assert floating_tag("lscr.io/linuxserver/sabnzbd:version-5.1.3") is None
+    assert floating_tag("ghcr.io/monicahq/monica-next:main@sha256:" + "a" * 64) is None
+    assert floating_tag("quay.io/toolbx/arch-toolbox@sha256:" + "b" * 64) is None
+    assert floating_tag("docker.io/jeankhawand/anki-sync-server:26.08-distroless") is None
+
     # directives() and published_port() live in qhui.py now, tested there —
     # one parser for the three tools, so a change cannot land in one of them.
 

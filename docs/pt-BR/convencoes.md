@@ -78,13 +78,12 @@ Parar/reiniciar uma dependência também para quem a requer. Se a
 dependência falhar nessa janela, quem dependia dela não volta sozinho —
 subir manualmente depois.
 
-### 9. Tag flutuante exige `HealthCmd` real
+### 9. Toda imagem é fixada; nada atualiza sozinho
 
-`AutoUpdate=registry` só tem rollback automático em containers com
-`HealthCmd` — que por sua vez exige shell/utilitário dentro da imagem.
-Padrão deste repositório: tag explícita + bump manual por default;
-auto-update é opt-in, só pra imagens com `HealthCmd` de verdade e sem
-estado crítico de usuário.
+Tag de versão, ou digest onde o projeto não publica versão. Nada de `latest`,
+`main`, major sozinho (`16`, `17-alpine`) nem `AutoUpdate=`: o `check.py` recusa
+todos. Atualizar é um bump no repositório e um `qh <app> --update` no host. O
+porquê, e como um host pode ligar na própria cópia: [auto-update](./auto-update.md).
 
 ### 10. `PublishPort=` não abre firewall
 

@@ -2,7 +2,7 @@
 Description=Toolbx Fedora 45 (interactive shell)
 
 [Container]
-Image=registry.fedoraproject.org/fedora-toolbox:44
+Image=registry.fedoraproject.org/fedora-toolbox:44@sha256:034cb7c472038e2d879ddc19568106a1342aa24403f0d641a0f73dda638707ad
 ContainerName=toolbx-fedora
 Exec=sleep infinity
 WorkingDir=/work

@@ -157,7 +157,7 @@ Leap 15's problem — it publishes no container image and was not measured here.
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/homebox.svg" width="48" height="48" alt=""> | [HomeBox](./apps/homebox) | `0.26.2` | A home inventory — what you own, where it is, the receipt, the manual and the warranty, with search and labels |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/grafana.svg" width="48" height="48" alt=""> | [Grafana](./apps/grafana) | `13.2.3` | Dashboards over whatever you point it at — it brings no data of its own |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/home-assistant.svg" width="48" height="48" alt=""> | [Home Assistant](./apps/home-assistant) | `2026.9.4` | The central home automation hub; it brings devices from any manufacturer into a single panel |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/homepage.png" width="48" height="48" alt=""> | [homepage](./apps/homepage) | `latest` (auto-update) | A dashboard that discovers and organises the other containers by itself through labels, with no config to edit per new service |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/homepage.png" width="48" height="48" alt=""> | [homepage](./apps/homepage) | `v2.4.0` | A dashboard that discovers and organises the other containers by itself through labels, with no config to edit per new service |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/immich.svg" width="48" height="48" alt=""> | [Immich](./apps/immich) | `v3.2.4` | Photo and video backup and organisation, with face recognition and smart search |
 | <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/invio.svg" width="48" height="48" alt=""> | [Invio](./apps/invio) | `v2.2.0` | Self-hosted invoicing and invoice tracking, on SQLite and with no external service |
 | <img src="https://api.iconify.design/mdi/microphone-variant.svg?color=%23888888" width="48" height="48" alt=""> | [Karaoke Eternal](./apps/karaoke-eternal) | `2.0.2` | A karaoke party from your own library — everyone queues songs from their phone, one screen plays |
@@ -171,7 +171,7 @@ Leap 15's problem — it publishes no container image and was not measured here.
 | <img src="https://api.iconify.design/mdi/multimedia.svg?color=%23888888" width="48" height="48" alt=""> | [Media Stack](./apps/media-stack) | — | Jellyfin, Navidrome, Seerr, Prowlarr, Sonarr, Radarr, Lidarr, Bazarr, SABnzbd, Deluge, Dispatcharr, Downtify and an optional Gluetun — a media server plus automation, a shared data root, each app on its own version |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/memos.svg" width="48" height="48" alt=""> | [Memos](./apps/memos) | `0.31.0` | Quick notes, self-hosted and markdown-native |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/metube.svg" width="48" height="48" alt=""> | [MeTube](./apps/metube) | `2026.09.29` | A web interface for yt-dlp — paste the URL and the video lands on disk |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/monica.svg" width="48" height="48" alt=""> | [Monica](./apps/monica) | `main` (no pinned tag, see the README) | A personal CRM — relationship history, contacts, reminders |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/monica.svg" width="48" height="48" alt=""> | [Monica](./apps/monica) | `main` (pinned by digest, see the README) | A personal CRM — relationship history, contacts, reminders |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/n8n.svg" width="48" height="48" alt=""> | [n8n](./apps/n8n) | `2.41.6` | Workflow automation through a visual node editor |
 | <img src="https://api.iconify.design/mdi/web-box.svg?color=%23888888" width="48" height="48" alt=""> | [neko](./apps/neko) | `3.1.6` | A browser running on the server, streamed to yours — shared control, and nothing it opens touches your machine |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/netbootxyz.svg" width="48" height="48" alt=""> | [netboot.xyz](./apps/netbootxyz) | `0.7.6-nbxyz24` | A network boot (PXE) menu for installing or trying distros and tools without writing a USB stick |
@@ -194,21 +194,22 @@ Leap 15's problem — it publishes no container image and was not measured here.
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/searxng.png" width="48" height="48" alt=""> | [SearXNG](./apps/searxng) | `2026.10.2-a5659a536` | Metasearch that queries dozens of engines at once, keeping no profile of you |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/stirling-pdf.svg" width="48" height="48" alt=""> | [Stirling-PDF](./apps/stirling-pdf) | `3.0.2` | Local PDF manipulation — merge, split, convert, OCR and sign, in place of the "online PDF" sites |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/syncthing.svg" width="48" height="48" alt=""> | [Syncthing](./apps/syncthing) | `2.1.5` | P2P file sync between devices, with no central server |
-| <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/tsdproxy.svg" width="48" height="48" alt=""> | [tsdproxy](./apps/tsdproxy) | `2` | Publishes containers on the tailnet automatically, from labels alone — no per-service proxy configuration |
+| <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/tsdproxy.svg" width="48" height="48" alt=""> | [tsdproxy](./apps/tsdproxy) | `2.3.4` | Publishes containers on the tailnet automatically, from labels alone — no per-service proxy configuration |
 | <img src="https://cdn.jsdelivr.net/gh/containers/containertoolbx.org@main/apple-touch-icon.png" width="48" height="48" alt=""> | [Toolbx](./apps/toolbx) | — | Disposable Arch, Fedora, RHEL and Ubuntu shells, on the official Toolbx images — somewhere to install a one-off tool that is not the host |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/traccar.svg" width="48" height="48" alt=""> | [Traccar](./apps/traccar) | `6.16.0` | GPS tracking — live map, history, geofences and reports, with a phone app |
 | <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/vikunja.svg" width="48" height="48" alt=""> | [Vikunja](./apps/vikunja) | `2.7.0` | Tasks with a deadline and a project behind them, in list, kanban or gantt |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/qemu.svg" width="48" height="48" alt=""> | [VM](./apps/vm) | — | Windows, macOS, ChromeOS Flex, ZimaOS and 23 Linux distros as VMs in containers, viewed in the browser — needs KVM on the host |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/uptime-kuma.svg" width="48" height="48" alt=""> | [Uptime Kuma](./apps/uptime-kuma) | `2.5.5` | An uptime monitor for the other services and the tailnet, with history and notifications |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/vaultwarden.png" width="48" height="48" alt=""> | [Vaultwarden](./apps/vaultwarden) | `1.37.3-alpine` | A password vault compatible with Bitwarden's protocol, light enough to run anywhere |
-| <img src="https://raw.githubusercontent.com/wallacepnts/vaultzap/main/internal/web/static/img/favicon.svg" width="48" height="48" alt=""> | [VaultZap](./apps/vaultzap) | `latest` (auto-update) | A local, browsable archive of exported WhatsApp conversations — search, gallery and calendar, fully offline |
+| <img src="https://raw.githubusercontent.com/wallacepnts/vaultzap/main/internal/web/static/img/favicon.svg" width="48" height="48" alt=""> | [VaultZap](./apps/vaultzap) | `v1.0.2` | A local, browsable archive of exported WhatsApp conversations — search, gallery and calendar, fully offline |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/wger.svg" width="48" height="48" alt=""> | [wger](./apps/wger) | `2.7` | Workout planning and tracking, with an exercise database and body measurements |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/zigbee2mqtt.svg" width="48" height="48" alt=""> | [Zigbee2MQTT](./apps/zigbee2mqtt) | `2.14.2` | A bridge between Zigbee devices and MQTT, with no proprietary hub — no coordinator plugged in yet (see the README) |
 | <img src="https://cdn.jsdelivr.net/gh/getwud/wud@main/ui/public/img/icons/android-chrome-512x512.png" width="48" height="48" alt=""> | [WUD (What's Up Docker)](./apps/wud) | `9.2.1` | Watches for available image updates for the containers, applying nothing itself — it only reports |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/zerobyte.png" width="48" height="48" alt=""> | [Zerobyte](./apps/zerobyte) | `v0.43.2` | Automates backups (via Restic) of every other service's data in this repository |
 
-**AutoUpdate on**: homepage, VaultZap. Everything else is
-pinned to a tag and updated by hand.
+**Nothing updates on its own.** Every image is pinned — to a version, or to a
+digest where upstream publishes none — and updated by hand; see
+[auto-update](./docs/auto-update.md).
 
 ## Optional: the tailnet
 
@@ -269,7 +270,7 @@ for x86_64 and `vm-windows-arm` for ARM64.
 | [Installing and operating](./docs/installing.md) | install, update, back up, restore, remove |
 | [Recovery and migration](./docs/recovery.md) | the machine died, or you are moving hosts |
 | [Reference](./docs/reference.md) | where every file lives, and an annotated `.container` |
-| [Auto-update](./docs/auto-update.md) | why almost everything updates by hand |
+| [Auto-update](./docs/auto-update.md) | why nothing updates on its own |
 | [Hardening, as measured](./docs/hardening.md) | what each image accepted, and the errors from what it refused |
 | [Tools](./docs/tools.md) | `qh-check` and `qh-updates` |
 

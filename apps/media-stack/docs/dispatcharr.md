@@ -37,7 +37,7 @@ Data in `~/.config/containers/volumes/media-stack/dispatcharr/data`.
 qh media-stack-dispatcharr --update --apply
 ```
 
-Pinned to `latest`. Nothing updates on its own — a new version is applied when
+Pinned to `0.31.0`. Nothing updates on its own — a new version is applied when
 you run the command above.
 
 ## Backup

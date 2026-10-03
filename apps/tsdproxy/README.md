@@ -114,7 +114,7 @@ publishes a name that answers 502 — and most hosts do not run Cockpit.
 qh tsdproxy --update --apply
 ```
 
-Pinned to `2`. Nothing updates on its own — a new version is applied
+Pinned to `2.3.4`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

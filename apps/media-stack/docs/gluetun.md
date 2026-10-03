@@ -38,7 +38,7 @@ media-stack-gluetun.env.example   environment
 qh media-stack-gluetun --update --apply
 ```
 
-Pinned to `latest`. Nothing updates on its own — a new version is applied when
+Pinned to `v3.41.3`. Nothing updates on its own — a new version is applied when
 you run the command above.
 
 ## Backup

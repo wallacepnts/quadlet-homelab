@@ -68,8 +68,11 @@ install.ini
 qh monica --update --apply
 ```
 
-Fixado em `main`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `8a02508cbdcfcc44d5bb3b456ba30cdc9fe9c0a17b2702043a4dbbd0c55300ed`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
+
+Por digest, porque o `monica-next` não publica imagem com versão — só `main` e
+`main-fpm`, reconstruídas conforme o branch anda. O digest congela um build dela.
 
 ## Backup
 

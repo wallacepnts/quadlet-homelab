@@ -77,12 +77,13 @@ Stopping or restarting a dependency also stops whoever requires it. If the
 dependency fails in that window, whatever depended on it does not come back on
 its own — start it by hand afterwards.
 
-### 9. A floating tag requires a real `HealthCmd`
+### 9. Every image is pinned; nothing updates on its own
 
-`AutoUpdate=registry` only has automatic rollback on containers with a
-`HealthCmd` — which in turn requires a shell or a utility inside the image.
-This repository's default: an explicit tag plus a manual bump; auto-update is
-opt-in, only for images with a genuine `HealthCmd` and no critical user state.
+A version tag, or a digest where upstream publishes no version. No `latest`,
+no `main`, no bare major (`16`, `17-alpine`), and no `AutoUpdate=`: `check.py`
+refuses all of them. An update is a bump in the repository and a
+`qh <app> --update` on the host. Why, and how one host can opt in on its own
+copy: [auto-update](./auto-update.md).
 
 ### 10. `PublishPort=` does not open the firewall
 

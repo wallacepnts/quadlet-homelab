@@ -2,9 +2,8 @@
 Description=vaultzap - archive of exported conversations
 
 [Container]
-Image=ghcr.io/wallacepnts/vaultzap:latest
+Image=ghcr.io/wallacepnts/vaultzap:v1.0.2
 ContainerName=vaultzap
-AutoUpdate=registry
 
 Network=tsdproxy-net.network
 PublishPort=8927:8927
@@ -40,6 +39,9 @@ Label=homepage.name=VaultZap
 Label=homepage.icon=/icons/vaultzap.svg
 Label=homepage.href=https://vaultzap.${TAILNET}.ts.net
 Label=homepage.description="A local, browsable archive of exported WhatsApp conversations"
+
+Label=wud.watch=true
+Label=wud.tag.include=^v[0-9]+[.][0-9]+[.][0-9]+$
 
 [Service]
 Restart=always

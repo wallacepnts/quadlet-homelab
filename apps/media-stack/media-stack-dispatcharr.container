@@ -2,7 +2,7 @@
 Description=Dispatcharr (IPTV, EPG, VOD) — AIO mode (all in one container)
 
 [Container]
-Image=ghcr.io/dispatcharr/dispatcharr:latest
+Image=ghcr.io/dispatcharr/dispatcharr:0.31.0
 ContainerName=dispatcharr
 
 Network=tsdproxy-net.network
@@ -35,7 +35,7 @@ Label=homepage.href=https://dispatcharr.${TAILNET}.ts.net
 Label=homepage.description="IPTV manager (streams, EPG, VOD)"
 
 Label=wud.watch=true
-Label=wud.watch.digest=true
+Label=wud.tag.include=^[0-9]+[.][0-9]+[.][0-9]+$
 
 [Service]
 Restart=always
