@@ -348,6 +348,12 @@ def moved(image, tag):
     remoto = h.get("Docker-Content-Digest")
     if not remoto:
         return None
+    # Pinned by digest, the unit names the build it wants: compare with that,
+    # not with whatever happens to be pulled. Without this, monica-next and
+    # mdrop read as "floating tag" on any machine that had never pulled them.
+    fixado = ref_parts(image)[1]
+    if fixado:
+        return remoto != fixado
     try:
         r = subprocess.run(["podman", "image", "inspect", image, "--format",
                             "{{.Digest}} {{range .RepoDigests}}{{.}} {{end}}"],
@@ -621,7 +627,8 @@ def check(item):
         # somewhere else than the local copy, an update is waiting behind the
         # same name. Without podman, or before the first pull, there is nothing
         # to compare against.
-        m = moved(image, tag)
+        # A reference with no tag at all (`mdrop@sha256:…`) is the `latest` one.
+        m = moved(image, ref_parts(image)[0] or "latest")
         if m is True:
             return (unit, image, tag, "new digest", "MOVED")
         if m is False:

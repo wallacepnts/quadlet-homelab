@@ -2,7 +2,7 @@
 Description=Toolbx Arch Linux (interactive shell)
 
 [Container]
-Image=quay.io/toolbx/arch-toolbox@sha256:04fc926ccff8536279b739224bf36fd89f9ae448956ff139bbebcb0c0425bdc3
+Image=quay.io/toolbx/arch-toolbox@sha256:b71b4446ac8aa3a334f34a2d24ae1a681f3559e59f20878d0f128681d3254d4f
 ContainerName=toolbx-arch
 Exec=sleep infinity
 WorkingDir=/work
