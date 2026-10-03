@@ -127,7 +127,7 @@ Leap 15's problem — it publishes no container image and was not measured here.
 
 | Logo | Application | Version | Description |
 | --- | --- | --- | --- |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/actual-budget.svg" width="48" height="48" alt=""> | [Actual Budget](./apps/actual-budget) | `latest` (auto-update) | Fast, privacy-focused personal finance management using the envelope budgeting method |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/actual-budget.svg" width="48" height="48" alt=""> | [Actual Budget](./apps/actual-budget) | `26.10.0` | Fast, privacy-focused personal finance management using the envelope budgeting method |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/adguard-home.svg" width="48" height="48" alt=""> | [AdGuard Home](./apps/adguardhome) | `v0.107.79` | A recursive DNS server that blocks ads and trackers for the whole network |
 | <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/anki.svg" width="48" height="48" alt=""> | [Anki](./apps/anki) | `26.08-distroless` | The sync server from Anki itself, so flashcards, reviews and media sync without AnkiWeb |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/anytype.svg" width="48" height="48" alt=""> | [any-sync-bundle](./apps/any-sync-bundle) | `1.6.0-2026-08-18` | The Any-Sync protocol backend, which syncs Anytype's data across devices without relying on the company's cloud |
@@ -207,7 +207,7 @@ Leap 15's problem — it publishes no container image and was not measured here.
 | <img src="https://cdn.jsdelivr.net/gh/getwud/wud@main/ui/public/img/icons/android-chrome-512x512.png" width="48" height="48" alt=""> | [WUD (What's Up Docker)](./apps/wud) | `9.2.1` | Watches for available image updates for the containers, applying nothing itself — it only reports |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/zerobyte.png" width="48" height="48" alt=""> | [Zerobyte](./apps/zerobyte) | `v0.43.2` | Automates backups (via Restic) of every other service's data in this repository |
 
-**AutoUpdate on**: Actual Budget, homepage, VaultZap. Everything else is
+**AutoUpdate on**: homepage, VaultZap. Everything else is
 pinned to a tag and updated by hand.
 
 ## Optional: the tailnet

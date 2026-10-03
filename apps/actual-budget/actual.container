@@ -2,9 +2,8 @@
 Description=Actual Budget Server
 
 [Container]
-Image=docker.io/actualbudget/actual-server:latest
+Image=docker.io/actualbudget/actual-server:26.10.0
 ContainerName=actual
-AutoUpdate=registry
 
 Network=tsdproxy-net.network
 PublishPort=5006:5006
@@ -38,6 +37,9 @@ Label=homepage.name="Actual Budget"
 Label=homepage.icon=actual-budget.svg
 Label=homepage.href=https://actual.${TAILNET}.ts.net
 Label=homepage.description="Self-hosted personal budgeting"
+
+Label=wud.watch=true
+Label=wud.tag.include=^[0-9]+[.][0-9]+[.][0-9]+$
 
 [Service]
 Restart=always

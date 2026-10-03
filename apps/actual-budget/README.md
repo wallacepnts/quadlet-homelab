@@ -46,6 +46,7 @@ systemctl --user start actual
 ```
 actual.container
 .env.example
+install.ini
 ```
 
 ## Update
@@ -54,7 +55,8 @@ actual.container
 qh actual-budget --update --apply
 ```
 
-`AutoUpdate=registry` is on: the image updates on its own.
+Pinned to `26.10.0`. Nothing updates on its own — a new version is applied
+when you run the command above.
 
 ## Backup
 

@@ -128,7 +128,7 @@ aqui.
 
 | Logo | Aplicativo | Versão | Descrição |
 | --- | --- | --- | --- |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/actual-budget.svg" width="48" height="48" alt=""> | [Actual Budget](../../apps/actual-budget/README.pt-BR.md) | `latest` (auto-update) | Rápido e focado em privacidade pra gerenciar finanças pessoais, usando a metodologia de Orçamento de Envelope |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/actual-budget.svg" width="48" height="48" alt=""> | [Actual Budget](../../apps/actual-budget/README.pt-BR.md) | `26.10.0` | Rápido e focado em privacidade pra gerenciar finanças pessoais, usando a metodologia de Orçamento de Envelope |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/adguard-home.svg" width="48" height="48" alt=""> | [AdGuard Home](../../apps/adguardhome/README.pt-BR.md) | `v0.107.79` | Servidor DNS recursivo com bloqueio de anúncios e rastreadores pra toda a rede |
 | <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/anki.svg" width="48" height="48" alt=""> | [Anki](../../apps/anki/README.pt-BR.md) | `26.08-distroless` | O servidor de sincronização do próprio Anki, para cartões, revisões e mídia sincronizarem sem o AnkiWeb |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/anytype.svg" width="48" height="48" alt=""> | [any-sync-bundle](../../apps/any-sync-bundle/README.pt-BR.md) | `1.6.0-2026-08-18` | Backend do protocolo Any-Sync, que sincroniza os dados do Anytype entre dispositivos sem depender da nuvem da empresa |
@@ -208,7 +208,7 @@ aqui.
 | <img src="https://cdn.jsdelivr.net/gh/getwud/wud@main/ui/public/img/icons/android-chrome-512x512.png" width="48" height="48" alt=""> | [WUD (What's Up Docker)](../../apps/wud/README.pt-BR.md) | `9.2.1` | Monitora as atualizações de imagem disponíveis pros containers, sem aplicar nada sozinho — só avisa |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/zerobyte.png" width="48" height="48" alt=""> | [Zerobyte](../../apps/zerobyte/README.pt-BR.md) | `v0.43.2` | Automatiza backup (via Restic) dos dados de todos os outros serviços deste repositório |
 
-**AutoUpdate ligado**: Actual Budget, homepage, VaultZap. Todo o resto tem tag
+**AutoUpdate ligado**: homepage, VaultZap. Todo o resto tem tag
 fixa e é atualizado na mão.
 
 ## Opcional: a tailnet

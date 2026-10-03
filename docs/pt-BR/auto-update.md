@@ -1,6 +1,6 @@
 # Auto-update
 
-Três serviços atualizam sozinhos: Actual Budget, homepage e VaultZap. Todo o
+Dois serviços atualizam sozinhos: homepage e VaultZap. Todo o
 resto tem tag fixa e sobe na mão.
 
 ## Ligando num serviço

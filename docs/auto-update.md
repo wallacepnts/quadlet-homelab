@@ -1,6 +1,6 @@
 # Auto-update
 
-Three services update on their own: Actual Budget, homepage and VaultZap.
+Two services update on their own: homepage and VaultZap.
 Everything else is pinned to a tag and bumped by hand.
 
 ## Turning it on for a service
