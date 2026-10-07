@@ -51,6 +51,7 @@ and is maintained by hand.
 | `home-assistant` | yes | **none** |
 | `homebox` | yes | **none** + `User=1000` |
 | `homepage` | yes | **none** |
+| `instagram-monitor` | yes | **none** + `User=10001` |
 | `immich` | yes | **none** + `UserNS=keep-id` |
 | `immich-machine-learning` | yes | **none** + `UserNS=keep-id` |
 | `immich-postgres` | no | **none** + `User=999` |

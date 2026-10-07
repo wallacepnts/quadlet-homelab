@@ -2,7 +2,7 @@
 
 **[🇺🇸 Read in English](../../README.md)**
 
-79 serviços self-hosted como units do [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html),
+80 serviços self-hosted como units do [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html),
 rootless, um serviço por pasta.
 
 ## Início rápido
@@ -70,7 +70,7 @@ use `--reinstall`.
 ## Requisitos
 
 - **Podman 5.0 ou mais novo.** É a régua de verdade: o `Notify=healthy` chegou
-  nessa versão, e 111 das 119 units usam. No 4.x o start volta antes de o app
+  nessa versão, e 112 das 120 units usam. No 4.x o start volta antes de o app
   estar pronto, e a instalação relata um sucesso que ela não tem como saber.
 - **systemd com sessão de usuário** e cgroups v2.
 - **`network-online.target` alcançado no boot.** O Quadlet ordena toda unit que
@@ -159,6 +159,7 @@ aqui.
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/grafana.svg" width="48" height="48" alt=""> | [Grafana](../../apps/grafana/README.pt-BR.md) | `13.2.3` | Painéis sobre o que você apontar — ele não traz dado nenhum próprio |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/home-assistant.svg" width="48" height="48" alt=""> | [Home Assistant](../../apps/home-assistant/README.pt-BR.md) | `2026.9.4` | Hub central de automação residencial, integra dispositivos de qualquer fabricante num painel só |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/homepage.png" width="48" height="48" alt=""> | [homepage](../../apps/homepage/README.pt-BR.md) | `v2.4.0` | Dashboard que descobre e organiza os outros containers sozinho via labels, sem editar config a cada serviço novo |
+| <img src="https://api.iconify.design/mdi/instagram.svg?color=%23E1306C" width="48" height="48" alt=""> | [Instagram Monitor](../../apps/instagram-monitor/README.pt-BR.md) | `v4.0.2` | Monitor OSINT de Instagram em tempo real com dashboard web, feed de atividade e download de mídia |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/immich.svg" width="48" height="48" alt=""> | [Immich](../../apps/immich/README.pt-BR.md) | `v3.2.4` | Backup e organização de fotos/vídeos, com reconhecimento facial e busca smart |
 | <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/invio.svg" width="48" height="48" alt=""> | [Invio](../../apps/invio/README.pt-BR.md) | `v2.2.0` | Emissão e controle de faturas self-hosted, com SQLite e sem depender de serviço externo |
 | <img src="https://api.iconify.design/mdi/microphone-variant.svg?color=%23888888" width="48" height="48" alt=""> | [Karaoke Eternal](../../apps/karaoke-eternal/README.pt-BR.md) | `2.0.2` | Karaokê com a sua própria biblioteca — cada um enfileira do celular, uma tela reproduz |

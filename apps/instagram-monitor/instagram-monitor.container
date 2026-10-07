@@ -1,0 +1,50 @@
+[Unit]
+Description=instagram_monitor (real-time Instagram OSINT monitor)
+
+[Container]
+Image=docker.io/misiektoja/instagram-monitor:v4.0.2
+ContainerName=instagram-monitor
+Exec=--env-file /data/.env --web-dashboard
+RunInit=true
+
+Network=tsdproxy-net.network
+PublishPort=8128:8000
+
+Volume=%h/.config/containers/volumes/instagram-monitor/data:/data:Z
+Volume=%h/.config/containers/volumes/instagram-monitor/session:/home/instagram/.config/instaloader:Z
+
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+User=10001
+PidsLimit=256
+NoNewPrivileges=true
+
+HealthCmd=CMD-SHELL python3 -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/')" || exit 1
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=30s
+Notify=healthy
+
+Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
+Label=tsdproxy.name=instagram-monitor
+Label=tsdproxy.port.web=443/https:8000/http
+Label=tsdproxy.dash.icon=si/instagram
+
+Label=homepage.group=Monitoring
+Label=homepage.name="Instagram Monitor"
+Label=homepage.icon=si-instagram
+Label=homepage.href=https://instagram-monitor.${TAILNET}.ts.net
+Label=homepage.description="Real-time Instagram OSINT monitor with web dashboard, activity feeds and media downloads"
+
+Label=wud.watch=true
+Label=wud.tag.include=^v[0-9]+[.][0-9]+[.][0-9]+$
+
+[Service]
+Restart=always
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target

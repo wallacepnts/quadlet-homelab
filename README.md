@@ -2,7 +2,7 @@
 
 **[🇧🇷 Leia em português](./docs/pt-BR/README.md)**
 
-79 self-hosted services as [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)
+80 self-hosted services as [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)
 units, rootless, one service per folder.
 
 ## Quick start
@@ -70,7 +70,7 @@ pulled. To go through anyway, use `--reinstall`.
 ## Requirements
 
 - **Podman 5.0 or newer.** This is the real floor: `Notify=healthy` arrived
-  there, and 111 of the 119 units use it. On 4.x the start returns before the app
+  there, and 112 of the 120 units use it. On 4.x the start returns before the app
   is ready, and the install reports a success it cannot know about.
 - **systemd with a user session** and cgroups v2.
 - **`network-online.target` reached at boot.** Quadlet orders every unit it
@@ -158,6 +158,7 @@ Leap 15's problem — it publishes no container image and was not measured here.
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/grafana.svg" width="48" height="48" alt=""> | [Grafana](./apps/grafana) | `13.2.3` | Dashboards over whatever you point it at — it brings no data of its own |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/home-assistant.svg" width="48" height="48" alt=""> | [Home Assistant](./apps/home-assistant) | `2026.9.4` | The central home automation hub; it brings devices from any manufacturer into a single panel |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/homepage.png" width="48" height="48" alt=""> | [homepage](./apps/homepage) | `v2.4.0` | A dashboard that discovers and organises the other containers by itself through labels, with no config to edit per new service |
+| <img src="https://api.iconify.design/mdi/instagram.svg?color=%23E1306C" width="48" height="48" alt=""> | [Instagram Monitor](./apps/instagram-monitor) | `v4.0.2` | Real-time Instagram OSINT monitor with web dashboard, activity feeds and media downloads |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/immich.svg" width="48" height="48" alt=""> | [Immich](./apps/immich) | `v3.2.4` | Photo and video backup and organisation, with face recognition and smart search |
 | <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/invio.svg" width="48" height="48" alt=""> | [Invio](./apps/invio) | `v2.2.0` | Self-hosted invoicing and invoice tracking, on SQLite and with no external service |
 | <img src="https://api.iconify.design/mdi/microphone-variant.svg?color=%23888888" width="48" height="48" alt=""> | [Karaoke Eternal](./apps/karaoke-eternal) | `2.0.2` | A karaoke party from your own library — everyone queues songs from their phone, one screen plays |
