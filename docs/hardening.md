@@ -134,6 +134,9 @@ and is maintained by hand.
 | `vm-zima` | no | podman default + 1 add |
 | `wger` | yes | **none** |
 | `wud` | yes | **none** |
+| `zabbix` | no | **none** + `User=1997` |
+| `zabbix-postgres` | yes | **none** + `User=70` |
+| `zabbix-server` | yes | **none** + `User=1997` |
 | `zerobyte` | yes | 1 (`dac_read_search`) |
 | `zigbee2mqtt` | yes | **none** |
 | `zigbee2mqtt-mosquitto` | yes | **none** + `User=1883` |
@@ -190,6 +193,8 @@ works, and only the message proves why it cannot go further.
 | `postiz` | `HOME=/root` as a non-root user | `EACCES: permission denied, mkdir '/root/.pm2/logs'` — `/root` is 0700, so no tmpfs under it is reachable. The unit points `HOME` at its own tmpfs |
 | `postiz` | `ReadOnly=true` with `/root/.cache` as a volume | the backend sometimes never opens port 3000, with no error in any log: 2 of 9 starts, against 0 of 18 with the cache on a tmpfs in the lab — and 1 of 4 in the installed unit, which has the tmpfs, so it is not the whole cause. `pm2 restart backend` brings it up. The cache is 244 MB that `pnpm dlx prisma` downloads on every start |
 | `postiz` | `PidsLimit=256` | the repository's default is too tight here: 197 at rest, peak 202. The unit uses 512 |
+| `zabbix` | `ReadOnly=true` | `/usr/lib/docker-entrypoint/nginx.sh: line 11: /etc/nginx/includes/access-log.conf: Read-only file system` — the entrypoint renders the nginx config into `/etc/nginx` on every start, and a tmpfs over it would hide the image's own files there. Everything else (no capabilities, `User=1997`) is accepted |
+| `zabbix-server` | no `RunInit=true` | `StopSignal SIGTERM failed to stop container in 10 seconds, resorting to SIGKILL` — the entrypoint runs as PID 1 and does not pass the signal on. With `--init` the stop takes 1–2 s; the unit also gives it `StopTimeout=30`, the official compose's grace period |
 | `postfix` | `ReadOnly=true` | exits 1 — `run.sh` rewrites `/etc/postfix/main.cf` on every start |
 | `postfix` | `User=1000` | `chmod: changing permissions of '/scripts/common.sh': Operation not permitted` |
 | `postfix` | `DropCapability=ALL` alone | the container stays `Up` with the app dead: `chown: /var/spool/postfix/private: Operation not permitted` |

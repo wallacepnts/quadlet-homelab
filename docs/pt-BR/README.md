@@ -2,7 +2,7 @@
 
 **[🇺🇸 Read in English](../../README.md)**
 
-81 serviços self-hosted como units do [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html),
+82 serviços self-hosted como units do [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html),
 rootless, um serviço por pasta.
 
 ## Início rápido
@@ -70,7 +70,7 @@ use `--reinstall`.
 ## Requisitos
 
 - **Podman 5.0 ou mais novo.** É a régua de verdade: o `Notify=healthy` chegou
-  nessa versão, e 113 das 121 units usam. No 4.x o start volta antes de o app
+  nessa versão, e 116 das 124 units usam. No 4.x o start volta antes de o app
   estar pronto, e a instalação relata um sucesso que ela não tem como saber.
 - **systemd com sessão de usuário** e cgroups v2.
 - **`network-online.target` alcançado no boot.** O Quadlet ordena toda unit que
@@ -208,6 +208,7 @@ aqui.
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/wger.svg" width="48" height="48" alt=""> | [wger](../../apps/wger/README.pt-BR.md) | `2.7` | Planejamento e acompanhamento de treinos, com banco de exercícios e medidas corporais |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/zigbee2mqtt.svg" width="48" height="48" alt=""> | [Zigbee2MQTT](../../apps/zigbee2mqtt/README.pt-BR.md) | `2.14.2` | Ponte entre dispositivos Zigbee e MQTT, sem hub proprietário — sem coordenador ligado ainda (ver README) |
 | <img src="https://cdn.jsdelivr.net/gh/getwud/wud@main/ui/public/img/icons/android-chrome-512x512.png" width="48" height="48" alt=""> | [WUD (What's Up Docker)](../../apps/wud/README.pt-BR.md) | `9.2.1` | Monitora as atualizações de imagem disponíveis pros containers, sem aplicar nada sozinho — só avisa |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/zabbix.svg" width="48" height="48" alt=""> | [Zabbix](../../apps/zabbix/README.pt-BR.md) | `alpine-7.4.16` | Monitoramento de servidores, redes e serviços com agentes, SNMP, triggers e alertas — server, interface web e PostgreSQL |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/zerobyte.png" width="48" height="48" alt=""> | [Zerobyte](../../apps/zerobyte/README.pt-BR.md) | `v0.43.2` | Automatiza backup (via Restic) dos dados de todos os outros serviços deste repositório |
 
 **Nada atualiza sozinho.** Toda imagem é fixada — numa versão, ou num digest

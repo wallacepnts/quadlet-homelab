@@ -134,6 +134,9 @@ motivo — e se mantém na mão.
 | `vm-zima` | no | podman default + 1 add |
 | `wger` | yes | **none** |
 | `wud` | yes | **none** |
+| `zabbix` | no | **none** + `User=1997` |
+| `zabbix-postgres` | yes | **none** + `User=70` |
+| `zabbix-server` | yes | **none** + `User=1997` |
 | `zerobyte` | yes | 1 (`dac_read_search`) |
 | `zigbee2mqtt` | yes | **none** |
 | `zigbee2mqtt-mosquitto` | yes | **none** + `User=1883` |
@@ -190,6 +193,8 @@ mensagem prova por que ele não vai além.
 | `postiz` | `HOME=/root` sem ser root | `EACCES: permission denied, mkdir '/root/.pm2/logs'` — `/root` é 0700, então nenhum tmpfs dentro dele é alcançável. A unit aponta o `HOME` para um tmpfs próprio |
 | `postiz` | `ReadOnly=true` com `/root/.cache` em volume | o backend às vezes nunca abre a porta 3000, sem erro em log nenhum: 2 de 9 partidas, contra 0 de 18 com o cache em tmpfs no laboratório — e 1 de 4 na unit instalada, que tem o tmpfs, então não é a causa inteira. `pm2 restart backend` o levanta. O cache tem 244 MB, que o `pnpm dlx prisma` baixa a cada start |
 | `postiz` | `PidsLimit=256` | o padrão do repositório é apertado demais aqui: 197 em repouso, pico de 202. A unit usa 512 |
+| `zabbix` | `ReadOnly=true` | `/usr/lib/docker-entrypoint/nginx.sh: line 11: /etc/nginx/includes/access-log.conf: Read-only file system` — o entrypoint renderiza a configuração do nginx em `/etc/nginx` a cada start, e um tmpfs por cima esconderia os arquivos da própria imagem ali. O resto (sem capabilities, `User=1997`) é aceito |
+| `zabbix-server` | sem `RunInit=true` | `StopSignal SIGTERM failed to stop container in 10 seconds, resorting to SIGKILL` — o entrypoint roda como PID 1 e não repassa o sinal. Com `--init` o stop leva 1–2 s; a unit ainda dá `StopTimeout=30`, a tolerância do compose oficial |
 | `postfix` | `ReadOnly=true` | sai com 1 — o `run.sh` reescreve `/etc/postfix/main.cf` a cada start |
 | `postfix` | `User=1000` | `chmod: changing permissions of '/scripts/common.sh': Operation not permitted` |
 | `postfix` | `DropCapability=ALL` sozinho | container fica `Up` com o app morto: `chown: /var/spool/postfix/private: Operation not permitted` |
