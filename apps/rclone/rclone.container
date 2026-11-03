@@ -1,0 +1,54 @@
+[Unit]
+Description=rclone (web GUI and remote control for cloud storage)
+
+[Container]
+Image=docker.io/rclone/rclone:1.75.2
+ContainerName=rclone
+Exec=rcd --rc-web-gui --rc-web-gui-no-open-browser --rc-addr=:5572 --rc-web-fetch-url=https://api.github.com/repos/rclone/rclone-webui-react/releases/tags/v2.0.5
+
+Network=tsdproxy-net.network
+PublishPort=5572:5572
+
+Environment=XDG_CONFIG_HOME=/config
+Environment=XDG_CACHE_HOME=/cache
+Environment=RCLONE_RC_USER=admin
+Secret=rclone-password,type=env,target=RCLONE_RC_PASS
+
+Volume=%h/.config/rclone:/config/rclone:z
+Volume=%h/.config/containers/volumes/rclone/cache:/cache:Z
+
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+DropCapability=ALL
+UserNS=keep-id
+PidsLimit=256
+NoNewPrivileges=true
+
+HealthCmd=CMD-SHELL rclone rc --url http://127.0.0.1:5572/ core/version > /dev/null || exit 1
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=30s
+Notify=healthy
+
+Label=tsdproxy.enable=true
+Label=tsdproxy.autodetect=true
+Label=tsdproxy.name=rclone
+Label=tsdproxy.port.web=443/https:5572/http
+Label=tsdproxy.dash.icon=si/rclone
+
+Label=homepage.group=Files
+Label=homepage.name=rclone
+Label=homepage.icon=rclone.svg
+Label=homepage.href=https://rclone.${TAILNET}.ts.net
+Label=homepage.description="Web GUI for rclone: browse, copy and sync files across the cloud accounts in its config"
+
+Label=wud.watch=true
+Label=wud.tag.include=^[0-9]+[.][0-9]+[.][0-9]+$
+
+[Service]
+Restart=always
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target

@@ -2,7 +2,7 @@
 
 **[🇧🇷 Leia em português](./docs/pt-BR/README.md)**
 
-80 self-hosted services as [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)
+81 self-hosted services as [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)
 units, rootless, one service per folder.
 
 ## Quick start
@@ -70,7 +70,7 @@ pulled. To go through anyway, use `--reinstall`.
 ## Requirements
 
 - **Podman 5.0 or newer.** This is the real floor: `Notify=healthy` arrived
-  there, and 112 of the 120 units use it. On 4.x the start returns before the app
+  there, and 113 of the 121 units use it. On 4.x the start returns before the app
   is ready, and the install reports a success it cannot know about.
 - **systemd with a user session** and cgroups v2.
 - **`network-online.target` reached at boot.** Quadlet orders every unit it
@@ -192,6 +192,7 @@ Leap 15's problem — it publishes no container image and was not measured here.
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/proxmox.svg" width="48" height="48" alt=""> | [Proxmox VE](./apps/proxmox) | `9.2.10` | The Proxmox hypervisor in a container, for trying it without dedicating a machine — runs privileged |
 | <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/retrom.webp" width="48" height="48" alt=""> | [Retrom](./apps/retrom) | `0.8.4` | A game library for emulation — one collection, played in the browser or through the desktop client |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/radicale.svg" width="48" height="48" alt=""> | [Radicale](./apps/radicale) | `v0.28.0` | A light, minimal CalDAV/CardDAV server, on the rebuild that carries the birthday-calendar script (Radicale 3.7.6.0 inside) |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/rclone.svg" width="48" height="48" alt=""> | [rclone](./apps/rclone) | `1.75.2` | Web GUI for the cloud accounts in your rclone config: browse, copy and sync files between them |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/searxng.png" width="48" height="48" alt=""> | [SearXNG](./apps/searxng) | `2026.10.2-a5659a536` | Metasearch that queries dozens of engines at once, keeping no profile of you |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/stirling-pdf.svg" width="48" height="48" alt=""> | [Stirling-PDF](./apps/stirling-pdf) | `3.0.2` | Local PDF manipulation — merge, split, convert, OCR and sign, in place of the "online PDF" sites |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/syncthing.svg" width="48" height="48" alt=""> | [Syncthing](./apps/syncthing) | `2.1.5` | P2P file sync between devices, with no central server |

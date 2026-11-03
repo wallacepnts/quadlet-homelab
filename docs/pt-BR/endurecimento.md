@@ -111,6 +111,7 @@ motivo — e se mantém na mão.
 | `prometheus` | yes | **none** + `User=65534` |
 | `proxmox` | no | podman default |
 | `radicale` | yes | 4 (`chown`, `kill`, `setgid`, `setuid`) |
+| `rclone` | yes | **none** + `UserNS=keep-id` |
 | `retrom` | no | 3 (`chown`, `setgid`, `setuid`) |
 | `searxng` | yes | **none** + `User=977` |
 | `stirling-pdf` | no | 5 (`chown`, `dac_override`, `fowner`, `setgid`, `setuid`) |

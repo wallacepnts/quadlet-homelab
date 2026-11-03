@@ -2,7 +2,7 @@
 
 **[🇺🇸 Read in English](../../README.md)**
 
-80 serviços self-hosted como units do [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html),
+81 serviços self-hosted como units do [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html),
 rootless, um serviço por pasta.
 
 ## Início rápido
@@ -70,7 +70,7 @@ use `--reinstall`.
 ## Requisitos
 
 - **Podman 5.0 ou mais novo.** É a régua de verdade: o `Notify=healthy` chegou
-  nessa versão, e 112 das 120 units usam. No 4.x o start volta antes de o app
+  nessa versão, e 113 das 121 units usam. No 4.x o start volta antes de o app
   estar pronto, e a instalação relata um sucesso que ela não tem como saber.
 - **systemd com sessão de usuário** e cgroups v2.
 - **`network-online.target` alcançado no boot.** O Quadlet ordena toda unit que
@@ -193,6 +193,7 @@ aqui.
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/proxmox.svg" width="48" height="48" alt=""> | [Proxmox VE](../../apps/proxmox/README.pt-BR.md) | `9.2.10` | O hypervisor Proxmox num container, pra experimentar sem dedicar uma máquina — roda privileged |
 | <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/retrom.webp" width="48" height="48" alt=""> | [Retrom](../../apps/retrom/README.pt-BR.md) | `0.8.4` | Biblioteca de jogos para emulação — uma coleção só, jogada no navegador ou pelo cliente de desktop |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/radicale.svg" width="48" height="48" alt=""> | [Radicale](../../apps/radicale/README.pt-BR.md) | `v0.28.0` | Servidor CalDAV/CardDAV leve e minimalista, no rebuild que traz o script do calendário de aniversários (Radicale 3.7.6.0 dentro) |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/rclone.svg" width="48" height="48" alt=""> | [rclone](../../apps/rclone/README.pt-BR.md) | `1.75.2` | Interface web para as contas de nuvem do seu config do rclone: navegar, copiar e sincronizar arquivos entre elas |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/searxng.png" width="48" height="48" alt=""> | [SearXNG](../../apps/searxng/README.pt-BR.md) | `2026.10.2-a5659a536` | Metabusca que consulta dezenas de motores de uma vez, sem guardar perfil seu |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/stirling-pdf.svg" width="48" height="48" alt=""> | [Stirling-PDF](../../apps/stirling-pdf/README.pt-BR.md) | `3.0.2` | Manipulação de PDF local — juntar, dividir, converter, OCR e assinar, no lugar dos sites de "PDF online" |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/syncthing.svg" width="48" height="48" alt=""> | [Syncthing](../../apps/syncthing/README.pt-BR.md) | `2.1.5` | Sincronização de arquivos P2P entre dispositivos, sem servidor central |
