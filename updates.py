@@ -39,6 +39,11 @@ from qhui import (translator, directives, directives_of, ref_parts, FLOATING,
 
 PT = {
     "also show what is up to date": "mostra também o que está em dia",
+    "compare what is INSTALLED here, not what the repository pins":
+        "compara o que está INSTALADO aqui, não o que o repositório fixa",
+    "print the comparison as JSON (for the store)": "imprime a comparação em JSON (para a loja)",
+    "--bump rewrites the repository; it does not combine with --host":
+        "--bump reescreve o repositório; não combina com --host",
     "test the parsing, no network": "testa o parsing, sem rede",
     "OUTDATED (": "DESATUALIZADOS (",
     "PINNED IMAGE IS GONE (": "IMAGEM FIXADA SUMIU (",
@@ -542,7 +547,20 @@ def target_tags(tag, remote):
     return list(dict.fromkeys(saida))
 
 
-def services():
+def services(host=None):
+    """(app, unit, Image=, [upstream] override, main unit's tag) per container.
+
+    With `host` — the Quadlet directory, ~/.config/containers/systemd — the
+    Image= comes from the INSTALLED unit instead, and a unit not installed is
+    skipped: the question becomes what runs here against what upstream
+    released, whether or not this repository was bumped yet. Basenames are
+    unique across the repository (rule 1), so the file name finds the unit in
+    either layout, flat or in its subfolder.
+    """
+    instaladas = {}
+    if host is not None:
+        for p in sorted(host.rglob("*.container")):
+            instaladas.setdefault(p.name, p)
     for folder in sorted(p for p in APPS.iterdir() if p.is_dir()):
         ini = configparser.ConfigParser(interpolation=None)
         ini.read(folder / "install.ini")
@@ -551,12 +569,19 @@ def services():
         conts = sorted(folder.glob("*.container"))
         if not principal.exists() and len(conts) == 1:
             principal = conts[0]
+        if host is not None and principal.name in instaladas:
+            principal = instaladas[principal.name]
         ref = ""
         if principal.exists():
             img = next((v for k, v in directives_of(principal) if k == "Image"), "")
             ref = img.split("@")[0].rpartition(":")[2]
         for cont in conts:
-            for key, value in directives_of(cont):
+            fonte = cont
+            if host is not None:
+                fonte = instaladas.get(cont.name)
+                if fonte is None:
+                    continue
+            for key, value in directives_of(fonte):
                 if key == "Image":
                     yield folder.name, cont.stem, value, overrides.get(cont.stem), ref
 
@@ -848,36 +873,15 @@ def tags_de(pasta):
     return sorted(set(out))
 
 
-def escrever_tabela(app, velha, nova):
-    """Swaps one tag in the version tables of both root READMEs.
-
-    Patched and not regenerated: the cell is prose in some rows — openwebui
-    carries `v0.11.0` (Open WebUI) + `0.32.6` (Ollama), and rebuilding it from
-    the units would keep the tags and lose the names.
-    """
-    mudados = []
-    for doc, padrao in ((RAIZ / "README.md", f"(./apps/{app})"),
-                        (RAIZ / "docs/pt-BR/README.md", f"(../../apps/{app}/README")):
-        if not doc.exists():
-            continue
-        linhas = doc.read_text().splitlines(keepends=True)
-        alvo = [i for i, l in enumerate(linhas) if padrao in l and f"`{velha}`" in l]
-        if len(alvo) != 1:
-            continue          # `—` for a stack with no single version, or already done
-        linhas[alvo[0]] = linhas[alvo[0]].replace(f"`{velha}`", f"`{nova}`")
-        doc.write_text("".join(linhas))
-        mudados.append(f"{doc.relative_to(RAIZ)}:{alvo[0] + 1}")
-    return mudados
-
-
 def sincronizar_docs():
     """Rewrites every place that mirrors a tag, from the units themselves.
 
-    The version lives in six: `Image=`, the two version tables, the `Pinned to`
-    line of each service README in both languages, and — for a folder that
-    documents each unit apart — that unit's page and the Version column that
-    links to it. `check.py` fails on four of them, so this is what keeps a bump
-    from having to be typed six times and remembered six times.
+    The version lives in `Image=`, the `Pinned to` line of each service README
+    in both languages, and — for a folder that documents each unit apart — that
+    unit's page and the Version column that links to it. `check.py` fails on
+    each of them, so this is what keeps a bump from having to be typed in every
+    place and remembered in every place. The root READMEs' services table
+    carries no version.
 
     Regenerated, not patched: it is derived data, and rebuilding it also
     settles whatever drifted before.
@@ -989,8 +993,6 @@ def bump(behind, items, apply, com_major):
             print(dim(f"     {loc('Image= did not match — left alone')}"))
             continue
         tocados.append(f"{caminho.relative_to(RAIZ)}")
-        # The table cell carries the tag, never the digest under it.
-        tocados += escrever_tabela(app, aqui, la.partition("@")[0])
     if not apply:
         print("\n" + loc("nothing was done. repeat with --apply"))
         return 0
@@ -1032,15 +1034,31 @@ def main():
     ap.add_argument("--apply", action="store_true", help=loc("execute (without it, only show)"))
     ap.add_argument("--major", action="store_true",
                     help=loc("with --bump: include the major bumps it refuses by default"))
+    ap.add_argument("--host", action="store_true",
+                    help=loc("compare what is INSTALLED here, not what the repository pins"))
+    ap.add_argument("--json", action="store_true",
+                    help=loc("print the comparison as JSON (for the store)"))
     a = ap.parse_args()
 
     if a.selftest:
         selftest()
         return 0
+    if a.host and a.bump:
+        # --bump rewrites the repository; the installed units are not its to edit.
+        ap.error(loc("--bump rewrites the repository; it does not combine with --host"))
 
-    items = list(services())
+    items = list(services(Path.home() / ".config/containers/systemd" if a.host else None))
     with ThreadPoolExecutor(max_workers=8) as pool:
         rows = list(pool.map(check, items))
+
+    if a.json:
+        # Every row, with the bucket the tables below sort by, so a front end
+        # does not reimplement which status asks for action.
+        print(json.dumps([{"app": item[0], "unit": unit, "image": image, "here": here,
+                           "there": there, "status": status, "bucket": balde(status)}
+                          for item, (unit, image, here, there, status) in zip(items, rows)],
+                         ensure_ascii=False, indent=2))
+        return 0
 
     baldes = {}
     for l in rows:

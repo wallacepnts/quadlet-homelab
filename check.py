@@ -62,7 +62,7 @@ PT = {
         "precisa de receita `manual` em [secrets] — secret gerado nunca é conferido",
     "which no unit uses": "que nenhuma unit usa",
     "which no unit declares as a Secret=": "que nenhuma unit declara como Secret=",
-    "has no row in the README version table": "não tem linha na tabela de versões do README",
+    "has no row in the README services table": "não tem linha na tabela de serviços do README",
     "the README says": "o README diz",
     "the unit says": "a unit diz",
     "could not find": "não encontrei",
@@ -103,7 +103,7 @@ def exemptions(text):
 
 
 def main_unit(folder):
-    """The .container that represents the app (the one the version table mirrors)."""
+    """The .container that represents the app (the one `qh` starts)."""
     conts = sorted(folder.glob("*.container"))
     if not conts:
         return None
@@ -111,21 +111,6 @@ def main_unit(folder):
     if exact in conts:
         return exact
     return conts[0] if len(conts) == 1 else None
-
-
-def image_tag(path):
-    """The tag in `Image=`, or None when there is no comparable tag.
-
-    An image pinned by digest (`...@sha256:abc...`) has no tag: comparing the
-    hex against the README's Version column would only produce noise.
-    """
-    for key, value in directives_of(path):
-        if key == "Image":
-            if "@sha256:" in value:
-                return None
-            _, _, tag = value.rpartition(":")
-            return tag if tag and "/" not in tag else None
-    return None
 
 
 # --------------------------------------------------------------------------
@@ -692,11 +677,15 @@ def check_counts(folders):
 
 def check_table(folders):
     readme = (ROOT / "README.md").read_text()
-    rows = {}
+    # The services table is the catalog's shop window (logo, name, description;
+    # `qh --catalog` reads it). It carries no version: the tag lives in Image=
+    # alone, and what is installed against what upstream released is asked
+    # live, by `qh-updates --host` and the store.
+    rows = set()
     for line in readme.splitlines():
-        m = re.match(r"^\|.*?\|\s*\[[^\]]+\]\(\./apps/([a-z0-9._-]+)\)\s*\|([^|]*)\|", line)
+        m = re.match(r"^\|.*?\|\s*\[[^\]]+\]\(\./apps/([a-z0-9._-]+)\)", line)
         if m:
-            rows[m.group(1)] = m.group(2).strip()
+            rows.add(m.group(1))
 
     # A repeated row is invisible to the checks below — the dict keeps the last
     # one and everything agrees. It only shows up as the same app listed twice
@@ -711,22 +700,10 @@ def check_table(folders):
             error("table", f"apps/{nome} appears {n} times in the README table")
 
     names = {p.name for p in folders}
-    for missing in sorted(names - rows.keys()):
-        error("table", f"apps/{missing} has no row in the README version table")
-    for extra in sorted(rows.keys() - names):
+    for missing in sorted(names - rows):
+        error("table", f"apps/{missing} has no row in the README services table")
+    for extra in sorted(rows - names):
         error("table", f"the README table mentions apps/{extra}, which does not exist")
-
-    for folder in folders:
-        cell = rows.get(folder.name)
-        if cell is None or cell.strip() in ("—", "-", ""):
-            continue  # stack with no single version (media-stack)
-        unit = main_unit(folder)
-        if unit is None:
-            continue  # multi-container with no clear main unit
-        tag = image_tag(unit)
-        if tag and tag not in cell:
-            error("table", f"apps/{folder.name}: Image= uses `{tag}` but the README "
-                           f"table says `{cell}`")
 
 
 # The "Pinned to `a`, `b`" line each service README opens its Update section
@@ -808,10 +785,9 @@ def check_hardening(folders):
 def check_pinned(folders):
     """The service README's own version line, against the units beside it.
 
-    The version lives in five places: `Image=`, the two version tables, and
-    this line in each README. check_table covers the first two; this line had
-    no check at all, so 80 of them drifted across 40 services while CI stayed
-    green — the table was right and nobody reads the other file top to bottom.
+    The version lives in three places: `Image=` and this line in each README.
+    This line had no check at all once, so 80 of them drifted across 40
+    services while CI stayed green — nobody reads the other file top to bottom.
 
     A service may legitimately carry no such line (actual-budget follows a
     floating tag), so only a line that exists is checked.
@@ -912,16 +888,6 @@ def selftest():
     # unit became an error — a check that condemns the fix it asks for.
     assert bad.search("echo $$VAR") is None, "the escape rule 7 asks for is not a defect"
     assert bad.search("test $${HOME}") is None, "the braced form escapes the same way"
-
-    import tempfile
-    with tempfile.TemporaryDirectory() as d:
-        p = Path(d) / "x.container"
-        p.write_text("[Container]\nImage=ghcr.io/a/b:v1.2.3\n")
-        assert image_tag(p) == "v1.2.3"
-        p.write_text("[Container]\nImage=quay.io/a/b\n")
-        assert image_tag(p) is None, "an untagged image must not become a fake tag"
-        p.write_text("[Container]\nImage=docker.io/a/b@sha256:" + "0" * 64 + "\n")
-        assert image_tag(p) is None, "a digest is not a tag: nothing to compare against"
 
     # the hardening table's two columns, in the words docs/hardening.md uses
     import tempfile as _tf

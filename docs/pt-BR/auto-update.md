@@ -10,7 +10,7 @@ Uma atualização é um commit, depois um comando no host:
 
 ```bash
 qh-updates                     # o que está atrasado, contra a página de releases de cada projeto
-qh-updates --bump --apply      # reescreve o Image= e as tabelas do README
+qh-updates --bump --apply      # reescreve o Image= e a linha Fixado em de cada README
 qh <app> --update --apply      # leva para o host
 ```
 

@@ -15,7 +15,7 @@ qh-check
 
 What it catches: a unit whose basename does not match the app, two services
 publishing the same host port, a `Secret=` with no recipe in `install.ini`, a
-service missing from the README's version table, a service README whose
+service missing from the README's services table, a service README whose
 pinned-version line no longer matches its units, a `PodmanArgs=` carrying what
 Quadlet has a key for or a space it will not survive, a row in
 [`hardening.md`](./hardening.md) that no longer matches its unit, `$` in
@@ -49,9 +49,19 @@ The GitHub repository is derived from the image name where that works, and
 often not named like the repository (`dockurr/windows` against `dockur/windows`).
 
 `--bump` takes what it found: it rewrites `Image=` and every place that mirrors
-it — the two version tables, the `Pinned to` line of each service README in both
-languages, and the per-unit page and Version column of a folder that documents
-its units apart. Without `--apply` it only shows the plan.
+it — the `Pinned to` line of each service README in both languages, and the
+per-unit page and Version column of a folder that documents its units apart.
+The root README's services table carries no version. Without `--apply` it only
+shows the plan.
+
+`--host` compares what is installed on this machine instead of what the
+repository pins, so you can tell what is behind upstream even before the
+repository is bumped. `--json` prints every row as JSON, which is what the
+store reads.
+
+```bash
+qh-updates --host            # installed here, against each project's release
+```
 
 ```bash
 qh-updates --bump            # what it would take
@@ -147,6 +157,9 @@ A web app store over `qh`. It shows the catalog (`qh --catalog`), and every
 action runs a `qh` command: the dry-run plan first, then `qh <app> --apply`
 (also `--update` and `--remove`), plus start/stop/restart and logs for each
 unit. It never runs `--purge`: data is still deleted only in the terminal.
+Each installed unit shows its tag next to the project's latest release
+(`qh-updates --host`, checked in the background and cached for six hours), so
+you can see what is behind without this repository having to be bumped first.
 What the terminal would ask during an install, the form asks first: `manual`
 secrets and unset `[vars]`. They are stored with the same functions and the
 same `[validate]` check that `qh` uses.

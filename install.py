@@ -3764,11 +3764,12 @@ def show_status(apps=None, home=None):
 
 
 def readme_rows(readme, link):
-    """{app: {icon, name, version, description}} from a README's services table.
+    """{app: {icon, name, description}} from a README's services table.
 
     The table is the catalog's shop window, already kept honest by check.py
-    (one row per app, the version matching Image=). Reading it here instead of
-    copying the same four fields into install.ini keeps one place to edit.
+    (one row per app). Reading it here instead of copying the same three
+    fields into install.ini keeps one place to edit. It carries no version:
+    the tag is Image=, and how it compares upstream is `qh-updates --host`.
     `link` is the regex for what precedes the folder name in the row's link —
     `./apps/` in the root README, `../../apps/` in the pt-BR one.
     """
@@ -3776,14 +3777,12 @@ def readme_rows(readme, link):
     if not readme.exists():
         return rows
     linha = re.compile(r'^\|\s*<img src="([^"]*)"[^|]*\|\s*\[([^\]]+)\]\('
-                       + link + r'([a-z0-9._-]+)[^)]*\)\s*\|([^|]*)\|(.*)\|\s*$')
+                       + link + r'([a-z0-9._-]+)[^)]*\)\s*\|(.*)\|\s*$')
     for texto in readme.read_text().splitlines():
         m = linha.match(texto)
         if m:
-            versao = m.group(4).replace("`", "").strip()
             rows[m.group(3)] = {"icon": m.group(1), "name": m.group(2),
-                                "version": "" if versao == "—" else versao,
-                                "description": m.group(5).strip()}
+                                "description": m.group(4).strip()}
     return rows
 
 
@@ -3812,6 +3811,9 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude):
         units.append({
             "unit": u.stem,
             "image": imagem,
+            # What runs, which is not what the repository pins until --update.
+            "installed_image": next((v for k, v in directives_of(p) if k == "Image"), "")
+                               if p else None,
             "installed": p is not None,
             "service": ativos.get(u.stem) if p else None,
             "container": estado_do_container(saude.get(container_name(p), "—")) if p else None,
@@ -3832,7 +3834,6 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude):
         "name": vitrine.get("name", d),
         "group": {"en": grupo, "pt": GRUPOS.get(grupo, grupo)} if grupo else None,
         "icon": vitrine.get("icon"),
-        "version": vitrine.get("version", ""),
         "description": {"en": vitrine.get("description", ""),
                         "pt": pt.get(d, {}).get("description", "")},
         "main_unit": principal.stem if principal else None,

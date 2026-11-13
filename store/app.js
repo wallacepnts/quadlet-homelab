@@ -16,7 +16,10 @@ const T = {
     removeNote: "Remove as units e para o serviço. Volumes, secrets e .env ficam.",
     busy: "Outra tarefa está rodando. Espere ela terminar.",
     synced: "em dia", duplicated: "duplicada",
-    version: "versão", lang: "English",
+    installedTag: "Instalada", upstream: "Upstream", newVersion: "nova versão",
+    gone: "imagem sumiu", checking: "verificando upstream…", checked: "upstream verificado",
+    recheck: "Verificar agora", upToDate: "atualizado", pending: "release sem imagem ainda",
+    lang: "English",
   },
   en: {
     search: "Search apps", onlyInstalled: "Installed only", all: "All", other: "Other",
@@ -31,13 +34,17 @@ const T = {
     removeNote: "Removes the units and stops the service. Volumes, secrets and .env stay.",
     busy: "Another job is running. Wait for it to finish.",
     synced: "in sync", duplicated: "duplicated",
-    version: "version", lang: "Português",
+    installedTag: "Installed", upstream: "Upstream", newVersion: "new version",
+    gone: "image gone", checking: "checking upstream…", checked: "upstream checked",
+    recheck: "Check now", upToDate: "up to date", pending: "released, image not out yet",
+    lang: "Português",
   },
 };
 
 const S = {
   lang: localStorage.getItem("qh-lang") || (navigator.language.startsWith("pt") ? "pt" : "en"),
   apps: [], group: null, search: "", onlyInstalled: false, current: null,
+  upd: {}, checked: null,   // unit -> qh-updates --host row; when it was asked
 };
 const t = (k) => T[S.lang][k];
 const $ = (id) => document.getElementById(id);
@@ -75,13 +82,43 @@ async function api(path, body) {
 
 // -- state of an app --------------------------------------------------------
 
+// The tag of an image reference; a digest-only reference has none to show.
+function tagOf(image) {
+  if (!image) return "";
+  const s = image.split("@")[0];
+  const i = s.lastIndexOf(":");
+  if (i > s.lastIndexOf("/")) return s.slice(i + 1);
+  return image.includes("@") ? "digest" : "latest";
+}
+
+function mainUnit(app) {
+  const inst = app.units.filter((u) => u.installed);
+  return inst.find((u) => u.unit === app.main_unit) || inst[0];
+}
+
+// Order is priority: a broken service matters more than a new release.
 function health(app) {
   const inst = app.units.filter((u) => u.installed);
   if (!inst.length) return null;
   if (inst.some((u) => u.service !== "active" || ["unhealthy", "down"].includes(u.container)))
     return ["bad", t("attention")];
+  const rows = inst.map((u) => S.upd[u.unit]).filter(Boolean);
+  if (rows.some((r) => r.bucket === "GONE")) return ["bad", t("gone")];
+  const atras = rows.find((r) => r.bucket === "BEHIND");
+  if (atras) return ["warn", `${t("newVersion")} ${atras.there}`];
   if (inst.some((u) => u.drift)) return ["warn", t("changed")];
   return ["ok", t("running")];
+}
+
+// The upstream cell: what upstream released, coloured by whether it asks anything.
+function upstreamCell(u) {
+  const r = S.upd[u.unit];
+  if (!r) return ["", S.checked ? "—" : "…"];
+  if (r.bucket === "BEHIND") return ["warn", r.there];
+  if (r.bucket === "GONE") return ["bad", t("gone")];
+  if (r.bucket === "up to date") return ["ok", t("upToDate")];
+  if (r.bucket === "PENDING") return ["warn", `${r.there} (${t("pending")})`];
+  return ["", r.status];
 }
 
 const groupOf = (app) => (app.group ? app.group[S.lang] : t("other"));
@@ -93,6 +130,7 @@ function renderChrome() {
   $("search").placeholder = t("search");
   $("only-installed-label").textContent = t("onlyInstalled");
   $("lang").textContent = t("lang");
+  $("recheck").textContent = t("recheck");
 }
 
 function renderGroups() {
@@ -115,7 +153,8 @@ function renderGrid() {
     return h("button", { class: "card", type: "button", onclick: () => openPanel(a.id) },
       h("div", { class: "top" },
         h("img", { src: a.icon, alt: "", loading: "lazy", referrerpolicy: "no-referrer" }),
-        h("div", {}, h("h3", {}, a.name), h("p", { class: "version" }, a.version || ""))),
+        h("div", {}, h("h3", {}, a.name),
+          h("p", { class: "version" }, a.installed ? tagOf((mainUnit(a) || {}).installed_image) : ""))),
       h("p", { class: "desc" }, plain(a.description[S.lang] || a.description.en)),
       st && h("span", { class: `badge ${st[0]}` }, st[1]));
   }));
@@ -129,6 +168,26 @@ async function load() {
   renderGroups();
   renderGrid();
   if (S.current && $("panel").open) renderPanel();
+  loadUpdates(false);
+}
+
+// Asked after the catalog, never before it: the grid does not wait on GitHub.
+async function loadUpdates(refresh) {
+  $("checked").textContent = t("checking");
+  $("recheck").disabled = true;
+  try {
+    const u = await api(`/api/updates${refresh ? "?refresh=1" : ""}`);
+    S.upd = Object.fromEntries(u.rows.map((r) => [r.unit, r]));
+    S.checked = u.checked;
+    renderGrid();
+    if (S.current && $("panel").open) renderPanel();
+  } catch (e) { /* the store works without it */ }
+  finally {
+    $("recheck").disabled = false;
+    $("checked").textContent = S.checked
+      ? `${t("checked")} ${new Date(S.checked * 1000).toLocaleTimeString(S.lang === "pt" ? "pt-BR" : "en")}`
+      : "";
+  }
 }
 
 // -- panel ------------------------------------------------------------------
@@ -154,8 +213,7 @@ function renderPanel() {
   const a = current();
   $("p-icon").src = a.icon || "";
   $("p-name").textContent = a.name;
-  $("p-meta").textContent = [a.group && a.group[S.lang], a.version && `${t("version")} ${a.version}`]
-    .filter(Boolean).join(" · ");
+  $("p-meta").textContent = (a.group && a.group[S.lang]) || "";
   $("p-desc").textContent = plain(a.description[S.lang] || a.description.en);
 
   const instaladas = new Set(a.units.filter((u) => u.installed).map((u) => u.unit));
@@ -167,11 +225,14 @@ function renderPanel() {
   const linhas = a.units.filter((u) => u.installed);
   $("p-units").hidden = !linhas.length;
   $("p-units").replaceChildren(
-    h("tr", {}, ...["unit", "service", "container", "repo", ""].map((k) => h("th", {}, k ? t(k) : ""))),
+    h("tr", {}, ...["unit", "service", "container", "installedTag", "upstream", "repo", ""]
+      .map((k) => h("th", {}, k ? t(k) : ""))),
     ...linhas.map((u) => h("tr", {},
       h("td", {}, u.unit),
       h("td", { class: stateClass(u.service) }, u.service || "—"),
       h("td", { class: stateClass(u.container) }, u.container || "—"),
+      h("td", {}, tagOf(u.installed_image)),
+      h("td", { class: upstreamCell(u)[0] || null }, upstreamCell(u)[1]),
       h("td", { class: u.drift ? stateClass(u.drift) : "ok" }, t(u.drift || "synced")),
       h("td", {},
         ...(u.service === "active" ? ["restart", "stop"] : ["start"]).map((v) =>
@@ -287,5 +348,6 @@ $("lang").addEventListener("click", () => {
   load();
 });
 $("p-close").addEventListener("click", () => $("panel").close());
+$("recheck").addEventListener("click", () => loadUpdates(true));
 renderChrome();
 load();

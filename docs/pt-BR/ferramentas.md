@@ -15,7 +15,7 @@ qh-check
 
 O que ele pega: unit com basename diferente do app, dois serviços publicando a
 mesma porta do host, `Secret=` sem receita no `install.ini`, serviço faltando na
-tabela de versões do README, README de serviço cuja linha de versão não bate
+tabela de serviços do README, README de serviço cuja linha de versão não bate
 mais com as units, `PodmanArgs=` levando o que o Quadlet já tem chave para ou um
 espaço que ele não sobrevive, linha do
 [`endurecimento.md`](./endurecimento.md) que não bate mais com a unit, `$` em
@@ -48,9 +48,18 @@ O repositório no GitHub é derivado do nome da imagem quando dá, e o
 nunca tem o nome do repositório (`dockurr/windows` contra `dockur/windows`).
 
 O `--bump` pega o que ele encontrou: reescreve o `Image=` e todo lugar que o
-espelha — as duas tabelas de versão, a linha `Fixado em` do README de cada
-serviço nos dois idiomas, e a página por unit e a coluna Versão de uma pasta que
-documenta suas units em separado. Sem `--apply`, só mostra o plano.
+espelha — a linha `Fixado em` do README de cada serviço nos dois idiomas, e a
+página por unit e a coluna Versão de uma pasta que documenta suas units em
+separado. A tabela de serviços do README raiz não tem versão. Sem `--apply`, só
+mostra o plano.
+
+O `--host` compara o que está instalado nesta máquina, não o que o repositório
+fixa, então dá pra saber o que está atrás do upstream antes mesmo do bump no
+repositório. O `--json` imprime cada linha em JSON, que é o que a loja lê.
+
+```bash
+qh-updates --host            # o instalado aqui, contra a release de cada projeto
+```
 
 ```bash
 qh-updates --bump            # o que ele pegaria
@@ -146,7 +155,10 @@ Uma loja de apps web sobre o `qh`. Ela mostra o catálogo (`qh --catalog`), e
 cada ação roda um comando do `qh`: primeiro o plano em simulação, depois
 `qh <app> --apply` (e também `--update` e `--remove`), além de
 iniciar/parar/reiniciar e logs de cada unit. Ela nunca roda `--purge`: dados
-continuam sendo apagados só no terminal. O que o terminal perguntaria durante
+continuam sendo apagados só no terminal. Cada unit instalada mostra a tag dela
+ao lado da última release do projeto (`qh-updates --host`, consultado em
+segundo plano e guardado por seis horas), então dá pra ver o que está atrás sem
+depender de um bump neste repositório. O que o terminal perguntaria durante
 uma instalação, o formulário pergunta antes: secrets `manual` e `[vars]` ainda
 não definidas. Eles são gravados com as mesmas funções e a mesma checagem
 `[validate]` que o `qh` usa.

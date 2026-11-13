@@ -89,6 +89,10 @@ VERBOS = {"start", "stop", "restart"}
 
 PREFIX = None              # --prefix: the sandbox every qh call is pointed at
 JOBS, JOB_LOCK = {}, threading.Lock()
+# What is installed against what upstream released. Network-bound (a few
+# seconds), so cached; every job clears it, since an install or update changes
+# the very tags it compared.
+UPDATES, UPDATES_LOCK, UPDATES_TTL = {"at": None, "rows": None}, threading.Lock(), 6 * 3600
 
 
 # -- the host, through qh --------------------------------------------------------
@@ -108,6 +112,25 @@ def catalog(lang="en"):
     r = subprocess.run(qh("--catalog"), capture_output=True, text=True,
                        env=qh_env(lang), cwd=ROOT, timeout=120)
     return json.loads(r.stdout)
+
+
+def updates(force=False):
+    """`qh-updates --host --json`, cached: {checked: epoch or None, rows: [...]}.
+
+    Under --prefix there is no host to compare and the sandbox must not reach
+    the network, so it answers empty.
+    """
+    if PREFIX:
+        return {"checked": None, "rows": []}
+    with UPDATES_LOCK:
+        velho = UPDATES["at"] is None or time.time() - UPDATES["at"] > UPDATES_TTL
+        if force or velho or UPDATES["rows"] is None:
+            r = subprocess.run([sys.executable, str(ROOT / "updates.py"), "--host", "--json"],
+                               capture_output=True, text=True, cwd=ROOT,
+                               env=qh_env("en"), timeout=300)
+            linhas = json.loads(r.stdout) if r.returncode == 0 and r.stdout.strip() else []
+            UPDATES.update(at=time.time(), rows=linhas)
+        return {"checked": UPDATES["at"], "rows": UPDATES["rows"]}
 
 
 def service_dir(app):
@@ -218,6 +241,7 @@ def start_job(app, action, cmd, lang, prepare=None):
             job.write(f"\n{type(e).__name__}: {e}\n")
             job.rc = 1
         finally:
+            UPDATES["rows"] = None
             JOB_LOCK.release()
 
     threading.Thread(target=worker, daemon=True).start()
@@ -306,6 +330,8 @@ class Handler(BaseHTTPRequestHandler):
         lang = "pt" if q.get("lang") == "pt" else "en"
         if url.path == "/api/catalog":
             return self._json(200, catalog(lang))
+        if url.path == "/api/updates":
+            return self._json(200, updates(force=q.get("refresh") == "1"))
         if url.path == "/api/plan":
             app, action = q.get("app", ""), q.get("action", "")
             if not service_dir(app):
@@ -458,6 +484,9 @@ def selftest():
             st, _, corpo = pedir("/api/catalog?lang=pt", headers=ok)
             cat = json.loads(corpo)
             assert st == 200 and any(a["id"] == "homebox" for a in cat["apps"])
+
+            st, _, corpo = pedir("/api/updates", headers=ok)
+            assert st == 200 and json.loads(corpo) == {"checked": None, "rows": []}, corpo
 
             st, _, corpo = pedir("/api/plan?app=homebox&action=install", headers=ok)
             assert st == 200 and json.loads(corpo)["rc"] == 0

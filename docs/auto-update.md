@@ -10,7 +10,7 @@ An update is a commit, then a command on the host:
 
 ```bash
 qh-updates                     # what is behind, against each project's own release page
-qh-updates --bump --apply      # rewrites Image= and the README tables
+qh-updates --bump --apply      # rewrites Image= and each service README's Pinned line
 qh <app> --update --apply      # puts it on the host
 ```
 
