@@ -27,6 +27,7 @@ import re
 import sys
 import urllib.error
 import json
+import os
 import subprocess
 import urllib.parse
 import urllib.request
@@ -504,6 +505,58 @@ def latest_release(repo):
     return target.rsplit("/tag/", 1)[1]
 
 
+def fetch_releases(repo, por_pagina=50):
+    """The repository's releases from the API, newest first — or None on failure.
+
+    The one lookup here that spends API quota (60 an hour without a token), so
+    it is made on demand only, for the release notes; `latest_release` above
+    stays on the redirect. GITHUB_TOKEN, when set, raises the quota.
+    """
+    cab = {"User-Agent": UA, "Accept": "application/vnd.github+json"}
+    if os.environ.get("GITHUB_TOKEN"):
+        cab["Authorization"] = f"Bearer {os.environ['GITHUB_TOKEN']}"
+    url = f"https://api.github.com/repos/{repo}/releases?per_page={por_pagina}"
+    try:
+        with urllib.request.urlopen(urllib.request.Request(url, headers=cab), timeout=20) as f:
+            dados = json.loads(f.read())
+    except (OSError, ValueError):
+        return None
+    return dados if isinstance(dados, list) else None
+
+
+def releases_between(releases, here, there=None):
+    """The published releases after `here` and up to `there`, newest first.
+
+    What to read before an update is every release since the installed one,
+    not just the last (CLAUDE.md, "Checando se há atualização"). Compared on
+    the common prefix, as check() does: LinuxServer's `4.0.19.2979-ls320` is
+    the release of an image pinned at `4.0.19`, not a newer one. Drafts and
+    prereleases are not releases.
+    """
+    aqui = version(here)
+    if not aqui:
+        return []
+    teto = version(there) if there else None
+    saida = []
+    for r in releases:
+        if r.get("draft") or r.get("prerelease"):
+            continue
+        v = version(r.get("tag_name"))
+        if not v:
+            continue
+        n = min(len(v), len(aqui))
+        if v[:n] <= aqui[:n]:
+            continue
+        if teto:
+            m = min(len(v), len(teto))
+            if v[:m] > teto[:m]:
+                continue
+        saida.append({"tag": r["tag_name"], "name": r.get("name") or r["tag_name"],
+                      "date": (r.get("published_at") or "")[:10],
+                      "url": r.get("html_url") or "", "body": r.get("body") or ""})
+    return sorted(saida, key=lambda x: version(x["tag"]), reverse=True)
+
+
 def version(tag):
     """(1, 2, 3) from the first dotted number in the tag, or None.
 
@@ -695,6 +748,16 @@ def selftest():
     Everything here is pure, so it runs in CI beside check.py's — the network
     half cannot be tested there and is not the half that has broken.
     """
+    # the release notes between what is installed and what upstream released
+    rel = [{"tag_name": t, "prerelease": t.endswith("rc1"), "draft": False}
+           for t in ("v1.37.5", "v1.38.0-rc1", "v1.37.4", "v1.37.3", "v1.37.2", "v1.36.0")]
+    assert [r["tag"] for r in releases_between(rel, "1.37.2-alpine", "1.37.5-alpine")] == \
+        ["v1.37.5", "v1.37.4", "v1.37.3"], "newer than installed, up to upstream, no rc"
+    assert [r["tag"] for r in releases_between(rel, "1.37.4")] == ["v1.37.5"]
+    assert releases_between([{"tag_name": "4.0.19.2979-ls320"}], "4.0.19") == [], \
+        "a LinuxServer build of the same version is not a newer release"
+    assert releases_between(rel, "latest") == [], "no version installed, nothing to range over"
+
     assert image_name("docker.io/valkey/valkey:9@sha256:" + "a" * 64) == "valkey"
     # Two images of one name in a compose: the one shaped like ours is chosen.
     dois = "image: postgres:17-alpine\n  image: 'postgres:16'\n  image: redis:7.2\n"

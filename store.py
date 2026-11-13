@@ -33,6 +33,7 @@ import json
 import os
 import re
 import secrets
+import shutil
 import subprocess
 import sys
 import threading
@@ -49,6 +50,9 @@ import qhui  # noqa: E402
 _spec = importlib.util.spec_from_file_location("qh_install", ROOT / "install.py")
 I = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(I)
+_spec = importlib.util.spec_from_file_location("qh_updates", ROOT / "updates.py")
+U = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(U)
 
 PT = {
     "the store is at": "a loja está em",
@@ -60,6 +64,17 @@ PT = {
     "unknown unit": "unit desconhecida",
     "unknown action": "ação desconhecida",
     "not asked by this service": "não é pedido por este serviço",
+    "no such backup of this service": "não há esse backup deste serviço",
+    "not a .tar.gz": "não é um .tar.gz",
+    "the upload was cut short": "o envio foi interrompido",
+    "a backup with this name already exists; try again in a second":
+        "já existe um backup com esse nome; tente de novo em um segundo",
+    "not installed": "não instalado",
+    "a restore overwrites the data: type the service name to confirm":
+        "restaurar sobrescreve os dados: digite o nome do serviço para confirmar",
+    "no GitHub releases for this image": "sem releases no GitHub para esta imagem",
+    "no GitHub repository known for this image": "nenhum repositório do GitHub conhecido para esta imagem",
+    "GitHub did not answer (rate limit?)": "o GitHub não respondeu (limite de requisições?)",
     "no spaces: Volume= would cut the path there": "sem espaços: o Volume= cortaria o caminho ali",
     "the service refused this value:": "o serviço recusou este valor:",
     "secret stored": "secret gravado",
@@ -84,7 +99,8 @@ CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; img-src https: 
        "connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'")
 COOKIE = "qh_store"
 NOME = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
-ACOES = {"install": [], "update": ["--update"], "remove": ["--remove"]}
+ACOES = ("install", "update", "remove", "backup", "restore")
+BACKUP = re.compile(r"-\d{8}-\d{6}\.tar\.gz")     # what --backup names its archive after the app
 VERBOS = {"start", "stop", "restart"}
 
 PREFIX = None              # --prefix: the sandbox every qh call is pointed at
@@ -131,6 +147,94 @@ def updates(force=False):
             linhas = json.loads(r.stdout) if r.returncode == 0 and r.stdout.strip() else []
             UPDATES.update(at=time.time(), rows=linhas)
         return {"checked": UPDATES["at"], "rows": UPDATES["rows"]}
+
+
+NOTES, NOTES_TTL = {}, 3600     # repo -> (when, releases): the API quota is 60 an hour
+
+
+def notes(unit):
+    """The release notes between the installed tag of `unit` and upstream's.
+
+    Only what GitHub publishes as releases: an image followed by registry tag
+    or by another project's compose has none to read here, and says so.
+    """
+    host = Path(PREFIX or Path.home()) / ".config/containers/systemd"
+    item = next((i for i in U.services(host) if i[1] == unit), None)
+    vazio = {"repo": None, "url": None, "releases": []}
+    if item is None:
+        return {**vazio, "reason": loc("not installed")}
+    _, _, imagem, override, _ = item
+    if override and override.startswith(("registry", "compose:")):
+        return {**vazio, "reason": loc("no GitHub releases for this image")}
+    repo = U.github_repo(imagem, override)
+    if not repo:
+        return {**vazio, "reason": loc("no GitHub repository known for this image")}
+    url = f"https://github.com/{repo}/releases"
+    aqui = imagem.split("@")[0].rpartition(":")[2]
+    linha = next((r for r in (UPDATES["rows"] or []) if r["unit"] == unit), None)
+    teto = linha["there"] if linha and linha["bucket"] == "BEHIND" else None
+    guardado = NOTES.get(repo)
+    if not guardado or time.time() - guardado[0] > NOTES_TTL:
+        lidas = U.fetch_releases(repo)
+        if lidas is None:
+            return {"repo": repo, "url": url, "releases": [],
+                    "reason": loc("GitHub did not answer (rate limit?)")}
+        NOTES[repo] = guardado = (time.time(), lidas)
+    return {"repo": repo, "url": url, "releases": U.releases_between(guardado[1], aqui, teto)[:20]}
+
+
+def login(app):
+    """The credential `[login]` names, as `qh` prints it after an install."""
+    s = I.Service(app, PREFIX)
+    par = s.login()
+    # Under --prefix there is no podman secret to read: the sandbox never
+    # created one, and the real one with the same name is not the sandbox's.
+    if not par or PREFIX or not I.secret_exists(par[1]):
+        return {"available": False}
+    user, secret = par
+    senha = I.read_secret(secret)
+    if user is None:
+        user, _, senha = senha.partition(":")     # one secret holding user:password
+    return {"available": True, "user": user, "password": senha}
+
+
+def backup_dir():
+    return Path(PREFIX or Path.home()) / ".local/share/quadlet-homelab/backups"
+
+
+def backup_file(app, nome):
+    """The archive `nome` of `app` in the backup folder, or None.
+
+    A bare name in the exact shape --backup writes, never a path: `../` and
+    another service's archive both fail the pattern, so nothing outside the
+    folder and nothing of another app is reachable through it. qh --restore
+    checks the contents belong to the service on top of this.
+    """
+    if not (nome or "").startswith(f"{app}-") or not BACKUP.fullmatch(nome[len(app):]):
+        return None
+    f = backup_dir() / nome
+    return f if f.is_file() else None
+
+
+def backups(app):
+    d = backup_dir()
+    if not d.is_dir():
+        return []
+    saida = []
+    for f in d.iterdir():
+        if backup_file(app, f.name):
+            st = f.stat()
+            saida.append({"file": f.name, "size": st.st_size, "date": int(st.st_mtime)})
+    return sorted(saida, key=lambda x: x["file"], reverse=True)
+
+
+def flags(app, action, arquivo=""):
+    """The qh flags for an action, or None when it is not one (or its archive is missing)."""
+    if action == "restore":
+        f = backup_file(app, arquivo)
+        return ["--restore", str(f)] if f else None
+    return {"install": [], "update": ["--update"], "remove": ["--remove"],
+            "backup": ["--backup", "--out", str(backup_dir())]}.get(action)
 
 
 def service_dir(app):
@@ -204,7 +308,7 @@ class Job:
         pass
 
 
-def start_job(app, action, cmd, lang, prepare=None):
+def start_job(app, action, cmd, lang, prepare=None, entrada=None):
     """The job, running in the background — or None when another one still is.
 
     One at a time: two `qh --apply` racing each other over the same
@@ -231,9 +335,14 @@ def start_job(app, action, cmd, lang, prepare=None):
                 job.write(f"({loc('sandbox, not executed')}: {' '.join(cmd)})\n")
                 job.rc = 0
                 return
+            # `entrada` is what the person typed where the terminal asks — the
+            # app name a restore wants before overwriting. qh checks it, not us.
             p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                 stdin=subprocess.DEVNULL, text=True, cwd=ROOT,
-                                 env=qh_env(lang))
+                                 stdin=subprocess.PIPE if entrada else subprocess.DEVNULL,
+                                 text=True, cwd=ROOT, env=qh_env(lang))
+            if entrada:
+                p.stdin.write(entrada + "\n")
+                p.stdin.close()
             for linha in p.stdout:
                 job.write(linha)
             job.rc = p.wait()
@@ -310,6 +419,51 @@ class Handler(BaseHTTPRequestHandler):
             raise ValueError("body too large")
         return self.rfile.read(n) if n else b""
 
+    def _download(self, f):
+        """Streams an archive: a backup can be gigabytes, so never read whole."""
+        self.send_response(200)
+        self.send_header("Content-Type", "application/gzip")
+        self.send_header("Content-Length", str(f.stat().st_size))
+        self.send_header("Content-Disposition", f'attachment; filename="{f.name}"')
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.end_headers()
+        with f.open("rb") as fh:
+            shutil.copyfileobj(fh, self.wfile, 1 << 20)
+
+    def _upload(self, app):
+        """An archive sent from the browser, saved under the name --backup would give it.
+
+        Streamed to a hidden .part and renamed only once complete and gzip, so
+        a cut upload never shows up in the list as something to restore.
+        """
+        n = int(self.headers.get("Content-Length") or 0)
+        if n <= 0:
+            return self._json(400, {"error": loc("not a .tar.gz")})
+        d = backup_dir()
+        d.mkdir(parents=True, exist_ok=True)
+        nome = f"{app}-{time.strftime('%Y%m%d-%H%M%S')}.tar.gz"
+        destino, parte = d / nome, d / f".{nome}.part"
+        if destino.exists():
+            return self._json(409, {"error": loc("a backup with this name already exists; "
+                                                 "try again in a second")})
+        restante = n
+        with parte.open("wb") as fh:
+            while restante:
+                bloco = self.rfile.read(min(1 << 20, restante))
+                if not bloco:
+                    break
+                fh.write(bloco)
+                restante -= len(bloco)
+        with parte.open("rb") as fh:
+            gzip = fh.read(2) == b"\x1f\x8b"
+        if restante or not gzip:
+            parte.unlink()
+            return self._json(400, {"error": loc("the upload was cut short") if restante
+                                    else loc("not a .tar.gz")})
+        parte.rename(destino)
+        return self._json(201, {"file": nome})
+
     def _static(self, nome):
         f = STATIC / nome
         self._send(200, f.read_bytes(), TIPOS[f.suffix])
@@ -336,12 +490,31 @@ class Handler(BaseHTTPRequestHandler):
             app, action = q.get("app", ""), q.get("action", "")
             if not service_dir(app):
                 return self._json(400, {"error": loc("unknown service")})
-            if action not in ACOES:
-                return self._json(400, {"error": loc("unknown action")})
-            r = subprocess.run(qh(app, *ACOES[action]), capture_output=True, text=True,
+            extra = flags(app, action, q.get("file", ""))
+            if extra is None:
+                return self._json(400, {"error": loc("unknown action") if action not in ACOES
+                                        else loc("no such backup of this service")})
+            r = subprocess.run(qh(app, *extra), capture_output=True, text=True,
                                stdin=subprocess.DEVNULL, env=qh_env(lang), cwd=ROOT,
                                timeout=120)
             return self._json(200, {"rc": r.returncode, "output": r.stdout + r.stderr})
+        if url.path in ("/api/login", "/api/backups", "/api/backup/file"):
+            app = q.get("app", "")
+            if not service_dir(app):
+                return self._json(400, {"error": loc("unknown service")})
+            if url.path == "/api/login":
+                return self._json(200, login(app))
+            if url.path == "/api/backups":
+                return self._json(200, {"dir": str(backup_dir()), "backups": backups(app)})
+            f = backup_file(app, q.get("file", ""))
+            if not f:
+                return self._json(404, {"error": loc("no such backup of this service")})
+            return self._download(f)
+        if url.path == "/api/notes":
+            unit = q.get("unit", "")
+            if not unit_exists(unit):
+                return self._json(400, {"error": loc("unknown unit")})
+            return self._json(200, notes(unit))
         if url.path.startswith("/api/job/"):
             job = JOBS.get(url.path.rsplit("/", 1)[1])
             if not job:
@@ -365,11 +538,11 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         url = urlparse(self.path)
-        try:
-            corpo = self._body()
-        except ValueError:
-            return self._json(413, {"error": "too large"})
         if url.path == "/login":
+            try:
+                corpo = self._body()
+            except ValueError:
+                return self._json(413, {"error": "too large"})
             dado = parse_qs(corpo.decode(errors="replace")).get("token", [""])[0].strip()
             if dado and hmac.compare_digest(dado, self.token):
                 return self._redirect("/", [("Set-Cookie", f"{COOKIE}={cookie_for(self.token)}; "
@@ -382,8 +555,13 @@ class Handler(BaseHTTPRequestHandler):
         # with the cookie still fails, without a CSRF token to keep in sync.
         if self.headers.get("X-QH-Store") != "1":
             return self._json(403, {"error": "missing X-QH-Store"})
+        if url.path == "/api/backup/upload":
+            app = parse_qs(url.query).get("app", [""])[0]
+            if not service_dir(app):
+                return self._json(400, {"error": loc("unknown service")})
+            return self._upload(app)
         try:
-            d = json.loads(corpo or b"{}")
+            d = json.loads(self._body() or b"{}")
         except ValueError:
             return self._json(400, {"error": "json"})
         lang = "pt" if d.get("lang") == "pt" else "en"
@@ -392,8 +570,10 @@ class Handler(BaseHTTPRequestHandler):
             app, action = d.get("app", ""), d.get("action", "")
             if not service_dir(app):
                 return self._json(400, {"error": loc("unknown service")})
-            if action not in ACOES:
-                return self._json(400, {"error": loc("unknown action")})
+            extra = flags(app, action, d.get("file", ""))
+            if extra is None:
+                return self._json(400, {"error": loc("unknown action") if action not in ACOES
+                                        else loc("no such backup of this service")})
             segredos, variaveis = d.get("secrets") or {}, d.get("vars") or {}
             if not (isinstance(segredos, dict) and isinstance(variaveis, dict)
                     and all(isinstance(v, str) for v in [*segredos.values(), *variaveis.values()])):
@@ -405,7 +585,14 @@ class Handler(BaseHTTPRequestHandler):
                                         + loc("not asked by this service")})
             prepare = ((lambda: provision(app, segredos, variaveis))
                        if action == "install" and (segredos or variaveis) else None)
-            job = start_job(app, action, qh(app, *ACOES[action], "--apply"), lang, prepare)
+            entrada = None
+            if action == "restore":
+                # The same guard the terminal has: the name, typed by the person.
+                entrada = d.get("confirm", "")
+                if not isinstance(entrada, str) or entrada.strip() != app:
+                    return self._json(400, {"error": loc("a restore overwrites the data: "
+                                                         "type the service name to confirm")})
+            job = start_job(app, action, qh(app, *extra, "--apply"), lang, prepare, entrada)
         elif url.path == "/api/unit":
             unit, verbo = d.get("unit", ""), d.get("verb", "")
             if not unit_exists(unit):
@@ -533,6 +720,63 @@ def selftest():
             gravado = Path(tmp, ".config/containers/secrets/vaultwarden/admin-token.txt")
             assert estado["rc"] == 0 and gravado.read_text() == "$argon2id$teste", estado["output"]
             assert oct(gravado.stat().st_mode)[-3:] == "600"
+
+            def esperar(resposta):
+                job = json.loads(resposta)["job"]
+                for _ in range(300):
+                    estado = json.loads(pedir(f"/api/job/{job}", headers=ok)[2])
+                    if estado["rc"] is not None:
+                        return estado
+                    time.sleep(0.5)
+                raise AssertionError("job never finished")
+
+            # login: the sandbox has no podman secret to read, and says so
+            st, _, corpo = pedir("/api/login?app=vaultwarden", headers=ok)
+            assert st == 200 and json.loads(corpo) == {"available": False}, corpo
+
+            # backup through qh --backup, listed, downloadable, and nothing else is
+            st, _, corpo = pedir("/api/run", json.dumps({"app": "homebox", "action": "backup"}).encode(), api)
+            assert st == 202 and esperar(corpo)["rc"] == 0
+            lista = json.loads(pedir("/api/backups?app=homebox", headers=ok)[2])["backups"]
+            assert len(lista) == 1 and lista[0]["file"].startswith("homebox-"), lista
+            nome = lista[0]["file"]
+            st, h, corpo = pedir(f"/api/backup/file?app=homebox&file={nome}", headers=ok)
+            assert st == 200 and corpo[:2] == b"\x1f\x8b" and len(corpo) == lista[0]["size"]
+            assert "attachment" in h["Content-Disposition"]
+            for ruim in ("../../.config/quadlet-homelab/store-token", f"x{nome}", nome + ".bak"):
+                st, _, _ = pedir(f"/api/backup/file?app=homebox&file={ruim}", headers=ok)
+                assert st == 404, (ruim, st)
+            st, _, _ = pedir(f"/api/backup/file?app=vaultwarden&file={nome}", headers=ok)
+            assert st == 404, "one service's archive is not reachable through another"
+
+            # upload: gzip only, and never under a name the list would show half-written
+            up = {**ok, "X-QH-Store": "1", "Content-Type": "application/octet-stream"}
+            time.sleep(1.1)                       # --backup names by the second
+            st, _, _ = pedir("/api/backup/upload?app=homebox", b"not a tarball", up)
+            assert st == 400, st
+            st, _, corpo = pedir("/api/backup/upload?app=homebox", corpo, up)
+            assert st == 201, (st, corpo)
+            assert len(json.loads(pedir("/api/backups?app=homebox", headers=ok)[2])["backups"]) == 2
+            assert not list(backup_dir().glob(".*.part")), "no partial file left behind"
+
+            # restore: the plan first, then qh --restore with that archive
+            st, _, corpo = pedir(f"/api/plan?app=homebox&action=restore&file={nome}", headers=ok)
+            assert st == 200 and json.loads(corpo)["rc"] == 0, corpo
+            st, _, _ = pedir("/api/plan?app=homebox&action=restore&file=../x", headers=ok)
+            assert st == 400, st
+            st, _, _ = pedir("/api/run", json.dumps(
+                {"app": "homebox", "action": "restore", "file": nome}).encode(), api)
+            assert st == 400, "a restore without the typed name is refused"
+            st, _, corpo = pedir("/api/run", json.dumps(
+                {"app": "homebox", "action": "restore", "file": nome,
+                 "confirm": "homebox"}).encode(), api)
+            assert st == 202, (st, corpo)
+            estado = esperar(corpo)
+            assert estado["rc"] == 0, estado["output"]
+
+            # release notes: a unit that is not installed answers without the network
+            st, _, corpo = pedir("/api/notes?unit=memos", headers=ok)
+            assert st == 200 and json.loads(corpo)["releases"] == [], corpo
         finally:
             srv.shutdown()
     print("store selftest: ok")

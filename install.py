@@ -3838,6 +3838,9 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude):
                         "pt": pt.get(d, {}).get("description", "")},
         "main_unit": principal.stem if principal else None,
         "installed": bool(instaladas),
+        # Whether there is a typed credential to show after the install
+        # ([login] in install.ini); the value itself is asked for apart.
+        "has_login": s.login() is not None,
         "units": units,
         "web": [{"unit": u, "local": local, "tailnet": rede}
                 for u, local, rede in addresses(s, tailnet)],

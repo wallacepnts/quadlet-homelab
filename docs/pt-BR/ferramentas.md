@@ -158,7 +158,15 @@ iniciar/parar/reiniciar e logs de cada unit. Ela nunca roda `--purge`: dados
 continuam sendo apagados só no terminal. Cada unit instalada mostra a tag dela
 ao lado da última release do projeto (`qh-updates --host`, consultado em
 segundo plano e guardado por seis horas), então dá pra ver o que está atrás sem
-depender de um bump neste repositório. O que o terminal perguntaria durante
+depender de um bump neste repositório.
+Quando algo está atrás, o **Novidades** lista todas as releases do GitHub
+entre a tag instalada e a do upstream. Leia antes de atualizar; prereleases
+ficam de fora. O **Login** mostra a credencial que o `[login]` do
+`install.ini` indica, a mesma que o `qh` imprime depois de instalar. O
+**Backups** roda o `qh --backup` em `~/.local/share/quadlet-homelab/backups`,
+lista os arquivos e permite baixá-los ou enviar um de volta. A restauração roda
+o `qh --restore`, e é preciso digitar o nome do serviço antes, igual no
+terminal. O que o terminal perguntaria durante
 uma instalação, o formulário pergunta antes: secrets `manual` e `[vars]` ainda
 não definidas. Eles são gravados com as mesmas funções e a mesma checagem
 `[validate]` que o `qh` usa.

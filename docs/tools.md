@@ -160,6 +160,13 @@ unit. It never runs `--purge`: data is still deleted only in the terminal.
 Each installed unit shows its tag next to the project's latest release
 (`qh-updates --host`, checked in the background and cached for six hours), so
 you can see what is behind without this repository having to be bumped first.
+When something is behind, **What's new** lists every GitHub release between the
+installed tag and upstream's. Read them before updating; prereleases are left
+out. **Login** shows the credential named in `[login]` of `install.ini`, the
+same one `qh` prints after an install. **Backups** runs `qh --backup` into
+`~/.local/share/quadlet-homelab/backups`, lists the archives, and lets you
+download them or upload one back. A restore runs `qh --restore`, and you have to
+type the service name first, the same as in the terminal.
 What the terminal would ask during an install, the form asks first: `manual`
 secrets and unset `[vars]`. They are stored with the same functions and the
 same `[validate]` check that `qh` uses.

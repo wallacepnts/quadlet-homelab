@@ -19,6 +19,15 @@ const T = {
     installedTag: "Instalada", upstream: "Upstream", newVersion: "nova versão",
     gone: "imagem sumiu", checking: "verificando upstream…", checked: "upstream verificado",
     recheck: "Verificar agora", upToDate: "atualizado", pending: "release sem imagem ainda",
+    login: "Login", user: "Usuário", password: "Senha", show: "Mostrar", hide: "Ocultar",
+    copy: "Copiar", copied: "Copiado", noLogin: "Sem credencial para mostrar (o secret ainda não existe).",
+    backups: "Backups", backupNow: "Fazer backup agora", download: "Baixar", restoreAction: "Restaurar",
+    upload: "Enviar backup", noBackups: "Nenhum backup ainda.", backupDir: "Pasta",
+    backupNote: "O backup para o serviço, empacota os dados e sobe de novo.",
+    restoreNote: "Restaurar SOBRESCREVE os dados atuais com os do arquivo, sem volta.",
+    typeToConfirm: "Digite o nome do serviço para confirmar:",
+    notes: "Novidades", notesFrom: "Releases desde a instalada", noNotes: "Nenhuma release nova para ler.",
+    onGithub: "ver no GitHub",
     lang: "English",
   },
   en: {
@@ -37,6 +46,15 @@ const T = {
     installedTag: "Installed", upstream: "Upstream", newVersion: "new version",
     gone: "image gone", checking: "checking upstream…", checked: "upstream checked",
     recheck: "Check now", upToDate: "up to date", pending: "released, image not out yet",
+    login: "Login", user: "User", password: "Password", show: "Show", hide: "Hide",
+    copy: "Copy", copied: "Copied", noLogin: "No credential to show (the secret does not exist yet).",
+    backups: "Backups", backupNow: "Back up now", download: "Download", restoreAction: "Restore",
+    upload: "Upload backup", noBackups: "No backups yet.", backupDir: "Folder",
+    backupNote: "The backup stops the service, packs the data and starts it again.",
+    restoreNote: "Restoring OVERWRITES the current data with the archive's, with no way back.",
+    typeToConfirm: "Type the service name to confirm:",
+    notes: "What's new", notesFrom: "Releases since the installed one", noNotes: "No new release to read.",
+    onGithub: "see on GitHub",
     lang: "Português",
   },
 };
@@ -197,6 +215,7 @@ function openPanel(id) {
   renderPanel();
   $("p-form").hidden = true;
   $("p-out").hidden = true;
+  $("p-section").hidden = true;
   $("panel").showModal();
 }
 
@@ -243,6 +262,11 @@ function renderPanel() {
   if (!a.installed) acoes.push(h("button", { type: "button", onclick: () => plan("install") }, t("install")));
   else {
     acoes.push(h("button", { type: "button", onclick: () => plan("update") }, t("update")));
+    if (behind(a).length)
+      acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showNotes(a) }, t("notes")));
+    if (a.has_login)
+      acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showLogin(a) }, t("login")));
+    acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showBackups(a) }, t("backups")));
     acoes.push(h("button", { type: "button", class: "danger", onclick: () => plan("remove") }, t("remove")));
   }
   $("p-actions").replaceChildren(...acoes);
@@ -259,21 +283,129 @@ function busy(on) {
   for (const b of $("panel").querySelectorAll("button:not(#p-close)")) b.disabled = on;
 }
 
-async function plan(action) {
+async function plan(action, file = "") {
   const a = current();
   busy(true);
+  if (action === "update" && behind(a).length) showNotes(a);   // read before you update
+  else if (!["restore", "backup"].includes(action)) $("p-section").hidden = true;
   try {
-    const p = await api(`/api/plan?app=${encodeURIComponent(a.id)}&action=${action}&lang=${S.lang}`);
+    const p = await api(`/api/plan?app=${encodeURIComponent(a.id)}&action=${action}` +
+                        `&file=${encodeURIComponent(file)}&lang=${S.lang}`);
     out(`# ${t("plan")}\n\n${p.output}`);
-    buildForm(a, action);
+    buildForm(a, action, file);
   } catch (e) { out(String(e.message)); }
   finally { busy(false); }
 }
 
+// -- sections: what's new, login, backups ------------------------------------
+
+const behind = (a) => a.units.filter((u) => u.installed && S.upd[u.unit] && S.upd[u.unit].bucket === "BEHIND");
+
+function section(...kids) {
+  $("p-section").replaceChildren(...kids);
+  $("p-section").hidden = false;
+}
+
+async function showNotes(a) {
+  section(h("p", { class: "muted" }, t("checking")));
+  const blocos = [h("h3", {}, t("notesFrom"))];
+  for (const u of behind(a)) {
+    try {
+      const n = await api(`/api/notes?unit=${encodeURIComponent(u.unit)}`);
+      if (behind(a).length > 1) blocos.push(h("h4", {}, u.unit));
+      if (!n.releases.length) blocos.push(h("p", { class: "muted" }, n.reason || t("noNotes")));
+      n.releases.forEach((r, i) => blocos.push(
+        h("details", { open: i === 0 },
+          h("summary", {}, `${r.tag}${r.name && r.name !== r.tag ? ` — ${r.name}` : ""}  ·  ${r.date}`),
+          h("pre", { class: "notes" }, r.body || "—"),
+          r.url && h("a", { href: r.url, target: "_blank", rel: "noopener noreferrer" }, `${t("onGithub")} ↗`))));
+    } catch (e) { blocos.push(h("p", { class: "note" }, String(e.message))); }
+  }
+  section(...blocos);
+}
+
+async function showLogin(a) {
+  try {
+    const l = await api(`/api/login?app=${encodeURIComponent(a.id)}`);
+    if (!l.available) return section(h("p", { class: "muted" }, t("noLogin")));
+    const senha = h("input", { type: "password", readonly: true, value: l.password });
+    const copiar = (valor, botao) => navigator.clipboard.writeText(valor)
+      .then(() => { botao.textContent = t("copied"); });
+    const linhas = [h("h3", {}, t("login"))];
+    if (l.user) {
+      const b = h("button", { type: "button", class: "ghost" }, t("copy"));
+      b.onclick = () => copiar(l.user, b);
+      linhas.push(h("div", { class: "cred" }, h("label", {}, t("user")),
+                    h("input", { type: "text", readonly: true, value: l.user }), b));
+    }
+    const ver = h("button", { type: "button", class: "ghost" }, t("show"));
+    ver.onclick = () => {
+      const oculto = senha.type === "password";
+      senha.type = oculto ? "text" : "password";
+      ver.textContent = oculto ? t("hide") : t("show");
+    };
+    const cp = h("button", { type: "button", class: "ghost" }, t("copy"));
+    cp.onclick = () => copiar(l.password, cp);
+    linhas.push(h("div", { class: "cred" }, h("label", {}, t("password")), senha, ver, cp));
+    section(...linhas);
+  } catch (e) { section(h("p", { class: "note" }, String(e.message))); }
+}
+
+const tamanho = (n) => n > 1 << 30 ? `${(n / (1 << 30)).toFixed(1)} GB`
+  : n > 1 << 20 ? `${(n / (1 << 20)).toFixed(1)} MB` : `${Math.ceil(n / 1024)} KB`;
+
+async function showBackups(a) {
+  try {
+    const b = await api(`/api/backups?app=${encodeURIComponent(a.id)}`);
+    const arquivo = h("input", { type: "file", accept: ".gz,.tar.gz,application/gzip" });
+    const enviar = h("button", { type: "button", class: "ghost" }, t("upload"));
+    enviar.onclick = () => upload(a, arquivo);
+    section(
+      h("h3", {}, t("backups")),
+      h("p", { class: "muted" }, `${t("backupDir")}: ${b.dir}`),
+      b.backups.length
+        ? h("table", { class: "backups" }, ...b.backups.map((x) => h("tr", {},
+            h("td", {}, x.file),
+            h("td", {}, new Date(x.date * 1000).toLocaleString(S.lang === "pt" ? "pt-BR" : "en")),
+            h("td", {}, tamanho(x.size)),
+            h("td", {},
+              h("a", { href: `/api/backup/file?app=${encodeURIComponent(a.id)}&file=${encodeURIComponent(x.file)}`,
+                       download: x.file }, t("download")), " ",
+              h("button", { type: "button", class: "ghost", onclick: () => plan("restore", x.file) },
+                t("restoreAction"))))))
+        : h("p", { class: "muted" }, t("noBackups")),
+      h("div", { class: "row" },
+        h("button", { type: "button", onclick: () => plan("backup") }, t("backupNow")), arquivo, enviar));
+  } catch (e) { section(h("p", { class: "note" }, String(e.message))); }
+}
+
+async function upload(a, input) {
+  const f = input.files[0];
+  if (!f) return;
+  busy(true);
+  out(`${t("working")}\n`);
+  try {
+    const r = await fetch(`/api/backup/upload?app=${encodeURIComponent(a.id)}`, {
+      method: "POST", body: f,
+      headers: { "X-QH-Store": "1", "Content-Type": "application/octet-stream" },
+    });
+    const d = await r.json();
+    out(r.ok ? `${d.file}\n${t("done")}\n` : `${d.error}\n`, true);
+  } catch (e) { out(String(e.message), true); }
+  finally { busy(false); showBackups(a); }
+}
+
 // What the terminal would have asked: `manual` secrets and unset [vars].
-function buildForm(a, action) {
+function buildForm(a, action, file = "") {
   const form = $("p-form");
   const campos = [];
+  if (action === "backup") campos.push(h("p", { class: "help" }, t("backupNote")));
+  if (action === "restore") {
+    // The same guard as the terminal: the name, typed. qh checks it again.
+    campos.push(h("p", { class: "note" }, t("restoreNote")));
+    campos.push(h("label", { for: "confirm" }, `${t("typeToConfirm")} ${a.id}`));
+    campos.push(h("input", { id: "confirm", type: "text", "data-confirm": "1", autocomplete: "off" }));
+  }
   if (action === "install") {
     for (const s of a.asks.secrets) {
       campos.push(h("label", { for: `s-${s.secret}` }, s.secret));
@@ -289,20 +421,23 @@ function buildForm(a, action) {
   }
   if (action === "remove") campos.push(h("p", { class: "note" }, t("removeNote")));
   campos.push(h("div", {},
-    h("button", { type: "submit", class: action === "remove" ? "danger" : null }, t("confirm")), " ",
+    h("button", { type: "submit", class: ["remove", "restore"].includes(action) ? "danger" : null },
+      t("confirm")), " ",
     h("button", { type: "button", class: "ghost", onclick: () => { form.hidden = true; } }, t("cancel"))));
   form.replaceChildren(...campos);
-  form.onsubmit = (ev) => { ev.preventDefault(); run(action); };
+  form.onsubmit = (ev) => { ev.preventDefault(); run(action, file); };
   form.hidden = false;
 }
 
-async function run(action) {
+async function run(action, file = "") {
   const a = current();
   const secrets = {}, vars = {};
+  const confirm = ($("p-form").querySelector("[data-confirm]") || {}).value || "";
   for (const i of $("p-form").querySelectorAll("[data-secret]")) if (i.value) secrets[i.dataset.secret] = i.value;
   for (const i of $("p-form").querySelectorAll("[data-var]")) if (i.value) vars[i.dataset.var] = i.value;
   $("p-form").hidden = true;
-  await follow(() => api("/api/run", { app: a.id, action, secrets, vars }));
+  await follow(() => api("/api/run", { app: a.id, action, secrets, vars, file, confirm }));
+  if (action === "backup" || action === "restore") showBackups(a);
 }
 
 async function unitVerb(unit, verb) {
