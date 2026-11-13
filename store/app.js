@@ -28,8 +28,11 @@ const T = {
     typeToConfirm: "Digite o nome do serviço para confirmar:",
     notes: "Novidades", notesFrom: "Releases desde a instalada", noNotes: "Nenhuma release nova para ler.",
     onGithub: "ver no GitHub",
-    notInRepo: (pin, novo) => `O repositório ainda fixa ${pin}, a versão instalada. A ${novo} só chega pelo ` +
-      `Atualizar depois do bump no repositório (qh-updates --bump --apply, e então commit).`,
+    notInRepo: (pin, novo) => `O repositório ainda fixa ${pin}, a versão instalada. Para ir à ${novo}, use ` +
+      `"Atualizar para ${novo}".`,
+    upgradeTo: (v) => `Atualizar para ${v}`,
+    upgradeNote: "Isto edita o repositório (o Image= e as linhas Fixado em deste serviço, via " +
+      "qh-updates --bump) e então roda qh --update. A mudança fica no git para você revisar e commitar.",
     nothingToDo: "Nada a fazer: o instalado já é igual ao que o repositório fixa.",
     lang: "English",
   },
@@ -58,8 +61,11 @@ const T = {
     typeToConfirm: "Type the service name to confirm:",
     notes: "What's new", notesFrom: "Releases since the installed one", noNotes: "No new release to read.",
     onGithub: "see on GitHub",
-    notInRepo: (pin, novo) => `The repository still pins ${pin}, the installed version. ${novo} only arrives ` +
-      `through Update after the repository is bumped (qh-updates --bump --apply, then commit).`,
+    notInRepo: (pin, novo) => `The repository still pins ${pin}, the installed version. To go to ${novo}, ` +
+      `use "Update to ${novo}".`,
+    upgradeTo: (v) => `Update to ${v}`,
+    upgradeNote: "This edits the repository (this service's Image= and Pinned lines, through " +
+      "qh-updates --bump) and then runs qh --update. The change stays in git for you to review and commit.",
     nothingToDo: "Nothing to do: what is installed already matches what the repository pins.",
     lang: "Português",
   },
@@ -331,7 +337,12 @@ function renderPanel() {
   const acoes = [];
   if (!a.installed) acoes.push(h("button", { type: "button", onclick: () => plan("install") }, t("install")));
   else {
-    acoes.push(h("button", { type: "button", onclick: () => plan("update") }, t("update")));
+    const alvo = unbumped(a)[0];
+    if (alvo)
+      acoes.push(h("button", { type: "button", onclick: () => plan("upgrade") },
+        t("upgradeTo")(S.upd[alvo.unit].there)));
+    acoes.push(h("button", { type: "button", class: alvo ? "ghost" : null, onclick: () => plan("update") },
+      t("update")));
     if (behind(a).length)
       acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showNotes(a) }, t("notes")));
     if (a.has_login)
@@ -356,7 +367,7 @@ function busy(on) {
 async function plan(action, file = "") {
   const a = current();
   busy(true);
-  if (action === "update" && behind(a).length) showNotes(a);   // read before you update
+  if (["update", "upgrade"].includes(action) && behind(a).length) showNotes(a);   // read before you update
   else if (!["restore", "backup"].includes(action)) $("p-section").hidden = true;
   try {
     const p = await api(`/api/plan?app=${encodeURIComponent(a.id)}&action=${action}` +
@@ -372,6 +383,9 @@ async function plan(action, file = "") {
 }
 
 // -- sections: what's new, login, backups ------------------------------------
+
+// Behind upstream with the repository pinning what is installed: only a bump moves it.
+const unbumped = (a) => behind(a).filter((u) => tagOf(u.image) === tagOf(u.installed_image));
 
 const behind = (a) => a.units.filter((u) => u.installed && S.upd[u.unit] && S.upd[u.unit].bucket === "BEHIND");
 
@@ -477,6 +491,7 @@ function buildForm(a, action, file = "") {
   const form = $("p-form");
   const campos = [];
   if (action === "backup") campos.push(h("p", { class: "help" }, t("backupNote")));
+  if (action === "upgrade") campos.push(h("p", { class: "note" }, t("upgradeNote")));
   if (action === "restore") {
     // The same guard as the terminal: the name, typed. qh checks it again.
     campos.push(h("p", { class: "note" }, t("restoreNote")));

@@ -55,7 +55,7 @@ install.ini
 qh actual-budget --update --apply
 ```
 
-Pinned to `26.10.0`. Nothing updates on its own — a new version is applied
+Pinned to `26.11.0`. Nothing updates on its own — a new version is applied
 when you run the command above.
 
 ## Backup

@@ -55,7 +55,7 @@ install.ini
 qh actual-budget --update --apply
 ```
 
-Fixado em `26.10.0`. Nada atualiza sozinho — versão nova entra quando você
+Fixado em `26.11.0`. Nada atualiza sozinho — versão nova entra quando você
 roda o comando acima.
 
 ## Backup

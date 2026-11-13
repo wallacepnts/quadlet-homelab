@@ -70,6 +70,8 @@ PT = {
     "a backup with this name already exists; try again in a second":
         "já existe um backup com esse nome; tente de novo em um segundo",
     "not installed": "não instalado",
+    "an upgrade edits the repository, which a sandbox does not have":
+        "atualizar a versão edita o repositório, que um sandbox não tem",
     "a restore overwrites the data: type the service name to confirm":
         "restaurar sobrescreve os dados: digite o nome do serviço para confirmar",
     "no GitHub releases for this image": "sem releases no GitHub para esta imagem",
@@ -99,7 +101,7 @@ CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; img-src https: 
        "connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'")
 COOKIE = "qh_store"
 NOME = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
-ACOES = ("install", "update", "remove", "backup", "restore")
+ACOES = ("install", "update", "remove", "backup", "restore", "upgrade")
 BACKUP = re.compile(r"-\d{8}-\d{6}\.tar\.gz")     # what --backup names its archive after the app
 VERBOS = {"start", "stop", "restart"}
 
@@ -228,11 +230,23 @@ def backups(app):
     return sorted(saida, key=lambda x: x["file"], reverse=True)
 
 
+def bump_cmd(app, aplicar):
+    """qh-updates --bump for this one service: the repository's Image= and Pinned lines."""
+    return [sys.executable, str(ROOT / "updates.py"), app, "--bump"] + (["--apply"] if aplicar else [])
+
+
+def bump_vazio(saida):
+    """Whether a bump dry-run found nothing to take (or held it back as a major)."""
+    return not any(f in saida for f in ("BUMP (", U.PT.get("BUMP (", "BUMP (")))
+
+
 def flags(app, action, arquivo=""):
     """The qh flags for an action, or None when it is not one (or its archive is missing)."""
     if action == "restore":
         f = backup_file(app, arquivo)
         return ["--restore", str(f)] if f else None
+    if action == "upgrade":
+        return []           # not a qh flag: bump_cmd, then --update
     return {"install": [], "update": ["--update"], "remove": ["--remove"],
             "backup": ["--backup", "--out", str(backup_dir())]}.get(action)
 
@@ -345,17 +359,24 @@ def start_job(app, action, cmd, lang, prepare=None, entrada=None):
                 job.write(f"({loc('sandbox, not executed')}: {' '.join(cmd)})\n")
                 job.rc = 0
                 return
-            # `entrada` is what the person typed where the terminal asks — the
-            # app name a restore wants before overwriting. qh checks it, not us.
-            p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                 stdin=subprocess.PIPE if entrada else subprocess.DEVNULL,
-                                 text=True, cwd=ROOT, env=qh_env(lang))
-            if entrada:
-                p.stdin.write(entrada + "\n")
-                p.stdin.close()
-            for linha in p.stdout:
-                job.write(linha)
-            job.rc = p.wait()
+            # One command, or several in order (an upgrade is a bump, then an
+            # update): each runs only if the one before it succeeded.
+            for i, uno in enumerate(cmd if isinstance(cmd[0], list) else [cmd]):
+                if i:
+                    job.write("\n" + "─" * 60 + "\n")
+                # `entrada` is what the person typed where the terminal asks —
+                # the app name a restore wants before overwriting. qh checks it.
+                p = subprocess.Popen(uno, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                     stdin=subprocess.PIPE if entrada else subprocess.DEVNULL,
+                                     text=True, cwd=ROOT, env=qh_env(lang))
+                if entrada:
+                    p.stdin.write(entrada + "\n")
+                    p.stdin.close()
+                for linha in p.stdout:
+                    job.write(linha)
+                job.rc = p.wait()
+                if job.rc:
+                    break
         except Exception as e:        # the page must learn the job ended
             job.write(f"\n{type(e).__name__}: {e}\n")
             job.rc = 1
@@ -504,11 +525,15 @@ class Handler(BaseHTTPRequestHandler):
             if extra is None:
                 return self._json(400, {"error": loc("unknown action") if action not in ACOES
                                         else loc("no such backup of this service")})
-            r = subprocess.run(qh(app, *extra), capture_output=True, text=True,
-                               stdin=subprocess.DEVNULL, env=qh_env(lang), cwd=ROOT,
-                               timeout=120)
+            if action == "upgrade" and PREFIX:
+                return self._json(400, {"error": loc("an upgrade edits the repository, "
+                                                     "which a sandbox does not have")})
+            r = subprocess.run(bump_cmd(app, False) if action == "upgrade" else qh(app, *extra),
+                               capture_output=True, text=True, stdin=subprocess.DEVNULL,
+                               env=qh_env(lang), cwd=ROOT, timeout=300)
             saida = r.stdout + r.stderr
-            return self._json(200, {"rc": r.returncode, "output": saida, "nothing": em_dia(saida)})
+            vazio = bump_vazio(saida) if action == "upgrade" else em_dia(saida)
+            return self._json(200, {"rc": r.returncode, "output": saida, "nothing": vazio})
         if url.path in ("/api/login", "/api/backups", "/api/backup/file"):
             app = q.get("app", "")
             if not service_dir(app):
@@ -603,7 +628,16 @@ class Handler(BaseHTTPRequestHandler):
                 if not isinstance(entrada, str) or entrada.strip() != app:
                     return self._json(400, {"error": loc("a restore overwrites the data: "
                                                          "type the service name to confirm")})
-            job = start_job(app, action, qh(app, *extra, "--apply"), lang, prepare, entrada)
+            cmd = qh(app, *extra, "--apply")
+            if action == "upgrade":
+                # The version is taken in the repository first — it stays the
+                # source, and the change is there to review and commit — then
+                # brought to the host by the same --update as always.
+                if PREFIX:
+                    return self._json(400, {"error": loc("an upgrade edits the repository, "
+                                                         "which a sandbox does not have")})
+                cmd = [bump_cmd(app, True), qh(app, "--update", "--apply")]
+            job = start_job(app, action, cmd, lang, prepare, entrada)
         elif url.path == "/api/unit":
             unit, verbo = d.get("unit", ""), d.get("verb", "")
             if not unit_exists(unit):
@@ -716,6 +750,14 @@ def selftest():
             st, _, corpo = pedir("/api/catalog", headers=ok)
             hb = next(a for a in json.loads(corpo)["apps"] if a["id"] == "homebox")
             assert hb["installed"], "the install shows up in the catalog"
+            for caminho in ("/api/plan?app=homebox&action=upgrade", None):
+                if caminho:
+                    st, _, _ = pedir(caminho, headers=ok)
+                else:
+                    st, _, _ = pedir("/api/run", json.dumps(
+                        {"app": "homebox", "action": "upgrade"}).encode(), api)
+                assert st == 400, ("a sandbox never bumps the real repository", st)
+            assert bump_vazio("nada a subir.") and not bump_vazio("SUBIR (1):  (dry-run)")
             assert em_dia(f"homebox: {I.EM_DIA}") and em_dia("homebox: já está em dia — nada a mudar")
             assert not em_dia("homebox: update, 5 steps  (dry-run)")
 

@@ -61,6 +61,7 @@ store reads.
 
 ```bash
 qh-updates --host            # installed here, against each project's release
+qh-updates memos --bump      # one service only (folder or unit names)
 ```
 
 ```bash
@@ -160,6 +161,11 @@ unit. It never runs `--purge`: data is still deleted only in the terminal.
 Each installed unit shows its tag next to the project's latest release
 (`qh-updates --host`, checked in the background and cached for six hours), so
 you can see what is behind without this repository having to be bumped first.
+When the repository still pins the installed version, **Update to X** takes
+it: `qh-updates <app> --bump --apply` for that one service (its `Image=` and
+Pinned lines, in the clone the store runs from), then `qh <app> --update
+--apply`. The change stays in git for you to review and commit. A major is held
+back exactly as `--bump` holds it.
 When something is behind, **What's new** lists every GitHub release between the
 installed tag and upstream's. Read them before updating; prereleases are left
 out. **Login** shows the credential named in `[login]` of `install.ini`, the

@@ -40,6 +40,9 @@ from qhui import (translator, directives, directives_of, ref_parts, FLOATING,
 
 PT = {
     "also show what is up to date": "mostra também o que está em dia",
+    "only these services (folder or unit names); default: all":
+        "só estes serviços (nome da pasta ou da unit); padrão: todos",
+    "not found in apps/: ": "não encontrado em apps/: ",
     "compare what is INSTALLED here, not what the repository pins":
         "compara o que está INSTALADO aqui, não o que o repositório fixa",
     "print the comparison as JSON (for the store)": "imprime a comparação em JSON (para a loja)",
@@ -1089,6 +1092,8 @@ def main():
     qhui.argparse_ptbr()
     ap = argparse.ArgumentParser(description=AJUDA_PT if qhui.PTBR else __doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("app", nargs="*", metavar="APP",
+                    help=loc("only these services (folder or unit names); default: all"))
     ap.add_argument("--all", action="store_true", help=loc("also show what is up to date"))
     ap.add_argument("--selftest", action="store_true", help=loc("test the parsing, no network"))
     ap.add_argument("--bump", action="store_true",
@@ -1111,6 +1116,15 @@ def main():
         ap.error(loc("--bump rewrites the repository; it does not combine with --host"))
 
     items = list(services(Path.home() / ".config/containers/systemd" if a.host else None))
+    if a.app:
+        # A folder takes all its units; a unit name takes just that one. One
+        # service at a time is how the store bumps: the version you read the
+        # notes for, not every other one that happened to be behind too.
+        conhecidos = {i[0] for i in items} | {i[1] for i in items}
+        fora = sorted(set(a.app) - conhecidos - {p.name for p in APPS.iterdir() if p.is_dir()})
+        if fora:
+            ap.error(loc("not found in apps/: ") + ", ".join(fora))
+        items = [i for i in items if i[0] in a.app or i[1] in a.app]
     with ThreadPoolExecutor(max_workers=8) as pool:
         rows = list(pool.map(check, items))
 

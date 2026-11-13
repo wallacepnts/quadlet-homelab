@@ -59,6 +59,7 @@ repositório. O `--json` imprime cada linha em JSON, que é o que a loja lê.
 
 ```bash
 qh-updates --host            # o instalado aqui, contra a release de cada projeto
+qh-updates memos --bump      # um serviço só (nome da pasta ou da unit)
 ```
 
 ```bash
@@ -159,6 +160,11 @@ continuam sendo apagados só no terminal. Cada unit instalada mostra a tag dela
 ao lado da última release do projeto (`qh-updates --host`, consultado em
 segundo plano e guardado por seis horas), então dá pra ver o que está atrás sem
 depender de um bump neste repositório.
+Quando o repositório ainda fixa a versão instalada, o **Atualizar para X** faz
+o caminho todo: `qh-updates <app> --bump --apply` só daquele serviço (o
+`Image=` e as linhas Fixado em, no clone de onde a loja roda) e então
+`qh <app> --update --apply`. A mudança fica no git para você revisar e
+commitar. Uma major fica retida, exatamente como no `--bump`.
 Quando algo está atrás, o **Novidades** lista todas as releases do GitHub
 entre a tag instalada e a do upstream. Leia antes de atualizar; prereleases
 ficam de fora. O **Login** mostra a credencial que o `[login]` do
