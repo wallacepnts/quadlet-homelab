@@ -26,10 +26,8 @@ const T = {
     backupNote: "O backup para o serviço, empacota os dados e sobe de novo.",
     restoreNote: "Restaurar SOBRESCREVE os dados atuais com os do arquivo, sem volta.",
     typeToConfirm: "Digite o nome do serviço para confirmar:",
-    notes: "Novidades", notesFrom: "Releases desde a instalada", noNotes: "Nenhuma release nova para ler.",
+    notesFrom: "Releases desde a instalada", noNotes: "Nenhuma release nova para ler.",
     onGithub: "ver no GitHub",
-    notInRepo: (pin, novo) => `O repositório ainda fixa ${pin}, a versão instalada. Para ir à ${novo}, use ` +
-      `"Atualizar para ${novo}".`,
     upgradeTo: (v) => `Atualizar para ${v}`,
     upgradeNote: "Isto edita o repositório (o Image= e as linhas Fixado em deste serviço, via " +
       "qh-updates --bump) e então roda qh --update. A mudança fica no git para você revisar e commitar.",
@@ -59,10 +57,8 @@ const T = {
     backupNote: "The backup stops the service, packs the data and starts it again.",
     restoreNote: "Restoring OVERWRITES the current data with the archive's, with no way back.",
     typeToConfirm: "Type the service name to confirm:",
-    notes: "What's new", notesFrom: "Releases since the installed one", noNotes: "No new release to read.",
+    notesFrom: "Releases since the installed one", noNotes: "No new release to read.",
     onGithub: "see on GitHub",
-    notInRepo: (pin, novo) => `The repository still pins ${pin}, the installed version. To go to ${novo}, ` +
-      `use "Update to ${novo}".`,
     upgradeTo: (v) => `Update to ${v}`,
     upgradeNote: "This edits the repository (this service's Image= and Pinned lines, through " +
       "qh-updates --bump) and then runs qh --update. The change stays in git for you to review and commit.",
@@ -337,14 +333,20 @@ function renderPanel() {
   const acoes = [];
   if (!a.installed) acoes.push(h("button", { type: "button", onclick: () => plan("install") }, t("install")));
   else {
-    const alvo = unbumped(a)[0];
-    if (alvo)
+    // One update button, and only when there is something to update: a new
+    // upstream release the repository does not pin yet (bump, then update), or
+    // a repository that changed since the install (update). Its label says
+    // where it goes; the release notes open with its plan.
+    const novo = unbumped(a)[0];
+    const mudou = a.units.find((u) => u.installed && u.drift);
+    if (novo)
       acoes.push(h("button", { type: "button", onclick: () => plan("upgrade") },
-        t("upgradeTo")(S.upd[alvo.unit].there)));
-    acoes.push(h("button", { type: "button", class: alvo ? "ghost" : null, onclick: () => plan("update") },
-      t("update")));
-    if (behind(a).length)
-      acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showNotes(a) }, t("notes")));
+        t("upgradeTo")(S.upd[novo.unit].there)));
+    else if (mudou) {
+      const alvo = tagOf(mudou.image) !== tagOf(mudou.installed_image) ? tagOf(mudou.image) : null;
+      acoes.push(h("button", { type: "button", onclick: () => plan("update") },
+        alvo ? t("upgradeTo")(alvo) : t("update")));
+    }
     if (a.has_login)
       acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showLogin(a) }, t("login")));
     acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showBackups(a) }, t("backups")));
@@ -398,9 +400,6 @@ async function showNotes(a) {
   section(h("p", { class: "muted" }, t("checking")));
   const blocos = [h("h3", {}, t("notesFrom"))];
   for (const u of behind(a)) {
-    // What Update can bring is what the repository pins, not what upstream released.
-    if (tagOf(u.image) === tagOf(u.installed_image))
-      blocos.push(h("p", { class: "note" }, t("notInRepo")(tagOf(u.image), S.upd[u.unit].there)));
     try {
       const n = await api(`/api/notes?unit=${encodeURIComponent(u.unit)}`);
       if (behind(a).length > 1) blocos.push(h("h4", {}, u.unit));

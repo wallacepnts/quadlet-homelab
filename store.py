@@ -374,9 +374,14 @@ def start_job(app, action, cmd, lang, prepare=None, entrada=None):
                     p.stdin.close()
                 for linha in p.stdout:
                     job.write(linha)
-                job.rc = p.wait()
-                if job.rc:
+                rc = p.wait()
+                if rc:
                     break
+            # The cache goes BEFORE the exit code is published: the page asks
+            # for the comparison as soon as it sees the job end, and it got
+            # the pre-update answer — 26.11.0 installed, "new version 26.11.0".
+            UPDATES["rows"] = None
+            job.rc = rc
         except Exception as e:        # the page must learn the job ended
             job.write(f"\n{type(e).__name__}: {e}\n")
             job.rc = 1

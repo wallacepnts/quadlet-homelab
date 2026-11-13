@@ -165,9 +165,10 @@ o caminho todo: `qh-updates <app> --bump --apply` só daquele serviço (o
 `Image=` e as linhas Fixado em, no clone de onde a loja roda) e então
 `qh <app> --update --apply`. A mudança fica no git para você revisar e
 commitar. Uma major fica retida, exatamente como no `--bump`.
-Quando algo está atrás, o **Novidades** lista todas as releases do GitHub
-entre a tag instalada e a do upstream. Leia antes de atualizar; prereleases
-ficam de fora. O **Login** mostra a credencial que o `[login]` do
+Existe um botão de atualizar só, e ele só aparece quando há algo para
+atualizar. O plano dele abre com todas as releases do GitHub entre a tag
+instalada e a do upstream, para você ler antes de confirmar; prereleases ficam
+de fora. O **Login** mostra a credencial que o `[login]` do
 `install.ini` indica, a mesma que o `qh` imprime depois de instalar. O
 **Backups** roda o `qh --backup` em `~/.local/share/quadlet-homelab/backups`,
 lista os arquivos e permite baixá-los ou enviar um de volta. A restauração roda

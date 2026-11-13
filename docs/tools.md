@@ -166,9 +166,9 @@ it: `qh-updates <app> --bump --apply` for that one service (its `Image=` and
 Pinned lines, in the clone the store runs from), then `qh <app> --update
 --apply`. The change stays in git for you to review and commit. A major is held
 back exactly as `--bump` holds it.
-When something is behind, **What's new** lists every GitHub release between the
-installed tag and upstream's. Read them before updating; prereleases are left
-out. **Login** shows the credential named in `[login]` of `install.ini`, the
+There is one update button, and it shows up only when there is something to
+update. Its plan opens with every GitHub release between the installed tag and
+upstream's, so you read them before confirming; prereleases are left out. **Login** shows the credential named in `[login]` of `install.ini`, the
 same one `qh` prints after an install. **Backups** runs `qh --backup` into
 `~/.local/share/quadlet-homelab/backups`, lists the archives, and lets you
 download them or upload one back. A restore runs `qh --restore`, and you have to
