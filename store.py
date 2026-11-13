@@ -107,10 +107,13 @@ VERBOS = {"start", "stop", "restart"}
 
 PREFIX = None              # --prefix: the sandbox every qh call is pointed at
 JOBS, JOB_LOCK = {}, threading.Lock()
-# What is installed against what upstream released. Network-bound (a few
-# seconds), so cached; every job clears it, since an install or update changes
-# the very tags it compared.
-UPDATES, UPDATES_LOCK, UPDATES_TTL = {"at": None, "rows": None}, threading.Lock(), 6 * 3600
+# What is installed against what upstream released. Network-bound, and
+# upstream does not move by the hour: kept on disk for a day, so a restart does
+# not ask again either. A job re-asks for its own service only — what it
+# changed is that service's installed side, never anyone's upstream.
+UPDATES, UPDATES_LOCK, UPDATES_TTL = {"at": None, "rows": None}, threading.Lock(), 24 * 3600
+# The jobs that change what is installed, and with it the comparison.
+MUDA_VERSAO = {"install", "update", "upgrade", "remove"}
 
 
 # -- the host, through qh --------------------------------------------------------
@@ -138,8 +141,27 @@ def catalog(lang="en"):
     return json.loads(r.stdout)
 
 
+def updates_file():
+    return Path(PREFIX or Path.home()) / ".cache/quadlet-homelab/store-updates.json"
+
+
+def ask_updates(*apps):
+    """`qh-updates --host --json [APP...]`: rows, or None when it could not answer."""
+    r = subprocess.run([sys.executable, str(ROOT / "updates.py"), *apps, "--host", "--json"],
+                       capture_output=True, text=True, cwd=ROOT, env=qh_env("en"), timeout=300)
+    if r.returncode != 0:
+        return None
+    return json.loads(r.stdout) if r.stdout.strip() else []
+
+
+def save_updates():
+    f = updates_file()
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text(json.dumps({"at": UPDATES["at"], "rows": UPDATES["rows"]}))
+
+
 def updates(force=False):
-    """`qh-updates --host --json`, cached: {checked: epoch or None, rows: [...]}.
+    """The comparison, from memory, then disk, then the network: {checked, rows}.
 
     Under --prefix there is no host to compare and the sandbox must not reach
     the network, so it answers empty.
@@ -147,14 +169,34 @@ def updates(force=False):
     if PREFIX:
         return {"checked": None, "rows": []}
     with UPDATES_LOCK:
+        if UPDATES["rows"] is None and updates_file().is_file():
+            try:
+                UPDATES.update(json.loads(updates_file().read_text()))
+            except (ValueError, OSError):
+                pass          # unreadable cache: asked again below
         velho = UPDATES["at"] is None or time.time() - UPDATES["at"] > UPDATES_TTL
         if force or velho or UPDATES["rows"] is None:
-            r = subprocess.run([sys.executable, str(ROOT / "updates.py"), "--host", "--json"],
-                               capture_output=True, text=True, cwd=ROOT,
-                               env=qh_env("en"), timeout=300)
-            linhas = json.loads(r.stdout) if r.returncode == 0 and r.stdout.strip() else []
-            UPDATES.update(at=time.time(), rows=linhas)
-        return {"checked": UPDATES["at"], "rows": UPDATES["rows"]}
+            linhas = ask_updates()
+            if linhas is not None:
+                UPDATES.update(at=time.time(), rows=linhas)
+                save_updates()
+        return {"checked": UPDATES["at"], "rows": UPDATES["rows"] or []}
+
+
+def refresh_updates(app):
+    """Re-asks one service after a job changed what it runs, keeping every other row.
+
+    A few lookups instead of all of them, and the time of the last full check
+    stays what it was: the other rows are no newer than before.
+    """
+    if PREFIX or UPDATES["rows"] is None:
+        return            # nothing cached yet: the next read asks for everything
+    linhas = ask_updates(app)
+    if linhas is None:
+        return
+    with UPDATES_LOCK:
+        UPDATES["rows"] = [r for r in UPDATES["rows"] if r["app"] != app] + linhas
+        save_updates()
 
 
 NOTES, NOTES_TTL = {}, 3600     # repo -> (when, releases): the API quota is 60 an hour
@@ -387,16 +429,16 @@ def start_job(app, action, cmd, lang, prepare=None, entrada=None):
                 rc = p.wait()
                 if rc:
                     break
-            # The cache goes BEFORE the exit code is published: the page asks
-            # for the comparison as soon as it sees the job end, and it got
-            # the pre-update answer — 26.11.0 installed, "new version 26.11.0".
-            UPDATES["rows"] = None
+            # Refreshed BEFORE the exit code is published: the page asks for
+            # the comparison as soon as it sees the job end, and it got the
+            # pre-update answer — 26.11.0 installed, "new version 26.11.0".
+            if action in MUDA_VERSAO:
+                refresh_updates(app)
             job.rc = rc
         except Exception as e:        # the page must learn the job ended
             job.write(f"\n{type(e).__name__}: {e}\n")
             job.rc = 1
         finally:
-            UPDATES["rows"] = None
             JOB_LOCK.release()
 
     threading.Thread(target=worker, daemon=True).start()

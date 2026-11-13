@@ -159,7 +159,8 @@ action runs a `qh` command: the dry-run plan first, then `qh <app> --apply`
 (also `--update` and `--remove`), plus start/stop/restart and logs for each
 unit. It never runs `--purge`: data is still deleted only in the terminal.
 Each installed unit shows its tag next to the project's latest release
-(`qh-updates --host`, checked in the background and cached for six hours), so
+(`qh-updates --host`, cached on disk for a day, and re-asked only for the
+service an install, update or remove just touched; **Check now** forces it), so
 you can see what is behind without this repository having to be bumped first.
 When the repository still pins the installed version, **Update to X** takes
 it: `qh-updates <app> --bump --apply` for that one service (its `Image=` and

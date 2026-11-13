@@ -157,8 +157,9 @@ cada ação roda um comando do `qh`: primeiro o plano em simulação, depois
 `qh <app> --apply` (e também `--update` e `--remove`), além de
 iniciar/parar/reiniciar e logs de cada unit. Ela nunca roda `--purge`: dados
 continuam sendo apagados só no terminal. Cada unit instalada mostra a tag dela
-ao lado da última release do projeto (`qh-updates --host`, consultado em
-segundo plano e guardado por seis horas), então dá pra ver o que está atrás sem
+ao lado da última release do projeto (`qh-updates --host`, guardado em disco
+por um dia e consultado de novo só para o serviço que uma instalação,
+atualização ou remoção acabou de mexer; o **Verificar agora** força), então dá pra ver o que está atrás sem
 depender de um bump neste repositório.
 Quando o repositório ainda fixa a versão instalada, o **Atualizar para X** faz
 o caminho todo: `qh-updates <app> --bump --apply` só daquele serviço (o
