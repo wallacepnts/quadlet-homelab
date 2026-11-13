@@ -508,6 +508,37 @@ def scenario_local(home):
           f"--local swaps the href for the LAN address ({href.split('=')[-1]})")
 
 
+def scenario_catalog(home):
+    """--catalog is what a front end reads: valid JSON, every app, the host's state."""
+    import json
+    r = run("--catalog", "--prefix", home)
+    try:
+        cat = json.loads(r.stdout)
+    except ValueError:
+        check(False, "--catalog prints JSON and nothing else")
+        return
+    apps = {a["id"]: a for a in cat["apps"]}
+    pastas = {p.parent.name for p in (ROOT / "apps").glob("*/*.container")}
+    check(set(apps) == pastas, "--catalog lists every folder that has a .container")
+    sem = sorted(a for a, x in apps.items()
+                 if not (x["icon"] and x["description"]["en"] and x["description"]["pt"]))
+    check(not sem, "every app has an icon and both descriptions from the READMEs"
+          + (f" (missing: {', '.join(sem)})" if sem else ""))
+    grupos = {x["group"]["en"] for x in apps.values() if x["group"]}
+    check(apps["vm"]["group"] == {"en": "Virtual Machines", "pt": "Máquinas Virtuais"}
+          and all(g and '"' not in g for g in grupos),
+          "--catalog takes the category from homepage.group, quotes stripped, in both languages")
+    check(apps[APP]["installed"] and all(u["installed"] for u in apps[APP]["units"]),
+          "--catalog sees the sandbox install")
+    check(not apps[STACK]["installed"], "--catalog does not see what was never installed")
+    check(cat["tailnet"] is False, "--catalog under --prefix never reads the real tailnet")
+    manuais = [s["secret"] for s in apps["vaultwarden"]["asks"]["secrets"]]
+    check(manuais == ["vaultwarden-admin-token"],
+          "--catalog names the `manual` secrets a form has to ask for")
+    one = json.loads(run("--catalog", APP, "--prefix", home).stdout)
+    check([a["id"] for a in one["apps"]] == [APP], "--catalog APP narrows to that service")
+
+
 def main():
     with tempfile.TemporaryDirectory() as tmp:
         home, out = str(Path(tmp) / "home"), str(Path(tmp) / "backups")
@@ -515,6 +546,7 @@ def main():
 
         print("install:");            scenario_install(home)
         print("user files:");         scenario_no_overwrite(home)
+        print("catalog:");            scenario_catalog(home)
         print("drift:");              scenario_drift(home)
         print("failure:");            scenario_failure(home, tmp)
         print("remove safety:");      scenario_remove_safety(tmp)

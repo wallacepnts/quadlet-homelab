@@ -108,6 +108,14 @@ O `repo` avisa que o arquivo aqui difere do instalado, que é o que o `--update`
 resolve. Versão não está aqui: isso exige rede, e é o que o `qh-updates` faz.
 Sai com código diferente de zero quando há algo precisando de atenção.
 
+`qh --catalog` dá a mesma resposta em JSON, para uma interface. Ele traz também
+o que a vitrine precisa: nome, ícone, versão e descrição (en/pt), lidos das
+tabelas dos READMEs, mais a categoria, que vem do `homepage.group`, os
+endereços web e o que a instalação precisa perguntar (secrets `manual` e
+`[vars]` com o padrão). Só lê. Uma interface montada em cima dele instala com o
+mesmo `qh <app> --apply`, então existe um caminho de instalação, não dois. Para
+restringir, nomeie serviços: `qh --catalog vaultwarden`.
+
 ## A regra de acesso
 
 Escolhida uma vez, seguida por toda instalação e atualização:

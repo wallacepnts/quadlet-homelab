@@ -109,6 +109,14 @@ memos                      active     healthy    —
 `--update` would fix. Versions are not here: that needs the network, and it is
 what `qh-updates` is for. It exits non-zero when anything needs attention.
 
+`qh --catalog` gives the same answer as JSON, for a front end. It also includes
+what the shop window needs: name, icon, version and description (en/pt), all
+read from the README tables, plus the category from `homepage.group`, the web
+addresses, and what an install has to ask for (`manual` secrets and `[vars]`
+with their defaults). It is read-only. A front end built on it installs with
+the same `qh <app> --apply`, so there is one install path, not two. Name
+services to narrow it: `qh --catalog vaultwarden`.
+
 ## The access rule
 
 Chosen once, followed by every install and update:

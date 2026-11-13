@@ -228,6 +228,7 @@ PT = {
     '  installed but not following it:': '  instalados que não a seguem:',
     '  bring them in line:  qh --all --update --apply': '  alinhar todos:  qh --all --update --apply',
     'what is installed, running, and changed in the repository': 'o que está instalado, rodando, e mudou no repositório',
+    'the services as JSON, for a front end (the app store)': 'os serviços em JSON, para uma interface (a loja de apps)',
     'nothing installed yet.': 'nada instalado ainda.',
     '  installed:': '  instalados:',
     'needing attention:': 'precisando de atenção:',
@@ -3636,13 +3637,27 @@ def estado_do_container(status):
     return "—" if status == "—" else "down"
 
 
-def show_status(apps=None, home=None):
-    """What is installed, what is running, and what drifted from the repository.
+def unit_deriva(s, u):
+    """"", "changed" or "duplicated": the installed unit `u` against the repository."""
+    fonte = s.dir / u.name
+    deriva = ""
+    if fonte.exists():
+        # Rendered with what the file itself says it was installed
+        # with: hard-coding href_local=(modo=="local") reported every
+        # service installed with --href-local as changed, forever.
+        lido = installed_access(u, fonte)
+        modo = (lido[0] if lido and lido[0] else "tailnet")
+        href = (lido[1] if lido and lido[1] is not None else modo == "local")
+        deriva = "changed" if unit_bytes(fonte, modo, href) != u.read_bytes() else ""
+    # Louder than "changed", and reported even when the file the tool
+    # looks at is in fact current: what runs may be the other copy.
+    if any(p.name == u.name for p in s.strays()):
+        deriva = "duplicated"
+    return deriva
 
-    One row per service: a folder with several units collapses into `2/12`,
-    because the question at this level is "is this service up", not which of
-    its twelve pieces. Naming services expands those into a row each.
-    """
+
+def host_state():
+    """({unit: systemd ActiveState}, {container: podman Status}) for every unit and container."""
     ativos, saude = {}, {}
     r = run_read(["systemctl", "--user", "list-units", "--type=service",
                   "--all", "--no-legend", "--plain"])
@@ -3654,6 +3669,17 @@ def show_status(apps=None, home=None):
     for linha in (r or "").splitlines():
         nome, _, estado = linha.partition("|")
         saude[nome] = estado
+    return ativos, saude
+
+
+def show_status(apps=None, home=None):
+    """What is installed, what is running, and what drifted from the repository.
+
+    One row per service: a folder with several units collapses into `2/12`,
+    because the question at this level is "is this service up", not which of
+    its twelve pieces. Naming services expands those into a row each.
+    """
+    ativos, saude = host_state()
 
     def estado_container(u):
         cont = container_name(u)
@@ -3679,20 +3705,7 @@ def show_status(apps=None, home=None):
             continue
         detalhe = []
         for u in units:
-            fonte = APPS / d / u.name
-            deriva = ""
-            if fonte.exists():
-                # Rendered with what the file itself says it was installed
-                # with: hard-coding href_local=(modo=="local") reported every
-                # service installed with --href-local as changed, forever.
-                lido = installed_access(u, fonte)
-                modo = (lido[0] if lido and lido[0] else "tailnet")
-                href = (lido[1] if lido and lido[1] is not None else modo == "local")
-                deriva = "changed" if unit_bytes(fonte, modo, href) != u.read_bytes() else ""
-            # Louder than "changed", and reported even when the file the tool
-            # looks at is in fact current: what runs may be the other copy.
-            if any(p.name == u.name for p in s.strays()):
-                deriva = "duplicated"
+            deriva = unit_deriva(s, u)
             e, c = ativos.get(u.stem, "—"), estado_container(u)
             if e != "active" or c in ("unhealthy", "down"):
                 problemas += 1
@@ -3733,6 +3746,123 @@ def show_status(apps=None, home=None):
         + loc("changed in the repository:") + f" {mudados}"
         + (f"  {loc('installed and stopped:')} {escondidas}" if escondidas else ""))
     return 1 if problemas else 0
+
+
+def readme_rows(readme, link):
+    """{app: {icon, name, version, description}} from a README's services table.
+
+    The table is the catalog's shop window, already kept honest by check.py
+    (one row per app, the version matching Image=). Reading it here instead of
+    copying the same four fields into install.ini keeps one place to edit.
+    `link` is the regex for what precedes the folder name in the row's link —
+    `./apps/` in the root README, `../../apps/` in the pt-BR one.
+    """
+    rows = {}
+    if not readme.exists():
+        return rows
+    linha = re.compile(r'^\|\s*<img src="([^"]*)"[^|]*\|\s*\[([^\]]+)\]\('
+                       + link + r'([a-z0-9._-]+)[^)]*\)\s*\|([^|]*)\|(.*)\|\s*$')
+    for texto in readme.read_text().splitlines():
+        m = linha.match(texto)
+        if m:
+            versao = m.group(4).replace("`", "").strip()
+            rows[m.group(3)] = {"icon": m.group(1), "name": m.group(2),
+                                "version": "" if versao == "—" else versao,
+                                "description": m.group(5).strip()}
+    return rows
+
+
+def catalog_entry(d, home, tailnet, en, pt, ativos, saude):
+    """One service as the store sees it: the window, what the install asks, the host."""
+    s = Service(d, home)
+    vitrine = en.get(d, {})
+    # What the install cannot invent: `manual` secrets and the ${VAR} of a
+    # Volume= nobody set. Everything else is generated, so a form asks only this.
+    manuais = []
+    if s.ini.has_section("secrets"):
+        for nome, receita in s.ini.items("secrets"):
+            tipo, _, texto = receita.strip().partition(" ")
+            if tipo == "manual" and nome in s.secrets():
+                manuais.append({"secret": nome, "instruction": texto.strip(),
+                                "exists": not SANDBOX and secret_exists(nome)})
+    variaveis = sorted({n for p, f in s.volumes() if f is None
+                        for n in re.findall(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}", p)})
+    instaladas = {p.name: p for p in s.installed()}
+    units = []
+    for u in s.units:
+        if u.suffix != ".container":
+            continue
+        imagem = next((v for k, v in directives_of(u) if k == "Image"), "")
+        p = instaladas.get(u.name)
+        units.append({
+            "unit": u.stem,
+            "image": imagem,
+            "installed": p is not None,
+            "service": ativos.get(u.stem) if p else None,
+            "container": estado_do_container(saude.get(container_name(p), "—")) if p else None,
+            "drift": (unit_deriva(s, p) or None) if p else None,
+        })
+    principal = s.main_unit()
+    # The category is the dashboard group the units already carry — the main
+    # unit's when it has one, else the first that does. Infrastructure with no
+    # dashboard entry (homepage itself, postfix) has none, and says so.
+    grupos = [v.partition("=")[2].strip('"')
+              for u in ([principal] if principal else []) + s.units
+              if u.suffix == ".container"
+              for k, v in directives_of(u)
+              if k == "Label" and v.startswith("homepage.group=")]
+    grupo = grupos[0] if grupos else None
+    return {
+        "id": d,
+        "name": vitrine.get("name", d),
+        "group": {"en": grupo, "pt": GRUPOS.get(grupo, grupo)} if grupo else None,
+        "icon": vitrine.get("icon"),
+        "version": vitrine.get("version", ""),
+        "description": {"en": vitrine.get("description", ""),
+                        "pt": pt.get(d, {}).get("description", "")},
+        "main_unit": principal.stem if principal else None,
+        "installed": bool(instaladas),
+        "units": units,
+        "web": [{"unit": u, "local": local, "tailnet": rede}
+                for u, local, rede in addresses(s, tailnet)],
+        "asks": {
+            "secrets": manuais,
+            "vars": [{"name": n, "default": var_default(s, n),
+                      "set": bool(manager_var(n))} for n in variaveis],
+        },
+    }
+
+
+def show_catalog(apps=None, home=None):
+    """Every service as JSON on stdout: what a front end needs and nothing it must parse.
+
+    Read-only, like --status: the store shows this and then calls the same
+    `qh <app> --apply` a person would, so there is one install path, not two.
+    """
+    import json
+    if apps:
+        desconhecidos = sorted(x for x in apps if find_app(x) == (None, None))
+        if desconhecidos:
+            say(loc("not found in apps/: ") + ", ".join(desconhecidos))
+            return 1
+        apps = {find_app(x)[0] for x in apps}
+    # Under --prefix the host is not what is being asked about: the sandbox's
+    # units are files nobody started, and the real systemd would answer for
+    # the real ones that share their names.
+    ativos, saude = ({}, {}) if SANDBOX else host_state()
+    en = readme_rows(ROOT / "README.md", r"\./apps/")
+    pt = readme_rows(ROOT / "docs/pt-BR/README.md", r"\.\./\.\./apps/")
+    tailnet = find_tailnet()
+    pastas = sorted(x.name for x in APPS.iterdir()
+                    if x.is_dir() and (apps is None or x.name in apps)
+                    and any(x.glob("*.container")))
+    saida = {
+        "access": saved_access(Path(home) if home else None) or "tailnet",
+        "tailnet": bool(tailnet),
+        "apps": [catalog_entry(d, home, tailnet, en, pt, ativos, saude) for d in pastas],
+    }
+    print(json.dumps(saida, ensure_ascii=False, indent=2))
+    return 0
 
 
 # What each executed step counts as, matched on the description it already
@@ -4098,6 +4228,8 @@ def main():
     ap.add_argument("--selftest", action="store_true", help=loc("test the script's parser"))
     ap.add_argument("--status", action="store_true",
                     help=loc("what is installed, running, and changed in the repository"))
+    ap.add_argument("--catalog", action="store_true",
+                    help=loc("the services as JSON, for a front end (the app store)"))
     ap.add_argument("--set-access", choices=ACCESS_MODES, metavar="MODE",
                     help=loc("save the rule every install and update follows "
                              "(local, tailnet or both), and exit"))
@@ -4145,6 +4277,9 @@ def main():
 
     if a.status:
         return show_status(a.app or None, a.prefix)
+
+    if a.catalog:
+        return show_catalog(a.app or None, a.prefix)
 
 
     if a.set_access:
