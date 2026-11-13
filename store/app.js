@@ -29,8 +29,6 @@ const T = {
     notesFrom: "Releases desde a instalada", noNotes: "Nenhuma release nova para ler.",
     onGithub: "ver no GitHub",
     upgradeTo: (v) => `Atualizar para ${v}`,
-    upgradeNote: "Isto edita o repositório (o Image= e as linhas Fixado em deste serviço, via " +
-      "qh-updates --bump) e então roda qh --update. A mudança fica no git para você revisar e commitar.",
     nothingToDo: "Nada a fazer: o instalado já é igual ao que o repositório fixa.",
     lang: "English",
   },
@@ -60,8 +58,6 @@ const T = {
     notesFrom: "Releases since the installed one", noNotes: "No new release to read.",
     onGithub: "see on GitHub",
     upgradeTo: (v) => `Update to ${v}`,
-    upgradeNote: "This edits the repository (this service's Image= and Pinned lines, through " +
-      "qh-updates --bump) and then runs qh --update. The change stays in git for you to review and commit.",
     nothingToDo: "Nothing to do: what is installed already matches what the repository pins.",
     lang: "Português",
   },
@@ -336,15 +332,15 @@ function renderPanel() {
     // One update button, and only when there is something to update: a new
     // upstream release the repository does not pin yet (bump, then update), or
     // a repository that changed since the install (update). Its label says
-    // where it goes; the release notes open with its plan.
+    // where it goes, and clicking it does it — no plan, no Confirm.
     const novo = unbumped(a)[0];
     const mudou = a.units.find((u) => u.installed && u.drift);
     if (novo)
-      acoes.push(h("button", { type: "button", onclick: () => plan("upgrade") },
+      acoes.push(h("button", { type: "button", onclick: () => updateNow("upgrade") },
         t("upgradeTo")(S.upd[novo.unit].there)));
     else if (mudou) {
       const alvo = tagOf(mudou.image) !== tagOf(mudou.installed_image) ? tagOf(mudou.image) : null;
-      acoes.push(h("button", { type: "button", onclick: () => plan("update") },
+      acoes.push(h("button", { type: "button", onclick: () => updateNow("update") },
         alvo ? t("upgradeTo")(alvo) : t("update")));
     }
     if (a.has_login)
@@ -369,8 +365,7 @@ function busy(on) {
 async function plan(action, file = "") {
   const a = current();
   busy(true);
-  if (["update", "upgrade"].includes(action) && behind(a).length) showNotes(a);   // read before you update
-  else if (!["restore", "backup"].includes(action)) $("p-section").hidden = true;
+  if (!["restore", "backup"].includes(action)) $("p-section").hidden = true;
   try {
     const p = await api(`/api/plan?app=${encodeURIComponent(a.id)}&action=${action}` +
                         `&file=${encodeURIComponent(file)}&lang=${S.lang}`);
@@ -490,7 +485,6 @@ function buildForm(a, action, file = "") {
   const form = $("p-form");
   const campos = [];
   if (action === "backup") campos.push(h("p", { class: "help" }, t("backupNote")));
-  if (action === "upgrade") campos.push(h("p", { class: "note" }, t("upgradeNote")));
   if (action === "restore") {
     // The same guard as the terminal: the name, typed. qh checks it again.
     campos.push(h("p", { class: "note" }, t("restoreNote")));
@@ -529,6 +523,16 @@ async function run(action, file = "") {
   $("p-form").hidden = true;
   await follow(() => api("/api/run", { app: a.id, action, secrets, vars, file, confirm }));
   if (action === "backup" || action === "restore") showBackups(a);
+}
+
+// Updating is one click: it runs right away, with the release notes of what it
+// brings shown above the output while it works.
+async function updateNow(action) {
+  const a = current();
+  $("p-form").hidden = true;
+  if (behind(a).length) showNotes(a);
+  else $("p-section").hidden = true;
+  await follow(() => api("/api/run", { app: a.id, action }));
 }
 
 async function unitVerb(unit, verb) {

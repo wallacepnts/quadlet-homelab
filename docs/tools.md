@@ -167,8 +167,10 @@ Pinned lines, in the clone the store runs from), then `qh <app> --update
 --apply`. The change stays in git for you to review and commit. A major is held
 back exactly as `--bump` holds it.
 There is one update button, and it shows up only when there is something to
-update. Its plan opens with every GitHub release between the installed tag and
-upstream's, so you read them before confirming; prereleases are left out. **Login** shows the credential named in `[login]` of `install.ini`, the
+update, and clicking it runs the update right away, with no plan and no
+confirmation. While it runs, the panel shows every GitHub release between the
+installed tag and upstream's (prereleases left out). Remove and restore still
+show a plan and ask first, because they touch data. **Login** shows the credential named in `[login]` of `install.ini`, the
 same one `qh` prints after an install. **Backups** runs `qh --backup` into
 `~/.local/share/quadlet-homelab/backups`, lists the archives, and lets you
 download them or upload one back. A restore runs `qh --restore`, and you have to

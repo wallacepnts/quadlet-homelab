@@ -2,7 +2,7 @@
 Description=Any-Sync-Bundle server — AIO mode (Mongo + Redis embedded)
 
 [Container]
-Image=ghcr.io/grishy/any-sync-bundle:1.6.0-2026-08-18
+Image=ghcr.io/grishy/any-sync-bundle:1.7.0-2026-10-12
 ContainerName=any-sync-bundle
 
 Network=tsdproxy-net.network

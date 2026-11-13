@@ -166,9 +166,10 @@ o caminho todo: `qh-updates <app> --bump --apply` só daquele serviço (o
 `qh <app> --update --apply`. A mudança fica no git para você revisar e
 commitar. Uma major fica retida, exatamente como no `--bump`.
 Existe um botão de atualizar só, e ele só aparece quando há algo para
-atualizar. O plano dele abre com todas as releases do GitHub entre a tag
-instalada e a do upstream, para você ler antes de confirmar; prereleases ficam
-de fora. O **Login** mostra a credencial que o `[login]` do
+atualizar, e clicar nele já roda a atualização, sem plano e sem confirmação.
+Enquanto roda, o painel mostra todas as releases do GitHub entre a tag
+instalada e a do upstream (sem prereleases). Remover e restaurar continuam
+mostrando o plano e pedindo confirmação, porque mexem com dados. O **Login** mostra a credencial que o `[login]` do
 `install.ini` indica, a mesma que o `qh` imprime depois de instalar. O
 **Backups** roda o `qh --backup` em `~/.local/share/quadlet-homelab/backups`,
 lista os arquivos e permite baixá-los ou enviar um de volta. A restauração roda
