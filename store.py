@@ -122,8 +122,14 @@ def qh(*args):
 
 
 def qh_env(lang):
-    # NO_COLOR: the output lands in a <pre>, where escape codes are noise.
-    return {**os.environ, "QH_LANG": "pt_BR" if lang == "pt" else "en", "NO_COLOR": "1"}
+    """The environment for qh; `lang` None keeps the host's own language.
+
+    NO_COLOR: the output lands in a <pre>, where escape codes are noise.
+    """
+    env = {**os.environ, "NO_COLOR": "1"}
+    if lang:
+        env["QH_LANG"] = "pt_BR" if lang == "pt" else "en"
+    return env
 
 
 def catalog(lang="en"):
@@ -366,9 +372,13 @@ def start_job(app, action, cmd, lang, prepare=None, entrada=None):
                     job.write("\n" + "─" * 60 + "\n")
                 # `entrada` is what the person typed where the terminal asks —
                 # the app name a restore wants before overwriting. qh checks it.
+                # The host's language, not the page's: qh translates the
+                # dashboard labels it writes into the unit, so a unit installed
+                # from a page in English read as "changed" to qh in Portuguese
+                # ever after. Only read-only output follows the page.
                 p = subprocess.Popen(uno, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                      stdin=subprocess.PIPE if entrada else subprocess.DEVNULL,
-                                     text=True, cwd=ROOT, env=qh_env(lang))
+                                     text=True, cwd=ROOT, env=qh_env(None))
                 if entrada:
                     p.stdin.write(entrada + "\n")
                     p.stdin.close()

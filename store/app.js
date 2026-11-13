@@ -329,11 +329,12 @@ function renderPanel() {
   const acoes = [];
   if (!a.installed) acoes.push(h("button", { type: "button", onclick: () => plan("install") }, t("install")));
   else {
-    // One update button, and only when there is something to update: a new
-    // upstream release the repository does not pin yet (bump, then update), or
-    // a repository that changed since the install (update). Its label says
-    // where it goes, and clicking it does it — no plan, no Confirm.
-    const novo = unbumped(a)[0];
+    // One update button, and only when there is something to update: a newer
+    // upstream release than what runs (bump the repository if it is behind
+    // too, then update — the bump is a no-op when the repository already has
+    // it), or a repository that changed since the install (update). Its label
+    // says where it goes, and clicking it does it — no plan, no Confirm.
+    const novo = behind(a)[0];
     const mudou = a.units.find((u) => u.installed && u.drift);
     if (novo)
       acoes.push(h("button", { type: "button", onclick: () => updateNow("upgrade") },
@@ -380,9 +381,6 @@ async function plan(action, file = "") {
 }
 
 // -- sections: what's new, login, backups ------------------------------------
-
-// Behind upstream with the repository pinning what is installed: only a bump moves it.
-const unbumped = (a) => behind(a).filter((u) => tagOf(u.image) === tagOf(u.installed_image));
 
 const behind = (a) => a.units.filter((u) => u.installed && S.upd[u.unit] && S.upd[u.unit].bucket === "BEHIND");
 
