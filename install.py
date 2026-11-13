@@ -221,6 +221,13 @@ PT = {
     'save the rule every install and update follows ': 'salva a regra que toda instalação e atualização segue ',
     '(local, tailnet or both), and exit': '(local, tailnet ou both), e sai',
     'rule saved:': 'regra salva:',
+    'with services named, an exception for them (`default` drops it)':
+        'com serviços nomeados, uma exceção para eles (`default` remove)',
+    'follows the rule again': 'volta a seguir a regra',
+    'exception saved:': 'exceção salva:',
+    '  apply it with:': '  aplique com:',
+    '`default` drops a service\'s exception: name the service':
+        '`default` remove a exceção de um serviço: nomeie o serviço',
     'every install and update follows it, unless --access says otherwise': 'toda instalação e atualização segue ela, a menos que o --access diga outra coisa',
     '  rule:': '  regra:',
     '  (default, never set)': '  (padrão, nunca definida)',
@@ -399,6 +406,9 @@ def effective_access(s, cli=None, cli_href=False, unit=None):
     """
     if cli:
         return cli, cli_href or cli == "local"
+    excecao = app_accesses(s.home).get(s.name)
+    if excecao:
+        return excecao, cli_href or excecao == "local"
     salvo = saved_access(s.home)
     if salvo:
         return salvo, cli_href or salvo == "local"
@@ -425,15 +435,17 @@ def access_drift(regra, prefix=None):
     nothing says so. This is what turns that into one line.
     """
     fora = []
+    excecoes = app_accesses(Path(prefix) if prefix else None)
     for d in sorted(x.name for x in APPS.iterdir() if x.is_dir()):
         s = Service(d, prefix)
+        esperado = excecoes.get(d, regra)
         for u in s.installed():
             lido = installed_access(u)
             # A unit the mode does not change answers None, and None is not a
             # disagreement. Counting it as one is what reported 14 of the 74
             # services as out of compliance for good, offering an update that
             # rewrote bytes already identical.
-            if lido and lido[0] and lido[0] != regra:
+            if lido and lido[0] and lido[0] != esperado:
                 fora.append(u.stem)
                 break
     return fora
@@ -1121,19 +1133,57 @@ def access_file(home=None):
 
 
 def saved_access(home=None):
-    """The mode chosen once and followed from then on, or None if never set."""
+    """The mode chosen once and followed from then on, or None if never set.
+
+    The file's first line. The lines after it are the per-service exceptions
+    (`app_accesses`), so a file written before they existed reads the same.
+    """
     f = access_file(home)
     if not f.exists():
         return None
-    v = f.read_text().strip()
+    linhas = f.read_text().splitlines()
+    v = linhas[0].strip() if linhas else ""
     return v if v in ACCESS_MODES else None
 
 
-def save_access(mode, home=None):
+def app_accesses(home=None):
+    """{app: mode} — the services that do not follow the rule, one `app = mode` line each.
+
+    An exception lives beside the rule and not only in the installed unit: the
+    unit alone lost it, because the rule outranks what is installed and the
+    next `qh --all --update` wrote the service back to the rule.
+    """
+    f = access_file(home)
+    if not f.exists():
+        return {}
+    saida = {}
+    for linha in f.read_text().splitlines()[1:]:
+        app, sep, modo = linha.partition("=")
+        if sep and modo.strip() in ACCESS_MODES:
+            saida[app.strip()] = modo.strip()
+    return saida
+
+
+def _write_access(regra, excecoes, home):
     f = access_file(home)
     f.parent.mkdir(parents=True, exist_ok=True)
-    f.write_text(mode + "\n")
+    f.write_text((regra or "") + "\n"
+                 + "".join(f"{a} = {m}\n" for a, m in sorted(excecoes.items())))
     return f
+
+
+def save_access(mode, home=None):
+    return _write_access(mode, app_accesses(home), home)
+
+
+def save_app_access(app, mode, home=None):
+    """Sets one service's exception; `mode` None drops it, back to the rule."""
+    excecoes = app_accesses(home)
+    if mode:
+        excecoes[app] = mode
+    else:
+        excecoes.pop(app, None)
+    return _write_access(saved_access(home), excecoes, home)
 
 
 def installed_access(path, source=None):
@@ -1843,6 +1893,7 @@ DESCRICOES = {
     "Cloud file sync and sharing (SQLite evaluation)": "Sincronização e compartilhamento de arquivos na nuvem (avaliação em SQLite)",
     "Converts PDF, Office, image and audio to Markdown, without leaving the machine": "Converte PDF, Office, imagem e áudio para Markdown, sem sair da máquina",
     "CPU/RAM/disk/network and container monitoring for this host": "Monitoramento de CPU/RAM/disco/rede e containers deste host",
+    "Enterprise-grade monitoring of servers, networks and services, with agents, SNMP, alerts and dashboards": "Monitoramento corporativo de servidores, redes e serviços, com agentes, SNMP, alertas e painéis",
     "Excalidraw drawings, organised and shared from one place": "Desenhos do Excalidraw, organizados e compartilhados de um lugar só",
     "File server with uploads from the browser, the phone or WebDAV": "Servidor de arquivos com upload pelo navegador, pelo celular ou por WebDAV",
     "Flow automation via a visual node editor": "Automação de fluxos por editor visual de nós",
@@ -1868,12 +1919,14 @@ DESCRICOES = {
     "Network-wide ad and tracker blocking over DNS": "Bloqueio de anúncios e rastreadores por DNS, para a rede toda",
     "NVR with AI object detection": "NVR com detecção de objetos por IA",
     "Offline converters, generators and calculators — everything runs in the browser": "Conversores, geradores e calculadoras offline — tudo roda no navegador",
+    "Real-time Instagram OSINT monitor with web dashboard, activity feeds and media downloads": "Monitor OSINT do Instagram em tempo real, com painel web, feed de atividades e download de mídia",
     "Tasks with a deadline and a project behind them":
         "Tarefas com prazo e projeto por trás",
     "Signing documents without sending them to a company first":
         "Assinar documentos sem mandá-los antes para uma empresa",
     "Comics and manga, with reading progress that follows you between devices":
         "Quadrinhos e mangá, com o progresso de leitura acompanhando entre aparelhos",
+    "Web GUI for rclone: browse, copy and sync files across the cloud accounts in its config": "Interface web do rclone: navegar, copiar e sincronizar arquivos entre as contas de nuvem da sua configuração",
     "Wikipedia and other libraries, read with the internet off":
         "Wikipedia e outras bibliotecas, para ler com a internet desligada",
     "Live logs of every container, without opening a terminal":
@@ -3043,6 +3096,22 @@ def selftest():
         assert saved_access(h) == "local"
         (h / ".config/quadlet-homelab/access").write_text("lixo\n")
         assert saved_access(h) is None, "valor inválido não vale como regra"
+        # per-service exceptions: beside the rule, never in place of it
+        save_access("tailnet", h)
+        save_app_access("vaultwarden", "local", h)
+        save_app_access("memos", "both", h)
+        assert saved_access(h) == "tailnet", "the exceptions do not move the rule"
+        assert app_accesses(h) == {"vaultwarden": "local", "memos": "both"}
+        save_access("both", h)
+        assert app_accesses(h) == {"vaultwarden": "local", "memos": "both"}, \
+            "changing the rule keeps the exceptions"
+        save_app_access("memos", None, h)
+        assert app_accesses(h) == {"vaultwarden": "local"} and saved_access(h) == "both"
+        assert effective_access(Service("vaultwarden", h)) == ("local", True), \
+            "an exception outranks the rule"
+        assert effective_access(Service("vaultwarden", h), "tailnet") == ("tailnet", False), \
+            "and --access outranks the exception"
+        assert effective_access(Service("memos", h))[0] == "both", "the rest follow the rule"
 
     # an update keeps the mode it finds, unless --access says otherwise
     with tempfile.TemporaryDirectory() as d:
@@ -3841,6 +3910,13 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude):
         # Whether there is a typed credential to show after the install
         # ([login] in install.ini); the value itself is asked for apart.
         "has_login": s.login() is not None,
+        # How it is reached: the mode in force for it, and whether that is an
+        # exception of its own (`qh --set-access MODE APP`) or the rule.
+        "access": {"mode": effective_access(s)[0],
+                   "exception": app_accesses(s.home).get(d)},
+        # Whoever owns a network it needs and is not installed: install
+        # refuses until they are, so a front end offers them first.
+        "requires": sorted({dono for dono, _ in missing_prereqs(s)}),
         "units": units,
         "web": [{"unit": u, "local": local, "tailnet": rede}
                 for u, local, rede in addresses(s, tailnet)],
@@ -4249,9 +4325,10 @@ def main():
                     help=loc("what is installed, running, and changed in the repository"))
     ap.add_argument("--catalog", action="store_true",
                     help=loc("the services as JSON, for a front end (the app store)"))
-    ap.add_argument("--set-access", choices=ACCESS_MODES, metavar="MODE",
+    ap.add_argument("--set-access", choices=ACCESS_MODES + ("default",), metavar="MODE",
                     help=loc("save the rule every install and update follows "
-                             "(local, tailnet or both), and exit"))
+                             "(local, tailnet or both), and exit") + "; "
+                    + loc("with services named, an exception for them (`default` drops it)"))
     ap.add_argument("--access", choices=ACCESS_MODES, default=None,
                     help=loc("local: no tsdproxy, link to the LAN | tailnet: link via the "
                              "tailnet name (default) | both: on the tailnet, with a LAN link"))
@@ -4302,7 +4379,23 @@ def main():
 
 
     if a.set_access:
-        f = save_access(a.set_access, Path(a.prefix) if a.prefix else None)
+        casa = Path(a.prefix) if a.prefix else None
+        if a.app:
+            # Named services: an exception for each, the rule left alone.
+            # `default` drops the exception, and the service follows the rule.
+            pastas = [find_app(x)[0] for x in a.app]
+            if None in pastas:
+                ap.error(loc("not found in apps/: ")
+                         + ", ".join(x for x, p in zip(a.app, pastas) if p is None))
+            for pasta in dict.fromkeys(pastas):
+                f = save_app_access(pasta, None if a.set_access == "default" else a.set_access, casa)
+                say(f"{pasta}: " + (loc("follows the rule again") if a.set_access == "default"
+                                    else loc("exception saved:") + f" {a.set_access}") + f"  ({f})")
+            say(loc("  apply it with:") + f"  qh {' '.join(dict.fromkeys(pastas))} --update --apply")
+            return 0
+        if a.set_access == "default":
+            ap.error(loc("`default` drops a service's exception: name the service"))
+        f = save_access(a.set_access, casa)
         say(loc("rule saved:") + f" {a.set_access}  ({f})")
         say(loc("every install and update follows it, unless --access says otherwise"))
         return 0

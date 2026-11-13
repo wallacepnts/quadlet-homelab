@@ -86,7 +86,7 @@ uma conta existente entra com a própria senha.
 qh fmd-server --update --apply
 ```
 
-Fixado em `0.17.0-alpine`. Nada atualiza sozinho.
+Fixado em `0.17.1-alpine`. Nada atualiza sozinho.
 
 O projeto é **pré-1.0, e avisa que versões minor podem quebrar** — leia as notas
 da release antes de ir da 0.17 para a 0.18, e faça backup antes. Ele vive no

@@ -83,7 +83,8 @@ PT = {
     "sandbox, not executed": "sandbox, não executado",
     "the web store over qh (install, update, remove, logs)":
         "a loja web sobre o qh (instalar, atualizar, remover, logs)",
-    "address and port to listen on": "endereço e porta para escutar",
+    "address and port to listen on, comma-separated for several":
+        "endereço e porta para escutar, separados por vírgula para vários",
     "use another home (to test without touching the real one)":
         "usar outro home (para testar sem tocar no real)",
     "test the store against a sandbox": "testar a loja contra um sandbox",
@@ -101,7 +102,7 @@ CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; img-src https: 
        "connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'")
 COOKIE = "qh_store"
 NOME = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
-ACOES = ("install", "update", "remove", "backup", "restore", "upgrade")
+ACOES = ("install", "update", "remove", "backup", "restore", "upgrade", "access")
 BACKUP = re.compile(r"-\d{8}-\d{6}\.tar\.gz")     # what --backup names its archive after the app
 VERBOS = {"start", "stop", "restart"}
 
@@ -293,8 +294,8 @@ def flags(app, action, arquivo=""):
     if action == "restore":
         f = backup_file(app, arquivo)
         return ["--restore", str(f)] if f else None
-    if action == "upgrade":
-        return []           # not a qh flag: bump_cmd, then --update
+    if action in ("upgrade", "access"):
+        return []           # not a single qh flag: built in the handler
     return {"install": [], "update": ["--update"], "remove": ["--remove"],
             "backup": ["--backup", "--out", str(backup_dir())]}.get(action)
 
@@ -319,6 +320,21 @@ def service_dir(app):
 
 def unit_exists(unit):
     return bool(NOME.match(unit or "")) and any(I.APPS.glob(f"*/{unit}.container"))
+
+
+def chain(app):
+    """The services an install of `app` needs first, in install order, then `app`.
+
+    qh refuses an install whose network's owner is missing (79 of the 82 need
+    tsdproxy's). Followed through: an owner may have owners of its own.
+    """
+    faltam, fila = [], [app]
+    while fila:
+        for dono, _ in I.missing_prereqs(I.Service(fila.pop(), PREFIX)):
+            if dono not in faltam and dono != app:
+                faltam.append(dono)
+                fila.append(dono)
+    return I.install_order(faltam) + [app]
 
 
 def asks(app):
@@ -380,7 +396,7 @@ class Job:
         pass
 
 
-def start_job(app, action, cmd, lang, prepare=None, entrada=None):
+def start_job(app, action, cmd, lang, prepare=None, entrada=None, refrescar=None):
     """The job, running in the background — or None when another one still is.
 
     One at a time: two `qh --apply` racing each other over the same
@@ -433,7 +449,8 @@ def start_job(app, action, cmd, lang, prepare=None, entrada=None):
             # the comparison as soon as it sees the job end, and it got the
             # pre-update answer — 26.11.0 installed, "new version 26.11.0".
             if action in MUDA_VERSAO:
-                refresh_updates(app)
+                for x in (refrescar or [app]):
+                    refresh_updates(x)
             job.rc = rc
         except Exception as e:        # the page must learn the job ended
             job.write(f"\n{type(e).__name__}: {e}\n")
@@ -585,10 +602,17 @@ class Handler(BaseHTTPRequestHandler):
             if action == "upgrade" and PREFIX:
                 return self._json(400, {"error": loc("an upgrade edits the repository, "
                                                      "which a sandbox does not have")})
-            r = subprocess.run(bump_cmd(app, False) if action == "upgrade" else qh(app, *extra),
-                               capture_output=True, text=True, stdin=subprocess.DEVNULL,
-                               env=qh_env(lang), cwd=ROOT, timeout=300)
-            saida = r.stdout + r.stderr
+            cmds = [bump_cmd(app, False)] if action == "upgrade" else [qh(app, *extra)]
+            if action == "install":
+                # The dry-run of each service the install takes along, in order.
+                cmds = [qh(x) for x in chain(app)]
+            saida, rc = "", 0
+            for i, c in enumerate(cmds):
+                r = subprocess.run(c, capture_output=True, text=True, stdin=subprocess.DEVNULL,
+                                   env=qh_env(lang), cwd=ROOT, timeout=300)
+                saida += ("\n" + "─" * 60 + "\n" if i else "") + r.stdout + r.stderr
+                rc = rc or r.returncode
+            r = subprocess.CompletedProcess(cmds[-1], rc)
             vazio = bump_vazio(saida) if action == "upgrade" else em_dia(saida)
             return self._json(200, {"rc": r.returncode, "output": saida, "nothing": vazio})
         if url.path in ("/api/login", "/api/backups", "/api/backup/file"):
@@ -671,13 +695,29 @@ class Handler(BaseHTTPRequestHandler):
             if not (isinstance(segredos, dict) and isinstance(variaveis, dict)
                     and all(isinstance(v, str) for v in [*segredos.values(), *variaveis.values()])):
                 return self._json(400, {"error": "secrets/vars"})
-            manuais, nomes = asks(app)
-            fora = sorted(set(segredos) - manuais) + sorted(set(variaveis) - nomes)
+            # An install takes the services it needs along, and the answers
+            # for all of them: each name goes to the service that asks it.
+            cadeia = chain(app) if action == "install" else [app]
+            dono_s, dono_v = {}, {}
+            for x in cadeia:
+                manuais, nomes = asks(x)
+                for n in manuais:
+                    dono_s.setdefault(n, x)
+                for n in nomes:
+                    dono_v.setdefault(n, x)
+            fora = sorted(set(segredos) - set(dono_s)) + sorted(set(variaveis) - set(dono_v))
             if fora:
                 return self._json(400, {"error": f"{', '.join(fora)}: "
                                         + loc("not asked by this service")})
-            prepare = ((lambda: provision(app, segredos, variaveis))
-                       if action == "install" and (segredos or variaveis) else None)
+
+            def prepare():
+                for x in cadeia:
+                    if provision(x, {n: v for n, v in segredos.items() if dono_s[n] == x},
+                                 {n: v for n, v in variaveis.items() if dono_v[n] == x}) is False:
+                        return False
+                return True
+            if action != "install" or not (segredos or variaveis):
+                prepare = None
             entrada = None
             if action == "restore":
                 # The same guard the terminal has: the name, typed by the person.
@@ -694,7 +734,18 @@ class Handler(BaseHTTPRequestHandler):
                     return self._json(400, {"error": loc("an upgrade edits the repository, "
                                                          "which a sandbox does not have")})
                 cmd = [bump_cmd(app, True), qh(app, "--update", "--apply")]
-            job = start_job(app, action, cmd, lang, prepare, entrada)
+            if action == "install" and len(cadeia) > 1:
+                cmd = [qh(x, "--apply") for x in cadeia]
+            if action == "access":
+                # An exception for this service, then the update that writes it
+                # into the unit. `default` drops it, back to the rule.
+                modo = d.get("mode", "")
+                if modo not in I.ACCESS_MODES + ("default",):
+                    return self._json(400, {"error": loc("unknown action")})
+                cmd = [qh("--set-access", modo, app)]
+                if I.Service(app, PREFIX).installed():
+                    cmd.append(qh(app, "--update", "--apply"))
+            job = start_job(app, action, cmd, lang, prepare, entrada, refrescar=cadeia)
         elif url.path == "/api/unit":
             unit, verbo = d.get("unit", ""), d.get("verb", "")
             if not unit_exists(unit):
@@ -713,14 +764,22 @@ class Handler(BaseHTTPRequestHandler):
 # -- entry points ----------------------------------------------------------------
 
 def serve(listen):
-    host, _, porta = listen.rpartition(":")
+    """One server per address in `listen`, comma-separated.
+
+    Several, so the store can stay on 127.0.0.1 for this machine and also
+    answer on the host's tailnet address for tsdproxy — rather than 0.0.0.0,
+    which would put it on the LAN as well.
+    """
     token, novo = load_token()
     Handler.token = token
-    srv = ThreadingHTTPServer((host.strip("[]"), int(porta)), Handler)
-    print(loc("the store is at") + f" http://{listen}", flush=True)
+    servidores = []
+    for endereco in (x.strip() for x in listen.split(",") if x.strip()):
+        host, _, porta = endereco.rpartition(":")
+        servidores.append(ThreadingHTTPServer((host.strip("[]"), int(porta)), Handler))
+        print(loc("the store is at") + f" http://{endereco}", flush=True)
     print((loc("token created in") if novo else loc("the token is in"))
           + f" {token_file()}  ({loc('read it with')}: cat {token_file()})", flush=True)
-    return srv
+    return servidores
 
 
 def selftest():
@@ -777,7 +836,12 @@ def selftest():
             st, _, corpo = pedir("/api/updates", headers=ok)
             assert st == 200 and json.loads(corpo) == {"checked": None, "rows": []}, corpo
 
+            # an install takes the network's owner along, and plans both
+            assert chain("homebox") == ["tsdproxy", "homebox"], chain("homebox")
+            assert chain("tsdproxy") == ["tsdproxy"]
+
             st, _, corpo = pedir("/api/plan?app=homebox&action=install", headers=ok)
+            assert "tsdproxy" in json.loads(corpo)["output"], "the plan shows the owner too"
             assert st == 200 and json.loads(corpo)["rc"] == 0 and not json.loads(corpo)["nothing"]
             for ruim in ("../etc", "nao-existe", "homebox;id"):
                 st, _, _ = pedir(f"/api/plan?app={ruim}&action=install", headers=ok)
@@ -807,6 +871,25 @@ def selftest():
             st, _, corpo = pedir("/api/catalog", headers=ok)
             hb = next(a for a in json.loads(corpo)["apps"] if a["id"] == "homebox")
             assert hb["installed"], "the install shows up in the catalog"
+            ts = next(a for a in json.loads(corpo)["apps"] if a["id"] == "tsdproxy")
+            assert ts["installed"] and hb["requires"] == [], "and the owner came first"
+
+            # access: an exception for one service, applied; `default` drops it
+            for modo, esperado in (("local", "local"), ("default", None)):
+                st, _, corpo = pedir("/api/run", json.dumps(
+                    {"app": "homebox", "action": "access", "mode": modo}).encode(), api)
+                assert st == 202, (st, corpo)
+                job = json.loads(corpo)["job"]
+                for _ in range(300):
+                    estado = json.loads(pedir(f"/api/job/{job}", headers=ok)[2])
+                    if estado["rc"] is not None:
+                        break
+                    time.sleep(0.5)
+                assert estado["rc"] == 0, estado["output"]
+                assert I.app_accesses(Path(tmp)).get("homebox") == esperado, modo
+            st, _, _ = pedir("/api/run", json.dumps(
+                {"app": "homebox", "action": "access", "mode": "lan"}).encode(), api)
+            assert st == 400, st
             for caminho in ("/api/plan?app=homebox&action=upgrade", None):
                 if caminho:
                     st, _, _ = pedir(caminho, headers=ok)
@@ -898,7 +981,8 @@ def main():
     qhui.argparse_ptbr()
     ap = argparse.ArgumentParser(description=loc("the web store over qh (install, update, remove, logs)"))
     ap.add_argument("--listen", default=os.environ.get("QH_STORE_LISTEN") or "127.0.0.1:8484",
-                    help=loc("address and port to listen on") + " (QH_STORE_LISTEN)")
+                    help=loc("address and port to listen on, comma-separated for several")
+                    + " (QH_STORE_LISTEN)")
     ap.add_argument("--prefix", help=loc("use another home (to test without touching the real one)"))
     ap.add_argument("--selftest", action="store_true", help=loc("test the store against a sandbox"))
     a = ap.parse_args()
@@ -908,9 +992,11 @@ def main():
     global PREFIX
     PREFIX = a.prefix
     I.SANDBOX = bool(a.prefix)
-    srv = serve(a.listen)
+    *outros, ultimo = serve(a.listen)
+    for srv in outros:
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
     try:
-        srv.serve_forever()
+        ultimo.serve_forever()
     except KeyboardInterrupt:
         pass
     return 0

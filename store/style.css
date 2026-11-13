@@ -92,3 +92,6 @@ table.backups td { padding: .3rem .4rem; border-bottom: 1px solid var(--line); }
 .md blockquote { margin: .4rem 0; padding-left: .7rem; border-left: 3px solid var(--line); color: var(--muted); }
 .md hr { border: 0; border-top: 1px solid var(--line); }
 #p-units td:nth-child(6) { white-space: nowrap; }
+select { font: inherit; color: inherit; background: var(--card); border: 1px solid var(--line);
+         border-radius: 8px; padding: .4rem .6rem; }
+.access { margin-left: auto; color: var(--muted); display: flex; align-items: center; gap: .4rem; }

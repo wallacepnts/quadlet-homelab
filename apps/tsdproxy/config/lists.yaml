@@ -19,3 +19,18 @@
 #     visible: true
 #     label: Cockpit
 #     icon: sh/cockpit
+#
+# qh-store, the app store (docs/tools.md), also COMMENTED OUT: it runs on the
+# host and only answers on an address you give it. Set
+#   QH_STORE_LISTEN=127.0.0.1:8484,<tailscale-ip>:8484
+# in its unit (`systemctl --user edit qh-store`), then uncomment this.
+#
+# qh-store:
+#   ports:
+#     443/https:
+#       targets:
+#         - http://<tailscale-ip>:8484
+#   dashboard:
+#     visible: true
+#     label: qh store
+#     icon: mdi/storefront

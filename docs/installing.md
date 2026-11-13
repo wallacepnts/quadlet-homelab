@@ -140,6 +140,18 @@ The bootstrap asks for it on the first run. Until it is set, `tailnet` is the
 default. Naming `--access` on a single command wins over the rule for that
 command only, and changes nothing saved.
 
+A service that should not follow the rule gets an exception of its own, saved
+beside the rule, so `qh --all --update` keeps it too:
+
+```bash
+qh --set-access local vaultwarden     # this one on the LAN only
+qh vaultwarden --update --apply       # write it into the unit
+qh --set-access default vaultwarden   # back to the rule
+```
+
+The order is `--access` on the command, then the service's exception, then the
+rule, then whatever is installed.
+
 ## Access
 
 ```bash

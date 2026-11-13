@@ -248,6 +248,23 @@ def scenario_access(tmp):
     check([l for l in u2.read_text().splitlines() if "homepage.href" in l] == href,
           "and --update does not revert --href-local")
 
+    # A per-service exception survives the update that follows the rule.
+    casa3 = str(Path(tmp, "acc3"))
+    run("--set-access", "tailnet", "--prefix", casa3)
+    run(APP, "--apply", "--prefix", casa3)
+    run("--set-access", "local", APP, "--prefix", casa3)
+    u3 = path(casa3, "systemd", f"{APP}.container")
+    os.utime(u3, (0, 0))
+    # Read by the comment `--access local` leaves, not by installed_access: this
+    # process renders in the machine's language and the runs above in English.
+    local = lambda: "# disabled by --access local: Label=tsdproxy.enable" in u3.read_text()
+    run(APP, "--update", "--apply", "--prefix", casa3)
+    check(local(), "--set-access MODE APP makes that service local while the rule stays tailnet")
+    # exit 1: every service the sandbox never installed is "nothing to do"
+    run("--all", "--update", "--apply", "--prefix", casa3, expected=1)
+    check(local(), "and `--all --update` does not write it back to the rule")
+    run("--set-access", "default", "--prefix", casa3, expected=2)
+
 
 def scenario_answers(tmp):
     """Six answers the tool gave wrong, each on its own.

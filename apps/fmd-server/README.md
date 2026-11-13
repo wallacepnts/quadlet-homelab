@@ -86,7 +86,7 @@ accounts — an existing account logs in with its own password.
 qh fmd-server --update --apply
 ```
 
-Pinned to `0.17.0-alpine`. Nothing updates on its own.
+Pinned to `0.17.1-alpine`. Nothing updates on its own.
 
 The project is **pre-1.0, and says minor versions can introduce breaking
 changes** — read the release notes before moving from 0.17 to 0.18, and back up

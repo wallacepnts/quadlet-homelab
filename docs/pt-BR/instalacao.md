@@ -139,6 +139,18 @@ O bootstrap pergunta no primeiro uso. Enquanto não houver regra, o padrão é
 `tailnet`. Nomear o `--access` num comando vence a regra só naquele comando, e
 não muda nada do que está salvo.
 
+Um serviço que não deve seguir a regra ganha uma exceção própria, salva ao lado
+da regra, então o `qh --all --update` também a respeita:
+
+```bash
+qh --set-access local vaultwarden     # este só na rede local
+qh vaultwarden --update --apply       # grava na unit
+qh --set-access default vaultwarden   # volta à regra
+```
+
+A ordem é: `--access` no comando, depois a exceção do serviço, depois a regra,
+depois o que está instalado.
+
 ## Acesso
 
 ```bash

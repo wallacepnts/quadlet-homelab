@@ -30,6 +30,11 @@ const T = {
     onGithub: "ver no GitHub",
     upgradeTo: (v) => `Atualizar para ${v}`,
     nothingToDo: "Nada a fazer: o instalado já é igual ao que o repositório fixa.",
+    installWith: (deps) => `Instalar (com ${deps})`,
+    requiresNote: (deps) => `Este app precisa de ${deps}, que ainda não está instalado. ` +
+      `A instalação instala antes, na ordem certa.`,
+    access: "Acesso", followRule: (m) => `Seguir a regra (${m})`,
+    modes: { local: "Rede local", tailnet: "Tailnet", both: "Rede local e tailnet" },
     lang: "English",
   },
   en: {
@@ -59,12 +64,18 @@ const T = {
     onGithub: "see on GitHub",
     upgradeTo: (v) => `Update to ${v}`,
     nothingToDo: "Nothing to do: what is installed already matches what the repository pins.",
+    installWith: (deps) => `Install (with ${deps})`,
+    requiresNote: (deps) => `This app needs ${deps}, which is not installed yet. ` +
+      `The install puts it in first, in the right order.`,
+    access: "Access", followRule: (m) => `Follow the rule (${m})`,
+    modes: { local: "Local network", tailnet: "Tailnet", both: "Local network and tailnet" },
     lang: "Português",
   },
 };
 
 const S = {
   lang: localStorage.getItem("qh-lang") || (navigator.language.startsWith("pt") ? "pt" : "en"),
+  rule: "tailnet",          // the host's access rule (qh --set-access)
   apps: [], group: null, search: "", onlyInstalled: false, current: null,
   upd: {}, checked: null,   // unit -> qh-updates --host row; when it was asked
 };
@@ -251,6 +262,7 @@ function renderGrid() {
 async function load() {
   const cat = await api(`/api/catalog?lang=${S.lang}`);
   S.apps = cat.apps;
+  S.rule = cat.access;
   renderGroups();
   renderGrid();
   if (S.current && $("panel").open) renderPanel();
@@ -327,7 +339,11 @@ function renderPanel() {
         h("button", { type: "button", class: "ghost", onclick: () => showLogs(u.unit) }, t("logs"))))));
 
   const acoes = [];
-  if (!a.installed) acoes.push(h("button", { type: "button", onclick: () => plan("install") }, t("install")));
+  if (!a.installed) {
+    const deps = needs(a);
+    acoes.push(h("button", { type: "button", onclick: () => plan("install") },
+      deps.length ? t("installWith")(deps.map((x) => x.name).join(", ")) : t("install")));
+  }
   else {
     // One update button, and only when there is something to update: a newer
     // upstream release than what runs (bump the repository if it is behind
@@ -349,7 +365,7 @@ function renderPanel() {
     acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showBackups(a) }, t("backups")));
     acoes.push(h("button", { type: "button", class: "danger", onclick: () => plan("remove") }, t("remove")));
   }
-  $("p-actions").replaceChildren(...acoes);
+  $("p-actions").replaceChildren(...acoes, a.installed && a.web.length ? accessPicker(a) : null);
 }
 
 function out(text, append = false) {
@@ -490,17 +506,10 @@ function buildForm(a, action, file = "") {
     campos.push(h("input", { id: "confirm", type: "text", "data-confirm": "1", autocomplete: "off" }));
   }
   if (action === "install") {
-    for (const s of a.asks.secrets) {
-      campos.push(h("label", { for: `s-${s.secret}` }, s.secret));
-      campos.push(h("input", { id: `s-${s.secret}`, type: "password", "data-secret": s.secret,
-                               autocomplete: "new-password" }));
-      campos.push(h("p", { class: "help" }, plain(s.instruction) + " — " +
-                    (s.exists ? t("exists") : t("secretHint"))));
-    }
-    for (const v of a.asks.vars.filter((x) => !x.set)) {
-      campos.push(h("label", { for: `v-${v.name}` }, v.name));
-      campos.push(h("input", { id: `v-${v.name}`, type: "text", "data-var": v.name, value: v.default }));
-    }
+    // The services it needs come first, and so do their questions.
+    const deps = needs(a);
+    if (deps.length) campos.push(h("p", { class: "note" }, t("requiresNote")(deps.map((x) => x.name).join(", "))));
+    for (const x of [...deps, a]) campos.push(...asksFields(x));
   }
   if (action === "remove") campos.push(h("p", { class: "note" }, t("removeNote")));
   campos.push(h("div", {},
@@ -525,6 +534,47 @@ async function run(action, file = "") {
 
 // Updating is one click: it runs right away, with the release notes of what it
 // brings shown above the output while it works.
+// The services an install of `a` takes along: the owners of the networks it
+// needs that are not installed, theirs first.
+function needs(a, vistos = new Set()) {
+  const saida = [];
+  for (const id of a.requires || []) {
+    const dono = S.apps.find((x) => x.id === id);
+    if (!dono || vistos.has(id)) continue;
+    vistos.add(id);
+    saida.push(...needs(dono, vistos), dono);
+  }
+  return saida;
+}
+
+// What the terminal would have asked for one service: `manual` secrets and unset [vars].
+function asksFields(x) {
+  const campos = [];
+  for (const s of x.asks.secrets) {
+    campos.push(h("label", { for: `s-${s.secret}` }, s.secret));
+    campos.push(h("input", { id: `s-${s.secret}`, type: "password", "data-secret": s.secret,
+                             autocomplete: "new-password" }));
+    campos.push(h("p", { class: "help" }, plain(s.instruction) + " — " +
+                  (s.exists ? t("exists") : t("secretHint"))));
+  }
+  for (const v of x.asks.vars.filter((y) => !y.set)) {
+    campos.push(h("label", { for: `v-${v.name}` }, v.name));
+    campos.push(h("input", { id: `v-${v.name}`, type: "text", "data-var": v.name, value: v.default }));
+  }
+  return campos;
+}
+
+// How the service is reached. Choosing applies it at once: the exception is
+// saved beside the rule, and the update writes it into the unit.
+function accessPicker(a) {
+  const atual = a.access.exception || "default";
+  const sel = h("select", { "aria-label": t("access") },
+    h("option", { value: "default", selected: atual === "default" }, t("followRule")(t("modes")[S.rule] || S.rule)),
+    ...["local", "tailnet", "both"].map((m) => h("option", { value: m, selected: atual === m }, t("modes")[m])));
+  sel.onchange = () => follow(() => api("/api/run", { app: a.id, action: "access", mode: sel.value }));
+  return h("label", { class: "access" }, `${t("access")}: `, sel);
+}
+
 async function updateNow(action) {
   const a = current();
   $("p-form").hidden = true;

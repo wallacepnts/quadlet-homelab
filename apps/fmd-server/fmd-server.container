@@ -2,7 +2,7 @@
 Description=FMD Server (find, locate and control your Android phone)
 
 [Container]
-Image=registry.gitlab.com/fmd-foss/fmd-server:0.17.0-alpine
+Image=registry.gitlab.com/fmd-foss/fmd-server:0.17.1-alpine
 ContainerName=fmd-server
 
 Network=tsdproxy-net.network

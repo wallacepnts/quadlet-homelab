@@ -194,13 +194,21 @@ systemctl --user enable --now ~/quadlet-homelab/store/qh-store.service
 cat ~/.config/quadlet-homelab/store-token       # the login
 ```
 
+Each installed service has an **Access** picker: follow the rule, local
+network, tailnet, or both. Picking one saves an exception
+(`qh --set-access MODE APP`) and applies it with `--update`. Installing a
+service whose network belongs to one that is not installed (tsdproxy, for 79 of
+the 82) installs that one first, asking its questions in the same form.
+
 It listens on `127.0.0.1:8484`, so only this machine can reach it. Use
 `ssh -L 8484:127.0.0.1:8484 <host>` to open it from another computer. To reach
-it from the tailnet, have it listen on the host's tailnet address and publish it
-through tsdproxy's `lists.yaml`, the same way as Cockpit:
+it from the tailnet as well, give it the host's tailnet address too
+(comma-separated addresses, each its own listener; `0.0.0.0` would add the LAN)
+and publish it through tsdproxy's `lists.yaml`, the same way as Cockpit. The
+entry ships commented out in `apps/tsdproxy/config/lists.yaml`:
 
 ```bash
-systemctl --user edit qh-store      # [Service]  Environment=QH_STORE_LISTEN=<tailscale-ip>:8484
+systemctl --user edit qh-store      # [Service]  Environment=QH_STORE_LISTEN=127.0.0.1:8484,<tailscale-ip>:8484
 ```
 
 ```yaml
