@@ -138,7 +138,7 @@ fi
 
 cd "$DEST"
 
-# 5. The three tools on PATH, so the repository's location stops mattering.
+# 5. The four tools on PATH, so the repository's location stops mattering.
 #    Only ever into ~/.local/bin: no sudo, nothing outside your home, and
 #    nothing written to your shell's rc file — a bootstrap that edits how every
 #    future shell starts is doing more than it was asked to. If PATH needs the
@@ -168,6 +168,7 @@ if [ "${NO_LINKS:-}" != 1 ]; then
     link install.py qh
     link check.py   qh-check
     link updates.py qh-updates
+    link store.py   qh-store
     case ":$PATH:" in
         *":$HOME/.local/bin:"*) ;;
         *) say ""

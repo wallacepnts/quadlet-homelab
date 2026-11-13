@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>qh store</title>
+<link rel="stylesheet" href="/style.css">
+<script src="/app.js" defer></script>
+</head>
+<body>
+<header>
+  <h1>qh store</h1>
+  <input id="search" type="search">
+  <label class="toggle"><input id="only-installed" type="checkbox"> <span id="only-installed-label"></span></label>
+  <button id="lang" type="button" class="ghost"></button>
+</header>
+<nav id="groups"></nav>
+<main id="grid"></main>
+<p id="empty" hidden></p>
+<dialog id="panel">
+  <div class="panel-head">
+    <img id="p-icon" alt="" referrerpolicy="no-referrer">
+    <div>
+      <h2 id="p-name"></h2>
+      <p id="p-meta"></p>
+    </div>
+    <button id="p-close" type="button" class="ghost">✕</button>
+  </div>
+  <p id="p-desc"></p>
+  <div id="p-links"></div>
+  <table id="p-units"></table>
+  <div id="p-actions"></div>
+  <form id="p-form" hidden></form>
+  <pre id="p-out" hidden></pre>
+</dialog>
+</body>
+</html>

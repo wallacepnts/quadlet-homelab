@@ -1,0 +1,13 @@
+[Unit]
+Description=qh store, the web app store over qh (quadlet-homelab)
+Documentation=https://github.com/wallacepnts/quadlet-homelab/blob/main/docs/tools.md
+After=default.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/qh-store
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

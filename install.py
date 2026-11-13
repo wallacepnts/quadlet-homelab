@@ -2547,7 +2547,6 @@ def ask_vars(s, faltam):
     is cut at the space, and a relative one resolves against nothing useful.
     Returns False when the answer was left empty, so the install stops.
     """
-    conf = Path.home() / ".config/environment.d" / f"{s.dir.name}.conf"
     for nome in sorted({n for n, _ in faltam}):
         usos = ", ".join(p for n, p in faltam if n == nome)
         padrao = var_default(s, nome)
@@ -2557,16 +2556,32 @@ def ask_vars(s, faltam):
             valor = input(loc("  path") + (f" [{padrao}]" if padrao else "") + ": ").strip() or padrao
             if not valor:
                 return False
-            valor = os.path.abspath(os.path.expanduser(valor))
-            if any(c.isspace() for c in valor):
+            conf, valor = save_var(s, nome, valor)
+            if conf is None:
                 say(loc("  no spaces: Volume= would cut the path there"))
                 continue
             break
-        conf.parent.mkdir(parents=True, exist_ok=True)
-        with conf.open("a") as f:
-            f.write(f"{nome}={valor}\n")
         say(f"  -> {conf}: {nome}={valor}")
     return True
+
+
+def save_var(s, nome, valor):
+    """(environment.d file, absolute path) after writing `nome=valor`, or (None, None).
+
+    None means the path holds whitespace — a Volume= with a space in it is cut
+    at the space. Written as an absolute path: a relative one resolves against
+    nothing useful. Shared by the terminal (ask_vars) and the store, so the two
+    cannot disagree on what a valid answer is.
+    """
+    valor = os.path.abspath(os.path.expanduser(valor.strip()))
+    if any(c.isspace() for c in valor):
+        return None, None
+    # s.home, not Path.home(): under --prefix the answer belongs to the sandbox.
+    conf = s.home / ".config/environment.d" / f"{s.dir.name}.conf"
+    conf.parent.mkdir(parents=True, exist_ok=True)
+    with conf.open("a") as f:
+        f.write(f"{nome}={valor}\n")
+    return conf, valor
 
 
 def find_tailnet():

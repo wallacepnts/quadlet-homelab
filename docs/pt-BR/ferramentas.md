@@ -1,6 +1,6 @@
 # Ferramentas
 
-Os dois falam português quando o sistema fala, como o `qh`. O `QH_LANG=en` ou
+Os três falam português quando o sistema fala, como o `qh`. O `QH_LANG=en` ou
 `QH_LANG=pt` força um dos dois, e o `NO_COLOR=1` desliga a cor — que já sai
 desligada sozinha sempre que a saída não é um terminal.
 
@@ -139,3 +139,52 @@ E `-` diz que não há o que comparar — a imagem Arch do toolbx só publica
 Tag flutuante (`latest`, major solto) não tem versão pra comparar, então a
 comparação é por digest: se a tag hoje aponta pra outro lugar que a imagem
 deste host, ele diz. Isso exige podman e a imagem já baixada.
+
+## `qh-store`
+
+Uma loja de apps web sobre o `qh`. Ela mostra o catálogo (`qh --catalog`), e
+cada ação roda um comando do `qh`: primeiro o plano em simulação, depois
+`qh <app> --apply` (e também `--update` e `--remove`), além de
+iniciar/parar/reiniciar e logs de cada unit. Ela nunca roda `--purge`: dados
+continuam sendo apagados só no terminal. O que o terminal perguntaria durante
+uma instalação, o formulário pergunta antes: secrets `manual` e `[vars]` ainda
+não definidas. Eles são gravados com as mesmas funções e a mesma checagem
+`[validate]` que o `qh` usa.
+
+Ela roda no host como serviço `systemd --user`, não como Quadlet. O trabalho
+dela é comandar o systemd e o podman como você, então um container precisaria
+do seu home, do socket do podman e do barramento do systemd. É o mesmo acesso,
+só que menos visível. Pelo mesmo motivo a unit não tem `NoNewPrivileges=`: o
+podman rootless precisa do `newuidmap` com setuid.
+
+A unit chama `~/.local/bin/qh-store`, o link que o `bootstrap.sh` cria; um clone de
+antes da loja precisa rodar o `bootstrap.sh` de novo, ou o `ln -s` na mão.
+
+```bash
+systemctl --user enable --now ~/quadlet-homelab/store/qh-store.service
+cat ~/.config/quadlet-homelab/store-token       # o login
+```
+
+Ela escuta em `127.0.0.1:8484`, então só esta máquina alcança. Para abrir de
+outro computador, use `ssh -L 8484:127.0.0.1:8484 <host>`. Para acessar pela
+tailnet, faça ela escutar no endereço da tailnet do host e publique pelo
+`lists.yaml` do tsdproxy, do mesmo jeito que o Cockpit:
+
+```bash
+systemctl --user edit qh-store      # [Service]  Environment=QH_STORE_LISTEN=<tailscale-ip>:8484
+```
+
+```yaml
+qh-store:
+  ports:
+    443/https:
+      targets:
+        - http://<tailscale-ip>:8484
+```
+
+Quem tiver o token instala e remove serviços como você. Trate-o como uma chave
+SSH. Para revogar, apague o arquivo e reinicie o serviço.
+
+`qh-store --prefix /tmp/test` aponta a loja para um sandbox, como o
+`qh --prefix`. O `qh-store --selftest` cobre o login, as checagens das
+requisições e uma instalação completa em sandbox.
