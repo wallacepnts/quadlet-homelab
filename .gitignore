@@ -25,6 +25,9 @@ volumes/
 CLAUDE.md
 _template/
 
+# Plano local da loja de apps (qh-store) — checklist de trabalho, não publicado.
+STORE-PLAN.md
+
 # Cache do Python.
 __pycache__/
 *.pyc
