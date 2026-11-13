@@ -237,6 +237,16 @@ def flags(app, action, arquivo=""):
             "backup": ["--backup", "--out", str(backup_dir())]}.get(action)
 
 
+def em_dia(saida):
+    """Whether a dry-run said there is nothing to change.
+
+    qh exits 0 either way, so the page could not tell "here is the plan" from
+    "there is no plan" and offered a Confirm that did nothing. EM_DIA is the
+    line qh prints for exactly that case, in either language.
+    """
+    return any(f in saida for f in (I.EM_DIA, I.PT.get(I.EM_DIA, I.EM_DIA)))
+
+
 def service_dir(app):
     """The folder of a service the store may act on, or None."""
     if not NOME.match(app or ""):
@@ -497,7 +507,8 @@ class Handler(BaseHTTPRequestHandler):
             r = subprocess.run(qh(app, *extra), capture_output=True, text=True,
                                stdin=subprocess.DEVNULL, env=qh_env(lang), cwd=ROOT,
                                timeout=120)
-            return self._json(200, {"rc": r.returncode, "output": r.stdout + r.stderr})
+            saida = r.stdout + r.stderr
+            return self._json(200, {"rc": r.returncode, "output": saida, "nothing": em_dia(saida)})
         if url.path in ("/api/login", "/api/backups", "/api/backup/file"):
             app = q.get("app", "")
             if not service_dir(app):
@@ -676,7 +687,7 @@ def selftest():
             assert st == 200 and json.loads(corpo) == {"checked": None, "rows": []}, corpo
 
             st, _, corpo = pedir("/api/plan?app=homebox&action=install", headers=ok)
-            assert st == 200 and json.loads(corpo)["rc"] == 0
+            assert st == 200 and json.loads(corpo)["rc"] == 0 and not json.loads(corpo)["nothing"]
             for ruim in ("../etc", "nao-existe", "homebox;id"):
                 st, _, _ = pedir(f"/api/plan?app={ruim}&action=install", headers=ok)
                 assert st == 400, (ruim, st)
@@ -705,6 +716,8 @@ def selftest():
             st, _, corpo = pedir("/api/catalog", headers=ok)
             hb = next(a for a in json.loads(corpo)["apps"] if a["id"] == "homebox")
             assert hb["installed"], "the install shows up in the catalog"
+            assert em_dia(f"homebox: {I.EM_DIA}") and em_dia("homebox: já está em dia — nada a mudar")
+            assert not em_dia("homebox: update, 5 steps  (dry-run)")
 
             # A `manual` secret goes through the same store_secret as the terminal
             st, _, corpo = pedir("/api/run", json.dumps(

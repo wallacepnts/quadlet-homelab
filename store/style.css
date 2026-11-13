@@ -76,9 +76,19 @@ body.login { display: grid; place-items: center; min-height: 100vh; }
 #p-section { border-top: 1px solid var(--line); margin-top: .8rem; padding-top: .4rem; }
 #p-section h3 { margin: .4rem 0; font-size: 1rem; } #p-section h4 { margin: .6rem 0 .2rem; }
 #p-section details { margin: .4rem 0; } #p-section summary { cursor: pointer; font-weight: 600; }
-#p-section pre.notes { max-height: 16rem; }
 #p-section a { color: var(--accent); }
 .cred { display: grid; grid-template-columns: 6rem 1fr auto auto; gap: .5rem; align-items: center; margin: .4rem 0; }
 table.backups { width: 100%; border-collapse: collapse; font-size: .85rem; }
 table.backups td { padding: .3rem .4rem; border-bottom: 1px solid var(--line); }
 .row { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-top: .6rem; }
+.md { max-height: 22rem; overflow: auto; background: var(--bg); border: 1px solid var(--line);
+      border-radius: 8px; padding: .4rem .9rem; font-size: .88rem; overflow-wrap: anywhere; }
+.md p { margin: .45rem 0; } .md ul { margin: .3rem 0; padding-left: 1.2rem; }
+.md li { margin: .15rem 0; } .md li.md-l1 { margin-left: 1rem; } .md li.md-l2 { margin-left: 2rem; }
+.md li.md-l3 { margin-left: 3rem; }
+.md .md-h { font-weight: 700; margin: .8rem 0 .3rem; } .md .md-h1, .md .md-h2 { font-size: 1.02rem; }
+.md code { background: var(--card); border: 1px solid var(--line); border-radius: 4px; padding: 0 .25rem; font-size: .82rem; }
+.md pre.code { max-height: none; margin: .4rem 0; }
+.md blockquote { margin: .4rem 0; padding-left: .7rem; border-left: 3px solid var(--line); color: var(--muted); }
+.md hr { border: 0; border-top: 1px solid var(--line); }
+#p-units td:nth-child(6) { white-space: nowrap; }

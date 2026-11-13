@@ -28,6 +28,9 @@ const T = {
     typeToConfirm: "Digite o nome do serviço para confirmar:",
     notes: "Novidades", notesFrom: "Releases desde a instalada", noNotes: "Nenhuma release nova para ler.",
     onGithub: "ver no GitHub",
+    notInRepo: (pin, novo) => `O repositório ainda fixa ${pin}, a versão instalada. A ${novo} só chega pelo ` +
+      `Atualizar depois do bump no repositório (qh-updates --bump --apply, e então commit).`,
+    nothingToDo: "Nada a fazer: o instalado já é igual ao que o repositório fixa.",
     lang: "English",
   },
   en: {
@@ -55,6 +58,9 @@ const T = {
     typeToConfirm: "Type the service name to confirm:",
     notes: "What's new", notesFrom: "Releases since the installed one", noNotes: "No new release to read.",
     onGithub: "see on GitHub",
+    notInRepo: (pin, novo) => `The repository still pins ${pin}, the installed version. ${novo} only arrives ` +
+      `through Update after the repository is bumped (qh-updates --bump --apply, then commit).`,
+    nothingToDo: "Nothing to do: what is installed already matches what the repository pins.",
     lang: "Português",
   },
 };
@@ -80,6 +86,70 @@ function h(tag, attrs = {}, ...kids) {
     el.append(kid instanceof Node ? kid : document.createTextNode(String(kid)));
   }
   return el;
+}
+
+// -- Markdown, for release notes ---------------------------------------------
+// Headings, lists, quotes, code and links, built as DOM nodes — never as HTML:
+// the notes are someone else's text. Raw HTML in them (badges, store buttons)
+// is stripped to its text, and images are dropped.
+
+function mdInline(text) {
+  const out = [];
+  const re = /(`[^`]+`)|\[((?:[^\[\]]|\[[^\]]*\])+)\]\((https?:\/\/[^)\s]+)[^)]*\)|\*\*([^*]+)\*\*|__([^_]+)__|(https?:\/\/[^\s<>)\]]+)/g;
+  let last = 0, m;
+  while ((m = re.exec(text))) {
+    if (m.index > last) out.push(text.slice(last, m.index));
+    const link = (href, label) => h("a", { href, target: "_blank", rel: "noopener noreferrer" }, label);
+    if (m[1]) out.push(h("code", {}, m[1].slice(1, -1)));
+    else if (m[2]) out.push(link(m[3], m[2]));
+    else if (m[4] || m[5]) out.push(h("strong", {}, m[4] || m[5]));
+    else if (m[6]) out.push(link(m[6], m[6]));
+    last = re.lastIndex;
+  }
+  if (last < text.length) out.push(text.slice(last));
+  return out;
+}
+
+function md(src) {
+  const text = (src || "").replace(/\r/g, "")
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/?(p|div|h[1-6]|ul|ol|li|details|summary|table|tr|td|th|picture)\b[^>]*>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+    .replace(/\[\s*\]\([^)]*\)/g, "")
+    .replace(/&nbsp;/g, " ").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, "&");
+  const nodes = [];
+  let para = [], list = null, code = null;
+  const flushPara = () => { if (para.length) nodes.push(h("p", {}, mdInline(para.join(" ")))); para = []; };
+  const flushList = () => { if (list) nodes.push(list); list = null; };
+  const flush = () => { flushPara(); flushList(); };
+  for (const line of text.split("\n")) {
+    if (code) {
+      if (/^\s*```/.test(line)) { nodes.push(h("pre", { class: "code" }, code.join("\n"))); code = null; }
+      else code.push(line);
+      continue;
+    }
+    let m;
+    if (/^\s*```/.test(line)) { flush(); code = []; }
+    else if (!line.trim()) flush();
+    else if ((m = line.match(/^\s{0,3}(#{1,6})\s+(.*?)[\s#]*$/))) {
+      flush();
+      nodes.push(h("p", { class: `md-h md-h${m[1].length}` }, mdInline(m[2])));
+    } else if (/^\s{0,3}([-*_])(\s*\1){2,}\s*$/.test(line)) { flush(); nodes.push(h("hr")); }
+    else if ((m = line.match(/^(\s*)([-*+]|\d+[.)])\s+(.*)$/))) {
+      flushPara();
+      if (!list) list = h("ul", {});
+      const nivel = Math.min(3, Math.floor(m[1].replace(/\t/g, "  ").length / 2));
+      list.append(h("li", { class: `md-l${nivel}` }, mdInline(m[3])));
+    } else if ((m = line.match(/^\s*>\s?(.*)$/))) { flush(); nodes.push(h("blockquote", {}, mdInline(m[1]))); }
+    else if (list && /^\s+\S/.test(line)) list.lastChild.append(" ", ...mdInline(line.trim()));
+    else { flushList(); para.push(line.trim()); }
+  }
+  if (code) nodes.push(h("pre", { class: "code" }, code.join("\n")));
+  flush();
+  return nodes;
 }
 
 // The README descriptions carry markdown links; the text is what reads well here.
@@ -252,7 +322,7 @@ function renderPanel() {
       h("td", { class: stateClass(u.container) }, u.container || "—"),
       h("td", {}, tagOf(u.installed_image)),
       h("td", { class: upstreamCell(u)[0] || null }, upstreamCell(u)[1]),
-      h("td", { class: u.drift ? stateClass(u.drift) : "ok" }, t(u.drift || "synced")),
+      h("td", { class: u.drift ? stateClass(u.drift) : "ok" }, `${tagOf(u.image)} · ${t(u.drift || "synced")}`),
       h("td", {},
         ...(u.service === "active" ? ["restart", "stop"] : ["start"]).map((v) =>
           h("button", { type: "button", class: "ghost", onclick: () => unitVerb(u.unit, v) }, t(v))),
@@ -292,7 +362,11 @@ async function plan(action, file = "") {
     const p = await api(`/api/plan?app=${encodeURIComponent(a.id)}&action=${action}` +
                         `&file=${encodeURIComponent(file)}&lang=${S.lang}`);
     out(`# ${t("plan")}\n\n${p.output}`);
-    buildForm(a, action, file);
+    if (p.nothing) {
+      // No Confirm for a plan with no steps: it would run and change nothing.
+      $("p-form").hidden = true;
+      out(`\n${t("nothingToDo")}\n`, true);
+    } else buildForm(a, action, file);
   } catch (e) { out(String(e.message)); }
   finally { busy(false); }
 }
@@ -310,6 +384,9 @@ async function showNotes(a) {
   section(h("p", { class: "muted" }, t("checking")));
   const blocos = [h("h3", {}, t("notesFrom"))];
   for (const u of behind(a)) {
+    // What Update can bring is what the repository pins, not what upstream released.
+    if (tagOf(u.image) === tagOf(u.installed_image))
+      blocos.push(h("p", { class: "note" }, t("notInRepo")(tagOf(u.image), S.upd[u.unit].there)));
     try {
       const n = await api(`/api/notes?unit=${encodeURIComponent(u.unit)}`);
       if (behind(a).length > 1) blocos.push(h("h4", {}, u.unit));
@@ -317,7 +394,7 @@ async function showNotes(a) {
       n.releases.forEach((r, i) => blocos.push(
         h("details", { open: i === 0 },
           h("summary", {}, `${r.tag}${r.name && r.name !== r.tag ? ` — ${r.name}` : ""}  ·  ${r.date}`),
-          h("pre", { class: "notes" }, r.body || "—"),
+          h("div", { class: "md" }, r.body ? md(r.body) : "—"),
           r.url && h("a", { href: r.url, target: "_blank", rel: "noopener noreferrer" }, `${t("onGithub")} ↗`))));
     } catch (e) { blocos.push(h("p", { class: "note" }, String(e.message))); }
   }
