@@ -15,6 +15,7 @@ const T = {
     exists: "já existe — vazio mantém o atual",
     removeNote: "Remove as units e para o serviço. Volumes, secrets e .env ficam.",
     busy: "Outra tarefa está rodando. Espere ela terminar.",
+    synced: "em dia", duplicated: "duplicada",
     version: "versão", lang: "English",
   },
   en: {
@@ -29,6 +30,7 @@ const T = {
     exists: "already exists — empty keeps it",
     removeNote: "Removes the units and stops the service. Volumes, secrets and .env stay.",
     busy: "Another job is running. Wait for it to finish.",
+    synced: "in sync", duplicated: "duplicated",
     version: "version", lang: "Português",
   },
 };
@@ -170,7 +172,7 @@ function renderPanel() {
       h("td", {}, u.unit),
       h("td", { class: stateClass(u.service) }, u.service || "—"),
       h("td", { class: stateClass(u.container) }, u.container || "—"),
-      h("td", { class: stateClass(u.drift) }, u.drift || "—"),
+      h("td", { class: u.drift ? stateClass(u.drift) : "ok" }, t(u.drift || "synced")),
       h("td", {},
         ...(u.service === "active" ? ["restart", "stop"] : ["start"]).map((v) =>
           h("button", { type: "button", class: "ghost", onclick: () => unitVerb(u.unit, v) }, t(v))),
