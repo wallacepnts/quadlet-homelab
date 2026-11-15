@@ -10,6 +10,8 @@ const T = {
     noInstall: "Não dá para instalar este app daqui.",
     worksWith: "Funciona com",
     play: "Iniciar / retomar", pause: "Pausar", stopApp: "Parar", pausedBadge: "pausado",
+    pickFolder: "Escolher pasta", newFolder: "nova subpasta (opcional)", useFolder: "Usar esta pasta", up: "Subir",
+    roots: "pastas permitidas", noSubfolders: "Sem subpastas aqui.", noRoots: "Nenhuma das pastas permitidas existe ainda: digite o caminho.",
     preIntro: "Antes de instalar: o que você escolher aqui é conferido agora e aplicado logo depois da instalação.",
     preSave: "Guardar para a instalação", preDiscard: "Descartar", preSaved: "Guardado: vai junto com a instalação.",
     preNone: "Nada mudou em relação ao padrão: nada a guardar.",
@@ -112,6 +114,8 @@ const T = {
     noInstall: "It cannot be installed from here.",
     worksWith: "Works with",
     play: "Start / resume", pause: "Pause", stopApp: "Stop", pausedBadge: "paused",
+    pickFolder: "Choose folder", newFolder: "new sub-folder (optional)", useFolder: "Use this folder", up: "Up",
+    roots: "permitted folders", noSubfolders: "No sub-folders here.", noRoots: "None of the permitted folders exists yet: type the path.",
     preIntro: "Before installing: what you choose here is checked now and applied right after the install.",
     preSave: "Keep for the install", preDiscard: "Discard", preSaved: "Kept: it goes with the install.",
     preNone: "Nothing differs from the default: nothing to keep.",
@@ -898,9 +902,10 @@ const linhas = {
   volumes(it) {
     if (it && it.opaque) return opaca(it);
     const host = campo("text", it && it.host, t("hostPath")), cont = campo("text", it && it.container, t("contPath"));
+    const escolher = dirPicker(host);
     const rotulo = escolha([["Z", t("labelZ")], ["z", t("labelz")], ["", t("labelNone")]], it ? it.label : "Z");
     const ro = h("input", { type: "checkbox", checked: !!(it && it.ro), "aria-label": t("readOnly") });
-    return { els: [host, cont, rotulo, h("label", { class: "check" }, ro, ` ${t("readOnly")}`)],
+    return { els: [host, escolher.btn, cont, rotulo, h("label", { class: "check" }, ro, ` ${t("readOnly")}`), escolher.painel],
       read: () => host.value.trim() === "" ? null :
         { host: host.value.trim(), container: cont.value.trim(), label: rotulo.value, ro: ro.checked, extra: (it && it.extra) || [] } };
   },
@@ -915,6 +920,40 @@ const linhas = {
     return { els: [d], read: () => d.value.trim() === "" ? null : { path: d.value.trim() } };
   },
 };
+
+// The folder picker beside a volume's host path (what CasaOS has): the folders inside the permitted roots,
+// by the server's own list, so it cannot lead anywhere the form would refuse. A new sub-folder is typed
+// and created when the customization is applied.
+function dirPicker(campoHost) {
+  const painel = h("div", { class: "picker" });
+  painel.hidden = true;
+  const NOVA = /^[A-Za-z0-9._@+-]+$/;
+  async function ir(caminho) {
+    let r;
+    try { r = await api(`/api/dirs?path=${encodeURIComponent(caminho || "")}`); }
+    catch (e) { return caminho ? ir("") : fill(painel, h("p", { class: "note" }, String(e.message))); }
+    const nova = h("input", { type: "text", placeholder: t("newFolder"), "aria-label": t("newFolder"), autocomplete: "off" });
+    const usar = () => {
+      const nome = nova.value.trim();
+      if (nome && !NOVA.test(nome)) return nova.setAttribute("aria-invalid", "true");
+      campoHost.value = r.value + (nome ? `/${nome}` : "");
+      painel.hidden = true;
+    };
+    fill(painel,
+      h("div", { class: "picker-bar" },
+        r.path ? h("button", { type: "button", class: "ghost", title: t("up"), "aria-label": t("up"),
+                               onclick: () => ir(r.parent || "") }, "↑") : null,
+        h("code", {}, r.shown || t("roots"))),
+      r.dirs.length
+        ? h("ul", { class: "picker-list" }, ...r.dirs.map((d) =>
+            h("li", {}, h("button", { type: "button", class: "ghost", onclick: () => ir(d.path) }, `📁 ${d.name}`))))
+        : h("p", { class: "cust-note" }, r.path ? t("noSubfolders") : t("noRoots")),
+      r.path ? h("div", { class: "row" }, nova, h("button", { type: "button", onclick: usar }, t("useFolder"))) : null);
+  }
+  const btn = h("button", { type: "button", class: "ghost", title: t("pickFolder"), "aria-label": t("pickFolder"),
+    onclick: () => { painel.hidden = !painel.hidden; if (!painel.hidden) ir(campoHost.value.trim().includes("$") ? "" : campoHost.value.trim()); } }, "📁");
+  return { btn, painel };
+}
 
 // An entry that is not a plain shape (a ${VAR} in a port, say): shown, kept as it is, removable.
 const opaca = (it) => ({ els: [h("code", {}, it.raw), h("span", { class: "cust-note" }, t("fromUnit"))],

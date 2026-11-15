@@ -388,6 +388,27 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   const formPre = () => [...$("p-section").walk()].find((e) => e.tag === "form");
   confere(!!formPre() && /Antes de instalar/.test(formPre().textContent) && porTexto(formPre(), "Guardar para a instalação").length === 1
     && porTexto(formPre(), "Salvar e aplicar").length === 0, "antes de instalar: o formulário abre, com Guardar e sem Salvar e aplicar");
+  // the folder picker beside a volume: list, go down, choose with a new sub-folder
+  rotas["/api/dirs"] = { path: "/h/vol", value: "%h/vol", shown: "~/vol", parent: null, at_root: true, dirs: [{ name: "a", path: "/h/vol/a" }] };
+  const botaoPasta = [...formPre().walk()].filter((e) => e.tag === "button" && e.attrs.title === "Escolher pasta")[0];
+  const linhaVol = (() => { let e = botaoPasta; const todos = [...formPre().walk()]; return todos.find((r) => r.attrs && r.attrs.class === "cust-row" && [...r.walk()].includes(botaoPasta)); })();
+  const painelPasta = [...linhaVol.walk()].find((e) => e.attrs && e.attrs.class === "picker");
+  confere(painelPasta.hidden === true, "o seletor de pasta começa fechado");
+  botaoPasta.listeners.click(); await esperar(50);
+  confere(painelPasta.hidden === false, "e abre ao clicar no ícone");
+  confere(/~\/vol/.test(painelPasta.textContent) && /📁 a/.test(painelPasta.textContent), `seletor: lista as pastas permitidas (${painelPasta.textContent})`);
+  rotas["/api/dirs"] = { path: "/h/vol/a", value: "%h/vol/a", shown: "~/vol/a", parent: "/h/vol", at_root: false, dirs: [] };
+  [...painelPasta.walk()].find((e) => e.tag === "button" && /📁 a/.test(e.textContent)).listeners.click(); await esperar(50);
+  confere(/~\/vol\/a/.test(painelPasta.textContent) && /Sem subpastas/.test(painelPasta.textContent), "seletor: entra na pasta");
+  const novaPasta = [...painelPasta.walk()].find((e) => e.tag === "input");
+  const campoHostPre = [...linhaVol.walk()].find((e) => e.tag === "input");
+  novaPasta.value = "com espaço";
+  [...painelPasta.walk()].find((e) => e.tag === "button" && e.textContent === "Usar esta pasta").listeners.click();
+  confere(campoHostPre.value !== "%h/vol/a/com espaço", "seletor: recusa nome de pasta com espaço");
+  novaPasta.value = "novo";
+  [...painelPasta.walk()].find((e) => e.tag === "button" && e.textContent === "Usar esta pasta").listeners.click();
+  confere(campoHostPre.value === "%h/vol/a/novo", `seletor: escolhe a pasta, com a subpasta nova (${campoHostPre.value})`);
+  delete rotas["/api/dirs"];
   const urlsPre = []; const fetchAntes = global.fetch;
   global.fetch = async (u, o) => { urlsPre.push(u); return fetchAntes(u, o); };
   const previaAntes = rotas["/api/custom/preview"];
@@ -470,7 +491,7 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   porTexto(formulario(), "+ Adicionar")[0].listeners.click(); await esperar(20);
   const [, hostIn, contIn] = [...linhasDe("Portas")[2].walk()].filter((e) => e.tag === "input");
   hostIn.value = "8123"; contIn.value = "80";
-  [...linhasDe("Volumes")[0].walk()].find((e) => e.tag === "button").listeners.click(); await esperar(20);
+  [...linhasDe("Volumes")[0].walk()].find((e) => e.tag === "button" && e.attrs.class === "x").listeners.click(); await esperar(20);
   confere(linhasDe("Volumes").length === 1, "remover tira a linha do volume");
   porTexto(formulario(), "Pré-visualizar")[0].listeners.click(); await esperar(100);
   const pre = posts.filter((x) => x.rota === "/api/custom/preview").pop().corpo;

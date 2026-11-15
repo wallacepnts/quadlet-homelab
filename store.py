@@ -92,6 +92,7 @@ PT = {
     "not a setting of this file, or not a single line":
         "não é uma opção deste arquivo, ou não é uma linha só",
     "set": "definido", "turned off": "desligado",
+    "not a folder this form may use": "não é uma pasta que este formulário possa usar",
     "applying the customization of": "aplicando a personalização de",
     "this address takes a WebSocket": "este endereço espera um WebSocket",
     "a sandbox has no containers to enter": "um sandbox não tem containers para entrar",
@@ -606,6 +607,50 @@ def volume_roots():
                         if I.manager_var(nome):
                             raizes.append(I.manager_var(nome))
     return list(dict.fromkeys(raizes))
+
+
+DIRS_CAP = 500
+
+
+def host_value(path):
+    """A path as the unit file should carry it: `%h/...` under the home, the plain path elsewhere."""
+    casa = str(Path(PREFIX or Path.home()))
+    return "%h" + path[len(casa):] if path == casa or path.startswith(casa + "/") else path
+
+
+def list_dirs(path=""):
+    """The folders the volume picker may show: {path, value, shown, parent, dirs: [{name, path}]}.
+
+    Only inside the permitted roots (the same list the form validates against), by real path, so a
+    symlink cannot lead out of them; a folder entry that is itself a symlink is not followed. With no
+    path it is the roots themselves. Hidden folders are left out, and so are files: it is for choosing
+    where a volume lives, not for browsing."""
+    raizes = [os.path.realpath(r) for r in volume_roots()]
+    if not path:
+        return {"path": "", "value": "", "shown": "", "parent": None,
+                "dirs": [{"name": host_value(r).replace("%h", "~"), "path": r} for r in raizes if os.path.isdir(r)]}
+    real = O.resolve_host(path, Path(PREFIX or Path.home()), I.manager_var)
+    if not real or not real.startswith("/"):
+        raise ValueError(loc("not a folder this form may use"))
+    real = os.path.realpath(real)
+    dentro_de_raiz = real in raizes
+    if not (dentro_de_raiz or O.under(real, raizes)) or not os.path.isdir(real):
+        raise ValueError(loc("not a folder this form may use"))
+    dirs = []
+    try:
+        with os.scandir(real) as it:
+            for e in sorted(it, key=lambda x: x.name.lower()):
+                if len(dirs) >= DIRS_CAP:
+                    break
+                if e.name.startswith(".") or not e.is_dir(follow_symlinks=False):
+                    continue
+                dirs.append({"name": e.name, "path": os.path.join(real, e.name)})
+    except OSError:
+        pass
+    pai = os.path.dirname(real)
+    return {"path": real, "value": host_value(real), "shown": host_value(real).replace("%h", "~"),
+            "parent": pai if (not dentro_de_raiz and (pai in raizes or O.under(pai, raizes))) else None,
+            "at_root": dentro_de_raiz, "dirs": dirs}
 
 
 def cgroup_limits():
@@ -1676,6 +1721,11 @@ class Handler(BaseHTTPRequestHandler):
             if not service_dir(app):
                 return self._json(400, {"error": loc("unknown service")})
             return self._json(200, {"links": links(app)})
+        if url.path == "/api/dirs":
+            try:
+                return self._json(200, list_dirs(q.get("path", "")))
+            except ValueError as e:
+                return self._json(400, {"error": str(e)})
         if url.path == "/api/custom":
             unit = q.get("unit", "")
             if not unit_exists(unit):
@@ -2407,6 +2457,29 @@ def selftest():
                     assert st == 202 and esperar(rev)["rc"] == 0 and O.read_override(unidade) is None
                 finally:
                     os.environ.pop("QH_CGROUP_CONTROLLERS", None)
+
+            # folder picker: only inside the permitted roots, by real path, no symlink out, no hidden, no files
+            raiz_v = Path(tmp, ".config/containers/volumes")
+            (raiz_v / "meus/dados").mkdir(parents=True, exist_ok=True)
+            (raiz_v / ".oculta").mkdir(exist_ok=True)
+            (raiz_v / "arquivo.txt").write_text("x")
+            with tempfile.TemporaryDirectory() as fora:
+                if not (raiz_v / "fuga").exists():
+                    (raiz_v / "fuga").symlink_to(fora)
+                lr = json.loads(pedir("/api/dirs", headers=ok)[2])
+                assert [d["path"] for d in lr["dirs"]] == [os.path.realpath(raiz_v)] and lr["parent"] is None, lr
+                lv = json.loads(pedir("/api/dirs?path=" + urllib.parse.quote(lr["dirs"][0]["path"]), headers=ok)[2])
+                nomes = [d["name"] for d in lv["dirs"]]
+                assert "meus" in nomes and not {".oculta", "arquivo.txt", "fuga"} & set(nomes), lv   # no file, no hidden, no symlink
+                assert lv["parent"] is None and lv["at_root"] is True and lv["value"].startswith(("%h", str(tmp))), lv
+                sub = json.loads(pedir("/api/dirs?path=" + urllib.parse.quote(next(d["path"] for d in lv["dirs"] if d["name"] == "meus")), headers=ok)[2])
+                assert [d["name"] for d in sub["dirs"]] == ["dados"] and sub["parent"] == lv["path"], sub
+                assert pedir("/api/dirs?path=" + urllib.parse.quote(lv["path"] + "/../.."), headers=ok)[0] == 400, "no .. out of the root"
+                assert pedir("/api/dirs?path=" + urllib.parse.quote(fora), headers=ok)[0] == 400, "a folder outside the roots"
+                assert pedir("/api/dirs?path=" + urllib.parse.quote(lv["path"] + "/fuga"), headers=ok)[0] == 400, "a symlink that leads out"
+                assert pedir("/api/dirs?path=%25h/.config/containers/volumes/meus", headers=ok)[0] == 200, "%h is understood"
+                assert pedir("/api/dirs?path=/etc", headers=ok)[0] == 400
+            assert pedir("/api/dirs")[0] == 401, "the picker needs the login too"
 
             # customize BEFORE the install: the form works on the unit as it will be written; the install
             # applies it once the unit exists; and a preview is the only thing allowed on what is not installed

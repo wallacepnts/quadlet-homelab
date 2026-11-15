@@ -423,7 +423,10 @@ linhas do journal.
 Só o que é novo é conferido, e o que a unit já tem é sempre aceito como está. Um
 volume novo tem de ficar dentro de `~/.config/containers/volumes`, de uma pasta
 que as units já pedem a você (`${MEDIA_DATA_DIR}`) ou de uma que você liste em
-`~/.config/quadlet-homelab/store-roots` (um caminho por linha); uma porta tem de
+`~/.config/quadlet-homelab/store-roots` (um caminho por linha), e um **seletor de pasta** (o 📁 ao
+lado do caminho do host) lista exatamente essas pastas e nada além: por caminho real, então um link
+simbólico não leva para fora delas, sem pastas ocultas nem arquivos, e dá para digitar uma subpasta
+nova (ela é criada quando a personalização é aplicada); uma porta tem de
 estar a partir do piso sem privilégio e livre (não ser de outra unit nem estar
 em uso); uma capability tem de estar numa lista curta (as padrão do Podman mais
 `NET_RAW`, `SYS_NICE`, `MKNOD`, `AUDIT_WRITE`); um dispositivo tem de existir em

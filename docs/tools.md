@@ -419,7 +419,10 @@ puts the previous state back and prints the last lines of its journal.
 Only what is new is checked, and what the unit already carries is always
 accepted as it is. A new volume must sit inside `~/.config/containers/volumes`,
 a folder the units already ask you for (`${MEDIA_DATA_DIR}`) or one you list in
-`~/.config/quadlet-homelab/store-roots` (one path per line); a port must be at
+`~/.config/quadlet-homelab/store-roots` (one path per line), and a **folder picker** (the 📁 beside
+the host path) lists exactly those folders and nothing else: by real path, so a symlink does not
+lead out of them, with no hidden folders or files, and a new sub-folder can be typed (it is created
+when the customization is applied); a port must be at
 or above the unprivileged floor and free (not another unit's, not listening); a
 capability must be on a short list (Podman's defaults plus `NET_RAW`,
 `SYS_NICE`, `MKNOD`, `AUDIT_WRITE`); a device must exist under `/dev`. There is

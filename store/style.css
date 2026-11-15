@@ -190,3 +190,8 @@ pre.term { width: 100ch; max-width: 100%; height: 28em; overflow: auto; white-sp
            background: #000; color: #ddd; font-size: .8rem; line-height: 1.25; padding: .5rem; border: 1px solid var(--line);
            border-radius: 8px; cursor: text; }
 pre.term:focus { outline: 2px solid var(--accent); }
+
+/* Folder picker */
+.picker { flex-basis: 100%; border: 1px solid var(--line); border-radius: 8px; padding: .5rem .7rem; margin-top: .3rem; background: var(--card); }
+.picker-bar { display: flex; align-items: center; gap: .5rem; margin-bottom: .3rem; overflow-wrap: anywhere; }
+.picker-list { list-style: none; margin: 0 0 .5rem; padding: 0; display: flex; flex-wrap: wrap; gap: .3rem; max-height: 12rem; overflow: auto; }
