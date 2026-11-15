@@ -303,6 +303,11 @@ o deixa de fora; nomeá-lo ainda instala, porque o aviso não é uma proibição
 uma linha simples de até 300 caracteres. É uma decisão que uma pessoa registra:
 nada marca um serviço sozinho.
 
+**Funciona com** é uma sugestão no painel: `works_with = grafana, ntfy` em
+`[store]` lista outras pastas de serviço que valem rodar junto, cada uma um link
+para o seu painel, com ✓ quando instalada. Nunca é requisito (isso é o dono de uma
+rede, que o `qh` já exige); o `check.py` reprova nome que não seja uma pasta.
+
 A **Personalizar** muda um serviço instalado sem tocar na unit do repositório:
 portas, volumes, variáveis extras, dispositivos, capabilities extras e a
 política de reinício, no desenho do formulário que o CasaOS tem para um app. A

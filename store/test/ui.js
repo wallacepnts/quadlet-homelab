@@ -187,6 +187,15 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   await api.pollHost();
   confere($("host").textContent === "carga 25% · RAM 2.0/8.0 GB · 50 °C · ligado há 1 d", `topo: resumo do servidor (${$("host").textContent})`);
 
+  // works with: suggested companions, as links; the installed ones are ticked
+  api.S.apps.find((x) => x.id === "homebox").works_with = ["memos", "gitea", "naoexiste"];
+  api.openPanel("homebox"); await esperar(50);
+  confere($("p-with").hidden === false && /^Funciona com: Memos ✓, Gitea$/.test($("p-with").textContent), `painel: Funciona com (${$("p-with").textContent})`);
+  api.S.apps.find((x) => x.id === "homebox").works_with = [];
+  api.openPanel("homebox"); await esperar(50);
+  confere($("p-with").hidden === true, "sem sugestões: a linha some");
+  $("panel").open = false;
+
   // trial: the notice says when it ends, there is a Keep button, and the install form offers the choice
   api.S.apps.find((x) => x.id === "homebox").trial = { mode: "time", expires: Date.now() / 1000 + 5 * 3600 + 60, purge: false };
   api.openPanel("homebox"); await esperar(50);

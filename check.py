@@ -364,6 +364,22 @@ def deprecated_problemas(valor):
     return saida
 
 
+def works_with_problemas(valor, proprio, existentes):
+    """What is wrong with `[store] works_with`, as a list: names of other service folders, comma-separated."""
+    nomes = [x.strip() for x in valor.split(",")]
+    saida = []
+    if "" in nomes:
+        saida.append("has an empty name (a stray comma?)")
+    for n in nomes:
+        if n == proprio:
+            saida.append("lists the service itself")
+        elif n and n not in existentes:
+            saida.append(f"names {n!r}, which is not a folder in apps/")
+    if len(set(nomes)) != len(nomes):
+        saida.append("repeats a name")
+    return saida
+
+
 def repo_problemas(valor):
     """What is wrong with `[store] repo`, as a list; empty when it will do.
 
@@ -570,12 +586,13 @@ def check_manifest(folders):
         # `screenshots` exists; any other key is a typo that would be ignored.
         if ini.has_section("store"):
             for key, valor in ini.items("store"):
-                if key not in ("screenshots", "deprecated", "deprecated_pt", "repo"):
+                if key not in ("screenshots", "deprecated", "deprecated_pt", "repo", "works_with"):
                     error("manifest", f"apps/{folder.name}: install.ini [store] has no key {key!r} "
-                                      f"(only `screenshots`, `deprecated`, `deprecated_pt` and `repo`)")
+                                      f"(only `screenshots`, `deprecated`, `deprecated_pt`, `repo` and `works_with`)")
                     continue
                 for problema in (screenshots_problemas(valor) if key == "screenshots"
                                  else repo_problemas(valor) if key == "repo"
+                                 else works_with_problemas(valor, folder.name, {p.name for p in APPS.iterdir()}) if key == "works_with"
                                  else deprecated_problemas(valor)):
                     error("manifest", f"apps/{folder.name}: install.ini [store] {key} {problema}")
             if ini.has_option("store", "deprecated_pt") and not ini.get("store", "deprecated", fallback="").strip():
@@ -934,6 +951,11 @@ def selftest():
     # [store] repo: owner/repo on GitHub, or a full https URL
     assert repo_problemas("netbootxyz/netboot.xyz") == [] and repo_problemas("https://codeberg.org/o/r") == []
     assert repo_problemas("") and repo_problemas("not a repo") and repo_problemas("http://github.com/o/r") and repo_problemas("a/b/c")
+
+    # [store] works_with: other folders, no self, no repeats
+    ex = {"a", "b", "c"}
+    assert works_with_problemas("b, c", "a", ex) == []
+    assert works_with_problemas("a", "a", ex) and works_with_problemas("z", "a", ex) and works_with_problemas("b,b", "a", ex) and works_with_problemas("b,", "a", ex)
 
     # [store] deprecated: one plain line that says why
     assert deprecated_problemas("Archived upstream on 2026-03-01; no release since 1.4.2.") == []

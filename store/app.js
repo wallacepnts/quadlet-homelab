@@ -8,6 +8,7 @@ const T = {
     noneInstalled: "Nenhum app instalado ainda.", goStore: "Abrir a Loja", manage: "Gerenciar",
     installedBadge: "instalado", deprecatedBadge: "descontinuado", deprecatedNote: "Descontinuado:",
     noInstall: "Não dá para instalar este app daqui.",
+    worksWith: "Funciona com",
     hostCpu: "carga", hostMem: "RAM", hostUp: "ligado há",
     trialLabel: "Experimentar", trialKeep: "Manter", trialBadge: "experimento",
     trialNone: "instalar de vez", trialReboot: "até reiniciar o servidor",
@@ -86,6 +87,7 @@ const T = {
     noneInstalled: "No app installed yet.", goStore: "Open the Store", manage: "Manage",
     installedBadge: "installed", deprecatedBadge: "discontinued", deprecatedNote: "Discontinued:",
     noInstall: "It cannot be installed from here.",
+    worksWith: "Works with",
     hostCpu: "load", hostMem: "RAM", hostUp: "up",
     trialLabel: "Try it", trialKeep: "Keep", trialBadge: "trial",
     trialNone: "install for good", trialReboot: "until the server reboots",
@@ -554,6 +556,14 @@ function renderPanel() {
         ...(u.service === "active" ? ["restart", "stop"] : ["start"]).map((v) =>
           h("button", { type: "button", class: "ghost", onclick: () => unitVerb(u.unit, v) }, t(v))),
         h("button", { type: "button", class: "ghost", onclick: () => showLogs(u.unit) }, t("logs"))))));
+
+  // Suggested companions, each one a way into its own panel; the ones already here say so.
+  const juntos = (a.works_with || []).map((id) => S.apps.find((x) => x.id === id)).filter(Boolean);
+  $("p-with").hidden = !juntos.length;
+  fill($("p-with"), ...(juntos.length ? [`${t("worksWith")}: `] : []), ...juntos.flatMap((x, i) => [
+    i ? ", " : null,
+    h("a", { href: `#${x.id}`, class: "with", onclick: (ev) => { ev.preventDefault(); openPanel(x.id); } },
+      x.installed ? `${x.name} ✓` : x.name)]));
 
   // The reason, where it is read; and a service that is discontinued is not offered for install.
   const motivo = depReason(a);

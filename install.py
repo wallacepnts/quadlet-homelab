@@ -1023,6 +1023,15 @@ class Service:
 # plan
 # --------------------------------------------------------------------------
 
+def works_with(ini, name=""):
+    """Folder names from `[store] works_with` (comma-separated): services this one is worth running beside.
+
+    A suggestion, never a requirement — a requirement is a network's owner, which
+    `missing_prereqs` already enforces. The store shows them in the panel."""
+    bruto = ini.get("store", "works_with", fallback="") if ini.has_section("store") else ""
+    return [x for x in dict.fromkeys(p.strip() for p in bruto.split(",")) if x and x != name]
+
+
 def deprecation(ini):
     """{en, pt} from `[store] deprecated` (and `deprecated_pt`) in an install.ini, or None.
 
@@ -4181,6 +4190,7 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude):
         "has_login": s.login() is not None,
         # Marked in install.ini [store]: the store shows the reason and offers no install.
         "deprecated": deprecation(s.ini),
+        "works_with": works_with(s.ini, s.name),
         # Armed with `--trial`: the store shows when it ends, and offers to keep it.
         "trial": trial_info(s),
         # How it is reached: the mode in force for it, and whether that is an

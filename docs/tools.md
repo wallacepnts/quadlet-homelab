@@ -300,6 +300,11 @@ the warning is not a ban. `deprecated_pt` is optional, and the English reason
 stands in without it. `check.py` wants one plain line of at most 300 characters.
 It is a decision a person writes down: nothing marks a service by itself.
 
+**Works with** is a suggestion in the panel: `works_with = grafana, ntfy` under
+`[store]` lists other service folders worth running beside this one, each a link
+to its panel, ticked when installed. It is never a requirement (that is a network's
+owner, which `qh` already enforces); `check.py` fails a name that is not a folder.
+
 **Customize** changes an installed service without touching the repository's
 unit: ports, volumes, extra variables, devices, extra capabilities and the
 restart policy, laid out like the form CasaOS has for an app. The change is a
