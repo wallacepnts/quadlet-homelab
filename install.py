@@ -4365,6 +4365,7 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude):
         "access": {"mode": effective_access(s)[0],
                    "exception": app_accesses(s.home).get(d)},
         # A .env it ships an example of, which a form can edit.
+        "has_data": bool(s.volume_roots()),
         "has_env": any(dest in s.env_files() for _, dest in s.examples() if dest),
         # Whoever owns a network it needs and is not installed: install
         # refuses until they are, so a front end offers them first.

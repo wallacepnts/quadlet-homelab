@@ -176,6 +176,10 @@ same one `qh` prints after an install. **Backups** runs `qh --backup` into
 `~/.local/share/quadlet-homelab/backups`, lists the archives, and lets you
 download them or upload one back. A restore runs `qh --restore`, and you have to
 type the service name first, the same as in the terminal.
+A service that keeps data also gets a **Back up first** box next to Update (remembered
+in the browser, off by default): the update then runs after a `qh --backup`, chained, so a
+backup that fails stops the update before it changes anything. The backup is the cold one
+(it stops the service for a moment), so it costs a short outage.
 What the terminal would ask during an install, the form asks first: `manual`
 secrets and unset `[vars]`. They are stored with the same functions and the
 same `[validate]` check that `qh` uses.

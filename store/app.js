@@ -9,6 +9,7 @@ const T = {
     installedBadge: "instalado", deprecatedBadge: "descontinuado", deprecatedNote: "Descontinuado:",
     noInstall: "Não dá para instalar este app daqui.",
     worksWith: "Funciona com",
+    backupFirst: "Backup antes",
     envType: { bool: "sim/não", number: "número", email: "e-mail", url: "URL", ip: "IP", password: "senha" },
     resources: "Recursos", resLoading: "Verificando o Podman…",
     resImages: "Imagens sem uso", resNetworks: "Redes sem uso", resVolumes: "Volumes sem uso",
@@ -96,6 +97,7 @@ const T = {
     installedBadge: "installed", deprecatedBadge: "discontinued", deprecatedNote: "Discontinued:",
     noInstall: "It cannot be installed from here.",
     worksWith: "Works with",
+    backupFirst: "Back up first",
     envType: { bool: "yes/no", number: "number", email: "email", url: "URL", ip: "IP", password: "password" },
     resources: "Resources", resLoading: "Asking Podman…",
     resImages: "Unused images", resNetworks: "Unused networks", resVolumes: "Unused volumes",
@@ -181,6 +183,7 @@ const T = {
 
 const S = {
   lang: localStorage.getItem("qh-lang") || (navigator.language.startsWith("pt") ? "pt" : "en"),
+  backupFirst: localStorage.getItem("qh-backup-first") === "1",   // the box next to Update, remembered
   rule: "tailnet",          // the host's access rule (qh --set-access)
   apps: [], group: null, search: "", current: null,
   view: null,               // "apps" (what is installed) or "store" (the catalog); kept in the URL hash
@@ -618,6 +621,11 @@ function renderPanel() {
     }
     if (a.trial)
       acoes.push(h("button", { type: "button", onclick: () => keepTrial() }, t("trialKeep")));
+    if (a.has_data && (novo || mudou))
+      acoes.push(h("label", { class: "check" },
+        h("input", { id: "backup-first", type: "checkbox", checked: S.backupFirst,
+                     onchange: (ev) => { S.backupFirst = ev.target.checked; localStorage.setItem("qh-backup-first", S.backupFirst ? "1" : ""); } }),
+        " " + t("backupFirst")));
     acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showCustom(a) }, t("customize")));
     if (a.has_env)
       acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showEnv(a) }, t("configure")));
@@ -1123,7 +1131,8 @@ async function updateNow(action) {
   $("p-form").hidden = true;
   if (behind(a).length) showNotes(a);
   else $("p-section").hidden = true;
-  await follow(() => api("/api/run", { app: a.id, action }));
+  const antes = !!($("backup-first") || {}).checked && a.has_data;
+  await follow(() => api("/api/run", { app: a.id, action, ...(antes ? { backup_first: true } : {}) }));
   await hintClean();
 }
 

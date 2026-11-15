@@ -89,6 +89,7 @@ PT = {
     "not a setting of this file, or not a single line":
         "não é uma opção deste arquivo, ou não é uma linha só",
     "set": "definido", "turned off": "desligado",
+    "this service keeps no data to back up": "este serviço não guarda dados para copiar",
     "not a valid value for the type": "não é um valor válido para o tipo",
     "an upgrade edits the repository, which a sandbox does not have":
         "atualizar a versão edita o repositório, que um sandbox não tem",
@@ -1650,6 +1651,15 @@ class Handler(BaseHTTPRequestHandler):
                     return self._json(400, {"error": loc("an upgrade edits the repository, "
                                                          "which a sandbox does not have")})
                 cmd = [bump_cmd(app, True), qh(app, "--update", "--apply")]
+            if d.get("backup_first"):
+                # Opt-in safety net: the same cold backup the Backups screen makes, then the update.
+                # Chained, so a backup that fails stops the update before it touches anything.
+                if action not in ("update", "upgrade"):
+                    return self._json(400, {"error": loc("unknown action")})
+                if not I.Service(app, PREFIX).volume_roots():
+                    return self._json(400, {"error": loc("this service keeps no data to back up")})
+                antes = qh(app, *flags(app, "backup"), "--apply")
+                cmd = [antes, *(cmd if cmd and isinstance(cmd[0], list) else [cmd])]
             if action == "install" and len(cadeia) > 1:
                 cmd = [qh(x, "--apply") for x in cadeia[:-1]] + [cmd] if quando else [qh(x, "--apply") for x in cadeia]
             if action == "access":
@@ -1893,6 +1903,16 @@ def selftest():
             assert st == 201, (st, corpo)
             assert len(json.loads(pedir("/api/backups?app=homebox", headers=ok)[2])["backups"]) == 2
             assert not list(backup_dir().glob(".*.part")), "no partial file left behind"
+
+            # backup before updating: opt-in, only for an update, and the archive is made before the update runs
+            assert pedir("/api/run", json.dumps({"app": "homebox", "action": "install", "backup_first": True}).encode(), api)[0] == 400
+            antes_n = len(json.loads(pedir("/api/backups?app=homebox", headers=ok)[2])["backups"])
+            time.sleep(1.1)          # the archive is named by the second
+            st, _, corpo = pedir("/api/run", json.dumps({"app": "homebox", "action": "update", "backup_first": True}).encode(), api)
+            assert st == 202, (st, corpo)
+            estado = esperar(corpo)
+            assert estado["rc"] == 0 and estado["output"].index("tar czf") < estado["output"].index("restart"), estado["output"][:400]
+            assert len(json.loads(pedir("/api/backups?app=homebox", headers=ok)[2])["backups"]) == antes_n + 1, "the update made a backup first"
 
             # restore: the plan first, then qh --restore with that archive
             st, _, corpo = pedir(f"/api/plan?app=homebox&action=restore&file={nome}", headers=ok)

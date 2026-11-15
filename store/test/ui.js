@@ -237,6 +237,23 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
     `depois de atualizar: dica com o tamanho (${$("p-clean").textContent})`);
   $("panel").open = false;
 
+  // backup before updating: a box that shows only when there is data and something to update, and rides along
+  const hb = api.S.apps.find((x) => x.id === "homebox");
+  Object.assign(hb, { has_data: true });
+  hb.units = [unidade("homebox", { drift: "changed", image: "x:2" })];
+  api.openPanel("homebox"); await esperar(30);
+  confere(!!$("backup-first") && /Backup antes/.test($("p-actions").textContent), "painel: caixa 'Backup antes' ao lado de Atualizar");
+  $("backup-first").checked = true;
+  const antesBk = posts.length;
+  await botoes($("p-actions")).find((b) => /^Atualizar/.test(b.textContent)).listeners.click(); await esperar(30);
+  const envioBk = posts.slice(antesBk).find((x) => x.rota === "/api/run");
+  confere(envioBk && envioBk.corpo.action === "update" && envioBk.corpo.backup_first === true, `a atualização leva backup_first (${JSON.stringify(envioBk && envioBk.corpo)})`);
+  hb.has_data = false;
+  api.openPanel("homebox"); await esperar(30);
+  confere(!$("backup-first") || !$("p-actions").textContent.includes("Backup antes"), "sem dados: sem a caixa");
+  hb.units = [unidade("homebox")];
+  $("panel").open = false;
+
   // minimum Podman: the panel says when the host is older than the app needs
   api.S.podman = "4.9.0";
   Object.assign(api.S.apps.find((x) => x.id === "homebox"), { podman_too_old: true, min_podman: "5.0" });

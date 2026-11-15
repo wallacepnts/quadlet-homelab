@@ -175,7 +175,11 @@ mostrando o plano e pedindo confirmação, porque mexem com dados. O **Login** m
 **Backups** roda o `qh --backup` em `~/.local/share/quadlet-homelab/backups`,
 lista os arquivos e permite baixá-los ou enviar um de volta. A restauração roda
 o `qh --restore`, e é preciso digitar o nome do serviço antes, igual no
-terminal. O que o terminal perguntaria durante
+terminal. Um serviço que guarda dados ganha também a caixa **Backup antes** ao lado de
+Atualizar (lembrada no navegador, desligada por padrão): a atualização roda depois de um
+`qh --backup`, encadeado, então um backup que falha impede a atualização antes de mudar
+qualquer coisa. O backup é o a frio (para o serviço por um instante), então custa uma
+parada curta. O que o terminal perguntaria durante
 uma instalação, o formulário pergunta antes: secrets `manual` e `[vars]` ainda
 não definidas. Eles são gravados com as mesmas funções e a mesma checagem
 `[validate]` que o `qh` usa.
