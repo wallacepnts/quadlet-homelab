@@ -27,6 +27,16 @@ sem `HealthCmd`, e unit fora do layout padrão — os blocos descritos na
 qh-check --format      # reescreve todas as units no layout; só ordem e linhas em branco
 ```
 
+Ele também passa cada unit pelo **gerador do próprio Quadlet** do Podman (`quadlet -dryrun -user`,
+todas as units num diretório só, como no host), que sabe o que o resto do arquivo não sabe: chave
+não suportada, `Network=` que cita um arquivo que não existe, seção que ele não consegue ler. Isso
+só aparecia na instalação. Roda quando a máquina tem um gerador do Podman 5 ou mais novo e é
+pulado em silêncio caso contrário; `qh-check --quadlet` faz a ausência dele virar erro, que é o que
+o CI usa (um job à parte, na imagem oficial `podman/stable`, já que o Podman do runner é mais antigo
+do que as chaves pedem). O gerador não interpreta todo valor (`Notify=maybe` passa), então isto é um
+piso sob as outras checagens, não um substituto. A tela Personalizar da loja já valida um drop-in
+com o mesmo gerador antes de gravá-lo.
+
 Pra dispensar uma regra de propósito, a unit diz isso e o motivo é obrigatório:
 
 ```ini

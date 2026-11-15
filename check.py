@@ -14,6 +14,7 @@ No dependencies: stdlib only, so it runs on the immutable host as-is.
 """
 
 import configparser
+import os
 import re
 import shlex
 import sys
@@ -1062,6 +1063,29 @@ def selftest():
     # [store] min_podman: a version like 5.4
     assert re.fullmatch(r"\d+\.\d+(\.\d+)?", "5.4") and not re.fullmatch(r"\d+\.\d+(\.\d+)?", "five")
 
+    # the generator's stderr: an error names the unit, a warning is kept apart
+    e, w = quadlet_problemas('quadlet-generator[1]: Warning: a.container specifies the image "x" which not fully\n'
+                             'quadlet-generator[1]: converting "a.container": unsupported key \'Foo\' in group \'Container\' in /t/a.container\n'
+                             'quadlet-generator[1]: converting "b.container": requested Quadlet unit missing.network was not found\n'
+                             'quadlet-generator[1]: processing encountered some errors\n', {"a.container": 1, "b.container": 1})
+    assert [x[0] for x in e] == ["a.container", "b.container"] and "unsupported key" in e[0][1], e
+    assert [x[0] for x in w] == ["a.container"], w
+    assert quadlet_problemas("Loading source drop-in file x\n", {}) == ([], [])
+    # and the real generator, when this machine has one: it must refuse a key it does not know
+    if quadlet_generator()[0] and quadlet_generator()[1] >= QUADLET_MIN:
+        import tempfile
+        with tempfile.TemporaryDirectory() as t:
+            pasta = Path(t, "app")
+            pasta.mkdir()
+            (pasta / "app.container").write_text("[Container]\nImage=docker.io/x/y:1\nFoo=bar\n")
+            (pasta / "app2.container").write_text("[Container]\nImage=docker.io/x/y:1\nNetwork=missing.network\n")
+            antes = len(errors)
+            check_quadlet([pasta])
+            novos = errors[antes:]
+            del errors[antes:]
+            assert any("app.container" in x and "unsupported key 'Foo'" in x for x in novos), novos
+            assert any("app2.container" in x and "missing.network" in x for x in novos), novos
+
     # [store] works_with: other folders, no self, no repeats
     ex = {"a", "b", "c"}
     assert works_with_problemas("b, c", "a", ex) == []
@@ -1187,6 +1211,80 @@ def selftest():
 
 # --------------------------------------------------------------------------
 
+QUADLET_GERADORES = ("/usr/libexec/podman/quadlet", "/usr/lib/podman/quadlet", "/usr/local/libexec/podman/quadlet")
+QUADLET_MIN = (5, 0)             # the keys these units use (Notify=healthy, PidsLimit...) came with Podman 5
+
+
+def quadlet_generator():
+    """(path, (major, minor)) of Podman's Quadlet generator, or (None, None) when this machine has none."""
+    import shutil
+    import subprocess
+    for c in (*QUADLET_GERADORES, shutil.which("quadlet") or ""):
+        if c and Path(c).is_file():
+            try:
+                r = subprocess.run([c, "--version"], capture_output=True, text=True, timeout=20)
+            except (OSError, subprocess.TimeoutExpired):
+                continue
+            m = re.search(r"(\d+)\.(\d+)", r.stdout + r.stderr)
+            return c, (int(m.group(1)), int(m.group(2))) if m else None
+    return None, None
+
+
+def quadlet_problemas(stderr, donos):
+    """([(unit, message)], [(unit, warning)]) from the generator's stderr.
+
+    An error reads `converting "x.container": unsupported key 'Foo' in group 'Container'`; a warning
+    `Warning: x.container specifies the image ...`. `donos` maps a unit's file name to its folder."""
+    erros, avisos = [], []
+    for linha in stderr.splitlines():
+        m = re.search(r'converting "([^"]+)": (.+)$', linha)
+        if m:
+            erros.append((m.group(1), m.group(2)))
+            continue
+        m = re.search(r"Warning: (\S+) (.+)$", linha)
+        if m and m.group(1) in donos:
+            avisos.append((m.group(1), m.group(2)))
+    return erros, avisos
+
+
+def check_quadlet(folders, exigido=False):
+    """Every unit through Podman's own generator (`quadlet -dryrun -user`), the way the host will read it.
+
+    The rest of this file knows the mistakes this repository has made; the generator knows what
+    Quadlet accepts: an unsupported key, a `Network=` that names a file that is not there, a
+    section it cannot read. Those used to show up at install. It does not validate VALUES it does
+    not interpret (`Notify=maybe` passes), so this is a floor and not a substitute for the rest.
+
+    All the units go in one directory, as on the host (a name is unique across apps, rule 1): a
+    `Network=tsdproxy-net.network` has to find its file. Run when the machine has a generator at
+    Podman 5 or newer; `exigido` (--quadlet) makes its absence an error, which is what CI asks for."""
+    import subprocess
+    import tempfile
+    gerador, versao = quadlet_generator()
+    if not gerador or not versao or versao < QUADLET_MIN:
+        if exigido:
+            error("quadlet", f"no Quadlet generator at Podman {QUADLET_MIN[0]}+ here "
+                             f"(found: {gerador or 'none'} {versao or ''})")
+        return
+    donos = {}
+    with tempfile.TemporaryDirectory(prefix="qh-quadlet-") as tmp:
+        for folder in folders:
+            for f in sorted(folder.iterdir()):
+                if f.is_file() and f.suffix in (".container", ".network", ".volume", ".image", ".build", ".pod", ".kube"):
+                    donos[f.name] = folder
+                    Path(tmp, f.name).write_bytes(f.read_bytes())
+        env = {**os.environ, "QUADLET_UNIT_DIRS": tmp}
+        r = subprocess.run([gerador, "-dryrun", "-user"], capture_output=True, text=True, env=env, timeout=120)
+    erros, avisos = quadlet_problemas(r.stderr, donos)
+    for unit, msg in erros:
+        pasta = donos.get(unit)
+        error("quadlet", f"apps/{pasta.name if pasta else '?'}/{unit}: {msg}")
+    for unit, msg in avisos:
+        warn("quadlet", f"apps/{donos[unit].name}/{unit}: {msg}")
+    if r.returncode != 0 and not erros:
+        error("quadlet", f"the generator failed ({r.returncode}): {r.stderr.strip().splitlines()[-1] if r.stderr.strip() else ''}")
+
+
 def main():
     if "--selftest" in sys.argv:
         selftest()
@@ -1209,6 +1307,7 @@ def main():
         print(loc(f"{feitos} unit(s) reformatted"))
         return 0
     check_units(folders)
+    check_quadlet(folders, exigido="--quadlet" in sys.argv)
     check_layout(folders)
     uses = check_ports(folders)
     check_manifest(folders)

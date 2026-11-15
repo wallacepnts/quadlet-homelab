@@ -28,6 +28,16 @@ That one it also fixes:
 qh-check --format      # rewrites every unit into the layout; order and blank lines only
 ```
 
+It also runs every unit through **Podman's own Quadlet generator** (`quadlet -dryrun -user`,
+all the units in one directory as on the host), which knows what the rest of the file does not: an
+unsupported key, a `Network=` naming a file that is not there, a section it cannot read. Those
+used to show up at install. It runs when the machine has a generator at Podman 5 or newer and is
+skipped quietly otherwise; `qh-check --quadlet` makes its absence an error, which is what CI uses
+(a separate job, in the official `podman/stable` image, since the runner's Podman is older than
+the keys need). The generator does not interpret every value (`Notify=maybe` passes), so this is a
+floor under the other checks, not a substitute for them. The store's Customize screen already
+validates a drop-in with the same generator before it writes it.
+
 To waive a rule deliberately, the unit says so and the reason is required:
 
 ```ini

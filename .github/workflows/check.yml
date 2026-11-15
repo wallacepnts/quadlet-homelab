@@ -66,3 +66,15 @@ jobs:
             esac
           done
           exit $failed
+
+  # Every unit through Podman's own Quadlet generator: it knows what Quadlet accepts, which check.py
+  # does not. The runner's Podman is older than the keys these units use (Notify=healthy and others
+  # came with 5.0), so the generator comes from the official image; python is installed into it.
+  quadlet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: validate the units with the Quadlet generator
+        run: |
+          docker run --rm --user root -v "$PWD:/repo" -w /repo quay.io/podman/stable:latest \
+            sh -c 'dnf -y install python3 >/dev/null && python3 check.py --quadlet'
