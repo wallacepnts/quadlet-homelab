@@ -216,7 +216,7 @@ cat ~/.config/quadlet-homelab/store-token       # o login
 Cada serviço instalado tem um seletor de **Acesso**: seguir a regra, rede
 local, tailnet ou os dois. Escolher um salva uma exceção
 (`qh --set-access MODO APP`) e aplica com `--update`. Instalar um serviço cuja
-rede pertence a outro que não está instalado (o tsdproxy, para 79 dos 82)
+rede pertence a outro que não está instalado (o tsdproxy, para 80 dos 83)
 instala esse outro antes, com as perguntas dele no mesmo formulário.
 
 Ela escuta em `127.0.0.1:8484`, então só esta máquina alcança. Para abrir de

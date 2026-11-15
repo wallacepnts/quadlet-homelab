@@ -215,8 +215,8 @@ cat ~/.config/quadlet-homelab/store-token       # the login
 Each installed service has an **Access** picker: follow the rule, local
 network, tailnet, or both. Picking one saves an exception
 (`qh --set-access MODE APP`) and applies it with `--update`. Installing a
-service whose network belongs to one that is not installed (tsdproxy, for 79 of
-the 82) installs that one first, asking its questions in the same form.
+service whose network belongs to one that is not installed (tsdproxy, for 80 of
+the 83) installs that one first, asking its questions in the same form.
 
 It listens on `127.0.0.1:8484`, so only this machine can reach it. Use
 `ssh -L 8484:127.0.0.1:8484 <host>` to open it from another computer. To reach

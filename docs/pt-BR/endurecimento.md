@@ -28,6 +28,7 @@ motivo — e se mantém na mão.
 | `beszel` | yes | **none** |
 | `beszel-agent` | no | podman default |
 | `calibre-web-automated` | yes | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
+| `casa` | no | 6 (`chown`, `dac_override`, `fowner`, `kill`, `setgid`, `setuid`) |
 | `changedetection` | yes | **none** + `User=1000` |
 | `collabora` | no | 1 (`sys_chroot`) |
 | `cookcli` | yes | **none** + `UserNS=keep-id` |
@@ -200,7 +201,7 @@ mensagem prova por que ele não vai além.
 | `postfix` | `DropCapability=ALL` sozinho | container fica `Up` com o app morto: `chown: /var/spool/postfix/private: Operation not permitted` |
 | `tsdproxy` | ícone com gradiente no `dash.icon` | o tsdproxy injeta `fill="currentColor"` na raiz do SVG; path sem `fill` próprio vira bloco sólido. Usar monocromático (`si/`, `mdi/`, ou a variante `-light`/`-dark` do selfh.st) |
 | immich (os três) | `--cap-drop=NET_RAW` | não faz nada: rootless, o `podman info` declara 11 capabilities padrão e `NET_RAW` não é uma delas. Medido: o `CapEff` fica idêntico com e sem a flag. Só as três units do immich tentavam isso, em 110 |
-| quem monta `podman.sock` | só `:z` | sob SELinux o processo fica `container_t` e a API recusa: `permission denied while trying to connect to the docker API`. O serviço sobe **healthy** e não enxerga container nenhum. Usar `SecurityLabelType=container_runtime_t`, não `SecurityLabelDisable` — são seis units: authentik-worker, beszel-agent, dozzle, homepage, tsdproxy, wud |
+| quem monta `podman.sock` | só `:z` | sob SELinux o processo fica `container_t` e a API recusa: `permission denied while trying to connect to the docker API`. O serviço sobe **healthy** e não enxerga container nenhum. Usar `SecurityLabelType=container_runtime_t`, não `SecurityLabelDisable` — são oito units: authentik-worker, beszel-agent, casa, dozzle, gitea-runner, homepage, tsdproxy, wud |
 | `collabora` | `ReadOnly=true` | `Access to file denied: /opt/cool/child-roots/...` — o tmpfs nasce do root e o coolwsd roda como uid 1001 |
 | `collabora` | `DropCapability=ALL` sozinho | `chroot(...) failed (EPERM)` — cada documento roda numa jaula própria |
 | `retrom` | `ReadOnly=true` | panic em `packages/telemetry/src/lib.rs:48` — o entrypoint chowna os três volumes a cada start |
@@ -210,3 +211,8 @@ mensagem prova por que ele não vai além.
 | `neko` | `ReadOnly=true` | sobe mas não serve: o supervisord escreve o socket em `/var/run` |
 | media-stack | um job de backup por unit | o gancho para a stack pelo prefixo (`media-stack-*`), numa chamada só; parar doze leva mais que os 60s padrão, daí o `WEBHOOK_TIMEOUT=180` |
 | `vm-windows` | `DISK_TYPE=sata` no Windows XP | ignorado — `writeState "type" "blk"` é fixo para `winxpx*`, e não existe driver virtio para XP |
+| `casa` | `User=1000` | `Script must be executed with root privileges.` (saída 12) — o entrypoint se recusa a rodar sem privilégio e baixa para o uid 1000 sozinho, com `gosu` |
+| `casa` | `ReadOnly=true` | `groupadd: cannot lock /etc/group` — o entrypoint cria o grupo e o usuário a cada start e ainda faz chown em `/var/lib/casaos`, onde mora a UI, então um tmpfs por cima esconderia a UI |
+| `casa` | `DropCapability=ALL` sozinho | sai com 10 em `groupadd: failure while writing changes to /etc/gshadow`. As seis são necessárias, cada uma com seu erro: `chown` (`groupadd`), `dac_override` e `fowner` (`install -d -o` em `/DATA/AppData`, saída 1), `setuid` e `setgid` (`gosu`: `failed switching to "1000:1000"`) e `kill` — sem ela a parada leva 11 s e termina em `SIGKILL` (saída 137), porque o shutdown do entrypoint dá `pkill` nos processos do uid 1000 |
+| `casa` | sem `--cgroupns=host` | `Failed to identify the current container!` — o entrypoint procura o próprio id em `/proc/self/cgroup`, e um cgroup namespace privado não mostra nenhum. O plano B dele, um `sed` sobre o `mountinfo`, devolve `storage` (de `.../containers/storage/...`) no lugar do id e nunca chega à busca por hostname |
+| `casa` | `SAMBA=N` | nenhum efeito medido: com as seis capabilities o `smbd` não fica de pé de qualquer jeito, e as portas dele não são publicadas |

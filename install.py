@@ -1890,6 +1890,7 @@ DESCRICOES = {
     "Locate, ring and lock your Android phone, end-to-end encrypted":
         "Localiza, toca e bloqueia seu celular Android, com criptografia ponta a ponta",
     "A bridge between Zigbee devices and MQTT, with no proprietary hub": "Ponte entre dispositivos Zigbee e MQTT, sem hub proprietário",
+    "A home server dashboard over your Podman containers": "Um painel de servidor doméstico sobre os seus containers do Podman",
     "Advanced web interface (Vue.js) for OwnTracks Recorder": "Interface web avançada (Vue.js) para o OwnTracks Recorder",
     "A light, minimal CalDAV/CardDAV server": "Servidor CalDAV/CardDAV leve e mínimo",
     "A local, browsable archive of exported WhatsApp conversations": "Acervo local e navegável de conversas exportadas do WhatsApp",

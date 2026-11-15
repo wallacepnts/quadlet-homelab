@@ -2,7 +2,7 @@
 
 **[🇺🇸 Read in English](../../README.md)**
 
-82 serviços self-hosted como units do [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html),
+83 serviços self-hosted como units do [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html),
 rootless, um serviço por pasta.
 
 ## Início rápido
@@ -70,7 +70,7 @@ use `--reinstall`.
 ## Requisitos
 
 - **Podman 5.0 ou mais novo.** É a régua de verdade: o `Notify=healthy` chegou
-  nessa versão, e 116 das 124 units usam. No 4.x o start volta antes de o app
+  nessa versão, e 117 das 125 units usam. No 4.x o start volta antes de o app
   estar pronto, e a instalação relata um sucesso que ela não tem como saber.
 - **systemd com sessão de usuário** e cgroups v2.
 - **`network-online.target` alcançado no boot.** O Quadlet ordena toda unit que
@@ -137,6 +137,7 @@ aqui.
 | <img src="https://avatars.githubusercontent.com/u/6239652?s=200&v=4" width="48" height="48" alt=""> | [Beaver Habits](../../apps/beaverhabits/README.pt-BR.md) | Acompanhamento de hábitos sem metas e sem cobrança de sequência — você marca o dia e segue |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/beszel.svg" width="48" height="48" alt=""> | [Beszel](../../apps/beszel/README.pt-BR.md) | Dashboard leve de monitoramento de recursos (CPU/RAM/disco/rede/containers) deste host |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/calibre-web.svg" width="48" height="48" alt=""> | [Calibre-Web-Automated](../../apps/calibre-web-automated/README.pt-BR.md) | Biblioteca de ebooks com conversão, metadados e capas automáticas via Calibre, com leitura direto no navegador |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/casaos.svg" width="48" height="48" alt=""> | [CasaOS](../../apps/casa/README.pt-BR.md) | Painel de servidor doméstico que fala com o socket do Podman — enxerga todos os containers que você roda; instalar apps pela loja dele não funcionou aqui |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/changedetection.svg" width="48" height="48" alt=""> | [changedetection.io](../../apps/changedetection/README.pt-BR.md) | Vigia páginas e avisa o que mudou — preço, estoque, um parágrafo de termos de uso |
 | <img src="https://sdk.collaboraonline.com/_static/collabora.svg" width="48" height="48" alt=""> | [Collabora](../../apps/collabora/README.pt-BR.md) | Edição de documentos dentro do ownCloud — texto, planilha e slides, no navegador |
 | <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/cookcli.svg" width="48" height="48" alt=""> | [CookCLI](../../apps/cookcli/README.pt-BR.md) | Receitas em texto puro no formato CookLang — versionáveis em git, sem banco e sem formulário |

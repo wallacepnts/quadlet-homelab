@@ -28,6 +28,7 @@ and is maintained by hand.
 | `beszel` | yes | **none** |
 | `beszel-agent` | no | podman default |
 | `calibre-web-automated` | yes | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
+| `casa` | no | 6 (`chown`, `dac_override`, `fowner`, `kill`, `setgid`, `setuid`) |
 | `changedetection` | yes | **none** + `User=1000` |
 | `collabora` | no | 1 (`sys_chroot`) |
 | `cookcli` | yes | **none** + `UserNS=keep-id` |
@@ -200,7 +201,7 @@ works, and only the message proves why it cannot go further.
 | `postfix` | `DropCapability=ALL` alone | the container stays `Up` with the app dead: `chown: /var/spool/postfix/private: Operation not permitted` |
 | `tsdproxy` | a gradient icon in `dash.icon` | tsdproxy injects `fill="currentColor"` at the SVG root; a path with no `fill` of its own becomes a solid block. Use a monochrome one (`si/`, `mdi/`, or selfh.st's `-light`/`-dark` variant) |
 | immich (all three) | `--cap-drop=NET_RAW` | does nothing: rootless, `podman info` declares 11 default capabilities and `NET_RAW` is not one of them. Measured: `CapEff` is identical with and without the flag. Only immich's three units tried it, out of 110 |
-| anything mounting `podman.sock` | `:z` alone | under SELinux the process ends up `container_t` and the API refuses: `permission denied while trying to connect to the docker API`. The service comes up **healthy** and sees no containers at all. Use `SecurityLabelType=container_runtime_t`, not `SecurityLabelDisable` — six units: authentik-worker, beszel-agent, dozzle, homepage, tsdproxy, wud |
+| anything mounting `podman.sock` | `:z` alone | under SELinux the process ends up `container_t` and the API refuses: `permission denied while trying to connect to the docker API`. The service comes up **healthy** and sees no containers at all. Use `SecurityLabelType=container_runtime_t`, not `SecurityLabelDisable` — eight units: authentik-worker, beszel-agent, casa, dozzle, gitea-runner, homepage, tsdproxy, wud |
 | `collabora` | `ReadOnly=true` | `Access to file denied: /opt/cool/child-roots/...` — the tmpfs is born owned by root and coolwsd runs as uid 1001 |
 | `collabora` | `DropCapability=ALL` alone | `chroot(...) failed (EPERM)` — each document runs in a jail of its own |
 | `retrom` | `ReadOnly=true` | panic at `packages/telemetry/src/lib.rs:48` — the entrypoint chowns all three volumes on every start |
@@ -210,3 +211,8 @@ works, and only the message proves why it cannot go further.
 | `neko` | `ReadOnly=true` | comes up but does not serve: supervisord writes its socket in `/var/run` |
 | media-stack | one backup job per unit | the hook stops the stack by prefix (`media-stack-*`) in a single call; stopping twelve takes longer than the default 60s, hence `WEBHOOK_TIMEOUT=180` |
 | `vm-windows` | `DISK_TYPE=sata` on Windows XP | ignored — `writeState "type" "blk"` is hardcoded for `winxpx*`, and there is no virtio driver for XP |
+| `casa` | `User=1000` | `Script must be executed with root privileges.` (exit 12) — the entrypoint refuses to run unprivileged, then drops to uid 1000 itself with `gosu` |
+| `casa` | `ReadOnly=true` | `groupadd: cannot lock /etc/group` — the entrypoint creates the group and the user on every start, and also chowns `/var/lib/casaos`, where the UI lives, so a tmpfs over it would hide the UI |
+| `casa` | `DropCapability=ALL` alone | exits 10 at `groupadd: failure while writing changes to /etc/gshadow`. All six are needed, each with its own error: `chown` (`groupadd`), `dac_override` and `fowner` (`install -d -o` on `/DATA/AppData`, exit 1), `setuid` and `setgid` (`gosu`: `failed switching to "1000:1000"`), and `kill` — without it the stop takes 11 s and ends in `SIGKILL` (exit 137), because the entrypoint's shutdown `pkill`s the uid-1000 processes |
+| `casa` | no `--cgroupns=host` | `Failed to identify the current container!` — the entrypoint looks for its own id in `/proc/self/cgroup`, and a private cgroup namespace shows none. Its fallback, a `sed` over `mountinfo`, then returns `storage` (from `.../containers/storage/...`) instead of the id and never reaches the hostname lookup |
+| `casa` | `SAMBA=N` | no effect measured: with the six capabilities `smbd` is not running either way, and its ports are not published |
