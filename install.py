@@ -2548,16 +2548,20 @@ def restart_unit(unit, container=None):
         run(cmd)
         return
 
+    # On a restart the OLD container is still there for the first moments: following it ends in
+    # `no container with ID ... found in database` as systemd removes it. So the one to follow is
+    # the one whose ID is not the old one's.
+    antigo = container_id(container)
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     follow = None
     try:
         # The container does not exist until systemd creates it, and following
         # a container that is not there yet fails immediately.
         while proc.poll() is None and follow is None:
-            if subprocess.run(["podman", "container", "exists", container],
-                              capture_output=True).returncode == 0:
+            atual = container_id(container)
+            if atual and atual != antigo:
                 say()
-                follow = subprocess.Popen(["podman", "logs", "-f", container])
+                follow = subprocess.Popen(["podman", "logs", "-f", atual], stderr=subprocess.DEVNULL)
             else:
                 time.sleep(0.5)
         out, err = proc.communicate()
@@ -2570,6 +2574,13 @@ def restart_unit(unit, container=None):
                 follow.kill()
     if proc.returncode:
         raise subprocess.CalledProcessError(proc.returncode, cmd, out, err)
+
+
+def container_id(nome):
+    """The ID of the container called `nome`, or None when there is none (yet, or any more)."""
+    r = subprocess.run(["podman", "container", "inspect", "--format", "{{.Id}}", nome],
+                       capture_output=True, text=True)
+    return r.stdout.strip() or None if r.returncode == 0 else None
 
 
 _IMAGENS = None
