@@ -198,6 +198,15 @@ accounting. Disk is `podman unshare du` over the volumes `qh --backup` would
 pack, never a shared media root, and is cached for ten minutes. Architectures
 come from the image's registry manifest and are cached for a week.
 
+The page has two screens, as CasaOS does. **My apps** is what is installed, as
+tiles with the state, the version badge and CPU and memory: a tile opens the app
+in a new tab when it has a single address, and the gear beside it manages the
+service. An app with several web UIs (the media stack) or none has no single
+place to go, so its tile opens the panel. **Store** is the whole catalog, with
+categories and search, and marks what is already installed. The screen is kept
+in the URL (`#apps` or `#store`), so a reload or a bookmark lands on the same
+one; with nothing installed yet it opens on the Store.
+
 It runs on the host as a systemd `--user` service, not as a Quadlet. Its job is
 driving systemd and podman as you, so a container would need your home, your
 podman socket and your systemd bus. That is the same access, just less obvious.

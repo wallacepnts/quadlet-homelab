@@ -4,7 +4,9 @@
 
 const T = {
   pt: {
-    search: "Buscar apps", onlyInstalled: "Só instalados", all: "Todos", other: "Outros",
+    search: "Buscar apps", tabApps: "Meus apps", tabStore: "Loja", all: "Todos", other: "Outros",
+    noneInstalled: "Nenhum app instalado ainda.", goStore: "Abrir a Loja", manage: "Gerenciar",
+    installedBadge: "instalado",
     none: "Nenhum app encontrado.", installed: "instalado", running: "rodando",
     attention: "atenção", changed: "repo mudou", install: "Instalar", update: "Atualizar",
     remove: "Remover", logs: "Logs", open: "Abrir", confirm: "Confirmar", cancel: "Cancelar",
@@ -49,7 +51,9 @@ const T = {
     lang: "English",
   },
   en: {
-    search: "Search apps", onlyInstalled: "Installed only", all: "All", other: "Other",
+    search: "Search apps", tabApps: "My apps", tabStore: "Store", all: "All", other: "Other",
+    noneInstalled: "No app installed yet.", goStore: "Open the Store", manage: "Manage",
+    installedBadge: "installed",
     none: "No app found.", installed: "installed", running: "running",
     attention: "attention", changed: "repo changed", install: "Install", update: "Update",
     remove: "Remove", logs: "Logs", open: "Open", confirm: "Confirm", cancel: "Cancel",
@@ -98,7 +102,8 @@ const T = {
 const S = {
   lang: localStorage.getItem("qh-lang") || (navigator.language.startsWith("pt") ? "pt" : "en"),
   rule: "tailnet",          // the host's access rule (qh --set-access)
-  apps: [], group: null, search: "", onlyInstalled: false, current: null,
+  apps: [], group: null, search: "", current: null,
+  view: null,               // "apps" (what is installed) or "store" (the catalog); kept in the URL hash
   stats: {},                // unit -> {cpu, mem}, from /api/stats
   upd: {}, checked: null,   // unit -> qh-updates --host row; when it was asked
 };
@@ -252,13 +257,38 @@ const groupOf = (app) => (app.group ? app.group[S.lang] : t("other"));
 function renderChrome() {
   document.documentElement.lang = S.lang === "pt" ? "pt-BR" : "en";
   $("search").placeholder = t("search");
-  $("only-installed-label").textContent = t("onlyInstalled");
   $("lang").textContent = t("lang");
   $("recheck").textContent = t("recheck");
   $("history-btn").textContent = t("history");
+  renderTabs();
+}
+
+const installed = () => S.apps.filter((a) => a.installed);
+
+// Two screens, as CasaOS has them: what is installed (a launcher) and the catalog
+// (somewhere to find and install). The choice lives in the URL hash, so a reload
+// or a bookmark lands on the same one.
+function renderTabs() {
+  const aba = (id, key, view, n) => {
+    fill($(id), t(key), h("span", { class: "count" }, String(n)));
+    $(id).setAttribute("aria-selected", String(S.view === view));
+  };
+  aba("tab-apps", "tabApps", "apps", installed().length);
+  aba("tab-store", "tabStore", "store", S.apps.length);
+}
+
+function setView(view) {
+  S.view = view;
+  S.group = null;
+  if (typeof history !== "undefined" && history.replaceState) history.replaceState(null, "", `#${view}`);
+  renderTabs();
+  renderGroups();
+  renderGrid();
 }
 
 function renderGroups() {
+  // Categories are for browsing the catalog; a handful of installed apps needs none.
+  $("groups").hidden = S.view !== "store";
   const groups = [...new Set(S.apps.map(groupOf))].sort((a, b) => a.localeCompare(b, S.lang));
   const chip = (g, label) => h("button", {
     type: "button", "aria-pressed": String(S.group === g),
@@ -267,31 +297,69 @@ function renderGroups() {
   fill($("groups"), chip(null, t("all")), ...groups.map((g) => chip(g, g)));
 }
 
+const matches = (a, q) =>
+  !q || `${a.name} ${a.id} ${a.description.en} ${a.description.pt}`.toLowerCase().includes(q);
+
+// The page of an installed app, when there is exactly one to open: the tile goes
+// straight to it. A stack with a dozen web UIs has no single answer, and the tile
+// opens its panel instead.
+function openUrl(a) {
+  const instaladas = new Set(a.units.filter((u) => u.installed).map((u) => u.unit));
+  const urls = a.web.filter((w) => instaladas.has(w.unit)).map((w) => w.tailnet || w.local).filter(Boolean);
+  return urls.length === 1 ? urls[0] : null;
+}
+
+function tile(a) {
+  const st = health(a), url = openUrl(a);
+  const corpo = [
+    h("img", { src: a.icon, alt: "", loading: "lazy", referrerpolicy: "no-referrer" }),
+    h("h3", {}, a.name),
+    st && h("span", { class: `badge ${st[0]}` }, st[1]),
+    h("p", { class: "version", "data-res": a.id }, resText(a)),
+  ];
+  return h("div", { class: "card tile" },
+    url
+      ? h("a", { class: "tile-open", href: url, target: "_blank", rel: "noopener noreferrer",
+                 "aria-label": `${t("open")} ${a.name}` }, ...corpo)
+      : h("button", { class: "tile-open", type: "button", onclick: () => openPanel(a.id) }, ...corpo),
+    url && h("button", { class: "gear", type: "button", title: t("manage"),
+                         "aria-label": `${t("manage")} ${a.name}`, onclick: () => openPanel(a.id) }, "⚙"));
+}
+
+function storeCard(a) {
+  return h("button", { class: "card", type: "button", onclick: () => openPanel(a.id) },
+    h("div", { class: "top" },
+      h("img", { src: a.icon, alt: "", loading: "lazy", referrerpolicy: "no-referrer" }),
+      h("div", {}, h("h3", {}, a.name),
+        h("p", { class: "version" }, a.installed ? tagOf((mainUnit(a) || {}).installed_image) : ""))),
+    h("p", { class: "desc" }, plain(a.description[S.lang] || a.description.en)),
+    a.installed && h("span", { class: "badge plain" }, t("installedBadge")));
+}
+
 function renderGrid() {
   const q = S.search.trim().toLowerCase();
-  const shown = S.apps.filter((a) =>
-    (!S.group || groupOf(a) === S.group) &&
-    (!S.onlyInstalled || a.installed) &&
-    (!q || `${a.name} ${a.id} ${a.description.en} ${a.description.pt}`.toLowerCase().includes(q)));
-  fill($("grid"), ...shown.map((a) => {
-    const st = health(a);
-    return h("button", { class: "card", type: "button", onclick: () => openPanel(a.id) },
-      h("div", { class: "top" },
-        h("img", { src: a.icon, alt: "", loading: "lazy", referrerpolicy: "no-referrer" }),
-        h("div", {}, h("h3", {}, a.name),
-          h("p", { class: "version" }, a.installed ? tagOf((mainUnit(a) || {}).installed_image) : ""))),
-      a.installed && h("p", { class: "version", "data-res": a.id }, resText(a)),
-      h("p", { class: "desc" }, plain(a.description[S.lang] || a.description.en)),
-      st && h("span", { class: `badge ${st[0]}` }, st[1]));
-  }));
+  const meus = S.view === "apps";
+  const pool = meus ? installed() : S.apps.filter((a) => !S.group || groupOf(a) === S.group);
+  const shown = pool.filter((a) => matches(a, q));
+  $("grid").className = meus ? "apps" : "";
+  fill($("grid"), ...shown.map(meus ? tile : storeCard));
   $("empty").hidden = shown.length > 0;
-  $("empty").textContent = t("none");
+  if (!shown.length) {
+    const semApps = meus && !installed().length && !q;
+    fill($("empty"), semApps ? t("noneInstalled") : t("none"),
+      semApps ? h("button", { type: "button", onclick: () => setView("store") }, t("goStore")) : null);
+  }
 }
 
 async function load() {
   const cat = await api(`/api/catalog?lang=${S.lang}`);
   S.apps = cat.apps;
   S.rule = cat.access;
+  if (!S.view) {
+    const hash = (location.hash || "").slice(1);
+    S.view = ["apps", "store"].includes(hash) ? hash : (installed().length ? "apps" : "store");
+  }
+  renderTabs();
   renderGroups();
   renderGrid();
   if (S.current && $("panel").open) renderPanel();
@@ -804,7 +872,8 @@ async function showLogs(unit) {
 // -- wiring -----------------------------------------------------------------
 
 $("search").addEventListener("input", (e) => { S.search = e.target.value; renderGrid(); });
-$("only-installed").addEventListener("change", (e) => { S.onlyInstalled = e.target.checked; renderGrid(); });
+$("tab-apps").addEventListener("click", () => setView("apps"));
+$("tab-store").addEventListener("click", () => setView("store"));
 $("lang").addEventListener("click", () => {
   S.lang = S.lang === "pt" ? "en" : "pt";
   localStorage.setItem("qh-lang", S.lang);

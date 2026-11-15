@@ -199,6 +199,15 @@ um tamanho para comparar, não uma contabilidade. O disco é o
 raiz de mídia compartilhada, e fica em cache por dez minutos. As arquiteturas
 vêm do manifest da imagem no registry e ficam em cache por uma semana.
 
+A página tem duas telas, como o CasaOS. **Meus apps** é o que está instalado,
+em azulejos com o estado, o selo de versão e CPU e memória: o azulejo abre o app
+em outra aba quando ele tem um endereço só, e a engrenagem ao lado gerencia o
+serviço. Um app com várias interfaces web (a media-stack) ou nenhuma não tem um
+lugar único para ir, então o azulejo dele abre o painel. A **Loja** é o catálogo
+inteiro, com categorias e busca, e marca o que já está instalado. A tela fica
+guardada na URL (`#apps` ou `#store`), então um reload ou um favorito volta para
+a mesma; sem nada instalado ainda, abre na Loja.
+
 Ela roda no host como serviço `systemd --user`, não como Quadlet. O trabalho
 dela é comandar o systemd e o podman como você, então um container precisaria
 do seu home, do socket do podman e do barramento do systemd. É o mesmo acesso,
