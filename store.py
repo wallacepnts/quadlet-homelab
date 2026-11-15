@@ -1105,6 +1105,36 @@ def service_dir(app):
     return d if d.is_dir() and any(d.glob("*.container")) else None
 
 
+def control_cmds(app, verbo, estados=None):
+    """(commands, history action) for play/pause/stop of a whole service, or ([], None) when there is nothing to do.
+
+    `estados` is {container: podman Status}; read from podman when not given (tests give it)."""
+    s = I.Service(app, PREFIX)
+    instaladas = [u for u in s.installed() if u.suffix == ".container"]
+    if not instaladas:
+        return [], None
+    if estados is None:
+        estados = {} if PREFIX else I.host_state()[1]
+    por_estado = {u.stem: I.estado_do_container(estados.get(I.container_name(u), "—")) for u in instaladas}
+    nomes = {u.stem: I.container_name(u) for u in instaladas}
+    parados = [x for x, e in por_estado.items() if e == "paused"]
+    rodando = [x for x, e in por_estado.items() if e in ("up", "healthy", "unhealthy")]
+    if verbo == "pause":
+        return ([["podman", "pause", *(nomes[x] for x in rodando)]], "pause") if rodando else ([], None)
+    if verbo == "stop":
+        if not parados and not rodando and all(e == "—" for e in por_estado.values()):
+            return [], None
+        # a frozen container does not stop on SIGTERM: thaw first
+        return ([["podman", "unpause", *(nomes[x] for x in parados)]] if parados else []) \
+            + [["systemctl", "--user", "stop", *(u.stem for u in instaladas)]], "stop"
+    # play: thaw what is frozen, start what is not running
+    cmds = [["podman", "unpause", *(nomes[x] for x in parados)]] if parados else []
+    faltam = [u for u in instaladas if por_estado[u.stem] not in ("up", "healthy", "unhealthy", "paused")]
+    if faltam:
+        cmds.append(["systemctl", "--user", "start", *(u.stem for u in faltam)])
+    return cmds, ("resume" if parados and not faltam else "start") if cmds else None
+
+
 def unit_exists(unit):
     return bool(NOME.match(unit or "")) and any(I.APPS.glob(f"*/{unit}.container"))
 
@@ -1226,7 +1256,7 @@ def start_job(app, action, cmd, lang, prepare=None, entrada=None, refrescar=None
             for i, uno in enumerate(cmd if cmd and isinstance(cmd[0], list) else [cmd] if cmd else []):
                 if i:
                     job.write("\n" + "─" * 60 + "\n")
-                if PREFIX and uno[0] == "systemctl":
+                if PREFIX and uno[0] in ("systemctl", "podman"):
                     job.write(f"({loc('sandbox, not executed')}: {' '.join(uno)})\n")
                     continue
                 # `entrada` is what the person typed where the terminal asks —
@@ -1686,6 +1716,19 @@ class Handler(BaseHTTPRequestHandler):
             if PREFIX:
                 cmd += ["--prefix", PREFIX]
             job = start_job("_host", "prune", cmd, lang, origem=self.client_address[0])
+        elif url.path == "/api/control":
+            # Play, pause and stop for the whole service. Play also lifts a pause; pause freezes the
+            # running containers (`podman pause`) and leaves the units active; stop stops every unit
+            # of the service together, so no dependency is left writing.
+            app, verbo = d.get("app", ""), d.get("verb", "")
+            if not service_dir(app):
+                return self._json(400, {"error": loc("unknown service")})
+            if verbo not in ("play", "pause", "stop"):
+                return self._json(400, {"error": loc("unknown action")})
+            cmd, acao = control_cmds(app, verbo)
+            if not cmd:
+                return self._json(400, {"error": loc("nothing to do: it is not installed, or already in that state")})
+            job = start_job(app, acao, cmd, lang, origem=self.client_address[0])
         elif url.path == "/api/unit":
             unit, verbo = d.get("unit", ""), d.get("verb", "")
             if not unit_exists(unit):
@@ -1913,6 +1956,22 @@ def selftest():
             estado = esperar(corpo)
             assert estado["rc"] == 0 and estado["output"].index("tar czf") < estado["output"].index("restart"), estado["output"][:400]
             assert len(json.loads(pedir("/api/backups?app=homebox", headers=ok)[2])["backups"]) == antes_n + 1, "the update made a backup first"
+
+            # play / pause / stop of a whole service, from the state podman reports
+            arriba, congelado, parado = {"homebox": "Up 3 hours (healthy)"}, {"homebox": "Up 3 hours (Paused)"}, {}
+            assert I.estado_do_container("Up 3 hours (Paused)") == "paused" and I.estado_do_container("Paused") == "paused"
+            assert control_cmds("homebox", "pause", arriba) == ([["podman", "pause", "homebox"]], "pause")
+            assert control_cmds("homebox", "pause", congelado) == ([], None), "pausing what is paused is nothing to do"
+            assert control_cmds("homebox", "play", arriba) == ([], None), "playing what runs is nothing to do"
+            assert control_cmds("homebox", "play", congelado) == ([["podman", "unpause", "homebox"]], "resume")
+            cmds, acao = control_cmds("homebox", "play", parado)
+            assert acao == "start" and cmds == [["systemctl", "--user", "start", "homebox"]], cmds
+            cmds, _ = control_cmds("homebox", "stop", congelado)
+            assert cmds[0] == ["podman", "unpause", "homebox"] and cmds[-1][:3] == ["systemctl", "--user", "stop"], "a frozen one is thawed before it is stopped"
+            assert control_cmds("homebox", "stop", parado) == ([], None)
+            assert pedir("/api/control", json.dumps({"app": "homebox", "verb": "dance"}).encode(), api)[0] == 400
+            assert pedir("/api/control", json.dumps({"app": "nope", "verb": "stop"}).encode(), api)[0] == 400
+            assert pedir("/api/control", json.dumps({"app": "homebox", "verb": "pause"}).encode(), api)[0] == 400, "nothing is running in the sandbox"
 
             # restore: the plan first, then qh --restore with that archive
             st, _, corpo = pedir(f"/api/plan?app=homebox&action=restore&file={nome}", headers=ok)

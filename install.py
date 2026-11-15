@@ -4049,7 +4049,7 @@ ESTADOS = {
     "service": "serviço", "unit": "unit", "container": "container", "repo": "repo",
     "active": "ativo", "inactive": "inativo", "failed": "falhou",
     "activating": "iniciando", "deactivating": "parando",
-    "healthy": "saudável", "unhealthy": "doente", "up": "no ar", "down": "parado",
+    "healthy": "saudável", "unhealthy": "doente", "up": "no ar", "down": "parado", "paused": "pausado",
     "changed": "mudou",
 }
 
@@ -4071,6 +4071,8 @@ def estado_do_container(status):
     container printed green in `--status` while the run exited 0. Read in two
     places, written here once.
     """
+    if "Paused" in status:              # `podman pause`: alive and frozen, which is neither up nor down
+        return "paused"
     if "(unhealthy)" in status:
         return "unhealthy"
     if "(healthy)" in status:

@@ -321,6 +321,13 @@ o deixa de fora; nomeá-lo ainda instala, porque o aviso não é uma proibição
 uma linha simples de até 300 caracteres. É uma decisão que uma pessoa registra:
 nada marca um serviço sozinho.
 
+**Iniciar, pausar e parar** (▶ ⏸ ■ em cada app instalado, em Meus apps e no painel) agem no
+serviço inteiro. Iniciar sobe o que não está rodando e descongela o que está pausado; pausar
+congela os containers que rodam com `podman pause` (as units seguem `active` para o systemd, o
+app aparece como "pausado" e a memória continua alocada); parar para todas as units do serviço
+juntas, descongelando antes um container congelado, que ignora o SIGTERM. Cada botão só fica
+ativo onde faz algo. Rodam como jobs, então aparecem no histórico.
+
 **Recursos** (o botão do cabeçalho, e uma dica depois de uma atualização) lista o que o
 Podman guarda e nada usa: imagens, redes e volumes, com o espaço das imagens ("até":
 camadas são compartilhadas). Cada atualização deixa a imagem anterior. "Sem uso" é mais

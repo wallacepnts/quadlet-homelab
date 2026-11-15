@@ -254,6 +254,26 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   hb.units = [unidade("homebox")];
   $("panel").open = false;
 
+  // play / pause / stop: the three buttons enable by state, and a click asks the server
+  const bc = api.S.apps.find((x) => x.id === "homebox");
+  const estadoBotoes = () => [...$("p-actions").walk()].filter((e) => e.attrs && e.attrs.class === "ctl").map((e) => (e.attrs.disabled === undefined ? "on" : "off")).join(",");
+  api.openPanel("homebox"); await esperar(30);
+  confere(estadoBotoes() === "off,on,on", `rodando: só pausar e parar (${estadoBotoes()})`);
+  bc.units = [unidade("homebox", { container: "paused" })];
+  api.setView("apps");
+  api.openPanel("homebox"); await esperar(30);
+  confere(estadoBotoes() === "on,off,on" && /pausado/.test($("p-info").textContent + $("grid").textContent + $("p-meta").textContent + $("panel").textContent), `pausado: retomar e parar, e o selo diz pausado (${estadoBotoes()})`);
+  bc.units = [unidade("homebox", { service: "inactive", container: null })];
+  api.openPanel("homebox"); await esperar(30);
+  confere(estadoBotoes() === "on,off,off", `parado: só iniciar (${estadoBotoes()})`);
+  bc.units = [unidade("homebox")];
+  rotas["/api/control"] = { job: "jc" }; rotas["/api/job/jc"] = { output: "", next: 0, rc: 0 };
+  api.openPanel("homebox"); await esperar(30);
+  const antesCtl = posts.length;
+  [...$("p-actions").walk()].filter((e) => e.attrs && e.attrs.class === "ctl")[1].listeners.click(); await esperar(900);
+  confere(posts.slice(antesCtl).some((x) => x.rota === "/api/control" && x.corpo.verb === "pause" && x.corpo.app === "homebox"), "o botão pausar chama /api/control");
+  $("panel").open = false;
+
   // minimum Podman: the panel says when the host is older than the app needs
   api.S.podman = "4.9.0";
   Object.assign(api.S.apps.find((x) => x.id === "homebox"), { podman_too_old: true, min_podman: "5.0" });

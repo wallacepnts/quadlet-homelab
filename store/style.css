@@ -169,3 +169,13 @@ main.apps { grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); }
 .cust-out details { margin: .4rem 0; } .cust-out summary { cursor: pointer; font-weight: 600; }
 @media (max-width: 640px) { .cust-row { grid-template-columns: 1fr auto; } .cust-row > :not(.x) { grid-column: 1 / 2; } }
 #p-notice { color: var(--warn); font-weight: 600; margin: .3rem 0 .6rem; }
+
+/* Play, pause and stop of an app */
+.controls { display: flex; justify-content: center; gap: .35rem; padding: 0 .7rem .7rem; }
+.ctl { min-width: 2rem; padding: .2rem .5rem; line-height: 1.2; background: transparent; color: var(--fg);
+       border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
+.ctl:hover:not(:disabled), .ctl:focus-visible { border-color: var(--accent); }
+.ctl:disabled { opacity: .35; cursor: default; }
+#p-actions .controls { padding: 0; }
+#toast { position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%); max-width: min(90vw, 40rem);
+         background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: .6rem 1rem; z-index: 20; }

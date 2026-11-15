@@ -9,6 +9,7 @@ const T = {
     installedBadge: "instalado", deprecatedBadge: "descontinuado", deprecatedNote: "Descontinuado:",
     noInstall: "Não dá para instalar este app daqui.",
     worksWith: "Funciona com",
+    play: "Iniciar / retomar", pause: "Pausar", stopApp: "Parar", pausedBadge: "pausado", ctlFailed: "Não foi possível:",
     backupFirst: "Backup antes",
     envType: { bool: "sim/não", number: "número", email: "e-mail", url: "URL", ip: "IP", password: "senha" },
     resources: "Recursos", resLoading: "Verificando o Podman…",
@@ -84,7 +85,7 @@ const T = {
     noArm: (host, units) => `Sem imagem para ${host}: ${units}. Não vai rodar neste servidor.`,
     history: "Histórico", noHistory: "Nenhuma ação registrada ainda.", when: "Quando", what: "Ação", result: "Resultado",
     took: "Duração", from: "de", output: "Saída",
-    act: { install: "Instalar", update: "Atualizar", upgrade: "Atualizar versão", remove: "Remover", backup: "Backup",
+    act: { pause: "Pausar", resume: "Retomar", install: "Instalar", update: "Atualizar", upgrade: "Atualizar versão", remove: "Remover", backup: "Backup",
            restore: "Restaurar", access: "Acesso", env: "Configuração", start: "Iniciar", stop: "Parar", restart: "Reiniciar",
            customize: "Personalizar", revert: "Reverter", prune: "Limpar" },
     link: { repo: "Projeto", docs: "Documentação", issues: "Problemas", releases: "Releases", image: "Imagem", recipe: "Receita neste repositório" },
@@ -97,6 +98,7 @@ const T = {
     installedBadge: "installed", deprecatedBadge: "discontinued", deprecatedNote: "Discontinued:",
     noInstall: "It cannot be installed from here.",
     worksWith: "Works with",
+    play: "Start / resume", pause: "Pause", stopApp: "Stop", pausedBadge: "paused", ctlFailed: "Could not:",
     backupFirst: "Back up first",
     envType: { bool: "yes/no", number: "number", email: "email", url: "URL", ip: "IP", password: "password" },
     resources: "Resources", resLoading: "Asking Podman…",
@@ -172,7 +174,7 @@ const T = {
     noArm: (host, units) => `No image for ${host}: ${units}. It will not run on this server.`,
     history: "History", noHistory: "No action recorded yet.", when: "When", what: "Action", result: "Result",
     took: "Took", from: "from", output: "Output",
-    act: { install: "Install", update: "Update", upgrade: "Update version", remove: "Remove", backup: "Backup",
+    act: { pause: "Pause", resume: "Resume", install: "Install", update: "Update", upgrade: "Update version", remove: "Remove", backup: "Backup",
            restore: "Restore", access: "Access", env: "Settings", start: "Start", stop: "Stop", restart: "Restart",
            customize: "Customize", revert: "Revert", prune: "Clean up" },
     link: { repo: "Project", docs: "Documentation", issues: "Issues", releases: "Releases", image: "Image", recipe: "Recipe in this repository" },
@@ -316,6 +318,7 @@ function health(app) {
     return ["bad", t("attention")];
   const rows = inst.map((u) => S.upd[u.unit]).filter(Boolean);
   if (rows.some((r) => r.bucket === "GONE")) return ["bad", t("gone")];
+  if (inst.some((u) => u.container === "paused")) return ["warn", t("pausedBadge")];
   if (app.deprecated) return ["warn", t("deprecatedBadge")];
   if (app.trial) return ["warn", t("trialBadge")];
   const atras = rows.find((r) => r.bucket === "BEHIND");
@@ -406,6 +409,47 @@ function openUrl(a) {
   return urls.length === 1 ? urls[0] : null;
 }
 
+// Where an installed app is: running, paused (frozen, still "active" to systemd), or stopped.
+function runState(a) {
+  const inst = a.units.filter((u) => u.installed);
+  if (inst.some((u) => u.container === "paused")) return "paused";
+  return inst.some((u) => u.service === "active") ? "running" : "stopped";
+}
+
+// ▶ ⏸ ■ for a whole app. Each is enabled only where it does something.
+function controls(a) {
+  const st = runState(a);
+  const botao = (verb, glyph, titulo, ligado) => h("button", {
+    type: "button", class: "ctl", title: titulo, "aria-label": `${titulo} ${a.name}`, disabled: !ligado,
+    onclick: () => control(a, verb) }, glyph);
+  return h("div", { class: "controls" },
+    botao("play", "▶", t("play"), st !== "running"),
+    botao("pause", "⏸", t("pause"), st === "running"),
+    botao("stop", "■", t("stopApp"), st !== "stopped"));
+}
+
+function toast(texto) {
+  const el = $("toast");
+  el.textContent = texto;
+  el.hidden = false;
+  clearTimeout(toast.fim);
+  toast.fim = setTimeout(() => { el.hidden = true; }, 6000);
+}
+
+// Runs in the background and refreshes the grid; only a failure is worth a word.
+async function control(a, verb) {
+  try {
+    const { job } = await api("/api/control", { app: a.id, verb });
+    let st;
+    do {
+      await new Promise((r) => setTimeout(r, 600));
+      st = await api(`/api/job/${job}?from=0`);
+    } while (st.rc === null);
+    if (st.rc !== 0) toast(`${t("ctlFailed")} ${a.name} — ${(st.output || "").trim().split("\n").pop()}`);
+  } catch (e) { toast(e.status === 409 ? t("busy") : `${t("ctlFailed")} ${e.message}`); }
+  await load();
+}
+
 function tile(a) {
   const st = health(a), url = openUrl(a);
   const corpo = [
@@ -420,7 +464,8 @@ function tile(a) {
                  "aria-label": `${t("open")} ${a.name}` }, ...corpo)
       : h("button", { class: "tile-open", type: "button", onclick: () => openPanel(a.id) }, ...corpo),
     url && h("button", { class: "gear", type: "button", title: t("manage"),
-                         "aria-label": `${t("manage")} ${a.name}`, onclick: () => openPanel(a.id) }, "⚙"));
+                         "aria-label": `${t("manage")} ${a.name}`, onclick: () => openPanel(a.id) }, "⚙"),
+    controls(a));
 }
 
 function storeCard(a) {
@@ -537,6 +582,7 @@ function renderInfo() {
 }
 
 function stateClass(v) {
+  if (v === "paused") return "warn";
   if (["active", "healthy", "up"].includes(v)) return "ok";
   if (["failed", "unhealthy", "down", "inactive"].includes(v)) return "bad";
   if (v === "changed" || v === "duplicated") return "warn";
@@ -595,7 +641,7 @@ function renderPanel() {
   if (motivo) $("p-notice").textContent = `${t("deprecatedNote")} ${motivo}${a.installed ? "" : ` ${t("noInstall")}`}`;
   else if (velho) $("p-notice").textContent = velho;
   else if (trial) $("p-notice").textContent = trial;
-  const acoes = [];
+  const acoes = a.installed ? [controls(a)] : [];
   if (!a.installed) {
     if (!a.deprecated) {
       const deps = needs(a);

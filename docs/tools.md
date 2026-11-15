@@ -318,6 +318,13 @@ the warning is not a ban. `deprecated_pt` is optional, and the English reason
 stands in without it. `check.py` wants one plain line of at most 300 characters.
 It is a decision a person writes down: nothing marks a service by itself.
 
+**Play, pause and stop** (▶ ⏸ ■ on each installed app, in My apps and in its panel) act on the
+whole service. Play starts what is not running and thaws what is paused; pause freezes the running
+containers with `podman pause` (the units stay `active` for systemd, the app shows "paused" and its
+memory stays allocated); stop stops every unit of the service together, thawing a frozen one first,
+as a frozen container ignores SIGTERM. Each button is enabled only where it does something. They run
+as jobs, so they appear in the history.
+
 **Resources** (the header button, and a hint after an update) lists what Podman keeps
 that nothing uses: images, networks and volumes, with the space the images take
 ("up to": layers are shared). Every update leaves the previous image behind. "Unused"
