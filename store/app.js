@@ -10,6 +10,7 @@ const T = {
     noInstall: "Não dá para instalar este app daqui.",
     worksWith: "Funciona com",
     play: "Iniciar / retomar", pause: "Pausar", stopApp: "Parar", pausedBadge: "pausado",
+    logFilter: "Filtrar linhas…", logFollow: "seguir", logConnecting: "conectando…", logLive: "ao vivo", logEnded: "encerrado", logNoMatch: "(nenhuma linha casa com o filtro)",
     filterUpdates: "Com atualização", filterProblems: "Com problema",
     summaryLine: (r, p, z) => `${r} rodando · ${p} parado(s)${z ? ` · ${z} pausado(s)` : ""}`,
     failFailed: "falhou", failLoop: "reiniciando em loop", failRestarted: "reiniciou", failExit: "saída", failLast: "última falha",
@@ -103,6 +104,7 @@ const T = {
     noInstall: "It cannot be installed from here.",
     worksWith: "Works with",
     play: "Start / resume", pause: "Pause", stopApp: "Stop", pausedBadge: "paused",
+    logFilter: "Filter lines…", logFollow: "follow", logConnecting: "connecting…", logLive: "live", logEnded: "ended", logNoMatch: "(no line matches the filter)",
     filterUpdates: "With updates", filterProblems: "With problems",
     summaryLine: (r, p, z) => `${r} running · ${p} stopped${z ? ` · ${z} paused` : ""}`,
     failFailed: "failed", failLoop: "restart loop", failRestarted: "restarted", failExit: "exit", failLast: "last failure",
@@ -596,6 +598,7 @@ async function loadUpdates(refresh) {
 // -- panel ------------------------------------------------------------------
 
 function openPanel(id) {
+  closeLogs();
   S.current = id;
   S.info = { disk: null, arch: null };       // asked per app, when its panel opens
   renderPanel();
@@ -1349,9 +1352,45 @@ async function follow(start) {
   }
 }
 
-async function showLogs(unit) {
-  try { out((await api(`/api/logs?unit=${encodeURIComponent(unit)}`)).output || "—"); }
-  catch (e) { out(String(e.message)); }
+// Live logs: the unit's last 200 lines, then `journalctl -f` as Server-Sent Events. The filter is
+// applied here, to what has arrived (5000 lines kept), so changing it needs no new request.
+const LOG_MAX = 5000;
+function closeLogs() {
+  if (S.logSource) { S.logSource.close(); S.logSource = null; }
+  clearTimeout(S.logTimer);
+}
+
+function showLogs(unit) {
+  closeLogs();
+  const linhas = [];
+  const filtro = h("input", { type: "search", placeholder: t("logFilter"), "aria-label": t("logFilter") });
+  const seguir = h("input", { type: "checkbox", checked: true });
+  const estado = h("span", { class: "muted" }, t("logConnecting"));
+  const area = h("pre", { class: "logs" });
+  const pintar = () => {
+    const f = filtro.value.trim().toLowerCase();
+    const vistas = f ? linhas.filter((l) => l.toLowerCase().includes(f)) : linhas;
+    area.textContent = vistas.length ? vistas.join("\n") : (linhas.length ? t("logNoMatch") : "");
+    if (seguir.checked) area.scrollTop = area.scrollHeight;
+  };
+  const agendar = () => { if (!S.logTimer) S.logTimer = setTimeout(() => { S.logTimer = null; pintar(); }, 150); };
+  filtro.addEventListener("input", pintar);
+  seguir.addEventListener("change", pintar);
+  section(h("h3", {}, `${t("logs")} — ${unit}`),
+    h("div", { class: "row" }, filtro, h("label", { class: "check" }, seguir, ` ${t("logFollow")}`), estado), area);
+  const es = new EventSource(`/api/logs/stream?unit=${encodeURIComponent(unit)}`);
+  S.logSource = es;
+  es.onopen = () => { estado.textContent = t("logLive"); };
+  es.onmessage = (ev) => {
+    linhas.push(ev.data);
+    if (linhas.length > LOG_MAX) linhas.splice(0, linhas.length - LOG_MAX);
+    agendar();
+  };
+  es.onerror = () => {         // the server ended it (journalctl stopped) or the connection dropped
+    estado.textContent = t("logEnded");
+    es.close();
+    if (S.logSource === es) S.logSource = null;
+  };
 }
 
 // -- wiring -----------------------------------------------------------------
@@ -1367,6 +1406,7 @@ $("lang").addEventListener("click", () => {
   load();
 });
 $("p-close").addEventListener("click", () => $("panel").close());
+$("panel").addEventListener("close", closeLogs);
 $("history-btn").addEventListener("click", () => openHistory(null));
 $("h-close").addEventListener("click", () => $("history").close());
 $("resources-btn").addEventListener("click", openResources);

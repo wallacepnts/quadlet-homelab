@@ -318,6 +318,13 @@ the warning is not a ban. `deprecated_pt` is optional, and the English reason
 stands in without it. `check.py` wants one plain line of at most 300 characters.
 It is a decision a person writes down: nothing marks a service by itself.
 
+**Live logs**: the Logs button on a unit opens its last 200 lines and then follows them as they
+arrive (`journalctl -f`, sent as Server-Sent Events), with a box that filters the lines as you type
+(case-insensitive, over the last 5000 received) and a "follow" tick that keeps the view at the end.
+Closing the panel or opening another log ends the stream, and the server kills the `journalctl`
+when the browser goes away (a heartbeat every 15 s notices a closed tab on a quiet journal). At most
+eight streams are open at once.
+
 **Filters and summary** in My apps: under the tabs, "All", "With updates" and "With problems" are
 buttons that carry their counts, and one line says how many apps are running, stopped or paused. A
 service has an update when a newer release exists upstream or the repository changed since it was

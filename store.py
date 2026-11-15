@@ -89,6 +89,7 @@ PT = {
     "not a setting of this file, or not a single line":
         "não é uma opção deste arquivo, ou não é uma linha só",
     "set": "definido", "turned off": "desligado",
+    "too many log streams open": "muitos logs ao vivo abertos",
     "this service keeps no data to back up": "este serviço não guarda dados para copiar",
     "not a valid value for the type": "não é um valor válido para o tipo",
     "an upgrade edits the repository, which a sandbox does not have":
@@ -1140,6 +1141,16 @@ def control_cmds(app, verbo, estados=None):
     return cmds, ("resume" if parados and not faltam else "start") if cmds else None
 
 
+JOURNALCTL = os.environ.get("QH_JOURNALCTL", "journalctl")      # tests point it at a stand-in
+STREAMS = threading.BoundedSemaphore(8)                              # a log stream is a thread and a process each
+HEARTBEAT = 15
+
+
+def sse_frame(linha):
+    """One Server-Sent Events message for one log line (a line holds no newline, but be sure)."""
+    return ("data: " + linha.replace("\r", "").replace("\n", " ") + "\n\n").encode()
+
+
 def unit_exists(unit):
     return bool(NOME.match(unit or "")) and any(I.APPS.glob(f"*/{unit}.container"))
 
@@ -1350,6 +1361,47 @@ class Handler(BaseHTTPRequestHandler):
     def _json(self, code, data):
         self._send(code, json.dumps(data, ensure_ascii=False).encode())
 
+    def _stream_logs(self, unit):
+        """`journalctl -f` for one unit as Server-Sent Events: the last 200 lines, then the new ones.
+
+        Ends when the browser goes away. An idle journal writes nothing, so a comment line goes out
+        every HEARTBEAT seconds — that write is what notices a closed tab and frees the process."""
+        import select
+        if PREFIX and "QH_JOURNALCTL" not in os.environ:
+            return self._json(200, {"output": ""})          # a sandbox has no journal of its own
+        if not STREAMS.acquire(blocking=False):
+            return self._json(429, {"error": loc("too many log streams open")})
+        proc = None
+        try:
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream")
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("X-Accel-Buffering", "no")        # a proxy in front must not hold the lines back
+            self.send_header("Content-Security-Policy", CSP)
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.end_headers()
+            proc = subprocess.Popen([JOURNALCTL, "--user", "-u", f"{unit}.service", "-n", "200", "-f",
+                                     "--no-pager", "-o", "short-iso"],
+                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+            while True:
+                pronto, _, _ = select.select([proc.stdout], [], [], HEARTBEAT)
+                if pronto:
+                    linha = proc.stdout.readline()
+                    if not linha:
+                        break                                  # journalctl ended
+                    self.wfile.write(sse_frame(linha.rstrip("\n")))
+                else:
+                    self.wfile.write(b": ping\n\n")
+                self.wfile.flush()
+        except (BrokenPipeError, ConnectionResetError, OSError):
+            pass                                               # the page closed
+        finally:
+            if proc is not None:
+                proc.kill()
+                proc.wait()
+            STREAMS.release()
+            self.close_connection = True
+
     def _redirect(self, where, headers=()):
         self._send(303, b"", "text/plain", [("Location", where), *headers])
 
@@ -1529,6 +1581,11 @@ class Handler(BaseHTTPRequestHandler):
             desde = int(q.get("from", "0") or 0)
             return self._json(200, {"app": job.app, "action": job.action, "rc": job.rc,
                                     "next": len(job.out), "output": "".join(job.out[desde:])})
+        if url.path == "/api/logs/stream":
+            unit = q.get("unit", "")
+            if not unit_exists(unit):
+                return self._json(400, {"error": loc("unknown unit")})
+            return self._stream_logs(unit)
         if url.path == "/api/logs":
             unit = q.get("unit", "")
             if not unit_exists(unit):
@@ -2196,6 +2253,27 @@ esac
                 finally:
                     os.environ.pop("QH_PODMAN", None)
                     resources.PODMAN = "podman"
+
+            # live logs: Server-Sent Events from `journalctl -f`; a sandbox has no journal, a stand-in has lines
+            assert pedir("/api/logs/stream?unit=homebox")[0] == 401, "the stream needs the login too"
+            assert pedir("/api/logs/stream?unit=nope", headers=ok)[0] == 400
+            assert sse_frame("a\r\nb") == b"data: a b\n\n"
+            assert json.loads(pedir("/api/logs/stream?unit=homebox", headers=ok)[2]) == {"output": ""}, "a sandbox answers plainly"
+            with tempfile.TemporaryDirectory() as fk:
+                falso = Path(fk, "journalctl")
+                falso.write_text("#!/bin/sh\necho 'nov 15 first line'\necho 'nov 15 second: erro'\nsleep 0.3\n")
+                falso.chmod(0o755)
+                os.environ["QH_JOURNALCTL"] = str(falso)
+                global JOURNALCTL
+                antes, JOURNALCTL = JOURNALCTL, str(falso)
+                try:
+                    st, h, corpo = pedir("/api/logs/stream?unit=homebox", headers=ok)
+                    assert st == 200 and h["Content-Type"] == "text/event-stream" and h["Cache-Control"] == "no-cache", (st, h)
+                    assert corpo == b"data: nov 15 first line\n\ndata: nov 15 second: erro\n\n", corpo
+                finally:
+                    os.environ.pop("QH_JOURNALCTL", None)
+                    JOURNALCTL = antes
+            assert STREAMS._value == 8, "every stream gives its slot back"
 
             # host summary: parsed from /proc and /sys, each field None when the host does not say
             with tempfile.TemporaryDirectory() as fk:

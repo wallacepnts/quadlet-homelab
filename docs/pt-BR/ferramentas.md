@@ -321,6 +321,13 @@ o deixa de fora; nomeá-lo ainda instala, porque o aviso não é uma proibição
 uma linha simples de até 300 caracteres. É uma decisão que uma pessoa registra:
 nada marca um serviço sozinho.
 
+**Logs ao vivo**: o botão Logs de uma unit abre as últimas 200 linhas e depois as segue conforme
+chegam (`journalctl -f`, enviado como Server-Sent Events), com uma caixa que filtra as linhas
+enquanto você digita (sem diferenciar maiúsculas, sobre as últimas 5000 recebidas) e uma marca
+"seguir" que mantém a vista no fim. Fechar o painel ou abrir outro log encerra o stream, e o
+servidor mata o `journalctl` quando o navegador some (um batimento a cada 15 s percebe a aba fechada
+num journal quieto). No máximo oito streams ficam abertos ao mesmo tempo.
+
 **Filtros e resumo** em Meus apps: sob as abas, "Todos", "Com atualização" e "Com problema" são
 botões que trazem a contagem, e uma linha diz quantos apps estão rodando, parados ou pausados. Um
 serviço tem atualização quando há versão nova no upstream ou o repositório mudou desde a instalação;

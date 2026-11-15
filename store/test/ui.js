@@ -45,6 +45,9 @@ global.localStorage = { getItem: () => "pt", setItem() {} };
 global.navigator = { language: "pt-BR" };
 global.location = {};
 global.setInterval = () => 0;
+// A stand-in for EventSource: the test pushes lines by hand.
+const fontes = [];
+global.EventSource = class { constructor(url) { this.url = url; this.closed = false; fontes.push(this); } close() { this.closed = true; } };
 
 const unidade = (nome, extra = {}) => ({ unit: nome, image: "x:1", installed_image: "x:1", installed: true,
   service: "active", container: "healthy", drift: null, override: false, ...extra });
@@ -95,7 +98,7 @@ global.fetch = async (url, opts = {}) => {
 };
 
 const codigo = fs.readFileSync(path.join(__dirname, "..", "app.js"), "utf8");
-const api = new Function(codigo + "; return { S, openPanel, showEnv, current, renderGrid, pollStats, pollHost, openResources, hintClean, openHistory, setView };")();
+const api = new Function(codigo + "; return { S, openPanel, showEnv, current, renderGrid, pollStats, pollHost, showLogs, openResources, hintClean, openHistory, setView };")();
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 let falhas = 0;
 const confere = (cond, msg) => { if (!cond) { falhas++; console.log("FALHOU:", msg); } else console.log("ok   ", msg); };
@@ -252,6 +255,31 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   api.openPanel("homebox"); await esperar(30);
   confere(!$("backup-first") || !$("p-actions").textContent.includes("Backup antes"), "sem dados: sem a caixa");
   hb.units = [unidade("homebox")];
+  $("panel").open = false;
+
+  // live logs: follows the stream, filters what arrived, and lets go when the panel closes
+  api.openPanel("homebox"); await esperar(30);
+  api.showLogs("homebox");
+  const fonte = fontes[fontes.length - 1];
+  confere(fonte.url === "/api/logs/stream?unit=homebox", "logs: abre o stream do journal da unit");
+  fonte.onopen();
+  for (const l of ["nov 15 start ok", "nov 15 ERROR boom", "nov 15 request served"]) fonte.onmessage({ data: l });
+  await esperar(250);
+  const areaLogs = [...$("p-section").walk()].find((e) => e.attrs && e.attrs.class === "logs");
+  confere(areaLogs.textContent.split("\n").length === 3 && /ao vivo/.test($("p-section").textContent), "logs: as linhas chegam, e o estado diz ao vivo");
+  const campoFiltro = [...$("p-section").walk()].find((e) => e.tag === "input" && e.attrs.type === "search");
+  campoFiltro.value = "error";
+  campoFiltro.listeners.input();
+  confere(areaLogs.textContent === "nov 15 ERROR boom", `logs: o filtro mostra só o que casa, sem diferenciar maiúsculas (${areaLogs.textContent})`);
+  campoFiltro.value = "zzz"; campoFiltro.listeners.input();
+  confere(/nenhuma linha casa/.test(areaLogs.textContent), "logs: avisa quando nada casa");
+  campoFiltro.value = ""; campoFiltro.listeners.input();
+  fonte.onmessage({ data: "nov 15 later" }); await esperar(250);
+  confere(areaLogs.textContent.split("\n").length === 4, "logs: continua recebendo depois de mudar o filtro");
+  api.showLogs("homebox");
+  confere(fonte.closed === true && fontes[fontes.length - 1] !== fonte, "logs: abrir outro fecha o stream anterior");
+  fontes[fontes.length - 1].onerror();
+  confere(/encerrado/.test($("p-section").textContent), "logs: o fim do stream aparece");
   $("panel").open = false;
 
   // My apps: counters as filters (updates, problems) and a one-line summary
