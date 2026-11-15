@@ -95,7 +95,7 @@ global.fetch = async (url, opts = {}) => {
 };
 
 const codigo = fs.readFileSync(path.join(__dirname, "..", "app.js"), "utf8");
-const api = new Function(codigo + "; return { S, openPanel, showEnv, current, renderGrid, pollStats, pollHost, openHistory, setView };")();
+const api = new Function(codigo + "; return { S, openPanel, showEnv, current, renderGrid, pollStats, pollHost, openResources, hintClean, openHistory, setView };")();
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 let falhas = 0;
 const confere = (cond, msg) => { if (!cond) { falhas++; console.log("FALHOU:", msg); } else console.log("ok   ", msg); };
@@ -186,6 +186,31 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   // host summary: one line at the top
   await api.pollHost();
   confere($("host").textContent === "carga 25% · RAM 2.0/8.0 GB · 50 °C · ligado há 1 d", `topo: resumo do servidor (${$("host").textContent})`);
+
+  // resources: the dialog lists what is unused and prunes in two clicks; volumes want the word
+  rotas["/api/resources"] = { reclaimable: 3 * 2 ** 30, networks: [{ name: "stray" }], volumes: [{ name: "vf" }],
+    images: [{ id: "i2", name: "docker.io/o/old:1", size: 3 * 2 ** 30, created: 0 }] };
+  rotas["/api/prune"] = { job: "j9" };
+  rotas["/api/job/j9"] = { output: "removed x\n", next: 1, rc: 0 };
+  await api.openResources(); await esperar(30);
+  const corpoRec = $("r-body").textContent;
+  confere(/Imagens sem uso \(1\)/.test(corpoRec) && /docker\.io\/o\/old:1/.test(corpoRec) && /3\.0 GB/.test(corpoRec) && /Redes sem uso \(1\)/.test(corpoRec) && /Volumes sem uso \(1\)/.test(corpoRec),
+    `Recursos: imagens, redes e volumes sem uso (${corpoRec.slice(0, 80)})`);
+  const apagar = porTexto($("r-body"), "Apagar");
+  confere(apagar.length === 3, "um Apagar por tipo");
+  const antesPrune = posts.length;
+  apagar[0].listeners.click();
+  confere(posts.length === antesPrune && porTexto($("r-body"), "Confirmar").length === 1, "o primeiro clique só pede confirmação");
+  porTexto($("r-body"), "Confirmar")[0].listeners.click(); await esperar(900);
+  confere(posts.slice(antesPrune).some((x) => x.rota === "/api/prune" && x.corpo.kind === "images"), "o segundo clique apaga as imagens");
+  confere(/removed x/.test($("r-out").textContent), "a saída do trabalho aparece");
+  $("resources").open = false;
+  // after an update: a hint with the size, and a way in
+  api.openPanel("homebox"); await esperar(30);
+  await api.hintClean();
+  confere(!$("p-clean").hidden && /1 imagem\(ns\) sem uso ocupam até 3\.0 GB/.test($("p-clean").textContent) && porTexto($("p-clean"), "Limpar…").length === 1,
+    `depois de atualizar: dica com o tamanho (${$("p-clean").textContent})`);
+  $("panel").open = false;
 
   // minimum Podman: the panel says when the host is older than the app needs
   api.S.podman = "4.9.0";

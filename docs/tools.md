@@ -300,6 +300,16 @@ the warning is not a ban. `deprecated_pt` is optional, and the English reason
 stands in without it. `check.py` wants one plain line of at most 300 characters.
 It is a decision a person writes down: nothing marks a service by itself.
 
+**Resources** (the header button, and a hint after an update) lists what Podman keeps
+that nothing uses: images, networks and volumes, with the space the images take
+("up to": layers are shared). Every update leaves the previous image behind. "Unused"
+is stricter than `podman image prune -a`: an image is kept if a container uses it
+**or an installed unit asks for it in `Image=`**, so a stopped service is not pulled
+again at its next start. A network is kept if it is the default, used, or declared by a
+`.network` file; a volume only when no container mounts it and no `.volume` file
+declares it. Deleting asks twice, and volumes (data) want the word typed. The same from
+a terminal: `python3 resources.py` to see, `prune images|networks|volumes --apply` to do.
+
 **Works with** is a suggestion in the panel: `works_with = grafana, ntfy` under
 `[store]` lists other service folders worth running beside this one, each a link
 to its panel, ticked when installed. It is never a requirement (that is a network's

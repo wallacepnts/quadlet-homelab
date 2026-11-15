@@ -9,6 +9,12 @@ const T = {
     installedBadge: "instalado", deprecatedBadge: "descontinuado", deprecatedNote: "Descontinuado:",
     noInstall: "Não dá para instalar este app daqui.",
     worksWith: "Funciona com",
+    resources: "Recursos", resLoading: "Verificando o Podman…",
+    resImages: "Imagens sem uso", resNetworks: "Redes sem uso", resVolumes: "Volumes sem uso",
+    resImagesNote: (n, s) => `${n} imagem(ns) que nenhuma unit instalada nem container usa, até ${s}. Cada atualização deixa a anterior aqui. O espaço real pode ser menor: camadas são compartilhadas entre imagens.`,
+    resNone: "Nada sobrando.", resRemove: "Apagar", resSure: "Confirmar", resVolumesWarn: "Volume guarda dados. Digite volumes para apagar:",
+    cleanHint: (n, s) => `${n} imagem(ns) sem uso ocupam até ${s}.`, cleanOpen: "Limpar…",
+    resWorking: "Apagando…",
     podmanOld: (need, host) => `Este app precisa do Podman ${need}+; o host tem ${host}. Atualize o Podman antes de instalar.`,
     hostCpu: "carga", hostMem: "RAM", hostUp: "ligado há",
     trialLabel: "Experimentar", trialKeep: "Manter", trialBadge: "experimento",
@@ -78,7 +84,7 @@ const T = {
     took: "Duração", from: "de", output: "Saída",
     act: { install: "Instalar", update: "Atualizar", upgrade: "Atualizar versão", remove: "Remover", backup: "Backup",
            restore: "Restaurar", access: "Acesso", env: "Configuração", start: "Iniciar", stop: "Parar", restart: "Reiniciar",
-           customize: "Personalizar", revert: "Reverter" },
+           customize: "Personalizar", revert: "Reverter", prune: "Limpar" },
     link: { repo: "Projeto", docs: "Documentação", issues: "Problemas", releases: "Releases", image: "Imagem", recipe: "Receita neste repositório" },
     shots: "Capturas de tela",
     lang: "English",
@@ -89,6 +95,12 @@ const T = {
     installedBadge: "installed", deprecatedBadge: "discontinued", deprecatedNote: "Discontinued:",
     noInstall: "It cannot be installed from here.",
     worksWith: "Works with",
+    resources: "Resources", resLoading: "Asking Podman…",
+    resImages: "Unused images", resNetworks: "Unused networks", resVolumes: "Unused volumes",
+    resImagesNote: (n, s) => `${n} image(s) that no installed unit or container uses, up to ${s}. Every update leaves the previous one here. The real space may be less: layers are shared between images.`,
+    resNone: "Nothing left over.", resRemove: "Delete", resSure: "Confirm", resVolumesWarn: "A volume holds data. Type volumes to delete:",
+    cleanHint: (n, s) => `${n} unused image(s) take up to ${s}.`, cleanOpen: "Clean up…",
+    resWorking: "Deleting…",
     podmanOld: (need, host) => `This app needs Podman ${need}+; the host has ${host}. Update Podman before installing.`,
     hostCpu: "load", hostMem: "RAM", hostUp: "up",
     trialLabel: "Try it", trialKeep: "Keep", trialBadge: "trial",
@@ -158,7 +170,7 @@ const T = {
     took: "Took", from: "from", output: "Output",
     act: { install: "Install", update: "Update", upgrade: "Update version", remove: "Remove", backup: "Backup",
            restore: "Restore", access: "Access", env: "Settings", start: "Start", stop: "Stop", restart: "Restart",
-           customize: "Customize", revert: "Revert" },
+           customize: "Customize", revert: "Revert", prune: "Clean up" },
     link: { repo: "Project", docs: "Documentation", issues: "Issues", releases: "Releases", image: "Image", recipe: "Recipe in this repository" },
     shots: "Screenshots",
     lang: "Português",
@@ -339,6 +351,7 @@ function renderChrome() {
   $("lang").textContent = t("lang");
   $("recheck").textContent = t("recheck");
   $("history-btn").textContent = t("history");
+  $("resources-btn").textContent = t("resources");
   renderTabs();
 }
 
@@ -477,6 +490,7 @@ function openPanel(id) {
   loadInfo(id);
   $("p-form").hidden = true;
   $("p-out").hidden = true;
+  $("p-clean").hidden = true;
   $("p-section").hidden = true;
   $("panel").showModal();
 }
@@ -678,7 +692,7 @@ async function openHistory(appId = null) {
   await renderHistory();
 }
 
-const appName = (id) => (S.apps.find((a) => a.id === id) || { name: id }).name;
+const appName = (id) => id === "_host" ? t("resources") : (S.apps.find((a) => a.id === id) || { name: id }).name;
 
 async function renderHistory() {
   $("h-out").hidden = true;
@@ -1084,6 +1098,83 @@ async function updateNow(action) {
   if (behind(a).length) showNotes(a);
   else $("p-section").hidden = true;
   await follow(() => api("/api/run", { app: a.id, action }));
+  await hintClean();
+}
+
+// After an update the old image is still on the disk: say how much, and where to clear it.
+async function hintClean() {
+  try {
+    const r = await api("/api/resources");
+    const p = $("p-clean");
+    p.hidden = !r.images.length;
+    if (r.images.length)
+      fill(p, t("cleanHint")(r.images.length, sizeOf(r.reclaimable)), " ",
+        h("button", { type: "button", class: "ghost", onclick: openResources }, t("cleanOpen")));
+  } catch (e) { /* the hint is a courtesy */ }
+}
+
+const sizeOf = (b) => b >= 2 ** 30 ? `${(b / 2 ** 30).toFixed(1)} GB` : `${Math.max(1, Math.round(b / 2 ** 20))} MB`;
+
+async function openResources() {
+  $("resources").showModal();
+  await renderResources();
+}
+
+async function renderResources() {
+  $("r-title").textContent = t("resources");
+  $("r-out").hidden = true;
+  fill($("r-body"), h("p", { class: "muted" }, t("resLoading")));
+  let r;
+  try { r = await api("/api/resources"); }
+  catch (e) { fill($("r-body"), h("p", { class: "bad" }, String(e.message))); return; }
+  const secao = (kind, titulo, itens, nota, linhas) => {
+    let palavra = null, pedido = false;
+    const botao = h("button", { type: "button", class: "danger", onclick: () => {
+      if (!pedido) {
+        pedido = true;
+        botao.textContent = t("resSure");
+        return;
+      }
+      pruneRun(kind, palavra ? palavra.value : "");
+    } }, t("resRemove"));
+    if (kind === "volumes" && itens.length)
+      palavra = h("input", { type: "text", autocomplete: "off", "aria-label": "volumes" });
+    return h("section", {},
+      h("h3", {}, `${titulo} (${itens.length})`),
+      itens.length ? h("div", {},
+        nota ? h("p", { class: "muted" }, nota) : null,
+        h("table", { class: "hist" }, ...linhas),
+        kind === "volumes" ? h("p", { class: "note" }, t("resVolumesWarn"), " ", palavra) : null,
+        botao) : h("p", { class: "muted" }, t("resNone")));
+  };
+  const img = r.images.slice(0, 20).map((i) => h("tr", {}, h("td", {}, i.name), h("td", {}, sizeOf(i.size))));
+  if (r.images.length > 20) img.push(h("tr", {}, h("td", { colspan: "2", class: "muted" }, `+${r.images.length - 20}`)));
+  fill($("r-body"),
+    secao("images", t("resImages"), r.images, t("resImagesNote")(r.images.length, sizeOf(r.reclaimable)), img),
+    secao("networks", t("resNetworks"), r.networks, null, r.networks.map((n) => h("tr", {}, h("td", {}, n.name)))),
+    secao("volumes", t("resVolumes"), r.volumes, null, r.volumes.map((v) => h("tr", {}, h("td", {}, v.name)))));
+}
+
+async function pruneRun(kind, confirm) {
+  const pre = $("r-out");
+  pre.hidden = false;
+  pre.textContent = `${t("resWorking")}\n`;
+  try {
+    const { job } = await api("/api/prune", { kind, confirm });
+    let next = 0, st;
+    do {
+      await new Promise((r) => setTimeout(r, 700));
+      st = await api(`/api/job/${job}?from=${next}`);
+      next = st.next;
+      if (st.output) pre.textContent += st.output;
+    } while (st.rc === null);
+    pre.textContent += `\n${st.rc === 0 ? t("done") : `${t("failed")} (${st.rc}).`}\n`;
+  } catch (e) { pre.textContent += e.status === 409 ? t("busy") : String(e.message); }
+  const texto = pre.textContent;
+  await renderResources();
+  pre.hidden = false;
+  pre.textContent = texto;
+  $("p-clean").hidden = true;
 }
 
 async function unitVerb(unit, verb) {
@@ -1132,6 +1223,8 @@ $("lang").addEventListener("click", () => {
 $("p-close").addEventListener("click", () => $("panel").close());
 $("history-btn").addEventListener("click", () => openHistory(null));
 $("h-close").addEventListener("click", () => $("history").close());
+$("resources-btn").addEventListener("click", openResources);
+$("r-close").addEventListener("click", () => $("resources").close());
 $("recheck").addEventListener("click", () => loadUpdates(true));
 renderChrome();
 load();

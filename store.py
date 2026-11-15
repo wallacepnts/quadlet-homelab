@@ -49,6 +49,7 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 import overrides as O  # noqa: E402
 import qhui  # noqa: E402
+import resources  # noqa: E402
 import trials  # noqa: E402
 
 _spec = importlib.util.spec_from_file_location("qh_install", ROOT / "install.py")
@@ -939,6 +940,14 @@ def stats():
         return resultado
 
 
+def resources_survey():
+    """Unused images, networks and volumes. A sandbox has no podman of its own, so it reports none
+    (unless a stand-in is named in QH_PODMAN, which is how the tests exercise it)."""
+    if PREFIX and "QH_PODMAN" not in os.environ:
+        return {"images": [], "networks": [], "volumes": [], "reclaimable": 0}
+    return resources.survey(Path(PREFIX or Path.home()))
+
+
 def host_summary(proc="/proc", sys_="/sys"):
     """Load, memory, temperature and uptime of the host: four small file reads, no sampling.
 
@@ -1426,6 +1435,11 @@ class Handler(BaseHTTPRequestHandler):
             if not f:
                 return self._json(404, {"error": loc("no such backup of this service")})
             return self._download(f)
+        if url.path == "/api/resources":
+            try:
+                return self._json(200, resources_survey())
+            except (RuntimeError, OSError, subprocess.TimeoutExpired, ValueError) as e:
+                return self._json(502, {"error": f"podman: {e}"})
         if url.path == "/api/host":
             return self._json(200, host_summary())
         if url.path == "/api/links":
@@ -1643,6 +1657,19 @@ class Handler(BaseHTTPRequestHandler):
                     cmd.append(qh(app, "--update", "--apply"))
             job = start_job(app, action, cmd, lang, prepare, entrada, refrescar=cadeia,
                             origem=self.client_address[0])
+        elif url.path == "/api/prune":
+            tipo = d.get("kind", "")
+            if tipo not in resources.KINDS:
+                return self._json(400, {"error": loc("unknown action")})
+            if PREFIX and "QH_PODMAN" not in os.environ:
+                return self._json(400, {"error": loc("a sandbox has no podman images to prune")})
+            # Volumes are data: the word typed, like a restore's service name. The CLI is told it was asked.
+            if tipo == "volumes" and d.get("confirm") != "volumes":
+                return self._json(400, {"error": loc("removing volumes deletes data: type `volumes` to confirm")})
+            cmd = [sys.executable, str(ROOT / "resources.py"), "prune", tipo, "--apply", "--confirmed"]
+            if PREFIX:
+                cmd += ["--prefix", PREFIX]
+            job = start_job("_host", "prune", cmd, lang, origem=self.client_address[0])
         elif url.path == "/api/unit":
             unit, verbo = d.get("unit", ""), d.get("verb", "")
             if not unit_exists(unit):
@@ -2025,6 +2052,37 @@ def selftest():
                     assert install_refusal("gitea") is None, "and an unmarked one is not"
                 finally:
                     I.APPS = original
+
+            # resources: a sandbox without a stand-in podman reports nothing; with one, the page can list and prune
+            assert json.loads(pedir("/api/resources", headers=ok)[2])["images"] == [], "a sandbox touches no real podman"
+            assert pedir("/api/prune", json.dumps({"kind": "images"}).encode(), api)[0] == 400
+            with tempfile.TemporaryDirectory() as fk:
+                falso = Path(fk, "podman")
+                falso.write_text("""#!/bin/sh
+case "$*" in
+  "images --format json") echo '[{"Id":"i9","Names":["docker.io/o/old:1"],"Size":500,"Containers":0}]';;
+  "ps -a --format json") echo '[]';;
+  "network ls --format json") echo '[{"name":"podman"}]';;
+  "volume ls --filter dangling=true --format json") echo '[{"Name":"vf"}]';;
+  "rmi i9"|"volume rm vf") echo gone;;
+  *) echo "unexpected: $*" >&2; exit 1;;
+esac
+""")
+                falso.chmod(0o755)
+                os.environ["QH_PODMAN"], resources.PODMAN = str(falso), str(falso)
+                try:
+                    r = json.loads(pedir("/api/resources", headers=ok)[2])
+                    assert [i["id"] for i in r["images"]] == ["i9"] and r["reclaimable"] == 500 and r["volumes"][0]["name"] == "vf", r
+                    assert pedir("/api/prune", json.dumps({"kind": "bogus"}).encode(), api)[0] == 400
+                    assert pedir("/api/prune", json.dumps({"kind": "volumes"}).encode(), api)[0] == 400, "volumes need the word typed"
+                    st, _, corpo = pedir("/api/prune", json.dumps({"kind": "images"}).encode(), api)
+                    assert st == 202 and esperar(corpo)["rc"] == 0
+                    st, _, corpo = pedir("/api/prune", json.dumps({"kind": "volumes", "confirm": "volumes"}).encode(), api)
+                    assert st == 202 and esperar(corpo)["rc"] == 0
+                    assert json.loads(pedir("/api/history?app=_host", headers=ok)[2])["entries"][0]["action"] == "prune"
+                finally:
+                    os.environ.pop("QH_PODMAN", None)
+                    resources.PODMAN = "podman"
 
             # host summary: parsed from /proc and /sys, each field None when the host does not say
             with tempfile.TemporaryDirectory() as fk:

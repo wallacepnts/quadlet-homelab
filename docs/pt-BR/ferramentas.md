@@ -303,6 +303,16 @@ o deixa de fora; nomeá-lo ainda instala, porque o aviso não é uma proibição
 uma linha simples de até 300 caracteres. É uma decisão que uma pessoa registra:
 nada marca um serviço sozinho.
 
+**Recursos** (o botão do cabeçalho, e uma dica depois de uma atualização) lista o que o
+Podman guarda e nada usa: imagens, redes e volumes, com o espaço das imagens ("até":
+camadas são compartilhadas). Cada atualização deixa a imagem anterior. "Sem uso" é mais
+estrito que `podman image prune -a`: a imagem fica se um container a usa **ou se uma unit
+instalada a pede em `Image=`**, então um serviço parado não baixa tudo de novo na próxima
+partida. Rede fica se é a padrão, está em uso ou é declarada por um `.network`; volume só
+sai quando nenhum container o monta e nenhum `.volume` o declara. Apagar pede duas vezes, e
+volume (dados) pede a palavra digitada. No terminal: `python3 resources.py` para ver,
+`prune images|networks|volumes --apply` para fazer.
+
 **Funciona com** é uma sugestão no painel: `works_with = grafana, ntfy` em
 `[store]` lista outras pastas de serviço que valem rodar junto, cada uma um link
 para o seu painel, com ✓ quando instalada. Nunca é requisito (isso é o dono de uma
