@@ -612,7 +612,10 @@ def cgroup_limits():
     Without them `--memory` and `--cpu-shares` stop the container from starting
     (`memory.swap.max: no such file or directory`), so the form does not offer them."""
     uid = os.getuid()
-    f = Path(f"/sys/fs/cgroup/user.slice/user-{uid}.slice/user@{uid}.service/cgroup.controllers")
+    # QH_CGROUP_CONTROLLERS names a file standing in for the real one, so a host that does not
+    # delegate them can still exercise the form (the tests do).
+    f = Path(os.environ.get("QH_CGROUP_CONTROLLERS")
+             or f"/sys/fs/cgroup/user.slice/user-{uid}.slice/user@{uid}.service/cgroup.controllers")
     try:
         c = f.read_text().split()
     except OSError:
@@ -636,8 +639,13 @@ def custom_context(unit, efetivo):
             if not it.get("opaque"):
                 em_uso[(it["host"], it["proto"])] = outra.stem
     proprias = {(i["host"], i["proto"]) for i in O.describe(efetivo[0])["ports"] if not i.get("opaque")}
+    try:
+        mem_total = int(re.search(r"MemTotal:\s+(\d+)", Path("/proc/meminfo").read_text()).group(1)) * 1024
+    except (OSError, AttributeError, ValueError):
+        mem_total = 0
     return O.Contexto(Path(PREFIX or Path.home()), roots=volume_roots(), floor=floor, em_uso=em_uso,
-                      escutando=listening() - proprias, var=I.manager_var)
+                      escutando=listening() - proprias, var=I.manager_var, limits_ok=cgroup_limits(),
+                      mem_total=mem_total, ncpu=os.cpu_count() or 0)
 
 
 def custom_state(unit):
@@ -657,7 +665,7 @@ def custom_state(unit):
             "effective": O.describe(efetivo[0]), "restart": efetivo[1],
             "roots": [r.replace(casa, "~") for r in volume_roots()], "caps_ok": list(O.CAPS_OK),
             "restarts": list(O.RESTARTS), "quadlet": O.quadlet_binary() is not None,
-            "limits": cgroup_limits()}
+            "limits": cgroup_limits(), "limit_values": O.merged_limits(p.read_text(), texto)}
 
 
 def clean_config(config):
@@ -696,6 +704,11 @@ def clean_config(config):
     restart = config.get("restart")
     if restart is not None and not isinstance(restart, str):
         raise ValueError("restart")
+    lim = config.get("limits")
+    if lim is not None:
+        if not isinstance(lim, dict) or not all(isinstance(lim.get(k, ""), str) for k in ("memory", "cpus")):
+            raise ValueError("limits")
+        saida["limits"] = {"memory": lim.get("memory", ""), "cpus": lim.get("cpus", "")}
     return saida, (restart or None)
 
 
@@ -714,7 +727,8 @@ def custom_plan(unit, config):
                 "changed": False}
     base = O.base_of(p.read_text())
     ctx = custom_context(unit, O.merged(base, O.read_override(p)))
-    texto, erros, avisos = O.validate_and_render(base, desejado, restart, ctx, propria=unit)
+    texto, erros, avisos = O.validate_and_render(base, desejado, restart, ctx, propria=unit,
+                                                 base_limits=O.limits_in(O.parse_sections(p.read_text())))
     gerado = ""
     if not erros:
         ok, mensagens, gerado = O.quadlet_check(systemd_dir(), p, texto)
@@ -2297,6 +2311,34 @@ def selftest():
             assert st == 202, rev
             assert esperar(rev)["rc"] == 0 and O.read_override(unidade) is None, "revert removes the file"
             assert json.loads(pedir("/api/custom?unit=homebox", headers=ok)[2])["override"] is False
+
+            # limits: offered only where the user's systemd delegates the controllers (a stand-in file says so)
+            with tempfile.TemporaryDirectory() as cg:
+                falso_cg = Path(cg, "cgroup.controllers")
+                lim = {"memory": "512m", "cpus": "1.5"}
+
+                def com_limites(cfg_base):
+                    return {**cfg_base, "limits": lim}
+                falso_cg.write_text("pids\n")
+                os.environ["QH_CGROUP_CONTROLLERS"] = str(falso_cg)
+                try:
+                    assert json.loads(pedir("/api/custom?unit=homebox", headers=ok)[2])["limits"] == {"memory": False, "cpu": False}
+                    st, pre = previa(com_limites(cfg()))
+                    assert pre["errors"] and "não delega o controlador memory" in pre["errors"][0], pre
+                    assert previa(cfg())[1]["errors"] == [], "a form without limits is not affected"
+                    falso_cg.write_text("cpuset cpu io memory pids\n")
+                    assert json.loads(pedir("/api/custom?unit=homebox", headers=ok)[2])["limits"] == {"memory": True, "cpu": True}
+                    st, pre = previa(com_limites(cfg()))
+                    assert not pre["errors"] and "Memory=512m" in pre["text"] and "PodmanArgs=--cpus=1.5" in pre["text"], pre
+                    assert "--memory 512m" in pre["generated"] and "--cpus=1.5" in pre["generated"], pre["generated"]
+                    st, ap = pedir("/api/custom/apply", json.dumps({"unit": "homebox", "config": com_limites(cfg())}).encode(), api)[0:3:2]
+                    assert st == 202 and esperar(ap)["rc"] == 0, ap
+                    est2 = json.loads(pedir("/api/custom?unit=homebox", headers=ok)[2])
+                    assert est2["limit_values"] == {"memory": "512m", "cpus": "1.5"} and est2["override"], est2
+                    st, rev = pedir("/api/custom/reset", json.dumps({"unit": "homebox"}).encode(), api)[0:3:2]
+                    assert st == 202 and esperar(rev)["rc"] == 0 and O.read_override(unidade) is None
+                finally:
+                    os.environ.pop("QH_CGROUP_CONTROLLERS", None)
 
             # deprecated: a service marked in install.ini is not offered for install, but stays manageable
             with tempfile.TemporaryDirectory() as dep:

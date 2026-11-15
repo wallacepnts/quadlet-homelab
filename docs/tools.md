@@ -420,13 +420,20 @@ and no privileged switch: with the store's token, either would make it a shell
 on your host. For those, edit the unit by hand. The `.env` file stays under
 **Configure**; the form edits the `Environment=` lines.
 
-Memory and CPU limits are not offered, on purpose. Rootless, they need the user's
-systemd to delegate those controllers, and where it does not, `--memory` stops
-the container from starting (`memory.swap.max: no such file or directory`),
-which was measured here, where only `pids` is delegated. Check yours with
+**Limits** (memory and CPU) are offered only where they can work. Rootless, they need the user's
+systemd to delegate those controllers, and where it does not, `--memory` stops the container from
+starting (`memory.swap.max: no such file or directory`), which was measured on a host where only
+`pids` is delegated. So the form reads the user's `cgroup.controllers` and, when it lists `memory`
+and `cpu`, shows two fields: **Memory** (`Memory=512m`, `2g`) and **CPUs** (`PodmanArgs=--cpus=1.5`,
+which Quadlet has no key for), written into the same drop-in and checked against the host's memory
+and core count. Where the controllers are missing the fields are shown disabled, with the reason, and
+the server refuses to save a limit anyway. A limit the unit itself carries is not removed from here.
+It takes effect the next time the container starts. Check yours with
 `cat /sys/fs/cgroup/user.slice/user-$(id -u).slice/user@$(id -u).service/cgroup.controllers`.
-Delegating them is a root change to `user@.service` (`Delegate=cpu cpuset io
-memory pids`) that this repository does not make for you.
+Delegating them is a root change that this repository does not make for you: a drop-in such as
+`/etc/systemd/system/user@.service.d/delegate.conf` with `[Service]` and `Delegate=cpu cpuset io
+memory pids`, then log out and in. This path was written and tested against a stand-in
+`cgroup.controllers`, not on a host that delegates them.
 
 `store/test/ui.js` runs the page in Node against a stand-in DOM, and
 `store/test/browser.js` drives a real Chromium through it (`node

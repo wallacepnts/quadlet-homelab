@@ -22,10 +22,11 @@ versions belong to the repository (rule 9). An entry the unit already carries is
 always accepted as it is: this guards what is added, not what the repository
 shipped.
 
-Memory and CPU limits are not here on purpose. Rootless, the controllers are
-only usable when the user's systemd delegates them; on a host that does not,
-`--memory` makes the container fail to start (`memory.swap.max: no such file or
-directory`), so offering the slider would break the app it was meant to tune.
+Memory and CPU limits are here only when they can work. Rootless, the controllers are usable
+only when the user's systemd delegates them (`cgroup.controllers` of `user@.service` lists
+`memory` and `cpu`); on a host that does not, `--memory` makes the container fail to start
+(`memory.swap.max: no such file or directory`), so saving one is refused there, with the reason.
+Memory is Quadlet's `Memory=`; CPU is `PodmanArgs=--cpus=N`, which has no key of its own.
 
 Pure functions, so it is tested without a host:
 
@@ -132,6 +133,41 @@ def base_hash(base):
     a customization and says so, instead of leaving the difference silent.
     """
     return hashlib.sha256(json.dumps([base[0], base[1]], sort_keys=True).encode()).hexdigest()[:16]
+
+
+# -- limits: Memory= and --cpus -------------------------------------------------------
+
+MEMORIA = re.compile(r"^(\d+(?:\.\d+)?)([kmg]?)b?$", re.I)
+CPUS = re.compile(r"^\d+(?:\.\d{1,2})?$")
+MEMORIA_MIN = 16 * 1024 * 1024               # below this a container does not get to run anything
+
+
+def limits_in(sections):
+    """{memory, cpus} a unit (or a drop-in) sets: the last `Memory=`, and a `--cpus` inside any `PodmanArgs=`."""
+    mem = cpus = ""
+    for k, v in sections.get("Container", []):
+        if k == "Memory":
+            mem = v
+        elif k == "PodmanArgs":
+            m = re.search(r"--cpus[= ](\d+(?:\.\d+)?)", v)
+            if m:
+                cpus = m.group(1)
+    return {"memory": mem, "cpus": cpus}
+
+
+def merged_limits(base_text, dropin_text):
+    """What a unit and its drop-in come to for the two limits; the drop-in wins, as it does in Quadlet."""
+    b = limits_in(parse_sections(base_text))
+    d = limits_in(parse_sections(dropin_text)) if dropin_text else {"memory": "", "cpus": ""}
+    return {k: d[k] or b[k] for k in b}
+
+
+def memory_bytes(texto):
+    """Bytes in `512m`, `2g`, `1.5G`, `256mb`; None when it is not a memory size."""
+    m = MEMORIA.match((texto or "").strip())
+    if not m:
+        return None
+    return int(float(m.group(1)) * {"": 1, "k": 1024, "m": 1024 ** 2, "g": 1024 ** 3}[m.group(2).lower()])
 
 
 # -- values -----------------------------------------------------------------------
@@ -245,8 +281,10 @@ class Contexto:
     """What validation needs to know about the host, passed in so it can be faked."""
 
     def __init__(self, home, roots=(), floor=1024, em_uso=None, escutando=None, existe=os.path.exists,
-                 var=None):
+                 var=None, limits_ok=None, mem_total=0, ncpu=0):
         self.home, self.roots, self.floor = Path(home), list(roots), floor
+        self.limits_ok = limits_ok or {"memory": False, "cpu": False}   # which controllers the user's systemd delegates
+        self.mem_total, self.ncpu = mem_total, ncpu
         self.em_uso = em_uso or {}              # {(host port, proto): unit that publishes it}
         self.escutando = escutando or set()     # {(port, proto)} bound on the host right now
         self.existe, self.var = existe, var
@@ -325,7 +363,7 @@ def _chave_dup(grupo, item, linha):
             "env": item.get("key")}.get(grupo, linha)
 
 
-def validate_and_render(base, desejado, restart, ctx, propria=""):
+def validate_and_render(base, desejado, restart, ctx, propria="", base_limits=None):
     """(text or None, errors, warnings).
 
     `desejado` is {group: [item]} — the whole list the person wants for each group.
@@ -355,6 +393,36 @@ def validate_and_render(base, desejado, restart, ctx, propria=""):
         linhas += [(chave, "")] + [(chave, l) for l in pedido]
         if grupo == "ports" and any(l not in conhecidos for l in pedido):
             avisos.append("uma porta publicada abre o app na rede local, qualquer que seja a regra de acesso")
+    # Limits: compared with what the unit itself carries, like the lists. A value that differs is
+    # checked, and refused outright where the controller is not delegated: it would not start.
+    pedido_lim = desejado.get("limits") or {}
+    base_lim = base_limits or {"memory": "", "cpus": ""}
+    mem = str(pedido_lim.get("memory") or "").strip().lower()
+    cpus = str(pedido_lim.get("cpus") or "").strip()
+    if mem != base_lim["memory"].strip().lower():
+        if not mem:
+            erros.append("memória: o limite vem da própria unit; para tirá-lo, edite a unit à mão")
+        elif not ctx.limits_ok.get("memory"):
+            erros.append("memória: o systemd do seu usuário não delega o controlador memory; com um limite o container não sobe")
+        elif (b := memory_bytes(mem)) is None:
+            erros.append(f"memória {mem!r}: use um número com k, m ou g (512m, 2g)")
+        elif b < MEMORIA_MIN:
+            erros.append("memória: o mínimo é 16m")
+        elif ctx.mem_total and b > ctx.mem_total:
+            erros.append(f"memória {mem}: mais do que este host tem")
+        else:
+            linhas.append(("Memory", mem))
+    if cpus != base_lim["cpus"].strip():
+        if not cpus:
+            erros.append("CPUs: o limite vem da própria unit; para tirá-lo, edite a unit à mão")
+        elif not ctx.limits_ok.get("cpu"):
+            erros.append("CPUs: o systemd do seu usuário não delega o controlador cpu; com um limite o container não sobe")
+        elif not CPUS.match(cpus) or float(cpus) < 0.1:
+            erros.append(f"CPUs {cpus!r}: use um número a partir de 0.1 (1.5 é um núcleo e meio)")
+        elif ctx.ncpu and float(cpus) > ctx.ncpu:
+            erros.append(f"CPUs {cpus}: este host tem {ctx.ncpu}")
+        else:
+            linhas.append(("PodmanArgs", f"--cpus={cpus}"))
     if restart is not None and restart != (b_restart or ""):
         if restart not in RESTARTS:
             erros.append(f"reinício {restart!r}: use {', '.join(RESTARTS)}")
@@ -501,6 +569,33 @@ def selftest():
 
     # nothing changed -> no file; the base's own entries are never re-checked
     nada = {g: describe(base[0])[g] for g, _ in GROUPS}
+
+    # limits: parsed from a unit and a drop-in, checked against what the host delegates, rendered as Memory= and --cpus
+    assert memory_bytes("512m") == 512 * 1024 ** 2 and memory_bytes("2G") == 2 * 1024 ** 3 and memory_bytes("1.5g") == int(1.5 * 1024 ** 3)
+    assert memory_bytes("256mb") == 256 * 1024 ** 2 and memory_bytes("lots") is None and memory_bytes("") is None
+    assert limits_in(parse_sections("[Container]\nMemory=1g\nPodmanArgs=--shm-size=1g --cpus=2\n")) == {"memory": "1g", "cpus": "2"}
+    assert limits_in(parse_sections("[Container]\nImage=x\n")) == {"memory": "", "cpus": ""}
+    assert merged_limits("[Container]\nMemory=1g\n", "[Container]\nMemory=2g\nPodmanArgs=--cpus=1.5\n") == {"memory": "2g", "cpus": "1.5"}
+    livre = Contexto("/home/u", roots=["/tmp"], limits_ok={"memory": True, "cpu": True}, mem_total=8 * 1024 ** 3, ncpu=4)
+    sem = {"memory": "", "cpus": ""}
+    quer = lambda **kw: {**nada, "limits": {**sem, **kw}}
+    t, e, _ = validate_and_render(base, quer(memory="512m", cpus="1.5"), None, livre, base_limits=sem)
+    assert not e and "Memory=512m" in t and "PodmanArgs=--cpus=1.5" in t, (e, t)
+    assert validate_and_render(base, quer(), None, livre, base_limits=sem) == (None, [], []), "no limit asked: nothing written"
+    assert validate_and_render(base, quer(memory="1g"), None, livre, base_limits={"memory": "1g", "cpus": ""}) == (None, [], []), "the unit's own limit is not a change"
+    # where the controllers are not delegated, saving a limit is refused with the reason, and a form with none is untouched
+    t, e, _ = validate_and_render(base, quer(memory="512m"), None, ctx, base_limits=sem)
+    assert t is None and "não delega o controlador memory" in e[0], e
+    t, e, _ = validate_and_render(base, quer(cpus="1"), None, ctx, base_limits=sem)
+    assert t is None and "não delega o controlador cpu" in e[0], e
+    assert validate_and_render(base, nada, None, ctx, base_limits=sem) == (None, [], [])
+    for ruim, trecho in ((dict(memory="lots"), "use um número"), (dict(memory="1m"), "mínimo"), (dict(memory="64g"), "mais do que este host"),
+                         (dict(cpus="abc"), "use um número"), (dict(cpus="0.01"), "a partir de 0.1"), (dict(cpus="9"), "este host tem 4")):
+        t, e, _ = validate_and_render(base, quer(**ruim), None, livre, base_limits=sem)
+        assert t is None and any(trecho in x for x in e), (ruim, e)
+    t, e, _ = validate_and_render(base, quer(), None, livre, base_limits={"memory": "1g", "cpus": ""})
+    assert t is None and "edite a unit à mão" in e[0], "a limit the unit carries is not removed from here"
+
     assert validate_and_render(base, nada, None, ctx) == (None, [], [])
     assert validate_and_render(base, nada, "always", ctx) == (None, [], []), "same restart as the unit"
 

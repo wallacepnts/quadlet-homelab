@@ -424,14 +424,20 @@ em uso); uma capability tem de estar numa lista curta (as padrão do Podman mais
 shell no seu host. Para isso, edite a unit à mão. O arquivo `.env` continua em
 **Configurar**; o formulário edita as linhas `Environment=`.
 
-Limite de memória e de CPU não são oferecidos, de propósito. Rootless, eles
-precisam que o systemd do usuário delegue esses controladores, e onde ele não
-delega o `--memory` impede o container de subir (`memory.swap.max: no such file
-or directory`), o que foi medido aqui, onde só o `pids` é delegado. Confira o
-seu com
+**Limites** (memória e CPU) só são oferecidos onde podem funcionar. Rootless, eles precisam que o
+systemd do usuário delegue esses controladores, e onde ele não delega o `--memory` impede o
+container de subir (`memory.swap.max: no such file or directory`), o que foi medido num host onde
+só o `pids` é delegado. Por isso o formulário lê o `cgroup.controllers` do usuário e, quando ele
+lista `memory` e `cpu`, mostra dois campos: **Memória** (`Memory=512m`, `2g`) e **CPUs**
+(`PodmanArgs=--cpus=1.5`, que o Quadlet não tem chave para), gravados no mesmo drop-in e conferidos
+contra a memória e o número de núcleos do host. Onde faltam os controladores os campos aparecem
+desligados, com o motivo, e o servidor recusa salvar um limite de qualquer jeito. Um limite que a
+própria unit traz não se tira por aqui. Vale na próxima partida do container. Confira o seu com
 `cat /sys/fs/cgroup/user.slice/user-$(id -u).slice/user@$(id -u).service/cgroup.controllers`.
-Delegá-los é uma mudança de root no `user@.service` (`Delegate=cpu cpuset io
-memory pids`) que este repositório não faz por você.
+Delegá-los é uma mudança de root que este repositório não faz por você: um drop-in como
+`/etc/systemd/system/user@.service.d/delegate.conf` com `[Service]` e `Delegate=cpu cpuset io
+memory pids`, e depois sair e entrar de novo. Este caminho foi escrito e testado contra um
+`cgroup.controllers` de mentira, não num host que delega.
 
 O `store/test/ui.js` roda a página no Node contra um DOM de mentira, e o
 `store/test/browser.js` a conduz num Chromium de verdade (`node

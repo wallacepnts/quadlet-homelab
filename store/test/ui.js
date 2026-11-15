@@ -426,7 +426,10 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   const opaca = linhasDe("Portas")[1];
   confere(/\$\{DNS\}:53:53\/udp/.test(opaca.textContent) && /vem da unit/.test(opaca.textContent) && ![...opaca.walk()].some((e) => e.tag === "input"),
     "a entrada de forma não simples aparece como está, sem campo");
-  confere(/indisponível aqui/.test(formulario().textContent), "avisa que limite de memória e CPU não existe neste host");
+  confere(/não delega os controladores memory e cpu/.test(formulario().textContent) && /Delegate=/.test(formulario().textContent),
+    "sem os controladores: avisa o motivo e como ligar");
+  const campoMem = [...formulario().walk()].find((e) => e.id === "lim-mem"), campoCpu = [...formulario().walk()].find((e) => e.id === "lim-cpu");
+  confere(campoMem.attrs.disabled !== undefined && campoCpu.attrs.disabled !== undefined, "os campos de limite aparecem, desligados, quando o host não delega");
   confere(/ficam em Configurar/.test(formulario().textContent) && !/desmarcar a comenta/.test(formulario().textContent),
     "a dica das variáveis é a da personalização, não a do formulário do .env");
   confere(!porTexto(formulario(), "Reverter ao padrão").length, "sem personalização, não há botão de reverter");
@@ -460,6 +463,17 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   confere(porTexto(formulario(), "Reverter ao padrão").length === 1 && /50-store\.conf/.test(formulario().textContent), "depois de aplicado: o arquivo e o botão de reverter");
   porTexto(formulario(), "Reverter ao padrão")[0].listeners.click(); await esperar(1500);
   confere(posts.some((x) => x.rota === "/api/custom/reset" && x.corpo.unit === "homebox"), "reverter chama o reset da unit");
+  // limits, when the host delegates the controllers: the fields are live and ride along in the form
+  rotas["/api/custom"] = { ...rotas["/api/custom"], limits: { memory: true, cpu: true }, limit_values: { memory: "1g", cpus: "" } };
+  porTexto($("p-actions"), "Personalizar")[0].listeners.click(); await esperar(100);
+  const cm = [...formulario().walk()].find((e) => e.id === "lim-mem"), cc = [...formulario().walk()].find((e) => e.id === "lim-cpu");
+  confere(cm.attrs.disabled === undefined && cc.attrs.disabled === undefined && cm.attrs.value === "1g" && /Valem na próxima partida/.test(formulario().textContent),
+    "com os controladores delegados: campos ligados, com o valor atual, e a dica");
+  cm.value = "2g"; cc.value = "1.5";
+  porTexto(formulario(), "Pré-visualizar")[0].listeners.click(); await esperar(100);
+  const prelim = posts.filter((x) => x.rota === "/api/custom/preview").pop().corpo.config.limits;
+  confere(prelim.memory === "2g" && prelim.cpus === "1.5", `os limites vão na configuração (${JSON.stringify(prelim)})`);
+  rotas["/api/custom"] = { ...rotas["/api/custom"], limits: { memory: false, cpu: false }, limit_values: { memory: "", cpus: "" } };
   $("panel").open = false;
   rotas["/api/custom"] = { ...rotas["/api/custom"], override: false };
 

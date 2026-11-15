@@ -51,8 +51,10 @@ const T = {
       "caminho em ~/.config/quadlet-homelab/store-roots.",
     custEnvHint: "As variáveis do arquivo .env ficam em Configurar; aqui entram as extras.",
     capsHint: "Só as da lista. Para outra, edite a unit à mão.",
-    limitsOff: "Limite de memória e CPU: indisponível aqui. O systemd do seu usuário não delega esses " +
-      "controladores, e com um limite o container não sobe (veja docs/tools.md).",
+    limitsOff: "O systemd do seu usuário não delega os controladores memory e cpu, e com um limite o container não " +
+      "sobe. Ligar é uma mudança de root (Delegate= no user@.service): veja docs/tools.md.",
+    cLimits: "Limites", limMemory: "Memória máxima", limCpus: "CPUs", limMemoryHint: "ex.: 512m, 2g",
+    limCpusHint: "ex.: 1.5 (um núcleo e meio)", limitsHint: "Valem na próxima partida do container. Vazio, sem limite.",
     baseChanged: "A unit do repositório mudou desde que você personalizou. A personalização zera listas e pode " +
       "esconder o que é novo: reveja e salve de novo.",
     none: "Nenhum app encontrado.", installed: "instalado", running: "rodando",
@@ -147,8 +149,10 @@ const T = {
       "in ~/.config/quadlet-homelab/store-roots.",
     custEnvHint: "Variables of the .env file are under Configure; extras go here.",
     capsHint: "Only the ones on the list. For another, edit the unit by hand.",
-    limitsOff: "Memory and CPU limits: not available here. Your user's systemd does not delegate those " +
-      "controllers, and with a limit the container does not start (see docs/tools.md).",
+    limitsOff: "Your user's systemd does not delegate the memory and cpu controllers, and with a limit the container " +
+      "does not start. Turning that on is a root change (Delegate= in user@.service): see docs/tools.md.",
+    cLimits: "Limits", limMemory: "Memory limit", limCpus: "CPUs", limMemoryHint: "e.g. 512m, 2g",
+    limCpusHint: "e.g. 1.5 (a core and a half)", limitsHint: "Takes effect the next time the container starts. Empty means no limit.",
     baseChanged: "The repository's unit changed since you customized it. The customization resets lists and may " +
       "hide what is new: review it and save again.",
     none: "No app found.", installed: "installed", running: "running",
@@ -941,9 +945,17 @@ async function showCustom(a, unit) {
   const caps = [...new Set([...d.caps_ok, ...tem])].map((n) =>
     ({ n, box: h("input", { type: "checkbox", id: `cap-${n}`, checked: tem.has(n) }) }));
   const reinicio = escolha(d.restarts.map((r) => [r, r]), d.restart || "always");
+  // Limits need the controllers delegated to the user; a field the host cannot honour is shown, disabled,
+  // with the reason. Its value still goes back as it is, so what the unit already says is never "changed".
+  const lv = d.limit_values || { memory: "", cpus: "" };
+  const limMem = h("input", { id: "lim-mem", type: "text", value: lv.memory, placeholder: "512m", autocomplete: "off",
+                              disabled: !d.limits.memory, "aria-label": t("limMemory") });
+  const limCpu = h("input", { id: "lim-cpu", type: "text", value: lv.cpus, placeholder: "1.5", autocomplete: "off",
+                              disabled: !d.limits.cpu, "aria-label": t("limCpus") });
   const saida = h("div", { class: "cust-out" });
   const config = () => ({ ports: G.ports.read(), volumes: G.volumes.read(), env: G.env.read(), devices: G.devices.read(),
-    caps: caps.filter((c) => c.box.checked).map((c) => ({ name: c.n })), restart: reinicio.value });
+    caps: caps.filter((c) => c.box.checked).map((c) => ({ name: c.n })), restart: reinicio.value,
+    limits: { memory: limMem.value.trim(), cpus: limCpu.value.trim() } });
 
   async function previa() {
     try {
@@ -982,7 +994,11 @@ async function showCustom(a, unit) {
     h("div", { class: "cust-group" }, h("h4", {}, t("cCaps")), h("p", { class: "cust-note" }, t("capsHint")),
       h("div", { class: "caps" }, ...caps.map((c) => h("label", { class: "check", for: `cap-${c.n}` }, c.box, ` ${c.n}`)))),
     h("div", { class: "cust-group" }, h("h4", {}, t("cRestart")), reinicio),
-    d.limits.memory && d.limits.cpu ? null : h("p", { class: "cust-note" }, t("limitsOff")),
+    h("div", { class: "cust-group" }, h("h4", {}, t("cLimits")),
+      h("p", { class: "cust-note" }, d.limits.memory && d.limits.cpu ? t("limitsHint") : t("limitsOff")),
+      h("div", { class: "row" },
+        h("label", { for: "lim-mem" }, t("limMemory")), limMem, h("span", { class: "muted" }, t("limMemoryHint")),
+        h("label", { for: "lim-cpu" }, t("limCpus")), limCpu, h("span", { class: "muted" }, t("limCpusHint")))),
     h("div", { class: "row" },
       h("button", { type: "button", class: "ghost", onclick: previa }, t("previewBtn")),
       h("button", { type: "button", onclick: aplicar }, t("saveApply")),
