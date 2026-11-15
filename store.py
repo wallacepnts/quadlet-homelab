@@ -306,6 +306,179 @@ def flags(app, action, arquivo=""):
             "backup": ["--backup", "--out", str(backup_dir())]}.get(action)
 
 
+# -- history ---------------------------------------------------------------------
+
+HISTORY_LOCK = threading.Lock()
+HISTORY_CAP, HISTORY_KEEP, OUTPUT_CAP = 2 * 1024 * 1024, 1024 * 1024, 20000
+# What qh prints after an install (show_secrets), in either language: the one
+# place a credential reaches the output. The page shows it live, as the
+# terminal does; the record on disk must not keep it.
+CREDENCIAL = re.compile(r"^(\s*(?:user|password|usuário|usuario|senha)\s*:\s*)(.*)$", re.I | re.M)
+
+
+def redact(texto):
+    return CREDENCIAL.sub(lambda m: m.group(1) + "***", texto)
+
+
+def history_file():
+    return Path(PREFIX or Path.home()) / ".local/share/quadlet-homelab/store-history.jsonl"
+
+
+def history_add(job):
+    """Appends a finished job: what, when, how it ended, from where, and its output.
+
+    One JSON line per job, private to the user (the output names paths and
+    units), with the credentials masked and only the tail of a long output
+    kept — an error is at the end. The file is compacted to its newest half
+    when it passes 2 MB, so it cannot grow without a bound.
+    """
+    saida = redact("".join(job.out))
+    if len(saida) > OUTPUT_CAP:
+        saida = "…\n" + saida[-OUTPUT_CAP:]
+    linha = json.dumps({"id": job.id, "app": job.app, "action": job.action, "unit": job.unit,
+                        "start": round(job.started, 1), "end": round(time.time(), 1),
+                        "rc": job.rc, "from": job.origem, "output": saida},
+                       ensure_ascii=False)
+    f = history_file()
+    f.parent.mkdir(parents=True, exist_ok=True)
+    with HISTORY_LOCK:
+        fd = os.open(f, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
+        with os.fdopen(fd, "a") as fh:
+            fh.write(linha + "\n")
+        if f.stat().st_size > HISTORY_CAP:
+            mantidas, total = [], 0
+            for velha in reversed(f.read_text().splitlines()):
+                total += len(velha) + 1
+                if total > HISTORY_KEEP:
+                    break
+                mantidas.append(velha)
+            tmp = f.with_name(f.name + ".tmp")
+            fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            with os.fdopen(fd, "w") as fh:
+                fh.write("\n".join(reversed(mantidas)) + "\n")
+            tmp.replace(f)
+
+
+def history_read(app=None, limite=100):
+    """Entries newest first, without their output; `app` narrows to one service."""
+    f = history_file()
+    if not f.is_file():
+        return []
+    saida = []
+    for linha in reversed(f.read_text().splitlines()):
+        try:
+            e = json.loads(linha)
+        except ValueError:
+            continue              # a torn last line is a lost entry, not a broken page
+        if app and e.get("app") != app:
+            continue
+        e.pop("output", None)
+        saida.append(e)
+        if len(saida) >= limite:
+            break
+    return saida
+
+
+def history_get(id_):
+    f = history_file()
+    if f.is_file():
+        for linha in reversed(f.read_text().splitlines()):
+            try:
+                e = json.loads(linha)
+            except ValueError:
+                continue
+            if e.get("id") == id_:
+                return e
+    return None
+
+
+# -- links to the project ---------------------------------------------------------
+
+REPO = re.compile(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+")
+
+
+def image_path(imagem):
+    """An image reference without its digest and tag: `ghcr.io/owner/name`."""
+    ref = imagem.split("@")[0]
+    return ref.rpartition(":")[0] if ":" in ref.split("/")[-1] else ref
+
+
+def repo_url(imagem, override):
+    """The project's repository, only where something reliable says which it is.
+
+    The `[upstream]` override is the author naming it. Without one — and for
+    `-` and `registry`, which only say how to compare versions, not where the
+    project lives — only a registry that mirrors the repository's own path says
+    it too (ghcr.io, lscr.io, GitLab's). A Docker Hub name proves nothing:
+    `vaultwarden/server` is built from `dani-garcia/vaultwarden`, and a guess
+    would be a link to a 404.
+    """
+    if override and override != "-" and not override.startswith("registry"):
+        alvo = override[len("compose:"):].split(":")[0] if override.startswith("compose:") else override
+        return f"https://github.com/{alvo}" if REPO.fullmatch(alvo) else None
+    partes = image_path(imagem).split("/")
+    if partes[0] == "ghcr.io" and len(partes) >= 3:
+        return f"https://github.com/{partes[1]}/{partes[2]}"
+    if partes[0] == "lscr.io" and len(partes) >= 3:
+        return f"https://github.com/{partes[1]}/docker-{partes[2]}"
+    if partes[0] == "registry.gitlab.com" and len(partes) == 3:
+        return f"https://gitlab.com/{partes[1]}/{partes[2]}"
+    return None
+
+
+def image_page(imagem):
+    """The registry's own page for an image, or None for a registry with no such page."""
+    p = image_path(imagem).split("/")
+    if p[0] == "docker.io" and len(p) == 3:
+        return (f"https://hub.docker.com/_/{p[2]}" if p[1] == "library"
+                else f"https://hub.docker.com/r/{p[1]}/{p[2]}")
+    if p[0] == "ghcr.io" and len(p) >= 3:
+        return f"https://github.com/{p[1]}/{p[2]}/pkgs/container/{p[-1]}"
+    if p[0] == "quay.io" and len(p) == 3:
+        return f"https://quay.io/repository/{p[1]}/{p[2]}"
+    return None
+
+
+def remote_https(remoto):
+    """https://github.com/<owner>/<repo> from a git remote in either its ssh or https form."""
+    m = re.fullmatch(r"(?:git@github\.com:|https://github\.com/)([\w.-]+/[\w.-]+?)(?:\.git)?/?", remoto.strip())
+    return f"https://github.com/{m.group(1)}" if m else None
+
+
+def recipe_base():
+    """This repository's page on GitHub, from the clone's own origin, or None."""
+    if "base" not in RECIPE:
+        r = subprocess.run(["git", "-C", str(ROOT), "remote", "get-url", "origin"],
+                           capture_output=True, text=True)
+        RECIPE["base"] = remote_https(r.stdout) if r.returncode == 0 else None
+    return RECIPE["base"]
+
+
+RECIPE = {}
+
+
+def links(app):
+    """[{kind, url}]: the project, its releases and image page, and this repo's recipe."""
+    s = I.Service(app, PREFIX)
+    principal = s.main_unit()
+    saida = []
+    if principal:
+        imagem = next((v for k, v in I.directives_of(principal) if k == "Image"), "")
+        override = s.ini.get("upstream", principal.stem, fallback=None) if s.ini.has_section("upstream") else None
+        repo = repo_url(imagem, override)
+        if repo:
+            saida.append({"kind": "repo", "url": repo})
+            if repo.startswith("https://github.com/"):
+                saida.append({"kind": "releases", "url": repo + "/releases"})
+        pagina = image_page(imagem)
+        if pagina:
+            saida.append({"kind": "image", "url": pagina})
+    base = recipe_base()
+    if base:
+        saida.append({"kind": "recipe", "url": f"{base}/tree/main/apps/{app}"})
+    return saida
+
+
 # -- the .env of a service ------------------------------------------------------
 
 SENSIVEL = re.compile(r"PASS|SECRET|TOKEN|KEY|CREDENTIAL|AUTH", re.I)
@@ -653,9 +826,10 @@ def provision(app, segredos, variaveis):
 class Job:
     """One run, its output as it arrives, and its exit code once it has one."""
 
-    def __init__(self, app, action):
+    def __init__(self, app, action, origem="", unit=""):
         self.id = secrets.token_hex(8)
-        self.app, self.action = app, action
+        self.app, self.action, self.origem, self.unit = app, action, origem, unit
+        self.started = time.time()
         self.out, self.rc = [], None
 
     def write(self, texto):           # a file, for redirect_stdout
@@ -666,7 +840,8 @@ class Job:
         pass
 
 
-def start_job(app, action, cmd, lang, prepare=None, entrada=None, refrescar=None):
+def start_job(app, action, cmd, lang, prepare=None, entrada=None, refrescar=None, origem="",
+              unit=""):
     """The job, running in the background — or None when another one still is.
 
     One at a time: two `qh --apply` racing each other over the same
@@ -674,7 +849,7 @@ def start_job(app, action, cmd, lang, prepare=None, entrada=None, refrescar=None
     """
     if not JOB_LOCK.acquire(blocking=False):
         return None
-    job = Job(app, action)
+    job = Job(app, action, origem, unit)
     JOBS[job.id] = job
     for velho in list(JOBS)[:-20]:
         JOBS.pop(velho, None)
@@ -726,6 +901,10 @@ def start_job(app, action, cmd, lang, prepare=None, entrada=None, refrescar=None
             job.write(f"\n{type(e).__name__}: {e}\n")
             job.rc = 1
         finally:
+            try:
+                history_add(job)
+            except Exception:     # the record of a job must never be what breaks it
+                pass
             JOB_LOCK.release()
 
     threading.Thread(target=worker, daemon=True).start()
@@ -897,6 +1076,11 @@ class Handler(BaseHTTPRequestHandler):
             if not f:
                 return self._json(404, {"error": loc("no such backup of this service")})
             return self._download(f)
+        if url.path == "/api/links":
+            app = q.get("app", "")
+            if not service_dir(app):
+                return self._json(400, {"error": loc("unknown service")})
+            return self._json(200, {"links": links(app)})
         if url.path in ("/api/env", "/api/disk", "/api/arch"):
             app = q.get("app", "")
             if not service_dir(app):
@@ -906,6 +1090,15 @@ class Handler(BaseHTTPRequestHandler):
             if url.path == "/api/disk":
                 return self._json(200, disk(app))
             return self._json(200, arch(app))
+        if url.path == "/api/history":
+            try:
+                limite = max(1, min(500, int(q.get("limit", "100"))))
+            except ValueError:
+                limite = 100
+            return self._json(200, {"entries": history_read(q.get("app") or None, limite)})
+        if url.path.startswith("/api/history/"):
+            e = history_get(url.path.rsplit("/", 1)[1])
+            return self._json(200, e) if e else self._json(404, {"error": "history"})
         if url.path == "/api/stats":
             return self._json(200, {"stats": stats()})
         if url.path == "/api/notes":
@@ -982,7 +1175,8 @@ class Handler(BaseHTTPRequestHandler):
                 or ([principal.stem] if principal else [])
             # try-restart: a stopped service is not started by editing its settings.
             cmd = [["systemctl", "--user", "try-restart", u] for u in usam]
-            job = start_job(app, "env", cmd, lang, lambda: env_save(app, nome, mudar, desligar))
+            job = start_job(app, "env", cmd, lang, lambda: env_save(app, nome, mudar, desligar),
+                            origem=self.client_address[0])
             if job is None:
                 return self._json(409, {"error": loc("another job is running")})
             return self._json(202, {"job": job.id})
@@ -1049,7 +1243,8 @@ class Handler(BaseHTTPRequestHandler):
                 cmd = [qh("--set-access", modo, app)]
                 if I.Service(app, PREFIX).installed():
                     cmd.append(qh(app, "--update", "--apply"))
-            job = start_job(app, action, cmd, lang, prepare, entrada, refrescar=cadeia)
+            job = start_job(app, action, cmd, lang, prepare, entrada, refrescar=cadeia,
+                            origem=self.client_address[0])
         elif url.path == "/api/unit":
             unit, verbo = d.get("unit", ""), d.get("verb", "")
             if not unit_exists(unit):
@@ -1057,7 +1252,11 @@ class Handler(BaseHTTPRequestHandler):
             if verbo not in VERBOS:
                 return self._json(400, {"error": loc("unknown action")})
             # The verbs Quadlet units take (rule 4): never enable/disable.
-            job = start_job(unit, verbo, ["systemctl", "--user", verbo, unit], lang)
+            # Recorded under the service, with the unit beside it, so a service's
+            # history holds its restarts as well as its installs.
+            pasta = next(I.APPS.glob(f"*/{unit}.container")).parent.name
+            job = start_job(pasta, verbo, ["systemctl", "--user", verbo, unit], lang,
+                            origem=self.client_address[0], unit=unit)
         else:
             return self._json(404, {"error": "not found"})
         if job is None:
@@ -1310,11 +1509,80 @@ def selftest():
             a = json.loads(pedir("/api/arch?app=homebox", headers=ok)[2])
             assert a["host"] == host_arch() and a["runs"] is None and a["units"][0]["ok"] is None, a
 
+            # links: this repo's recipe for it, and the project where one is known
+            lk = {x["kind"]: x["url"] for x in json.loads(pedir("/api/links?app=vaultwarden", headers=ok)[2])["links"]}
+            assert lk["repo"] == "https://github.com/dani-garcia/vaultwarden", lk
+            assert lk["releases"].endswith("/releases") and lk["image"].startswith("https://hub.docker.com/")
+            st, _, _ = pedir("/api/links?app=../x", headers=ok)
+            assert st == 400, st
+
+            # history: every job is on disk, newest first, with who asked and how it ended
+            lista = json.loads(pedir("/api/history?app=homebox", headers=ok)[2])["entries"]
+            acoes = [e["action"] for e in lista]
+            assert acoes[0] == "env" and "install" in acoes and "backup" in acoes, acoes
+            assert all("output" not in e and e["from"] == "127.0.0.1" for e in lista)
+            assert all(e["app"] == "homebox" for e in lista) and lista[0]["start"] <= lista[0]["end"]
+            todos = json.loads(pedir("/api/history?limit=3", headers=ok)[2])["entries"]
+            assert len(todos) == 3, "limit narrows it"
+            det = json.loads(pedir(f"/api/history/{lista[-1]['id']}", headers=ok)[2])
+            assert det["action"] == "install" and det["rc"] == 0 and "homebox" in det["output"]
+            st, _, corpo = pedir("/api/unit", json.dumps({"unit": "homebox", "verb": "restart"}).encode(), api)
+            assert st == 202, (st, corpo)
+            assert esperar(corpo)["rc"] == 0
+            ultima = json.loads(pedir("/api/history?app=homebox&limit=1", headers=ok)[2])["entries"][0]
+            assert (ultima["action"], ultima["unit"]) == ("restart", "homebox"), ultima
+            st, _, _ = pedir("/api/history/nao-existe", headers=ok)
+            assert st == 404, st
+            assert oct(history_file().stat().st_mode)[-3:] == "600", "the history is private"
+            st, _, _ = pedir("/api/history", metodo="GET")
+            assert st == 401, "and behind the login"
+
             # release notes: a unit that is not installed answers without the network
             st, _, corpo = pedir("/api/notes?unit=memos", headers=ok)
             assert st == 200 and json.loads(corpo)["releases"] == [], corpo
         finally:
             srv.shutdown()
+    # links: the repository only from a source that can be trusted, never a guess
+    assert repo_url("docker.io/vaultwarden/server:1.37.5-alpine", "dani-garcia/vaultwarden") == \
+        "https://github.com/dani-garcia/vaultwarden"
+    assert repo_url("docker.io/vaultwarden/server:1", None) is None, "a Docker Hub name is not a repository"
+    assert repo_url("ghcr.io/hargata/lubelogger:v1.7.4", None) == "https://github.com/hargata/lubelogger"
+    assert repo_url("lscr.io/linuxserver/jellyfin:10", None) == "https://github.com/linuxserver/docker-jellyfin"
+    assert repo_url("registry.gitlab.com/fmd-foss/fmd-server:0.17", None) == "https://gitlab.com/fmd-foss/fmd-server"
+    assert repo_url("docker.io/x/y:1", "-") is None, "no override and no mirror: no link"
+    assert repo_url("registry.gitlab.com/fmd-foss/fmd-server:0.17", "registry:^[0-9]+$") == \
+        "https://gitlab.com/fmd-foss/fmd-server", "`registry` says how to compare, not where it lives"
+    assert repo_url("ghcr.io/a/b:1", "-") == "https://github.com/a/b"
+    assert repo_url("ghcr.io/a/b:1", "compose:karakeep-app/karakeep:docker/docker-compose.yml") == \
+        "https://github.com/karakeep-app/karakeep"
+    assert repo_url("docker.io/x/y:1", "compose:https://example.org/c.yml") is None
+    assert repo_url("docker.io/x/y:1", "not a repo") is None, "an override must look like owner/repo"
+    assert image_page("docker.io/vaultwarden/server:1.37.5@sha256:" + "a" * 64) == \
+        "https://hub.docker.com/r/vaultwarden/server"
+    assert image_page("docker.io/library/nginx:1.29") == "https://hub.docker.com/_/nginx"
+    assert image_page("ghcr.io/hargata/lubelogger:v1") == "https://github.com/hargata/lubelogger/pkgs/container/lubelogger"
+    assert image_page("registry.fedoraproject.org/fedora-toolbox:44") is None
+    assert remote_https("git@github.com:me/quadlet-homelab.git\n") == "https://github.com/me/quadlet-homelab"
+    assert remote_https("https://github.com/me/quadlet-homelab") == "https://github.com/me/quadlet-homelab"
+    assert remote_https("git@example.org:me/x.git") is None
+
+    # what the history keeps of an output: no credential, only the tail, a bounded file
+    assert redact("  user:     joe\n  password: s3cret\n  usuário:  ana\n  senha:    x\nok: y") == \
+        "  user:     ***\n  password: ***\n  usuário:  ***\n  senha:    ***\nok: y"
+    assert redact("a password: in prose") == "a password: in prose", "only a line that starts with the label"
+    with tempfile.TemporaryDirectory() as tmp2:
+        PREFIX = tmp2
+        for i in range(130):
+            falso = Job(f"app{i}", "install", "127.0.0.1")
+            falso.out, falso.rc = [f"{i}:" + "x" * 30000], 0
+            history_add(falso)
+        assert history_file().stat().st_size <= HISTORY_CAP, "the file is compacted past its cap"
+        linhas = history_file().read_text().splitlines()
+        assert all(json.loads(x) for x in linhas) and json.loads(linhas[-1])["app"] == "app129"
+        assert len(linhas) < 130 and json.loads(linhas[-1])["output"].startswith("…\n"), "newest kept, tail cut"
+        assert oct(history_file().stat().st_mode)[-3:] == "600"
+        PREFIX = tmp
+
     # CPU and memory are read from /proc and cgroupfs: the parsing is pure, the reading is real
     assert parse_cgroup("0::/user.slice/a.scope\n") == "/user.slice/a.scope"
     assert parse_cgroup("12:memory:/x\n11:cpu:/x\n") is None, "cgroup v1 has no unified path"

@@ -40,6 +40,12 @@ const T = {
     noEnv: "Este serviço não tem arquivo de configuração para editar.", active: "ativa",
     disk: "Disco", cpu: "CPU", mem: "Memória", runsOn: "Roda em", counting: "calculando…",
     noArm: (host, units) => `Sem imagem para ${host}: ${units}. Não vai rodar neste servidor.`,
+    history: "Histórico", noHistory: "Nenhuma ação registrada ainda.", when: "Quando", what: "Ação", result: "Resultado",
+    took: "Duração", from: "de", output: "Saída",
+    act: { install: "Instalar", update: "Atualizar", upgrade: "Atualizar versão", remove: "Remover", backup: "Backup",
+           restore: "Restaurar", access: "Acesso", env: "Configuração", start: "Iniciar", stop: "Parar", restart: "Reiniciar" },
+    link: { repo: "Projeto", releases: "Releases", image: "Imagem", recipe: "Receita neste repositório" },
+    shots: "Capturas de tela",
     lang: "English",
   },
   en: {
@@ -79,6 +85,12 @@ const T = {
     noEnv: "This service has no settings file to edit.", active: "on",
     disk: "Disk", cpu: "CPU", mem: "Memory", runsOn: "Runs on", counting: "counting…",
     noArm: (host, units) => `No image for ${host}: ${units}. It will not run on this server.`,
+    history: "History", noHistory: "No action recorded yet.", when: "When", what: "Action", result: "Result",
+    took: "Took", from: "from", output: "Output",
+    act: { install: "Install", update: "Update", upgrade: "Update version", remove: "Remove", backup: "Backup",
+           restore: "Restore", access: "Access", env: "Settings", start: "Start", stop: "Stop", restart: "Restart" },
+    link: { repo: "Project", releases: "Releases", image: "Image", recipe: "Recipe in this repository" },
+    shots: "Screenshots",
     lang: "Português",
   },
 };
@@ -239,6 +251,7 @@ function renderChrome() {
   $("only-installed-label").textContent = t("onlyInstalled");
   $("lang").textContent = t("lang");
   $("recheck").textContent = t("recheck");
+  $("history-btn").textContent = t("history");
 }
 
 function renderGroups() {
@@ -323,6 +336,12 @@ async function loadInfo(id) {
   const pedidos = [];
   if (a.installed) pedidos.push(api(`/api/disk?app=${encodeURIComponent(id)}`).then((d) => { S.info.disk = d; }));
   pedidos.push(api(`/api/arch?app=${encodeURIComponent(id)}`).then((d) => { S.info.arch = d; }));
+  api(`/api/links?app=${encodeURIComponent(id)}`).then(({ links }) => {
+    if (S.current !== id) return;
+    $("p-project").replaceChildren(...links.map((l) =>
+      h("a", { href: l.url, target: "_blank", rel: "noopener noreferrer" }, `${t("link")[l.kind]} ↗`)));
+  }).catch(() => {});
+  $("p-project").replaceChildren();
   renderInfo();
   await Promise.allSettled(pedidos);
   if (S.current === id && $("panel").open) renderInfo();
@@ -356,6 +375,12 @@ function renderPanel() {
   $("p-name").textContent = a.name;
   $("p-meta").textContent = (a.group && a.group[S.lang]) || "";
   $("p-desc").textContent = plain(a.description[S.lang] || a.description.en);
+
+  // Images the project hosts (install.ini [store]); each opens full size in a new tab.
+  $("p-shots").replaceChildren(...(a.screenshots || []).map((u) =>
+    h("a", { href: u, target: "_blank", rel: "noopener noreferrer", "aria-label": t("shots") },
+      h("img", { src: u, alt: "", loading: "lazy", referrerpolicy: "no-referrer" }))));
+  $("p-shots").hidden = !(a.screenshots || []).length;
 
   const instaladas = new Set(a.units.filter((u) => u.installed).map((u) => u.unit));
   $("p-links").replaceChildren(...a.web
@@ -409,6 +434,8 @@ function renderPanel() {
     acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showBackups(a) }, t("backups")));
     acoes.push(h("button", { type: "button", class: "danger", onclick: () => plan("remove") }, t("remove")));
   }
+  // After the others: an app that was removed, or never came up, still has a past worth reading.
+  acoes.push(h("button", { type: "button", class: "ghost", onclick: () => openHistory(a.id) }, t("history")));
   $("p-actions").replaceChildren(...acoes, a.installed && a.web.length ? accessPicker(a) : null);
 }
 
@@ -465,6 +492,51 @@ async function showNotes(a) {
     } catch (e) { blocos.push(h("p", { class: "note" }, String(e.message))); }
   }
   section(...blocos);
+}
+
+// -- history: what was done, when, and how it ended, kept on disk -----------------
+
+async function openHistory(appId = null) {
+  S.histApp = appId;
+  $("history").showModal();
+  await renderHistory();
+}
+
+const appName = (id) => (S.apps.find((a) => a.id === id) || { name: id }).name;
+
+async function renderHistory() {
+  $("h-out").hidden = true;
+  $("h-title").textContent = S.histApp ? `${t("history")} — ${appName(S.histApp)}` : t("history");
+  try {
+    const { entries } = await api(`/api/history?limit=200${S.histApp ? `&app=${encodeURIComponent(S.histApp)}` : ""}`);
+    const quando = (s) => new Date(s * 1000).toLocaleString(S.lang === "pt" ? "pt-BR" : "en");
+    const linha = (e) => {
+      const tr = h("tr", { tabindex: "0", class: "run" },
+        h("td", {}, quando(e.start)),
+        !S.histApp && h("td", {}, appName(e.app)),
+        h("td", {}, t("act")[e.action] || e.action, e.unit && e.unit !== e.app ? ` (${e.unit})` : ""),
+        h("td", { class: e.rc === 0 ? "ok" : "bad" }, e.rc === 0 ? "✓" : `✗ ${e.rc ?? "?"}`),
+        h("td", {}, `${Math.max(0, Math.round(e.end - e.start))}s`));
+      tr.onclick = () => showRun(e);
+      tr.onkeydown = (ev) => { if (ev.key === "Enter") showRun(e); };
+      return tr;
+    };
+    $("h-list").replaceChildren(entries.length
+      ? h("table", { class: "hist" },
+          h("tr", {}, h("th", {}, t("when")), !S.histApp && h("th", {}, "App"), h("th", {}, t("what")),
+            h("th", {}, t("result")), h("th", {}, t("took"))),
+          ...entries.map(linha))
+      : h("p", { class: "muted" }, t("noHistory")));
+  } catch (e) { $("h-list").replaceChildren(h("p", { class: "note" }, String(e.message))); }
+}
+
+async function showRun(e) {
+  try {
+    const d = await api(`/api/history/${encodeURIComponent(e.id)}`);
+    $("h-out").textContent = `${t("act")[d.action] || d.action} · ${appName(d.app)} · ${t("from")} ${d.from || "?"}\n\n${d.output || "—"}`;
+    $("h-out").hidden = false;
+    $("h-out").scrollTop = 0;
+  } catch (err) { $("h-out").textContent = String(err.message); $("h-out").hidden = false; }
 }
 
 // The settings of a service: its .env, as the .example files lay it out. An
@@ -737,6 +809,8 @@ $("lang").addEventListener("click", () => {
   load();
 });
 $("p-close").addEventListener("click", () => $("panel").close());
+$("history-btn").addEventListener("click", () => openHistory(null));
+$("h-close").addEventListener("click", () => $("history").close());
 $("recheck").addEventListener("click", () => loadUpdates(true));
 renderChrome();
 load();

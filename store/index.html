@@ -13,6 +13,7 @@
   <input id="search" type="search">
   <label class="toggle"><input id="only-installed" type="checkbox"> <span id="only-installed-label"></span></label>
   <span id="checked" class="muted"></span>
+  <button id="history-btn" type="button" class="ghost"></button>
   <button id="recheck" type="button" class="ghost"></button>
   <button id="lang" type="button" class="ghost"></button>
 </header>
@@ -30,12 +31,22 @@
   </div>
   <p id="p-desc"></p>
   <p id="p-info" class="muted"></p>
+  <div id="p-project" class="project"></div>
+  <div id="p-shots" class="shots" hidden></div>
   <div id="p-links"></div>
   <table id="p-units"></table>
   <div id="p-actions"></div>
   <section id="p-section" hidden></section>
   <form id="p-form" hidden></form>
   <pre id="p-out" hidden></pre>
+</dialog>
+<dialog id="history">
+  <div class="panel-head">
+    <h2 id="h-title"></h2>
+    <button id="h-close" type="button" class="ghost">✕</button>
+  </div>
+  <div id="h-list"></div>
+  <pre id="h-out" hidden></pre>
 </dialog>
 </body>
 </html>

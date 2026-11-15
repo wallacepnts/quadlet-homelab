@@ -238,6 +238,38 @@ qh-store:
         - http://<tailscale-ip>:8484
 ```
 
+O **Histórico** (o botão do cabeçalho, e um por serviço) lista toda ação que a
+loja rodou — instalar, atualizar, remover, backup, restauração, acesso,
+configuração e iniciar/parar/reiniciar — com quando foi, como terminou,
+quanto durou e a saída. É uma linha de JSON por ação em
+`~/.local/share/quadlet-homelab/store-history.jsonl` (modo 0600): da saída
+fica só o último pedaço de 20 000 caracteres, as credenciais de login que o
+`qh` imprime depois de uma instalação são mascaradas como `***`, e o arquivo é
+cortado pela metade mais nova quando passa de 2 MB. O "de" é o endereço que a
+loja viu; atrás do tsdproxy é o do proxy, já que existe um token só e portanto
+um usuário só.
+
+Cada painel também tem links para o projeto e as releases dele, a página da
+imagem no registry e a receita deste repositório. O repositório do projeto só
+aparece onde algo diz qual é — o `[upstream]` do `install.ini`, ou uma imagem
+no `ghcr.io`/`lscr.io` — e nunca é adivinhado a partir de um nome do Docker
+Hub, o que daria um link para um 404.
+
+As capturas de tela vêm do `install.ini`, como imagens que o próprio projeto
+hospeda:
+
+```ini
+[store]
+screenshots =
+    https://example.org/captura-1.png
+    https://example.org/captura-2.png
+```
+
+O `check.py` limita a lista a URLs https, no máximo seis e sem repetição. O
+navegador carrega as imagens de lá, então o host do projeto vê a requisição,
+como já vê nos ícones. Alguns serviços trazem capturas como exemplo; os demais
+ficam sem até alguém acrescentar uma imagem que valha a pena.
+
 Quem tiver o token instala e remove serviços como você. Trate-o como uma chave
 SSH. Para revogar, apague o arquivo e reinicie o serviço.
 

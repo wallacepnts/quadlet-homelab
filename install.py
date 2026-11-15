@@ -3971,6 +3971,10 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude):
         "description": {"en": vitrine.get("description", ""),
                         "pt": pt.get(d, {}).get("description", "")},
         "main_unit": principal.stem if principal else None,
+        # Images the project hosts, named in install.ini [store]: https only,
+        # the same rule check.py holds the file to.
+        "screenshots": [u for u in re.split(r"[\s,]+", s.ini.get("store", "screenshots", fallback=""))
+                        if u.startswith("https://")],
         "installed": bool(instaladas),
         # Whether there is a typed credential to show after the install
         # ([login] in install.ini); the value itself is asked for apart.

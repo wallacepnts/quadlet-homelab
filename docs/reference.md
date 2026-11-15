@@ -24,7 +24,7 @@ apps/<app>/
 ├── <app>.container
 ├── <app>-net.network       # only for a stack that talks to itself
 ├── .env.example
-├── install.ini             # secret recipes, validation, login, upstream name
+├── install.ini             # secret recipes, validation, login, upstream name, store screenshots
 ├── README.md
 └── README.pt-BR.md
 ```

@@ -237,6 +237,36 @@ qh-store:
         - http://<tailscale-ip>:8484
 ```
 
+**History** (the header button, and one per service) lists every action the
+store ran — install, update, remove, backup, restore, access, settings, and
+start/stop/restart — with when, how it ended, how long it took and its output.
+It is one line of JSON per action in
+`~/.local/share/quadlet-homelab/store-history.jsonl` (mode 0600): the output
+keeps only its last 20 000 characters, the login credentials `qh` prints after
+an install are masked as `***`, and the file is cut to its newest half when it
+passes 2 MB. "From" is the address the store saw; behind tsdproxy that is the
+proxy's, since there is one token and so one user.
+
+Each panel also links to the project and its releases, the image's page on its
+registry, and this repository's recipe. The project's repository is shown only
+where something says which it is — `install.ini [upstream]`, or an image on
+`ghcr.io`/`lscr.io` — and never guessed from a Docker Hub name, which would
+give a link to a 404.
+
+Screenshots come from `install.ini`, as images the project itself hosts:
+
+```ini
+[store]
+screenshots =
+    https://example.org/shot-1.png
+    https://example.org/shot-2.png
+```
+
+`check.py` holds the list to https URLs, at most six, with no repeats. The
+browser loads them from there, so the project's host sees the request, as it
+already does for the icons. A few services carry them as examples; the rest
+have none until someone adds an image worth showing.
+
 Anyone holding the token can install and remove services as you. Treat it like
 an SSH key. To revoke it, delete the file and restart the service.
 

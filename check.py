@@ -324,6 +324,28 @@ def check_ports(folders):
     return uses
 
 
+def screenshots_problemas(valor):
+    """What is wrong with `[store] screenshots`, as a list; empty when it parses.
+
+    The store shows each as an image, straight from where the project hosts it.
+    https only (a mixed-content image would be dropped by the page), no more
+    than six (they are loaded when a panel opens), and plain URLs: a space or a
+    quote would cut it short in the page's attribute.
+    """
+    urls = [u for u in re.split(r"[\s,]+", valor.strip()) if u]
+    saida = []
+    if not urls:
+        saida.append("is empty")
+    if len(urls) > 6:
+        saida.append(f"lists {len(urls)} images; the store shows at most 6")
+    for u in urls:
+        if not re.fullmatch(r"https://[A-Za-z0-9.-]+(:[0-9]+)?/[^\s\"'<>]*", u):
+            saida.append(f"{u!r} is not a plain https:// URL")
+    if len(set(urls)) != len(urls):
+        saida.append("repeats an image")
+    return saida
+
+
 def upstream_problema(valor):
     """What is wrong with an [upstream] value, or None when it parses.
 
@@ -512,6 +534,16 @@ def check_manifest(folders):
             if problema:
                 error("manifest", f"apps/{folder.name}: install.ini [upstream] {key} = "
                                   f"{valor} — {problema}")
+        # [store] is what the app store shows about the service. Only
+        # `screenshots` exists; any other key is a typo that would be ignored.
+        if ini.has_section("store"):
+            for key, valor in ini.items("store"):
+                if key != "screenshots":
+                    error("manifest", f"apps/{folder.name}: install.ini [store] has no key {key!r} "
+                                      f"(only `screenshots`)")
+                    continue
+                for problema in screenshots_problemas(valor):
+                    error("manifest", f"apps/{folder.name}: install.ini [store] screenshots {problema}")
         # [vars]: every ${VAR} a Volume= of this folder names needs a default
         # here, because it is what the install offers when it asks — and a
         # variable left unset turns `${MEDIA_DATA_DIR}/downloads` into
@@ -862,6 +894,16 @@ def check_per_unit(folder):
 # --------------------------------------------------------------------------
 
 def selftest():
+    # [store] screenshots: https URLs, at most six, no repeats
+    assert screenshots_problemas("https://a.example/x.png\n    https://b.example/y.jpg") == []
+    assert screenshots_problemas("https://a.example/x.png, https://b.example/y.png") == []
+    assert screenshots_problemas("") == ["is empty"]
+    assert screenshots_problemas("http://a.example/x.png")[0].endswith("is not a plain https:// URL")
+    assert screenshots_problemas("https://a.example/x y.png\n")  # a space splits it: `y.png` is not a URL
+    assert any("at most 6" in x for x in screenshots_problemas(" ".join(f"https://a.example/{i}.png" for i in range(7))))
+    assert screenshots_problemas("https://a.example/x.png https://a.example/x.png") == ["repeats an image"]
+    assert screenshots_problemas("https://a.example/x.png?a=1&b=\"2\"")[0].endswith("is not a plain https:// URL")
+
     # rule 9: a version or a digest pins the image; anything else floats
     assert floating_tag("docker.io/library/postgres:16") == "16"
     assert floating_tag("docker.io/library/postgres:17-alpine") == "17-alpine"
