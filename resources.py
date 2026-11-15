@@ -86,14 +86,21 @@ def podman_json(*args):
 def survey(home):
     """What is unused, with sizes: {images: [...], networks: [...], volumes: [...], reclaimable: bytes}."""
     nomes, digests = wanted_images(home)
-    imagens = []
+    # One image can come back once per tag, and it has to be judged as ONE: in use under any of its
+    # names means in use, and its size counts once.
+    por_id = {}
     for im in podman_json("images"):
-        refs = {normalize(n) for n in (im.get("Names") or [])}
-        dig = {d.split("@")[-1] for d in (im.get("RepoDigests") or [])} | ({im["Digest"]} if im.get("Digest") else set())
-        if im.get("Containers", 0) or refs & nomes or dig & digests:
+        g = por_id.setdefault(im["Id"], {"im": im, "names": [], "refs": set(), "dig": set(), "uso": 0})
+        g["names"] += [n for n in (im.get("Names") or []) if n not in g["names"]]
+        g["refs"] |= {normalize(n) for n in (im.get("Names") or [])}
+        g["dig"] |= {d.split("@")[-1] for d in (im.get("RepoDigests") or [])} | ({im["Digest"]} if im.get("Digest") else set())
+        g["uso"] = max(g["uso"], im.get("Containers", 0))
+    imagens = []
+    for iid, g in por_id.items():
+        if g["uso"] or g["refs"] & nomes or g["dig"] & digests:
             continue
-        imagens.append({"id": im["Id"], "name": (im.get("Names") or ["<none>"])[0], "size": im.get("Size", 0),
-                        "created": im.get("Created", 0)})
+        imagens.append({"id": iid, "name": (g["names"] or ["<none>"])[0], "tags": len(g["names"]),
+                        "size": g["im"].get("Size", 0), "created": g["im"].get("Created", 0)})
     imagens.sort(key=lambda x: -x["size"])
 
     containers = podman_json("ps", "-a")
@@ -125,11 +132,22 @@ def prune(kind, home, apply):
     feitos = falhas = 0
     for item in achado:
         alvo = item["id"] if kind == "images" else item["name"]
-        rotulo = item["name"] + (f"  ({human(item['size'])})" if kind == "images" else "")
+        rotulo = item["name"] + (f" (+{item['tags'] - 1} tags)" if kind == "images" and item.get("tags", 1) > 1 else "") \
+            + (f"  ({human(item['size'])})" if kind == "images" else "")
         if not apply:
             print(f"  would remove {rotulo}")
             continue
-        r = subprocess.run([PODMAN, *comando, alvo], capture_output=True, text=True)
+        if kind == "images":
+            # An image with several tags is not removed by ID without --force, and --force also kills
+            # containers made from it. None may exist (the survey said so a moment ago): ask once more.
+            vivo = subprocess.run([PODMAN, "ps", "-a", "-q", "--filter", f"ancestor={alvo}"], capture_output=True, text=True)
+            if vivo.stdout.strip():
+                falhas += 1
+                print(f"  kept {rotulo}: a container uses it now")
+                continue
+            r = subprocess.run([PODMAN, "rmi", "--force", alvo], capture_output=True, text=True)
+        else:
+            r = subprocess.run([PODMAN, *comando, alvo], capture_output=True, text=True)
         if r.returncode == 0:
             feitos += 1
             print(f"  removed {rotulo}")
@@ -213,11 +231,15 @@ case "$*" in
     {"Id":"i2","Names":["ghcr.io/a/b:0.9"],"Size":300,"Containers":0},
     {"Id":"i3","Names":["docker.io/q/r:1"],"Size":50,"Containers":1},
     {"Id":"i4","Names":["docker.io/x/y:old"],"Size":70,"Containers":0,"RepoDigests":["docker.io/x/y@sha256:abc"]},
-    {"Id":"i5","Names":[],"Size":20,"Containers":0}]';;
+    {"Id":"i5","Names":[],"Size":20,"Containers":0},
+    {"Id":"i2","Names":["ghcr.io/a/b:0.9-alt"],"Size":300,"Containers":0},
+    {"Id":"i6","Names":["ghcr.io/a/b:1.0-twin"],"Size":40,"Containers":0},
+    {"Id":"i6","Names":["docker.io/z/z:1"],"Size":40,"Containers":2}]';;
+  "ps -a -q --filter ancestor=i2"|"ps -a -q --filter ancestor=i5") ;;
   "ps -a --format json") echo '[{"Networks":["used-net"],"Mounts":["/data"]}]';;
   "network ls --format json") echo '[{"name":"podman"},{"name":"a-net"},{"name":"systemd-z"},{"name":"used-net"},{"name":"stray"}]';;
   "volume ls --filter dangling=true --format json") echo '[{"Name":"vol-free"},{"Name":"systemd-kept"}]';;
-  "rmi i2"|"rmi i5"|"network rm stray"|"volume rm vol-free") echo gone;;
+  "rmi --force i2"|"rmi --force i5"|"network rm stray"|"volume rm vol-free") echo gone;;
   *) echo "unexpected: $*" >&2; exit 1;;
 esac
 """)
@@ -225,8 +247,9 @@ esac
         global PODMAN
         PODMAN = str(falso)
         r = survey(t)
-        assert [i["id"] for i in r["images"]] == ["i2", "i5"], "the unit's image, the container's and the digest-pinned one stay"
-        assert r["reclaimable"] == 320
+        assert [i["id"] for i in r["images"]] == ["i2", "i5"], "the unit's image, the container's and the digest-pinned one stay; a tag listed twice is one image"
+        assert r["reclaimable"] == 320, "and its size counts once"
+        assert r["images"][0]["tags"] == 2
         assert [x["name"] for x in r["networks"]] == ["stray"], "the default, the declared and the used one stay"
         assert [x["name"] for x in r["volumes"]] == ["vol-free"], "a declared volume stays"
         assert prune("images", t, False) == (0, 0) and prune("images", t, True) == (2, 0)

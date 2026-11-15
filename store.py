@@ -2176,7 +2176,8 @@ case "$*" in
   "ps -a --format json") echo '[]';;
   "network ls --format json") echo '[{"name":"podman"}]';;
   "volume ls --filter dangling=true --format json") echo '[{"Name":"vf"}]';;
-  "rmi i9"|"volume rm vf") echo gone;;
+  "ps -a -q --filter ancestor=i9") ;;
+  "rmi --force i9"|"volume rm vf") echo gone;;
   *) echo "unexpected: $*" >&2; exit 1;;
 esac
 """)
