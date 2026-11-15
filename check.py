@@ -586,12 +586,14 @@ def check_manifest(folders):
         # `screenshots` exists; any other key is a typo that would be ignored.
         if ini.has_section("store"):
             for key, valor in ini.items("store"):
-                if key not in ("screenshots", "deprecated", "deprecated_pt", "repo", "works_with"):
+                if key not in ("screenshots", "deprecated", "deprecated_pt", "repo", "works_with", "min_podman"):
                     error("manifest", f"apps/{folder.name}: install.ini [store] has no key {key!r} "
-                                      f"(only `screenshots`, `deprecated`, `deprecated_pt`, `repo` and `works_with`)")
+                                      f"(only `screenshots`, `deprecated`, `deprecated_pt`, `repo`, `works_with` and `min_podman`)")
                     continue
                 for problema in (screenshots_problemas(valor) if key == "screenshots"
                                  else repo_problemas(valor) if key == "repo"
+                                 else [] if key == "min_podman" and re.fullmatch(r"\d+\.\d+(\.\d+)?", valor.strip())
+                                 else ["is not a version like 5.4"] if key == "min_podman"
                                  else works_with_problemas(valor, folder.name, {p.name for p in APPS.iterdir()}) if key == "works_with"
                                  else deprecated_problemas(valor)):
                     error("manifest", f"apps/{folder.name}: install.ini [store] {key} {problema}")
@@ -951,6 +953,9 @@ def selftest():
     # [store] repo: owner/repo on GitHub, or a full https URL
     assert repo_problemas("netbootxyz/netboot.xyz") == [] and repo_problemas("https://codeberg.org/o/r") == []
     assert repo_problemas("") and repo_problemas("not a repo") and repo_problemas("http://github.com/o/r") and repo_problemas("a/b/c")
+
+    # [store] min_podman: a version like 5.4
+    assert re.fullmatch(r"\d+\.\d+(\.\d+)?", "5.4") and not re.fullmatch(r"\d+\.\d+(\.\d+)?", "five")
 
     # [store] works_with: other folders, no self, no repeats
     ex = {"a", "b", "c"}

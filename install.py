@@ -26,6 +26,7 @@ import importlib.util
 import os
 import re
 import secrets
+import shutil
 import string
 import subprocess
 import sys
@@ -262,6 +263,8 @@ PT = {
     'the trials armed, and when each ends': 'os experimentos armados, e quando cada um termina',
     'at the next reboot': 'no próximo reinício',
     'and DELETES its data': 'e APAGA os dados', 'keeping its data': 'mantendo os dados',
+    'this service needs Podman': 'este serviço precisa do Podman',
+    'the host has': 'o host tem',
     'this service is marked deprecated:': 'este serviço está marcado como descontinuado:',
     'skipped, marked deprecated:': 'ignorado, marcado como descontinuado:',
     'keeps its customization (50-store.conf)': 'mantém a personalização dela (50-store.conf)',
@@ -1023,6 +1026,59 @@ class Service:
 # plan
 # --------------------------------------------------------------------------
 
+NOTIFY_HEALTHY_PODMAN = "5.0"      # Notify=healthy needs it (conventions, rule 14)
+_PODMAN = []
+
+
+def parse_version(texto):
+    """(5, 4, 2) from "5.4.2" or "5.4.0-dev"; None when it is not a version."""
+    m = re.match(r"\s*v?(\d+)\.(\d+)(?:\.(\d+))?", texto or "")
+    return tuple(int(x or 0) for x in m.groups()) if m else None
+
+
+def podman_version():
+    """The host's Podman as a tuple, or None when it cannot be told (not installed, a sandbox box).
+
+    QH_PODMAN_VERSION overrides it — for tests, and for a host whose podman answers oddly."""
+    if _PODMAN:
+        return _PODMAN[0]
+    v = parse_version(os.environ.get("QH_PODMAN_VERSION", ""))
+    if v is None:
+        r = (subprocess.run(["podman", "version", "--format", "{{.Client.Version}}"],
+                            capture_output=True, text=True) if shutil.which("podman") else None)
+        v = parse_version(r.stdout if r is not None and r.returncode == 0 else "")
+    _PODMAN.append(v)
+    return v
+
+
+def min_podman(s):
+    """The oldest Podman this service runs on, as "5.4", or None when nothing is known.
+
+    `[store] min_podman` is the service's own floor (a Quadlet key it uses that arrived late);
+    `Notify=healthy` is 5.0 for any unit that has it. The larger one counts."""
+    pedidos = []
+    if s.ini.has_section("store") and s.ini.get("store", "min_podman", fallback="").strip():
+        pedidos.append(s.ini.get("store", "min_podman").strip())
+    if any(waits_for_health(u) for u in s.units if u.suffix == ".container"):
+        pedidos.append(NOTIFY_HEALTHY_PODMAN)
+    validos = [p for p in pedidos if parse_version(p)]
+    return max(validos, key=parse_version) if validos else None
+
+
+def podman_too_old(s):
+    """(needed, host) as strings when the host's Podman is older than the service needs; else None."""
+    need, host = min_podman(s), podman_version()
+    if need and host and host < parse_version(need):
+        return need, ".".join(map(str, host))
+    return None
+
+
+def _selftest_podman():
+    assert parse_version("5.4.2") == (5, 4, 2) and parse_version("v6.0") == (6, 0, 0) and parse_version("5.4.0-dev") == (5, 4, 0)
+    assert parse_version("") is None and parse_version("x") is None
+    assert parse_version("5.10") > parse_version("5.9"), "versions compare as numbers, not text"
+
+
 def works_with(ini, name=""):
     """Folder names from `[store] works_with` (comma-separated): services this one is worth running beside.
 
@@ -1053,6 +1109,10 @@ def plan_install(s, tailnet, force=False, interactive=False, access="tailnet",
     razao = deprecation(s.ini)
     if razao:
         warnings.append("this service is marked deprecated: " + razao["pt" if qhui.PTBR else "en"])
+
+    velho = podman_too_old(s)
+    if velho:
+        warnings.append(loc("this service needs Podman") + f" {velho[0]}+, " + loc("the host has") + f" {velho[1]}")
 
     dest = s.unit_dest
     steps.append((f"mkdir -p {dest}", lambda: dest.mkdir(parents=True, exist_ok=True)))
@@ -2819,6 +2879,7 @@ def find_tailnet():
 # --------------------------------------------------------------------------
 
 def selftest():
+    _selftest_podman()
     """Checks the internal-port -> host-port match, which is the part of
     `addresses()` that is easy to get silently wrong."""
     import tempfile, types
@@ -4191,6 +4252,8 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude):
         # Marked in install.ini [store]: the store shows the reason and offers no install.
         "deprecated": deprecation(s.ini),
         "works_with": works_with(s.ini, s.name),
+        "min_podman": min_podman(s),
+        "podman_too_old": bool(podman_too_old(s)),
         # Armed with `--trial`: the store shows when it ends, and offers to keep it.
         "trial": trial_info(s),
         # How it is reached: the mode in force for it, and whether that is an
@@ -4239,6 +4302,7 @@ def show_catalog(apps=None, home=None):
     saida = {
         "access": saved_access(Path(home) if home else None) or "tailnet",
         "tailnet": bool(tailnet),
+        "podman": ".".join(map(str, podman_version())) if podman_version() else None,
         "apps": [catalog_entry(d, home, tailnet, en, pt, ativos, saude) for d in pastas],
     }
     print(json.dumps(saida, ensure_ascii=False, indent=2))

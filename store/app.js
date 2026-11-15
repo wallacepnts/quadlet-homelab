@@ -9,6 +9,7 @@ const T = {
     installedBadge: "instalado", deprecatedBadge: "descontinuado", deprecatedNote: "Descontinuado:",
     noInstall: "Não dá para instalar este app daqui.",
     worksWith: "Funciona com",
+    podmanOld: (need, host) => `Este app precisa do Podman ${need}+; o host tem ${host}. Atualize o Podman antes de instalar.`,
     hostCpu: "carga", hostMem: "RAM", hostUp: "ligado há",
     trialLabel: "Experimentar", trialKeep: "Manter", trialBadge: "experimento",
     trialNone: "instalar de vez", trialReboot: "até reiniciar o servidor",
@@ -88,6 +89,7 @@ const T = {
     installedBadge: "installed", deprecatedBadge: "discontinued", deprecatedNote: "Discontinued:",
     noInstall: "It cannot be installed from here.",
     worksWith: "Works with",
+    podmanOld: (need, host) => `This app needs Podman ${need}+; the host has ${host}. Update Podman before installing.`,
     hostCpu: "load", hostMem: "RAM", hostUp: "up",
     trialLabel: "Try it", trialKeep: "Keep", trialBadge: "trial",
     trialNone: "install for good", trialReboot: "until the server reboots",
@@ -434,6 +436,7 @@ async function load() {
   const cat = await api(`/api/catalog?lang=${S.lang}`);
   S.apps = cat.apps;
   S.rule = cat.access;
+  S.podman = cat.podman;
   if (!S.view) {
     const hash = (location.hash || "").slice(1);
     S.view = ["apps", "store"].includes(hash) ? hash : (installed().length ? "apps" : "store");
@@ -568,8 +571,10 @@ function renderPanel() {
   // The reason, where it is read; and a service that is discontinued is not offered for install.
   const motivo = depReason(a);
   const trial = a.installed && a.trial ? t("trialEnds")(trialWhen(a.trial), a.trial.purge) : null;
-  $("p-notice").hidden = !motivo && !trial;
+  const velho = a.podman_too_old ? t("podmanOld")(a.min_podman, S.podman) : null;
+  $("p-notice").hidden = !motivo && !trial && !velho;
   if (motivo) $("p-notice").textContent = `${t("deprecatedNote")} ${motivo}${a.installed ? "" : ` ${t("noInstall")}`}`;
+  else if (velho) $("p-notice").textContent = velho;
   else if (trial) $("p-notice").textContent = trial;
   const acoes = [];
   if (!a.installed) {

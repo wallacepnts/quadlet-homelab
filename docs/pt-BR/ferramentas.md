@@ -308,6 +308,11 @@ nada marca um serviço sozinho.
 para o seu painel, com ✓ quando instalada. Nunca é requisito (isso é o dono de uma
 rede, que o `qh` já exige); o `check.py` reprova nome que não seja uma pasta.
 
+**Podman mínimo**: uma unit com `Notify=healthy` exige o Podman 5.0, e `[store]
+min_podman = 5.4` sobe esse piso para um serviço que usa uma chave de Quadlet mais
+nova. O `qh` avisa antes de instalar num host mais antigo e a loja mostra no
+painel; não recusa. `QH_PODMAN_VERSION` substitui o que o host informa.
+
 A **Personalizar** muda um serviço instalado sem tocar na unit do repositório:
 portas, volumes, variáveis extras, dispositivos, capabilities extras e a
 política de reinício, no desenho do formulário que o CasaOS tem para um app. A

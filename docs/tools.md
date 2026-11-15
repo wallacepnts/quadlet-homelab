@@ -305,6 +305,11 @@ It is a decision a person writes down: nothing marks a service by itself.
 to its panel, ticked when installed. It is never a requirement (that is a network's
 owner, which `qh` already enforces); `check.py` fails a name that is not a folder.
 
+**Minimum Podman**: a unit with `Notify=healthy` needs Podman 5.0, and `[store]
+min_podman = 5.4` raises that floor for a service that uses a newer Quadlet key.
+`qh` warns before installing on an older host and the store shows it in the panel;
+it does not refuse. `QH_PODMAN_VERSION` overrides what the host reports.
+
 **Customize** changes an installed service without touching the repository's
 unit: ports, volumes, extra variables, devices, extra capabilities and the
 restart policy, laid out like the form CasaOS has for an app. The change is a

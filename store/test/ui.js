@@ -187,6 +187,14 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   await api.pollHost();
   confere($("host").textContent === "carga 25% · RAM 2.0/8.0 GB · 50 °C · ligado há 1 d", `topo: resumo do servidor (${$("host").textContent})`);
 
+  // minimum Podman: the panel says when the host is older than the app needs
+  api.S.podman = "4.9.0";
+  Object.assign(api.S.apps.find((x) => x.id === "homebox"), { podman_too_old: true, min_podman: "5.0" });
+  api.openPanel("homebox"); await esperar(50);
+  confere(/precisa do Podman 5\.0\+; o host tem 4\.9\.0/.test($("p-notice").textContent), `painel: Podman antigo (${$("p-notice").textContent})`);
+  api.S.apps.find((x) => x.id === "homebox").podman_too_old = false;
+  $("panel").open = false;
+
   // works with: suggested companions, as links; the installed ones are ticked
   api.S.apps.find((x) => x.id === "homebox").works_with = ["memos", "gitea", "naoexiste"];
   api.openPanel("homebox"); await esperar(50);
