@@ -1117,19 +1117,24 @@ def control_cmds(app, verbo, estados=None):
         estados = {} if PREFIX else I.host_state()[1]
     por_estado = {u.stem: I.estado_do_container(estados.get(I.container_name(u), "—")) for u in instaladas}
     nomes = {u.stem: I.container_name(u) for u in instaladas}
+    mascaradas = [u.stem for u in instaladas if I.unit_masked(s.home, u.stem)]
     parados = [x for x, e in por_estado.items() if e == "paused"]
     rodando = [x for x, e in por_estado.items() if e in ("up", "healthy", "unhealthy")]
     if verbo == "pause":
         return ([["podman", "pause", *(nomes[x] for x in rodando)]], "pause") if rodando else ([], None)
     if verbo == "stop":
-        if not parados and not rodando and all(e == "—" for e in por_estado.values()):
+        if len(mascaradas) == len(instaladas):
             return [], None
-        # a frozen container does not stop on SIGTERM: thaw first
+        # Masked, not just stopped: a plain stop is undone by the next boot, which starts every
+        # unit wanted by default.target. Mask is what survives it; play lifts it. A frozen
+        # container does not stop on SIGTERM, so it is thawed first.
         return ([["podman", "unpause", *(nomes[x] for x in parados)]] if parados else []) \
-            + [["systemctl", "--user", "stop", *(u.stem for u in instaladas)]], "stop"
+            + [["systemctl", "--user", "mask", "--now", *(u.stem for u in instaladas)]], "stop"
     # play: thaw what is frozen, start what is not running
     cmds = [["podman", "unpause", *(nomes[x] for x in parados)]] if parados else []
     faltam = [u for u in instaladas if por_estado[u.stem] not in ("up", "healthy", "unhealthy", "paused")]
+    if mascaradas:
+        cmds.append(["systemctl", "--user", "unmask", *mascaradas])
     if faltam:
         cmds.append(["systemctl", "--user", "start", *(u.stem for u in faltam)])
     return cmds, ("resume" if parados and not faltam else "start") if cmds else None
@@ -1739,7 +1744,12 @@ class Handler(BaseHTTPRequestHandler):
             # Recorded under the service, with the unit beside it, so a service's
             # history holds its restarts as well as its installs.
             pasta = next(I.APPS.glob(f"*/{unit}.container")).parent.name
-            job = start_job(pasta, verbo, ["systemctl", "--user", verbo, unit], lang,
+            cmd_unit = ["systemctl", "--user", verbo, unit]
+            if verbo == "stop":
+                cmd_unit = ["systemctl", "--user", "mask", "--now", unit]    # stays stopped after a reboot
+            if verbo in ("start", "restart") and I.unit_masked(PREFIX or Path.home(), unit):
+                cmd_unit = [["systemctl", "--user", "unmask", unit], cmd_unit]     # it was stopped on purpose
+            job = start_job(pasta, verbo, cmd_unit, lang,
                             origem=self.client_address[0], unit=unit)
         else:
             return self._json(404, {"error": "not found"})
@@ -1967,8 +1977,16 @@ def selftest():
             cmds, acao = control_cmds("homebox", "play", parado)
             assert acao == "start" and cmds == [["systemctl", "--user", "start", "homebox"]], cmds
             cmds, _ = control_cmds("homebox", "stop", congelado)
-            assert cmds[0] == ["podman", "unpause", "homebox"] and cmds[-1][:3] == ["systemctl", "--user", "stop"], "a frozen one is thawed before it is stopped"
-            assert control_cmds("homebox", "stop", parado) == ([], None)
+            assert cmds[0] == ["podman", "unpause", "homebox"] and cmds[-1][:4] == ["systemctl", "--user", "mask", "--now"], "a frozen one is thawed before it is stopped, and masked so a reboot keeps it so"
+            cmds, _ = control_cmds("homebox", "stop", parado)
+            assert cmds == [["systemctl", "--user", "mask", "--now", "homebox"]], "a stopped one is masked too: it would come back at the next boot"
+            masc = Path(tmp, ".config/systemd/user/homebox.service")
+            masc.parent.mkdir(parents=True, exist_ok=True)
+            masc.symlink_to("/dev/null")
+            assert control_cmds("homebox", "stop", parado) == ([], None), "masked already: nothing to do"
+            assert control_cmds("homebox", "play", parado)[0] == [["systemctl", "--user", "unmask", "homebox"],
+                                                                 ["systemctl", "--user", "start", "homebox"]], "play lifts the mask, then starts"
+            masc.unlink()
             assert pedir("/api/control", json.dumps({"app": "homebox", "verb": "dance"}).encode(), api)[0] == 400
             assert pedir("/api/control", json.dumps({"app": "nope", "verb": "stop"}).encode(), api)[0] == 400
             assert pedir("/api/control", json.dumps({"app": "homebox", "verb": "pause"}).encode(), api)[0] == 400, "nothing is running in the sandbox"

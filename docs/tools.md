@@ -321,8 +321,14 @@ It is a decision a person writes down: nothing marks a service by itself.
 **Play, pause and stop** (▶ ⏸ ■ on each installed app, in My apps and in its panel) act on the
 whole service. Play starts what is not running and thaws what is paused; pause freezes the running
 containers with `podman pause` (the units stay `active` for systemd, the app shows "paused" and its
-memory stays allocated); stop stops every unit of the service together, thawing a frozen one first,
-as a frozen container ignores SIGTERM. Each button is enabled only where it does something. They run
+memory stays allocated), and a reboot brings the app back running, since the processes were
+never saved; stop stops every unit of the service together (thawing a frozen one first, as it
+ignores SIGTERM) and **masks** them (`systemctl --user mask --now`), which is what survives a
+reboot: the units are wanted by `default.target`, so a plain stop is undone at the next boot. Play
+unmasks, then starts. A masked service shows as "stopped", not as a problem; `qh --update` pulls
+the new image and skips the restart (and says so), and `qh --remove` lifts the mask so the name can
+be installed again. Masking is not enable/disable (rule 4): the generated unit keeps its own
+`[Install]`. Each button is enabled only where it does something. They run
 as jobs, so they appear in the history.
 
 **Resources** (the header button, and a hint after an update) lists what Podman keeps

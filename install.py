@@ -1238,8 +1238,11 @@ def plan_install(s, tailnet, force=False, interactive=False, access="tailnet",
         # what was stopped.
         cname = container_name(main) if waits_for_health(main) else None
         mark = "  (follows the log while it starts)" if cname else ""
-        steps.append((f"systemctl --user restart {unit}{mark}",
-                      lambda unit=unit, cname=cname: restart_unit(unit, cname)))
+        if unit_masked(s.home, unit):
+            steps.append(skipped_restart(unit))
+        else:
+            steps.append((f"systemctl --user restart {unit}{mark}",
+                          lambda unit=unit, cname=cname: restart_unit(unit, cname)))
     else:
         names = " ".join(sorted(u.stem for u in s.units if u.suffix == ".container"))
         warnings.append(f"stack with no main unit — start the one you want: "
@@ -1663,6 +1666,9 @@ def plan_update(s, access="tailnet", href_local=False):
         path = paths.get(unit)
         cname = container_name(path) if path and waits_for_health(path) else None
         mark = "  (follows the log while it starts)" if cname else ""
+        if unit_masked(s.home, unit):
+            steps.append(skipped_restart(unit))
+            continue
         steps.append((f"systemctl --user restart {unit}{mark}",
                       lambda unit=unit, cname=cname: restart_unit(unit, cname)))
     return steps, warnings
@@ -2004,6 +2010,10 @@ def plan_remove(s, purge):
     """Stops, removes the units and (only with --purge) deletes volumes and secrets."""
     steps, warnings = [], []
     units = service_units(s)
+    # A mask left behind would make the next install of this name fail to start.
+    if any(unit_masked(s.home, u) for u in units):
+        steps.append((f"systemctl --user unmask {' '.join(units)}  (it was stopped on purpose)",
+                      lambda: unmask_units(s.home, units)))
     steps.append((f"systemctl --user stop {' '.join(units)}",
                   lambda: run_lenient(["systemctl", "--user", "stop", *units])))
     # reset-failed: without it the 'failed' state stays dangling after the unit
@@ -2640,6 +2650,38 @@ def container_name(unit_path):
         if key == "ContainerName":
             return value
     return unit_path.stem
+
+
+def unit_masked(home, unit):
+    """True when the unit was stopped on purpose (the store's stop): masked, which survives a reboot.
+
+    `systemctl mask` is a symlink to /dev/null in the user's unit directory. It is not enable/disable
+    (conventions, rule 4): the generated unit keeps its own [Install], and unmasking gives it back."""
+    p = Path(home or Path.home()) / ".config/systemd/user" / f"{unit}.service"
+    try:
+        return p.is_symlink() and os.readlink(p) == "/dev/null"
+    except OSError:
+        return False
+
+
+def unmask_units(home, units):
+    """Lifts the mask from those that have one. In the sandbox the symlink is just a file, so remove it."""
+    mascaradas = [u for u in units if unit_masked(home, u)]
+    if not mascaradas:
+        return
+    if SANDBOX:
+        for u in mascaradas:
+            (Path(home) / ".config/systemd/user" / f"{u}.service").unlink()
+        return
+    run_lenient(["systemctl", "--user", "unmask", *mascaradas])
+
+
+def skipped_restart(unit):
+    """The step in place of a restart for a unit stopped on purpose: restarting it would undo the stop."""
+    texto = (f"systemctl --user restart {unit}  — pulado: parado de propósito (▶ na loja, ou `systemctl --user unmask {unit}`)"
+             if qhui.PTBR else
+             f"systemctl --user restart {unit}  — skipped: stopped on purpose (play in the store, or `systemctl --user unmask {unit}`)")
+    return (texto, lambda: None)
 
 
 def restart_unit(unit, container=None):
@@ -4049,7 +4091,7 @@ ESTADOS = {
     "service": "serviço", "unit": "unit", "container": "container", "repo": "repo",
     "active": "ativo", "inactive": "inativo", "failed": "falhou",
     "activating": "iniciando", "deactivating": "parando",
-    "healthy": "saudável", "unhealthy": "doente", "up": "no ar", "down": "parado", "paused": "pausado",
+    "healthy": "saudável", "unhealthy": "doente", "up": "no ar", "down": "parado", "paused": "pausado", "stopped": "parado de propósito",
     "changed": "mudou",
 }
 
@@ -4227,7 +4269,10 @@ def show_status(apps=None, home=None):
         for u in units:
             deriva = unit_deriva(s, u)
             e, c = ativos.get(u.stem, "—"), estado_container(u)
-            if e != "active" or c in ("unhealthy", "down"):
+            parado = unit_masked(s.home, u.stem)
+            if parado:
+                e = "stopped"          # chosen, so not a problem — and it stays visible: it will not come back by itself
+            elif e != "active" or c in ("unhealthy", "down"):
                 problemas += 1
             if deriva:
                 mudados += 1
@@ -4326,6 +4371,7 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude):
             # A drop-in beside the unit (overrides.py): the store's Customize screen wrote it.
             "override": bool(p and overrides.read_override(p) is not None),
             "service": ativos.get(u.stem) if p else None,
+            "stopped": bool(p) and unit_masked(s.home, u.stem),     # stopped on purpose: stays so after a reboot
             "container": estado_do_container(saude.get(container_name(p), "—")) if p else None,
             "drift": (unit_deriva(s, p) or None) if p else None,
         })

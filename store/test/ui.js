@@ -266,6 +266,9 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   bc.units = [unidade("homebox", { service: "inactive", container: null })];
   api.openPanel("homebox"); await esperar(30);
   confere(estadoBotoes() === "on,off,off", `parado: só iniciar (${estadoBotoes()})`);
+  bc.units = [unidade("homebox", { service: "inactive", container: null, stopped: true })];
+  api.setView("apps"); api.renderGrid();
+  confere(/parado/.test($("grid").textContent) && !/Atenção|atenção/.test($("grid").textContent), "parado de propósito: selo neutro, não alarme");
   bc.units = [unidade("homebox")];
   rotas["/api/control"] = { job: "jc" }; rotas["/api/job/jc"] = { output: "", next: 0, rc: 0 };
   api.openPanel("homebox"); await esperar(30);

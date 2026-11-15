@@ -706,6 +706,24 @@ def scenario_backup_exclude(tmp):
     check(keep.read_text() == "state" and not cache.exists(), "restore brings the data back, and the excluded folder stays gone (the app rebuilds it)")
 
 
+def scenario_stopped(tmp):
+    """A service stopped on purpose (masked) is left alone by an update, shown as stopped, and unmasked by --remove."""
+    home = str(Path(tmp, "stop-home"))
+    run(APP, "--apply", "--prefix", home)
+    masc = Path(home, ".config/systemd/user", f"{APP}.service")
+    masc.parent.mkdir(parents=True, exist_ok=True)
+    masc.symlink_to("/dev/null")
+    out = run(APP, "--update", "--prefix", home).stdout
+    check("skipped: stopped on purpose" in out, "an update does not restart what was stopped on purpose")
+    st = run("--status", "--prefix", home, expected=0).stdout
+    check("stopped" in st, "--status shows it as stopped, and it is not a problem (exit 0)")
+    import json
+    unit = json.loads(run("--catalog", APP, "--prefix", home).stdout)["apps"][0]["units"][0]
+    check(unit["stopped"] is True, "--catalog carries stopped")
+    run(APP, "--remove", "--apply", "--prefix", home)
+    check(not masc.exists() and not masc.is_symlink(), "--remove lifts the mask, or the next install of this name would not start")
+
+
 def main():
     with tempfile.TemporaryDirectory() as tmp:
         home, out = str(Path(tmp) / "home"), str(Path(tmp) / "backups")
@@ -730,6 +748,7 @@ def main():
         print("removal:");            scenario_remove(home)
 
         print("backup exclude:");      scenario_backup_exclude(tmp)
+        print("stopped on purpose:");  scenario_stopped(tmp)
         print("trials:");              scenario_trial(tmp)
         print("recovery:");           scenario_recovery(tmp)
 

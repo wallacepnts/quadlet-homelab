@@ -324,8 +324,14 @@ nada marca um serviço sozinho.
 **Iniciar, pausar e parar** (▶ ⏸ ■ em cada app instalado, em Meus apps e no painel) agem no
 serviço inteiro. Iniciar sobe o que não está rodando e descongela o que está pausado; pausar
 congela os containers que rodam com `podman pause` (as units seguem `active` para o systemd, o
-app aparece como "pausado" e a memória continua alocada); parar para todas as units do serviço
-juntas, descongelando antes um container congelado, que ignora o SIGTERM. Cada botão só fica
+app aparece como "pausado" e a memória continua alocada), e um reinício traz o app de volta rodando, já que os processos nunca
+foram salvos; parar para todas as units do serviço juntas (descongelando antes um container
+congelado, que ignora o SIGTERM) e as **mascara** (`systemctl --user mask --now`), que é o que
+sobrevive a um reinício: as units são desejadas pelo `default.target`, então um stop simples é
+desfeito no próximo boot. Iniciar desmascara e sobe. Um serviço mascarado aparece como "parado", não
+como problema; o `qh --update` baixa a imagem nova e pula o restart (e avisa), e o `qh --remove`
+tira a máscara para o nome poder ser instalado de novo. Mascarar não é enable/disable (regra 4): a
+unit gerada mantém o próprio `[Install]`. Cada botão só fica
 ativo onde faz algo. Rodam como jobs, então aparecem no histórico.
 
 **Recursos** (o botão do cabeçalho, e uma dica depois de uma atualização) lista o que o

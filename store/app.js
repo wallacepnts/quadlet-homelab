@@ -9,7 +9,7 @@ const T = {
     installedBadge: "instalado", deprecatedBadge: "descontinuado", deprecatedNote: "Descontinuado:",
     noInstall: "Não dá para instalar este app daqui.",
     worksWith: "Funciona com",
-    play: "Iniciar / retomar", pause: "Pausar", stopApp: "Parar", pausedBadge: "pausado", ctlFailed: "Não foi possível:",
+    play: "Iniciar / retomar", pause: "Pausar", stopApp: "Parar", pausedBadge: "pausado", stoppedBadge: "parado", ctlFailed: "Não foi possível:",
     backupFirst: "Backup antes",
     envType: { bool: "sim/não", number: "número", email: "e-mail", url: "URL", ip: "IP", password: "senha" },
     resources: "Recursos", resLoading: "Verificando o Podman…",
@@ -98,7 +98,7 @@ const T = {
     installedBadge: "installed", deprecatedBadge: "discontinued", deprecatedNote: "Discontinued:",
     noInstall: "It cannot be installed from here.",
     worksWith: "Works with",
-    play: "Start / resume", pause: "Pause", stopApp: "Stop", pausedBadge: "paused", ctlFailed: "Could not:",
+    play: "Start / resume", pause: "Pause", stopApp: "Stop", pausedBadge: "paused", stoppedBadge: "stopped", ctlFailed: "Could not:",
     backupFirst: "Back up first",
     envType: { bool: "yes/no", number: "number", email: "email", url: "URL", ip: "IP", password: "password" },
     resources: "Resources", resLoading: "Asking Podman…",
@@ -314,6 +314,8 @@ function mainUnit(app) {
 function health(app) {
   const inst = app.units.filter((u) => u.installed);
   if (!inst.length) return null;
+  // Stopped on purpose (masked): not an alarm, and it will stay so after a reboot.
+  if (inst.every((u) => u.stopped)) return ["plain", t("stoppedBadge")];
   if (inst.some((u) => u.service !== "active" || ["unhealthy", "down"].includes(u.container)))
     return ["bad", t("attention")];
   const rows = inst.map((u) => S.upd[u.unit]).filter(Boolean);
