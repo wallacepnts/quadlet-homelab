@@ -72,6 +72,13 @@ secrets no lugar e mantém, com aviso. O `--reinstall` sobrescreve.
 leva os volumes, os secrets e o `.env` — os dois últimos são minúsculos e são o
 que torna o backup restaurável.
 
+**`[backup] exclude`** no `install.ini` de um serviço lista pastas que se refazem
+sozinhas (miniaturas do Immich, cache do Jellyfin), um padrão por linha, casado em
+qualquer profundidade; dê caminho suficiente (`upload/thumbs`). O `--backup` as
+deixa de fora e diz quanto pula; pasta que este usuário não consegue ler conta como
+desconhecida (`≥`). A restauração recria as pastas de volume vazias, porque bind
+mount de diretório inexistente não sobe. Os jobs do zerobyte leem a mesma chave.
+
 **O `--restore` é troca, não mistura.** Ele apaga a raiz do volume antes de
 extrair, confere se o arquivo é daquele serviço, e pede o nome digitado pra
 confirmar.

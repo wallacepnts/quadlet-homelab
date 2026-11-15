@@ -73,6 +73,13 @@ still in place and keeps them, with a warning. `--reinstall` overwrites them.
 `.tar.gz` carries the volumes, the secrets and the `.env` — the last two are
 tiny and are what makes it restorable.
 
+**`[backup] exclude`** in a service's `install.ini` lists folders that rebuild
+themselves (Immich's thumbnails, Jellyfin's cache), one pattern per line, matched
+at any depth, so give enough of the path (`upload/thumbs`). `--backup` leaves them
+out and says how much it skips; a folder this user cannot read counts as unknown
+(`≥`). The restore recreates the empty volume folders, since a bind mount of a
+missing directory would not start. Zerobyte's jobs read the same key.
+
 **`--restore` is a swap, not a merge.** It deletes the volume root before
 extracting, checks the archive belongs to that service, and asks for the typed
 name to confirm.

@@ -263,6 +263,9 @@ PT = {
     'the trials armed, and when each ends': 'os experimentos armados, e quando cada um termina',
     'at the next reboot': 'no próximo reinício',
     'and DELETES its data': 'e APAGA os dados', 'keeping its data': 'mantendo os dados',
+    'the backup leaves out': 'o backup deixa de fora',
+    'they rebuild themselves; the restore recreates the empty folders': 'eles se refazem; a restauração recria as pastas vazias',
+    '[backup] exclude matches nothing here:': '[backup] exclude não casa com nada aqui:',
     'this service needs Podman': 'este serviço precisa do Podman',
     'the host has': 'o host tem',
     'this service is marked deprecated:': 'este serviço está marcado como descontinuado:',
@@ -1657,6 +1660,69 @@ def plan_update(s, access="tailnet", href_local=False):
     return steps, warnings
 
 
+def backup_excludes(s):
+    """Patterns from `[backup] exclude`, one per line: what a backup leaves out because it rebuilds itself.
+
+    The same key zerobyte's jobs read. For `tar` each is a pattern that matches at any depth,
+    so give enough of the path to be unambiguous (`upload/thumbs`, not `thumbs`)."""
+    bruto = s.ini.get("backup", "exclude", fallback="") if s.ini.has_section("backup") else ""
+    return [l.strip() for l in bruto.splitlines() if l.strip()]
+
+
+def matches_exclude(rel, patterns):
+    """Whether tar's --exclude would skip `rel` (a path under the archive root): any trailing run of components."""
+    import fnmatch
+    partes = Path(rel).parts
+    return any(fnmatch.fnmatchcase("/".join(partes[i:]), p) for p in patterns for i in range(len(partes)))
+
+
+def excluded_report(base, targets, patterns):
+    """[(relative path, bytes or None)] for what the patterns would leave out of the archive.
+
+    A directory is counted whole and not entered again. None is a size this user cannot read —
+    a volume owned by a service's own uid — and it is shown as unknown, not as zero."""
+    achados = []
+    for alvo in targets:
+        pilha = [Path(alvo)]
+        while pilha:
+            rel = pilha.pop()
+            caminho = base / rel
+            if matches_exclude(rel, patterns):
+                achados.append((str(rel), tree_bytes(caminho)))
+                continue
+            try:
+                if caminho.is_dir() and not caminho.is_symlink():
+                    pilha.extend(rel / e.name for e in os.scandir(caminho))
+            except OSError:
+                pass
+    return sorted(achados)
+
+
+def tree_bytes(caminho):
+    """Total size of a file or directory tree; None when part of it cannot be read."""
+    total, legivel = 0, True
+    pilha = [caminho]
+    while pilha:
+        p = pilha.pop()
+        try:
+            if p.is_symlink():
+                continue
+            if p.is_dir():
+                pilha.extend(Path(e.path) for e in os.scandir(p))
+            else:
+                total += p.stat().st_size
+        except OSError:
+            legivel = False
+    return total if legivel else None
+
+
+def human_bytes(n):
+    for unidade in ("B", "KB", "MB", "GB", "TB"):
+        if n < 1024 or unidade == "TB":
+            return f"{n:.0f} {unidade}" if unidade == "B" else f"{n:.1f} {unidade}"
+        n /= 1024
+
+
 def plan_backup(s, destination):
     """Cold backup of the data: stops the service, packs it, brings it back.
 
@@ -1719,8 +1785,22 @@ def plan_backup(s, destination):
                   lambda: archive.parent.mkdir(parents=True, exist_ok=True)))
     steps.append((f"systemctl --user stop {' '.join(units)}",
                   lambda: run_lenient(["systemctl", "--user", "stop", *units])))
-    steps.append((f"tar czf {archive}\n         from {base}: {' '.join(targets)}",
-                  lambda: tar_cmd("czf", str(archive), "-C", str(base), *targets)))
+    excl = backup_excludes(s)
+    fora = excluded_report(base, targets, excl) if excl else []
+    if excl:
+        soma = sum(b for _, b in fora if b is not None)
+        desconhecidos = any(b is None for _, b in fora)
+        if fora:
+            warnings.append(loc("the backup leaves out") + f" {'≥ ' if desconhecidos else ''}{human_bytes(soma)}: "
+                            + ", ".join(f"{r} ({human_bytes(b) if b is not None else '?'})" for r, b in fora[:6])
+                            + (f" (+{len(fora) - 6})" if len(fora) > 6 else "")
+                            + " — " + loc("they rebuild themselves; the restore recreates the empty folders"))
+        else:
+            warnings.append(loc("[backup] exclude matches nothing here:") + " " + ", ".join(excl))
+    skip = [f"--exclude={p}" for p in excl]
+    steps.append((f"tar czf {archive}\n         from {base}: {' '.join(targets)}"
+                  + (f"\n         without: {' '.join(excl)}" if excl else ""),
+                  lambda: tar_cmd("czf", str(archive), *skip, "-C", str(base), *targets)))
     main = s.main_unit()
     restart = [main.stem] if main else units
     for unit in restart:
@@ -1854,6 +1934,13 @@ def plan_restore(s, archive):
                                lambda a=alvo: swap_in(temporario / a, base / a))))
     steps.append((f"rm -rf {temporario}",
                   rotulado(None, Recovery(lambda: _rmtree(temporario)))))
+    # An archive that left folders out (`[backup] exclude`) comes back without them, and a bind
+    # mount of a directory that does not exist fails the start (conventions, rule 6).
+    if restored:
+        faltam = [Path(p) for p, arq in s.volumes() if not arq and str(p).startswith(str(base / "volumes") + "/")]
+        if faltam:
+            steps.append(("mkdir -p the volume folders the swap left out",
+                          lambda faltam=faltam: [p.mkdir(parents=True, exist_ok=True) for p in faltam]))
     # Per unit, like the install: one unit's User= must not chown a sibling's
     # directory. Only what the archive carries — a chown on a path that was not
     # extracted fails, and run() uses check=True, which would abort the plan

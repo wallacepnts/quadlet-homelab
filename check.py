@@ -364,6 +364,21 @@ def deprecated_problemas(valor):
     return saida
 
 
+def backup_problemas(ini):
+    """What is wrong with an install.ini [backup] section, as a list."""
+    saida = []
+    for key, valor in ini.items("backup"):
+        if key not in ("mode", "exclude"):
+            saida.append(f"has no key {key!r} (only `mode` and `exclude`)")
+        elif key == "mode" and valor.strip() != "stop":
+            saida.append("mode must be `stop`")
+        elif key == "exclude":
+            for p in (l.strip() for l in valor.splitlines() if l.strip()):
+                if p.startswith("/") or ".." in Path(p).parts:
+                    saida.append(f"exclude {p!r}: a pattern relative to the volumes, no leading / and no ..")
+    return saida
+
+
 def works_with_problemas(valor, proprio, existentes):
     """What is wrong with `[store] works_with`, as a list: names of other service folders, comma-separated."""
     nomes = [x.strip() for x in valor.split(",")]
@@ -582,6 +597,9 @@ def check_manifest(folders):
             if problema:
                 error("manifest", f"apps/{folder.name}: install.ini [upstream] {key} = "
                                   f"{valor} — {problema}")
+        if ini.has_section("backup"):
+            for problema in backup_problemas(ini):
+                error("manifest", f"apps/{folder.name}: install.ini [backup] {problema}")
         # [store] is what the app store shows about the service. Only
         # `screenshots` exists; any other key is a typo that would be ignored.
         if ini.has_section("store"):
@@ -953,6 +971,13 @@ def selftest():
     # [store] repo: owner/repo on GitHub, or a full https URL
     assert repo_problemas("netbootxyz/netboot.xyz") == [] and repo_problemas("https://codeberg.org/o/r") == []
     assert repo_problemas("") and repo_problemas("not a repo") and repo_problemas("http://github.com/o/r") and repo_problemas("a/b/c")
+
+    # [backup]: mode and exclude only; exclude is relative
+    import configparser as _cp
+    _i = _cp.ConfigParser(interpolation=None); _i.read_string("[backup]\nmode = stop\nexclude =\n    upload/thumbs\n")
+    assert backup_problemas(_i) == []
+    _i.read_string("[backup]\nexclude =\n    /abs\n    a/../b\nfoo = 1\n")
+    assert len(backup_problemas(_i)) == 3
 
     # [store] min_podman: a version like 5.4
     assert re.fullmatch(r"\d+\.\d+(\.\d+)?", "5.4") and not re.fullmatch(r"\d+\.\d+(\.\d+)?", "five")

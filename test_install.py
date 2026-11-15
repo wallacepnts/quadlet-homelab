@@ -669,6 +669,42 @@ def scenario_trial(tmp):
     check("not due yet" in r.stdout, "…and does not end within the same boot")
 
 
+def scenario_backup_exclude(tmp):
+    """`[backup] exclude` leaves rebuildable folders out of the archive, says how much, and the restore brings the folders back."""
+    raiz = Path(tmp, "bx-repo")
+    raiz.mkdir()
+    for f in ("install.py", "qhui.py", "overrides.py", "trials.py"):
+        shutil.copy(ROOT / f, raiz / f)
+    shutil.copytree(ROOT / "apps", raiz / "apps", ignore_dangling_symlinks=True)
+    with open(raiz / "apps" / APP / "install.ini", "a") as fh:
+        fh.write("\n[backup]\nexclude =\n    data/cache\n    nothing/here\n")
+    home, out = str(Path(tmp, "bx-home")), str(Path(tmp, "bx-out"))
+
+    def executa(*args, stdin=""):
+        r = subprocess.run([sys.executable, str(raiz / "install.py"), *args], capture_output=True, text=True,
+                           cwd=raiz, input=stdin, env={**os.environ, "QH_LANG": "en"})
+        return r.stdout + r.stderr
+    executa(APP, "--apply", "--prefix", home)
+    cache = path(home, "volumes", APP, "data", "cache")
+    cache.mkdir(parents=True)
+    (cache / "blob").write_bytes(b"x" * 3000)
+    keep = path(home, "volumes", APP, "data", "db.sqlite")
+    keep.write_text("state")
+    plano = executa(APP, "--backup", "--prefix", home, "--out", out)
+    check("the backup leaves out" in plano and "data/cache" in plano and "2.9 KB" in plano,
+          "the plan says how much the backup leaves out")
+    check("exclude matches nothing here" not in plano, "…and a pattern that matches something is not called useless")
+    executa(APP, "--backup", "--apply", "--prefix", home, "--out", out)
+    tgz = next(Path(out).glob(f"{APP}-*.tar.gz"))
+    with tarfile.open(tgz) as t:
+        dentro = t.getnames()
+    check(any(n.endswith("db.sqlite") for n in dentro) and not any("data/cache" in n for n in dentro),
+          "the archive has the data and not the excluded folder")
+    shutil.rmtree(cache)
+    executa(APP, "--restore", str(tgz), "--apply", "--prefix", home, stdin=f"{APP}\n")
+    check(keep.read_text() == "state" and not cache.exists(), "restore brings the data back, and the excluded folder stays gone (the app rebuilds it)")
+
+
 def main():
     with tempfile.TemporaryDirectory() as tmp:
         home, out = str(Path(tmp) / "home"), str(Path(tmp) / "backups")
@@ -692,6 +728,7 @@ def main():
             print("restore refuses:"); scenario_restore_refuses(home, tgz, out)
         print("removal:");            scenario_remove(home)
 
+        print("backup exclude:");      scenario_backup_exclude(tmp)
         print("trials:");              scenario_trial(tmp)
         print("recovery:");           scenario_recovery(tmp)
 
