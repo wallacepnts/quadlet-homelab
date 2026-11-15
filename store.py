@@ -468,22 +468,70 @@ def recipe_base():
 RECIPE = {}
 
 
+def repo_from_field(valor):
+    """The project's page from `[store] repo`: `owner/repo` on GitHub, or a full https URL."""
+    v = (valor or "").strip().rstrip("/")
+    if REPO.fullmatch(v):
+        return f"https://github.com/{v}"
+    return v if re.fullmatch(r"https://[A-Za-z0-9.-]+/[A-Za-z0-9._/-]+", v) else None
+
+
+def issues_url(repo):
+    """Where a project takes bug reports, for the hosts whose address is known; else None."""
+    host = repo.split("/")[2] if repo.startswith("https://") else ""
+    if host in ("github.com", "codeberg.org"):
+        return repo + "/issues"
+    if host == "gitlab.com":
+        return repo + "/-/issues"
+    return None
+
+
+def docs_url(app):
+    """The documentation link the service README already names in its Credits, or None.
+
+    A person chose it there (82 of the 83 READMEs have one), so it is read from that
+    file instead of being written down a second time in install.ini."""
+    readme = I.APPS / app / "README.md"
+    if not readme.is_file():
+        return None
+    secao = re.search(r"^## Credits\s*\n(.*?)(?=^## |\Z)", readme.read_text(), re.S | re.M)
+    m = re.search(r"\[Official documentation\]\((https?://[^)\s]+)\)", secao.group(1)) if secao else None
+    return m.group(1) if m else None
+
+
+def same_page(a, b):
+    """Whether two addresses are the same page, ignoring a #fragment and a trailing slash."""
+    norm = lambda u: u.split("#")[0].rstrip("/").lower()
+    return norm(a) == norm(b)
+
+
 def links(app):
-    """[{kind, url}]: the project, its releases and image page, and this repo's recipe."""
+    """[{kind, url}]: the project, its documentation and issues, releases, image page, and this repo's recipe.
+
+    The project's repository comes from `[store] repo` when the unit's own image would point
+    at the wrong place (the registry path is not always the repository's); else from the
+    sources `repo_url` trusts."""
     s = I.Service(app, PREFIX)
     principal = s.main_unit()
     saida = []
+    repo = repo_from_field(s.ini.get("store", "repo", fallback=None)) if s.ini.has_section("store") else None
+    imagem = ""
     if principal:
         imagem = next((v for k, v in I.directives_of(principal) if k == "Image"), "")
         override = s.ini.get("upstream", principal.stem, fallback=None) if s.ini.has_section("upstream") else None
-        repo = repo_url(imagem, override)
-        if repo:
-            saida.append({"kind": "repo", "url": repo})
-            if repo.startswith("https://github.com/"):
-                saida.append({"kind": "releases", "url": repo + "/releases"})
-        pagina = image_page(imagem)
-        if pagina:
-            saida.append({"kind": "image", "url": pagina})
+        repo = repo or repo_url(imagem, override)
+    if repo:
+        saida.append({"kind": "repo", "url": repo})
+    docs = docs_url(app)
+    if docs and not (repo and same_page(docs, repo)):      # a README anchor of the repo is the repo
+        saida.append({"kind": "docs", "url": docs})
+    if repo and issues_url(repo):
+        saida.append({"kind": "issues", "url": issues_url(repo)})
+    if repo and repo.startswith("https://github.com/"):
+        saida.append({"kind": "releases", "url": repo + "/releases"})
+    pagina = image_page(imagem) if imagem else None
+    if pagina:
+        saida.append({"kind": "image", "url": pagina})
     base = recipe_base()
     if base:
         saida.append({"kind": "recipe", "url": f"{base}/tree/main/apps/{app}"})
@@ -1811,6 +1859,7 @@ def selftest():
             # links: this repo's recipe for it, and the project where one is known
             lk = {x["kind"]: x["url"] for x in json.loads(pedir("/api/links?app=vaultwarden", headers=ok)[2])["links"]}
             assert lk["repo"] == "https://github.com/dani-garcia/vaultwarden", lk
+            assert lk["issues"] == "https://github.com/dani-garcia/vaultwarden/issues" and lk["docs"].startswith("https://"), lk
             assert lk["releases"].endswith("/releases") and lk["image"].startswith("https://hub.docker.com/")
             st, _, _ = pedir("/api/links?app=../x", headers=ok)
             assert st == 400, st
@@ -1970,6 +2019,27 @@ def selftest():
     assert remote_https("git@github.com:me/quadlet-homelab.git\n") == "https://github.com/me/quadlet-homelab"
     assert remote_https("https://github.com/me/quadlet-homelab") == "https://github.com/me/quadlet-homelab"
     assert remote_https("git@example.org:me/x.git") is None
+
+    # links: the documentation is the one the README names, the issues come from the repository
+    assert repo_from_field("owner/repo") == "https://github.com/owner/repo"
+    assert repo_from_field("https://codeberg.org/o/r/") == "https://codeberg.org/o/r"
+    assert repo_from_field("javascript:alert(1)") is None and repo_from_field("a b/c") is None and repo_from_field("") is None
+    assert issues_url("https://github.com/o/r") == "https://github.com/o/r/issues"
+    assert issues_url("https://gitlab.com/o/r") == "https://gitlab.com/o/r/-/issues"
+    assert issues_url("https://codeberg.org/o/r") == "https://codeberg.org/o/r/issues"
+    assert issues_url("https://example.org/o/r") is None, "a host whose issue tracker's address is not known gets no guess"
+    assert same_page("https://github.com/o/r#readme", "https://github.com/o/r/") and not same_page("https://o.org/", "https://github.com/o/r")
+    with tempfile.TemporaryDirectory() as dd:
+        antes, I.APPS = I.APPS, Path(dd)
+        try:
+            (I.APPS / "demo").mkdir()
+            (I.APPS / "demo" / "README.md").write_text("# Demo\n\n## Credits\n\n[o/r](https://github.com/o/r) — MIT\n\n"
+                "[Official documentation](https://docs.example.org/demo)\n\n## Other\n\n[Official documentation](https://wrong.example)\n")
+            assert docs_url("demo") == "https://docs.example.org/demo", "read from the Credits section only"
+            (I.APPS / "demo" / "README.md").write_text("# Demo\n\nno credits here\n")
+            assert docs_url("demo") is None and docs_url("nao-existe") is None
+        finally:
+            I.APPS = antes
 
     # what the history keeps of an output: no credential, only the tail, a bounded file
     assert redact("  user:     joe\n  password: s3cret\n  usuário:  ana\n  senha:    x\nok: y") == \

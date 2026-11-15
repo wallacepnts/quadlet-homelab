@@ -64,7 +64,8 @@ const rotas = {
   "/api/stats": { stats: { homebox: { cpu: 1.5, mem: 150 * 1048576 } } },
   "/api/disk": { bytes: 5 * 1048576, paths: [] },
   "/api/arch": { host: "arm64", runs: ["amd64"], units: [{ unit: "homebox", ok: false }] },
-  "/api/links": { links: [{ kind: "repo", url: "https://github.com/o/r" }, { kind: "releases", url: "https://github.com/o/r/releases" },
+  "/api/links": { links: [{ kind: "repo", url: "https://github.com/o/r" }, { kind: "docs", url: "https://docs.example.org/r" },
+    { kind: "issues", url: "https://github.com/o/r/issues" }, { kind: "releases", url: "https://github.com/o/r/releases" },
     { kind: "recipe", url: "https://github.com/me/qh/tree/main/apps/homebox" }] },
   "/api/history": { entries: [
     { id: "a1", app: "homebox", action: "install", unit: "", start: 1700000000, end: 1700000042, rc: 0, from: "127.0.0.1" },
@@ -135,6 +136,11 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   confere(!shots.hidden && [...shots.walk()].filter((e) => e.tag === "img").length === 2, "galeria: duas capturas");
   confere([...shots.walk()].filter((e) => e.tag === "a").every((a) => a.attrs.target === "_blank" && /noopener/.test(a.attrs.rel)), "galeria: outra aba, com noopener");
   confere(/Projeto ↗/.test($("p-project").textContent) && /Releases ↗/.test($("p-project").textContent), "links do projeto");
+  const ancorasProjeto = [...$("p-project").walk()].filter((e) => e.tag === "a");
+  confere(ancorasProjeto.map((a) => a.textContent).slice(0, 3).join("|") === "Projeto ↗|Documentação ↗|Problemas ↗",
+    `links: Projeto, Documentação e Problemas, nessa ordem (${ancorasProjeto.map((a) => a.textContent).join("|")})`);
+  confere(ancorasProjeto.find((a) => /Problemas/.test(a.textContent)).attrs.href === "https://github.com/o/r/issues"
+    && ancorasProjeto.every((a) => a.attrs.target === "_blank" && /noopener/.test(a.attrs.rel)), "Problemas leva às issues, e todos abrem em outra aba com noopener");
   await api.openHistory("homebox"); await esperar(50);
   const linhasHist = [...$("h-list").walk()].filter((e) => e.tag === "tr" && e.attrs.class === "run");
   confere($("history").open && linhasHist.length === 2 && /✓/.test(linhasHist[0].textContent) && /✗ 1/.test(linhasHist[1].textContent), "histórico: linhas com o resultado");

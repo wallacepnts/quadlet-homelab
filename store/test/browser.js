@@ -91,6 +91,9 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
   const app = MODO === "sandbox" ? "HomeBox" : "Actual Budget";
   await abrir(app); await ate("document.getElementById('p-info').textContent.includes('Disco') && !document.getElementById('p-info').textContent.includes('calculando')", 25000);
   console.log("botões:", await ev("[...document.querySelectorAll('#p-actions button')].map(b=>b.textContent).join(' | ')"));
+  await ate("document.querySelectorAll('#p-project a').length > 2", 8000);
+  console.log("links do projeto:", mascara(await ev("[...document.querySelectorAll('#p-project a')].map((a) => a.textContent.replace(' ↗', '') + '=' + a.href).join('  |  ')")));
+  await foto("00-painel-links");
   console.log("Personalizar:", await botao("Personalizar")); await ate("!!document.querySelector('#p-section .cust')", 10000); await esperar(400);
   console.log("grupos:", await ev("[...document.querySelectorAll('.cust-group h4')].map(h => h.firstChild.textContent).join(' | ')"));
   console.log("linhas:", await ev("[...document.querySelectorAll('.cust-group')].map(g => g.querySelector('h4').firstChild.textContent + '=' + g.querySelectorAll('.cust-row').length).join(' ')"), "| restart:", await ev("[...document.querySelectorAll('#p-section .cust-group')].pop().querySelector('select').value"));

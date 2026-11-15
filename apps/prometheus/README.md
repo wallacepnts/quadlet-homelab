@@ -122,4 +122,4 @@ podman exec prometheus wget -qO- 'http://127.0.0.1:9090/api/v1/query?query=up'
 
 [Prometheus](https://github.com/prometheus/prometheus) — Apache-2.0
 
-[Official documentation](https://prometheus.io/docs/prometheus/latest/)
+[Official documentation](https://prometheus.io/docs/introduction/overview/)

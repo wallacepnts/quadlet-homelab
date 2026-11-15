@@ -106,4 +106,4 @@ podman logs -f faved
 
 [denho/faved](https://github.com/denho/faved) — MIT.
 
-[Official documentation](https://faved.to/docs/)
+[Official documentation](https://faved.to/)

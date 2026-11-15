@@ -256,11 +256,18 @@ an install are masked as `***`, and the file is cut to its newest half when it
 passes 2 MB. "From" is the address the store saw; behind tsdproxy that is the
 proxy's, since there is one token and so one user.
 
-Each panel also links to the project and its releases, the image's page on its
-registry, and this repository's recipe. The project's repository is shown only
-where something says which it is — `install.ini [upstream]`, or an image on
-`ghcr.io`/`lscr.io` — and never guessed from a Docker Hub name, which would
-give a link to a 404.
+Each panel also links to the project, its documentation and issues, its
+releases, the image's page on its registry, and this repository's recipe. The
+project's repository is shown only where something says which it is —
+`install.ini [upstream]`, or an image on `ghcr.io`/`lscr.io` — and never guessed
+from a Docker Hub name, which would give a link to a 404. Where the image's path
+is not the repository's (netbootxyz's image is built from another repository),
+`[store] repo = owner/repo` (or a full https URL) says which it is; **Issues** and
+**Releases** follow from it, for GitHub, GitLab and Codeberg. **Documentation** is
+read from the `[Official documentation](...)` link in each service README's
+Credits, so it is written down once, by a person, and a link that only points back
+to the repository is left out. Every one of these was checked to answer when it was
+added; `check.py` does not fetch them, so a link can still go stale.
 
 Screenshots come from `install.ini`, as images the project itself hosts:
 

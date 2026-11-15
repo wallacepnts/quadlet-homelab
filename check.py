@@ -364,6 +364,20 @@ def deprecated_problemas(valor):
     return saida
 
 
+def repo_problemas(valor):
+    """What is wrong with `[store] repo`, as a list; empty when it will do.
+
+    The store links the project, its issues and its releases from it, so it has to be a
+    page that exists: `owner/repo` on GitHub, or a full https URL. Only needed where the
+    image's own path would point somewhere else (the registry path is not always the
+    repository's), which is why it is an override and not a field every service fills in.
+    """
+    v = valor.strip()
+    if re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", v) or re.fullmatch(r"https://[A-Za-z0-9.-]+/[A-Za-z0-9._/-]+", v):
+        return []
+    return ["is neither `owner/repo` (GitHub) nor a full https:// URL"]
+
+
 def upstream_problema(valor):
     """What is wrong with an [upstream] value, or None when it parses.
 
@@ -556,11 +570,12 @@ def check_manifest(folders):
         # `screenshots` exists; any other key is a typo that would be ignored.
         if ini.has_section("store"):
             for key, valor in ini.items("store"):
-                if key not in ("screenshots", "deprecated", "deprecated_pt"):
+                if key not in ("screenshots", "deprecated", "deprecated_pt", "repo"):
                     error("manifest", f"apps/{folder.name}: install.ini [store] has no key {key!r} "
-                                      f"(only `screenshots`, `deprecated` and `deprecated_pt`)")
+                                      f"(only `screenshots`, `deprecated`, `deprecated_pt` and `repo`)")
                     continue
                 for problema in (screenshots_problemas(valor) if key == "screenshots"
+                                 else repo_problemas(valor) if key == "repo"
                                  else deprecated_problemas(valor)):
                     error("manifest", f"apps/{folder.name}: install.ini [store] {key} {problema}")
             if ini.has_option("store", "deprecated_pt") and not ini.get("store", "deprecated", fallback="").strip():
@@ -916,6 +931,10 @@ def check_per_unit(folder):
 # --------------------------------------------------------------------------
 
 def selftest():
+    # [store] repo: owner/repo on GitHub, or a full https URL
+    assert repo_problemas("netbootxyz/netboot.xyz") == [] and repo_problemas("https://codeberg.org/o/r") == []
+    assert repo_problemas("") and repo_problemas("not a repo") and repo_problemas("http://github.com/o/r") and repo_problemas("a/b/c")
+
     # [store] deprecated: one plain line that says why
     assert deprecated_problemas("Archived upstream on 2026-03-01; no release since 1.4.2.") == []
     assert deprecated_problemas("   ") == ["is empty — say why"]

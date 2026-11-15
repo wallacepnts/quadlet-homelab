@@ -258,11 +258,18 @@ cortado pela metade mais nova quando passa de 2 MB. O "de" é o endereço que a
 loja viu; atrás do tsdproxy é o do proxy, já que existe um token só e portanto
 um usuário só.
 
-Cada painel também tem links para o projeto e as releases dele, a página da
-imagem no registry e a receita deste repositório. O repositório do projeto só
-aparece onde algo diz qual é — o `[upstream]` do `install.ini`, ou uma imagem
-no `ghcr.io`/`lscr.io` — e nunca é adivinhado a partir de um nome do Docker
-Hub, o que daria um link para um 404.
+Cada painel também tem links para o projeto, a documentação e as issues dele, as
+releases, a página da imagem no registry e a receita deste repositório. O
+repositório do projeto só aparece onde algo diz qual é — o `[upstream]` do
+`install.ini`, ou uma imagem no `ghcr.io`/`lscr.io` — e nunca é adivinhado a
+partir de um nome do Docker Hub, o que daria um link para um 404. Onde o caminho
+da imagem não é o do repositório (a imagem do netbootxyz sai de outro
+repositório), o `[store] repo = dono/repo` (ou uma URL https completa) diz qual
+é; **Problemas** e **Releases** saem dele, para GitHub, GitLab e Codeberg. A
+**Documentação** é lida do link `[Documentação oficial](...)` da seção Créditos
+do README de cada serviço, então é escrita uma vez, por uma pessoa, e um link
+que só aponta de volta para o repositório fica de fora. Todos foram conferidos
+quando entraram; o `check.py` não os busca, então um link ainda pode envelhecer.
 
 As capturas de tela vêm do `install.ini`, como imagens que o próprio projeto
 hospeda:
