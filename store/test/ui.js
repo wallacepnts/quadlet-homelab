@@ -254,6 +254,26 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   hb.units = [unidade("homebox")];
   $("panel").open = false;
 
+  // failure state: loop, failed with the exit code, and a recovered restart; details and last failure in the panel
+  const bf = api.S.apps.find((x) => x.id === "homebox");
+  const falha = (extra) => ({ restarts: 0, exit: 0, result: "success", state: "active", sub: "running", last: 1700000000, ...extra });
+  api.setView("apps");
+  bf.units = [unidade("homebox", { service: "activating", failure: falha({ restarts: 7, exit: 1, result: "exit-code", state: "activating", sub: "auto-restart" }) })];
+  api.renderGrid();
+  confere(/loop de restart \(7×\)/.test($("grid").textContent), `card: loop de restart com a contagem (${$("grid").textContent.slice(0, 60)})`);
+  bf.units = [unidade("homebox", { service: "failed", failure: falha({ exit: 125, result: "exit-code", state: "failed", sub: "failed" }) })];
+  api.renderGrid();
+  confere(/falhou \(saída 125\)/.test($("grid").textContent), "card: falhou, com o código de saída");
+  api.openPanel("homebox"); await esperar(30);
+  confere(!$("p-fail").hidden && /homebox: falhou .*saída 125 \(exit-code\) · última falha/.test($("p-fail").textContent), `painel: detalhes e última falha (${$("p-fail").textContent})`);
+  $("panel").open = false;
+  bf.units = [unidade("homebox", { failure: falha({ restarts: 2 }) })];
+  api.renderGrid();
+  confere(/reiniciou 2×/.test($("grid").textContent), "card: recuperado depois de reiniciar mostra só um aviso");
+  bf.units = [unidade("homebox")];
+  api.renderGrid();
+  confere(!/reiniciou|loop de restart|falhou \(/.test($("grid").textContent), "sem falha: sem selo");
+
   // play / pause / stop: the three buttons enable by state, and a click asks the server
   const bc = api.S.apps.find((x) => x.id === "homebox");
   const estadoBotoes = () => [...$("p-actions").walk()].filter((e) => e.attrs && e.attrs.class === "ctl").map((e) => (e.attrs.disabled === undefined ? "on" : "off")).join(",");

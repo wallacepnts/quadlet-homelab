@@ -9,7 +9,9 @@ const T = {
     installedBadge: "instalado", deprecatedBadge: "descontinuado", deprecatedNote: "Descontinuado:",
     noInstall: "Não dá para instalar este app daqui.",
     worksWith: "Funciona com",
-    play: "Iniciar / retomar", pause: "Pausar", stopApp: "Parar", pausedBadge: "pausado", stoppedBadge: "parado", ctlFailed: "Não foi possível:",
+    play: "Iniciar / retomar", pause: "Pausar", stopApp: "Parar", pausedBadge: "pausado",
+    failFailed: "falhou", failLoop: "reiniciando em loop", failRestarted: "reiniciou", failExit: "saída", failLast: "última falha",
+    loopBadge: (n) => `loop de restart (${n}×)`, failedBadge: (c) => `falhou (saída ${c})`, restartedBadge: (n) => `reiniciou ${n}×`, stoppedBadge: "parado", ctlFailed: "Não foi possível:",
     backupFirst: "Backup antes",
     envType: { bool: "sim/não", number: "número", email: "e-mail", url: "URL", ip: "IP", password: "senha" },
     resources: "Recursos", resLoading: "Verificando o Podman…",
@@ -98,7 +100,9 @@ const T = {
     installedBadge: "installed", deprecatedBadge: "discontinued", deprecatedNote: "Discontinued:",
     noInstall: "It cannot be installed from here.",
     worksWith: "Works with",
-    play: "Start / resume", pause: "Pause", stopApp: "Stop", pausedBadge: "paused", stoppedBadge: "stopped", ctlFailed: "Could not:",
+    play: "Start / resume", pause: "Pause", stopApp: "Stop", pausedBadge: "paused",
+    failFailed: "failed", failLoop: "restart loop", failRestarted: "restarted", failExit: "exit", failLast: "last failure",
+    loopBadge: (n) => `restart loop (${n}×)`, failedBadge: (c) => `failed (exit ${c})`, restartedBadge: (n) => `restarted ${n}×`, stoppedBadge: "stopped", ctlFailed: "Could not:",
     backupFirst: "Back up first",
     envType: { bool: "yes/no", number: "number", email: "email", url: "URL", ip: "IP", password: "password" },
     resources: "Resources", resLoading: "Asking Podman…",
@@ -311,11 +315,34 @@ function mainUnit(app) {
 }
 
 // Order is priority: a broken service matters more than a new release.
+// What systemd knows about a unit that is not simply running: restarts, exit code, last failure.
+function failText(u) {
+  const f = u.failure;
+  const quando = f.last ? new Date(f.last * 1000).toLocaleString(S.lang === "pt" ? "pt-BR" : "en") : null;
+  return [`${u.unit}:`, f.state === "failed" ? t("failFailed") : f.sub === "auto-restart" ? t("failLoop") : t("failRestarted"),
+    f.restarts ? `${f.restarts}×` : null, `${t("failExit")} ${f.exit}`, f.result !== "success" ? `(${f.result})` : null,
+    quando ? `· ${t("failLast")} ${quando}` : null].filter(Boolean).join(" ");
+}
+
+function failBadge(inst) {
+  const com = inst.filter((u) => u.failure && !u.stopped);
+  if (!com.length) return null;
+  const laco = com.find((u) => u.failure.sub === "auto-restart");
+  const caiu = com.find((u) => u.failure.state === "failed");
+  const mais = Math.max(...com.map((u) => u.failure.restarts));
+  const titulo = com.map(failText).join("\n");
+  if (laco) return ["bad", t("loopBadge")(laco.failure.restarts), titulo];
+  if (caiu) return ["bad", t("failedBadge")(caiu.failure.exit), titulo];
+  return mais ? ["warn", t("restartedBadge")(mais), titulo] : null;
+}
+
 function health(app) {
   const inst = app.units.filter((u) => u.installed);
   if (!inst.length) return null;
   // Stopped on purpose (masked): not an alarm, and it will stay so after a reboot.
   if (inst.every((u) => u.stopped)) return ["plain", t("stoppedBadge")];
+  const falha = failBadge(inst);
+  if (falha && falha[0] === "bad") return falha;
   if (inst.some((u) => u.service !== "active" || ["unhealthy", "down"].includes(u.container)))
     return ["bad", t("attention")];
   const rows = inst.map((u) => S.upd[u.unit]).filter(Boolean);
@@ -323,6 +350,7 @@ function health(app) {
   if (inst.some((u) => u.container === "paused")) return ["warn", t("pausedBadge")];
   if (app.deprecated) return ["warn", t("deprecatedBadge")];
   if (app.trial) return ["warn", t("trialBadge")];
+  if (falha) return falha;
   const atras = rows.find((r) => r.bucket === "BEHIND");
   if (atras) return ["warn", `${t("newVersion")} ${atras.there}`];
   if (inst.some((u) => u.drift)) return ["warn", t("changed")];
@@ -457,7 +485,7 @@ function tile(a) {
   const corpo = [
     h("img", { src: a.icon, alt: "", loading: "lazy", referrerpolicy: "no-referrer" }),
     h("h3", {}, a.name),
-    st && h("span", { class: `badge ${st[0]}` }, st[1]),
+    st && h("span", { class: `badge ${st[0]}`, title: st[2] || null }, st[1]),
     h("p", { class: "version", "data-res": a.id }, resText(a)),
   ];
   return h("div", { class: "card tile" },
@@ -638,6 +666,9 @@ function renderPanel() {
   // The reason, where it is read; and a service that is discontinued is not offered for install.
   const motivo = depReason(a);
   const trial = a.installed && a.trial ? t("trialEnds")(trialWhen(a.trial), a.trial.purge) : null;
+  const caidas = a.units.filter((u) => u.installed && u.failure && !u.stopped);
+  $("p-fail").hidden = !caidas.length;
+  fill($("p-fail"), ...caidas.map((u) => h("p", {}, failText(u))));
   const velho = a.podman_too_old ? t("podmanOld")(a.min_podman, S.podman) : null;
   $("p-notice").hidden = !motivo && !trial && !velho;
   if (motivo) $("p-notice").textContent = `${t("deprecatedNote")} ${motivo}${a.installed ? "" : ` ${t("noInstall")}`}`;

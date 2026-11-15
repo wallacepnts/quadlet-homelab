@@ -1076,6 +1076,17 @@ def podman_too_old(s):
     return None
 
 
+def _selftest_failures():
+    ok = "Id=a.service\nActiveState=active\nSubState=running\nResult=success\nNRestarts=0\nExecMainExitTimestamp=\nExecMainStatus=0\n"
+    laco = "Id=b.service\nActiveState=activating\nSubState=auto-restart\nResult=exit-code\nNRestarts=7\nExecMainExitTimestamp=@1700000000\nExecMainStatus=1\n"
+    caiu = "Id=c.service\nActiveState=failed\nSubState=failed\nResult=exit-code\nNRestarts=0\nExecMainExitTimestamp=@1700000100\nExecMainStatus=125\n"
+    r = parse_failures("\n\n".join([ok, laco, caiu]))
+    assert set(r) == {"b", "c"}, "a healthy unit is not reported"
+    assert r["b"] == {"restarts": 7, "exit": 1, "result": "exit-code", "state": "activating", "sub": "auto-restart", "last": 1700000000}
+    assert r["c"]["exit"] == 125 and r["c"]["state"] == "failed"
+    assert parse_failures("") == {} and parse_failures("Id=x.service\nNRestarts=oops\n") == {}
+
+
 def _selftest_env_types():
     es = parse_env("# Cores\n# type: number\nCORES=2\n# plain\nNAME=x\n\n# type: bool\n# FLAG=Y\n")
     por = {e["key"]: e for e in es}
@@ -3026,6 +3037,7 @@ def find_tailnet():
 def selftest():
     _selftest_podman()
     _selftest_env_types()
+    _selftest_failures()
     """Checks the internal-port -> host-port match, which is the part of
     `addresses()` that is easy to get silently wrong."""
     import tempfile, types
@@ -4339,7 +4351,42 @@ def readme_rows(readme, link):
     return rows
 
 
-def catalog_entry(d, home, tailnet, en, pt, ativos, saude):
+def unit_failures(units):
+    """{unit: {restarts, exit, result, state, sub, last}} for the units with something to report.
+
+    From one `systemctl show` for all of them. Worth reporting: restarted by systemd (NRestarts),
+    a Result other than success, a failed state, or waiting to be restarted (auto-restart, a loop).
+    `last` is when the main process last exited, unix seconds, or None."""
+    if not units:
+        return {}
+    return parse_failures(run_read(["systemctl", "--user", "show", "--timestamp=unix",
+                                    "-p", "Id,NRestarts,ExecMainStatus,Result,ActiveState,SubState,ExecMainExitTimestamp",
+                                    *(f"{u}.service" for u in units)]))
+
+
+def parse_failures(texto):
+    """The reportable units out of `systemctl show` output (blocks separated by a blank line)."""
+    saida = {}
+    for bloco in (texto or "").split("\n\n"):
+        c = dict(l.split("=", 1) for l in bloco.splitlines() if "=" in l)
+        unit = c.get("Id", "")[:-8] if c.get("Id", "").endswith(".service") else None
+        if not unit:
+            continue
+        try:
+            reinicios = int(c.get("NRestarts") or 0)
+            saida_cod = int(c.get("ExecMainStatus") or 0)
+        except ValueError:
+            continue
+        ts = c.get("ExecMainExitTimestamp", "")
+        ultimo = int(ts[1:]) if ts.startswith("@") and ts[1:].isdigit() else None
+        resultado, estado, sub = c.get("Result", "success"), c.get("ActiveState", ""), c.get("SubState", "")
+        if reinicios or resultado not in ("success", "") or estado == "failed" or sub == "auto-restart":
+            saida[unit] = {"restarts": reinicios, "exit": saida_cod, "result": resultado,
+                           "state": estado, "sub": sub, "last": ultimo}
+    return saida
+
+
+def catalog_entry(d, home, tailnet, en, pt, ativos, saude, falhas=None):
     """One service as the store sees it: the window, what the install asks, the host."""
     s = Service(d, home)
     vitrine = en.get(d, {})
@@ -4371,6 +4418,7 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude):
             # A drop-in beside the unit (overrides.py): the store's Customize screen wrote it.
             "override": bool(p and overrides.read_override(p) is not None),
             "service": ativos.get(u.stem) if p else None,
+            "failure": (falhas or {}).get(u.stem) if p else None,
             "stopped": bool(p) and unit_masked(s.home, u.stem),     # stopped on purpose: stays so after a reboot
             "container": estado_do_container(saude.get(container_name(p), "—")) if p else None,
             "drift": (unit_deriva(s, p) or None) if p else None,
@@ -4452,11 +4500,13 @@ def show_catalog(apps=None, home=None):
     pastas = sorted(x.name for x in APPS.iterdir()
                     if x.is_dir() and (apps is None or x.name in apps)
                     and any(x.glob("*.container")))
+    falhas = {} if SANDBOX else unit_failures(sorted(
+        u.stem for d in pastas for u in (APPS / d).glob("*.container") if u.stem in ativos))
     saida = {
         "access": saved_access(Path(home) if home else None) or "tailnet",
         "tailnet": bool(tailnet),
         "podman": ".".join(map(str, podman_version())) if podman_version() else None,
-        "apps": [catalog_entry(d, home, tailnet, en, pt, ativos, saude) for d in pastas],
+        "apps": [catalog_entry(d, home, tailnet, en, pt, ativos, saude, falhas) for d in pastas],
     }
     print(json.dumps(saida, ensure_ascii=False, indent=2))
     return 0

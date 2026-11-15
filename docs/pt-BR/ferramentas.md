@@ -321,6 +321,13 @@ o deixa de fora; nomeá-lo ainda instala, porque o aviso não é uma proibição
 uma linha simples de até 300 caracteres. É uma decisão que uma pessoa registra:
 nada marca um serviço sozinho.
 
+**Estado de falha** no card: uma unit que o systemd reiniciou, que falhou ou que espera para ser
+reiniciada mostra o selo vermelho "loop de restart (7×)" ou "falhou (saída 125)", ou o amarelo
+"reiniciou 2×" quando já se recuperou, com os detalhes ao passar o mouse e no painel: reinícios,
+código de saída, resultado e a hora da última falha. Vem de um único `systemctl show` para todas as
+units (`NRestarts`, `ExecMainStatus`, `Result`, `ExecMainExitTimestamp`) e está no `qh --catalog`
+como `failure`. Um serviço parado de propósito nunca mostra isso.
+
 **Iniciar, pausar e parar** (▶ ⏸ ■ em cada app instalado, em Meus apps e no painel) agem no
 serviço inteiro. Iniciar sobe o que não está rodando e descongela o que está pausado; pausar
 congela os containers que rodam com `podman pause` (as units seguem `active` para o systemd, o

@@ -318,6 +318,13 @@ the warning is not a ban. `deprecated_pt` is optional, and the English reason
 stands in without it. `check.py` wants one plain line of at most 300 characters.
 It is a decision a person writes down: nothing marks a service by itself.
 
+**Failure state** on the card: a unit that systemd restarted, that failed, or that is waiting to
+be restarted shows a red "restart loop (7×)" or "failed (exit 125)" badge, or a yellow "restarted
+2×" once it recovered, with the details on hover and in the panel: restarts, exit code, result and
+the time of the last failure. It comes from one `systemctl show` for all the units (`NRestarts`,
+`ExecMainStatus`, `Result`, `ExecMainExitTimestamp`) and is in `qh --catalog` as `failure`. A
+service stopped on purpose never shows it.
+
 **Play, pause and stop** (▶ ⏸ ■ on each installed app, in My apps and in its panel) act on the
 whole service. Play starts what is not running and thaws what is paused; pause freezes the running
 containers with `podman pause` (the units stay `active` for systemd, the app shows "paused" and its

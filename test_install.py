@@ -623,6 +623,7 @@ def scenario_deprecated(tmp):
     out, _ = executa(APP, "--prefix", home, lang="pt")
     check("descontinuado: Arquivado no upstream." in out, "…in Portuguese, with the Portuguese reason")
     cat = json.loads(executa("--catalog", APP, "--prefix", home)[0])["apps"][0]
+    check(cat["units"][0]["failure"] is None, "--catalog has a failure field per unit (empty in the sandbox, which asks no systemd)")
     check(cat["has_data"] is True, "--catalog says whether the service keeps data (the store offers a backup before updating)")
     check(cat["deprecated"] == {"en": "Archived upstream.", "pt": "Arquivado no upstream."}, "--catalog carries the reason in both languages")
     outro = json.loads(executa("--catalog", STACK, "--prefix", home)[0])["apps"][0]
