@@ -1027,7 +1027,14 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         url = urlparse(self.path)
         q = {k: v[0] for k, v in parse_qs(url.query).items()}
-        if url.path in ("/login", "/style.css"):
+        if url.path == "/login":
+            # A refused token comes back as ?e=1. The page cannot read its own
+            # query (no inline script, by the CSP), so the notice is put in the
+            # HTML here — a fixed text, nothing from the request is echoed.
+            html = (STATIC / ARQUIVOS["/login"]).read_text()
+            aviso = '<p class="erro" role="alert">Token inválido / Invalid token</p>' if q.get("e") == "1" else ""
+            return self._send(200, html.replace("<!--error-->", aviso).encode(), TIPOS[".html"])
+        if url.path == "/style.css":
             return self._static(ARQUIVOS[url.path])
         if not self._logged():
             if url.path.startswith("/api/"):
@@ -1322,6 +1329,12 @@ def selftest():
             assert st == 401, st
             st, h, _ = pedir("/login", b"token=wrong")
             assert st == 303 and "e=1" in h["Location"], h["Location"]
+            _, _, pagina = pedir("/login?e=1")
+            assert b"Token inv\xc3\xa1lido" in pagina and b'role="alert"' in pagina, "a refused token says so"
+            _, _, limpa = pedir("/login")
+            assert b"erro" not in limpa and b"<!--error-->" not in limpa, "and the plain page does not"
+            _, _, tentativa = pedir("/login?e=1%3Cscript%3E")
+            assert b"<script>" not in tentativa, "nothing from the query is echoed"
             st, h, _ = pedir("/login", f"token={token}".encode())
             assert st == 303 and h["Location"] == "/", h
             biscoito = h["Set-Cookie"].split(";")[0]

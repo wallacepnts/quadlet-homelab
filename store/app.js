@@ -187,6 +187,10 @@ function md(src) {
 // The README descriptions carry markdown links; the text is what reads well here.
 const plain = (s) => (s || "").replace(/\[([^\]]+)\]\([^)]*\)/g, "$1").replace(/`/g, "");
 
+// replaceChildren turns a null or false argument into the words "null" and "false"
+// (h() skips them): every fill of a container goes through here.
+const fill = (el, ...kids) => el.replaceChildren(...kids.filter((k) => k !== null && k !== undefined && k !== false));
+
 async function api(path, body) {
   const opts = body === undefined ? {} : {
     method: "POST",
@@ -260,7 +264,7 @@ function renderGroups() {
     type: "button", "aria-pressed": String(S.group === g),
     onclick: () => { S.group = g; renderGroups(); renderGrid(); },
   }, label);
-  $("groups").replaceChildren(chip(null, t("all")), ...groups.map((g) => chip(g, g)));
+  fill($("groups"), chip(null, t("all")), ...groups.map((g) => chip(g, g)));
 }
 
 function renderGrid() {
@@ -269,7 +273,7 @@ function renderGrid() {
     (!S.group || groupOf(a) === S.group) &&
     (!S.onlyInstalled || a.installed) &&
     (!q || `${a.name} ${a.id} ${a.description.en} ${a.description.pt}`.toLowerCase().includes(q)));
-  $("grid").replaceChildren(...shown.map((a) => {
+  fill($("grid"), ...shown.map((a) => {
     const st = health(a);
     return h("button", { class: "card", type: "button", onclick: () => openPanel(a.id) },
       h("div", { class: "top" },
@@ -338,10 +342,10 @@ async function loadInfo(id) {
   pedidos.push(api(`/api/arch?app=${encodeURIComponent(id)}`).then((d) => { S.info.arch = d; }));
   api(`/api/links?app=${encodeURIComponent(id)}`).then(({ links }) => {
     if (S.current !== id) return;
-    $("p-project").replaceChildren(...links.map((l) =>
+    fill($("p-project"), ...links.map((l) =>
       h("a", { href: l.url, target: "_blank", rel: "noopener noreferrer" }, `${t("link")[l.kind]} ↗`)));
   }).catch(() => {});
-  $("p-project").replaceChildren();
+  fill($("p-project"));
   renderInfo();
   await Promise.allSettled(pedidos);
   if (S.current === id && $("panel").open) renderInfo();
@@ -357,7 +361,7 @@ function renderInfo() {
   const arq = info.arch;
   if (arq && arq.runs && arq.runs.length) partes.push(`${t("runsOn")} ${arq.runs.join(", ")}`);
   const sem = arq ? arq.units.filter((u) => u.ok === false).map((u) => u.unit) : [];
-  $("p-info").replaceChildren(
+  fill($("p-info"), 
     partes.join(" · "),
     sem.length ? h("span", { class: "note" }, " ", t("noArm")(arq.host, sem.join(", "))) : null);
 }
@@ -377,20 +381,20 @@ function renderPanel() {
   $("p-desc").textContent = plain(a.description[S.lang] || a.description.en);
 
   // Images the project hosts (install.ini [store]); each opens full size in a new tab.
-  $("p-shots").replaceChildren(...(a.screenshots || []).map((u) =>
+  fill($("p-shots"), ...(a.screenshots || []).map((u) =>
     h("a", { href: u, target: "_blank", rel: "noopener noreferrer", "aria-label": t("shots") },
       h("img", { src: u, alt: "", loading: "lazy", referrerpolicy: "no-referrer" }))));
   $("p-shots").hidden = !(a.screenshots || []).length;
 
   const instaladas = new Set(a.units.filter((u) => u.installed).map((u) => u.unit));
-  $("p-links").replaceChildren(...a.web
+  fill($("p-links"), ...a.web
     .filter((w) => instaladas.has(w.unit) && (w.tailnet || w.local))
     .map((w) => h("a", { href: w.tailnet || w.local, target: "_blank", rel: "noopener noreferrer" },
       `${t("open")} ${a.web.length > 1 ? w.unit : ""}`.trim() + " ↗")));
 
   const linhas = a.units.filter((u) => u.installed);
   $("p-units").hidden = !linhas.length;
-  $("p-units").replaceChildren(
+  fill($("p-units"), 
     h("tr", {}, ...["unit", "service", "container", "installedTag", "upstream", "repo", ""]
       .map((k) => h("th", {}, k ? t(k) : ""))),
     ...linhas.map((u) => h("tr", {},
@@ -436,7 +440,7 @@ function renderPanel() {
   }
   // After the others: an app that was removed, or never came up, still has a past worth reading.
   acoes.push(h("button", { type: "button", class: "ghost", onclick: () => openHistory(a.id) }, t("history")));
-  $("p-actions").replaceChildren(...acoes, a.installed && a.web.length ? accessPicker(a) : null);
+  fill($("p-actions"), ...acoes, a.installed && a.web.length ? accessPicker(a) : null);
 }
 
 function out(text, append = false) {
@@ -472,7 +476,7 @@ async function plan(action, file = "") {
 const behind = (a) => a.units.filter((u) => u.installed && S.upd[u.unit] && S.upd[u.unit].bucket === "BEHIND");
 
 function section(...kids) {
-  $("p-section").replaceChildren(...kids);
+  fill($("p-section"), ...kids);
   $("p-section").hidden = false;
 }
 
@@ -521,13 +525,13 @@ async function renderHistory() {
       tr.onkeydown = (ev) => { if (ev.key === "Enter") showRun(e); };
       return tr;
     };
-    $("h-list").replaceChildren(entries.length
+    fill($("h-list"), entries.length
       ? h("table", { class: "hist" },
           h("tr", {}, h("th", {}, t("when")), !S.histApp && h("th", {}, "App"), h("th", {}, t("what")),
             h("th", {}, t("result")), h("th", {}, t("took"))),
           ...entries.map(linha))
       : h("p", { class: "muted" }, t("noHistory")));
-  } catch (e) { $("h-list").replaceChildren(h("p", { class: "note" }, String(e.message))); }
+  } catch (e) { fill($("h-list"), h("p", { class: "note" }, String(e.message))); }
 }
 
 async function showRun(e) {
@@ -699,7 +703,7 @@ function buildForm(a, action, file = "") {
     h("button", { type: "submit", class: ["remove", "restore"].includes(action) ? "danger" : null },
       t("confirm")), " ",
     h("button", { type: "button", class: "ghost", onclick: () => { form.hidden = true; } }, t("cancel"))));
-  form.replaceChildren(...campos);
+  fill(form, ...campos);
   form.onsubmit = (ev) => { ev.preventDefault(); run(action, file); };
   form.hidden = false;
 }

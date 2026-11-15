@@ -212,6 +212,15 @@ PT = {
     'Tailscale is installed but not logged in': 'Tailscale instalado, mas sem login',
     'Tailscale is up': 'Tailscale no ar',
     'TAILNET is set': 'TAILNET definida',
+    "no TAILNET: the service works locally just the same, but the dashboard link will be broken — use --local to point it at the LAN address":
+        "sem TAILNET: o serviço funciona do mesmo jeito na rede local, mas o link do dashboard ficará quebrado — use --local para apontá-lo ao endereço da LAN",
+    "TAILNET is set but tailscale is not installed — `python3 install.py tailscale` explains how":
+        "TAILNET está definida, mas o tailscale não está instalado — `python3 install.py tailscale` explica como",
+    "tailscaled is not active — `sudo systemctl enable --now tailscaled`":
+        "o tailscaled não está ativo — `sudo systemctl enable --now tailscaled`",
+    "host port ": "porta do host ",
+    " is below this kernel's unprivileged floor (": " está abaixo do piso de portas sem privilégio deste kernel (",
+    ") — rootless cannot bind it. Lower the floor once: ": ") — o rootless não consegue abrir. Baixe o piso uma vez: ",
     'TAILNET is not set': 'TAILNET não definida',
     'tsdproxy is not installed': 'tsdproxy não instalado',
     'tsdproxy is installed but not running': 'tsdproxy instalado, mas parado',
@@ -477,6 +486,16 @@ def tailscaled_ativo():
     return _TAILSCALE["ativo"]
 
 
+# The three preflight messages with no moving part. Constants so that selftest can
+# hold each to having a Portuguese entry: they went untranslated for as long as they
+# were literals in the middle of a function, and `say` falls back to English silently.
+SEM_TAILNET = ("no TAILNET: the service works locally just the same, but the dashboard "
+               "link will be broken — use --local to point it at the LAN address")
+SEM_TAILSCALE = ("TAILNET is set but tailscale is not installed — "
+                 "`python3 install.py tailscale` explains how")
+TAILSCALED_PARADO = "tailscaled is not active — `sudo systemctl enable --now tailscaled`"
+
+
 def preflight(s, tailnet, local=False):
     """Warns when the host lacks what the service assumes.
 
@@ -518,15 +537,11 @@ def preflight(s, tailnet, local=False):
     if tailnet:
         # Wants a tailnet: a missing daemon is an error.
         if not tem_tailscale():
-            problems.append("TAILNET is set but tailscale is not installed — "
-                            "`python3 install.py tailscale` explains how")
+            problems.append(SEM_TAILSCALE)
         elif not tailscaled_ativo():
-            problems.append("tailscaled is not active — "
-                            "`sudo systemctl enable --now tailscaled`")
+            problems.append(TAILSCALED_PARADO)
     else:
-        problems.append("no TAILNET: the service works locally just the same, but the "
-                        "dashboard link will be broken — use --local to point it "
-                        "at the LAN address")
+        problems.append(SEM_TAILNET)
     return problems
 
 
@@ -3143,6 +3158,19 @@ def selftest():
     assert parse_env("# A=1\nA=2\n")[0] == {"key": "A", "value": "2", "active": True, "help": ""}, \
         "the active line wins over a commented one"
     assert parse_env("# Leave it true until the first account exists\n") == []
+
+    # every preflight message has a Portuguese entry: `say` falls back to English without a word
+    for aviso in (SEM_TAILNET, SEM_TAILSCALE, TAILSCALED_PARADO):
+        assert aviso in PT, f"no Portuguese for the preflight message: {aviso[:40]}..."
+    antes_pt = qhui.PTBR
+    qhui.PTBR = True
+    try:
+        assert loc("host port 80 is below this kernel's unprivileged floor (1024) — rootless "
+                   "cannot bind it. Lower the floor once: sudo sysctl -w x=80") == \
+            "porta do host 80 está abaixo do piso de portas sem privilégio deste kernel (1024) — o " \
+            "rootless não consegue abrir. Baixe o piso uma vez: sudo sysctl -w x=80"
+    finally:
+        qhui.PTBR = antes_pt
 
     # unset_env_value comments a key out, and set_env_value brings it back
     with tempfile.TemporaryDirectory() as d:
