@@ -10,6 +10,8 @@ const T = {
     noInstall: "Não dá para instalar este app daqui.",
     worksWith: "Funciona com",
     play: "Iniciar / retomar", pause: "Pausar", stopApp: "Parar", pausedBadge: "pausado",
+    console: "Console", consoleFailed: "não foi possível abrir o console",
+    consoleHint: "Um shell dentro do container (bash, ou sh). Clique na tela para digitar. Programas de tela cheia (vim, top) não funcionam.",
     logFilter: "Filtrar linhas…", logFollow: "seguir", logConnecting: "conectando…", logLive: "ao vivo", logEnded: "encerrado", logNoMatch: "(nenhuma linha casa com o filtro)",
     filterUpdates: "Com atualização", filterProblems: "Com problema",
     summaryLine: (r, p, z) => `${r} rodando · ${p} parado(s)${z ? ` · ${z} pausado(s)` : ""}`,
@@ -104,6 +106,8 @@ const T = {
     noInstall: "It cannot be installed from here.",
     worksWith: "Works with",
     play: "Start / resume", pause: "Pause", stopApp: "Stop", pausedBadge: "paused",
+    console: "Console", consoleFailed: "could not open the console",
+    consoleHint: "A shell inside the container (bash, or sh). Click the screen to type. Full-screen programs (vim, top) do not work.",
     logFilter: "Filter lines…", logFollow: "follow", logConnecting: "connecting…", logLive: "live", logEnded: "ended", logNoMatch: "(no line matches the filter)",
     filterUpdates: "With updates", filterProblems: "With problems",
     summaryLine: (r, p, z) => `${r} running · ${p} stopped${z ? ` · ${z} paused` : ""}`,
@@ -688,7 +692,9 @@ function renderPanel() {
       h("td", {},
         ...(u.service === "active" ? ["restart", "stop"] : ["start"]).map((v) =>
           h("button", { type: "button", class: "ghost", onclick: () => unitVerb(u.unit, v) }, t(v))),
-        h("button", { type: "button", class: "ghost", onclick: () => showLogs(u.unit) }, t("logs"))))));
+        h("button", { type: "button", class: "ghost", onclick: () => showLogs(u.unit) }, t("logs")),
+        u.service === "active" && (u.container || "—") !== "—"
+          ? h("button", { type: "button", class: "ghost", onclick: () => showConsole(u.unit) }, t("console")) : null))));
 
   // Suggested companions, each one a way into its own panel; the ones already here say so.
   const juntos = (a.works_with || []).map((id) => S.apps.find((x) => x.id === id)).filter(Boolean);
@@ -1358,6 +1364,7 @@ const LOG_MAX = 5000;
 function closeLogs() {
   if (S.logSource) { S.logSource.close(); S.logSource = null; }
   clearTimeout(S.logTimer);
+  closeConsole();
 }
 
 function showLogs(unit) {
@@ -1391,6 +1398,105 @@ function showLogs(unit) {
     es.close();
     if (S.logSource === es) S.logSource = null;
   };
+}
+
+// -- console ------------------------------------------------------------------
+// A terminal over a WebSocket, with no library: the pty on the server does the line editing, and
+// this keeps the screen. It understands what a shell with TERM=dumb sends — \r, \n, backspace, tab
+// — and drops the colour and cursor sequences. Full-screen programs (vim, top) are out of reach.
+
+const ANSI = /\x1b\[[0-9;?]*[ -\/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b[@-Z\\-_]/g;
+const TERM_LINES = 2000;
+
+function termNew() { return { lines: [""], row: 0, col: 0, pend: "" }; }
+
+function termFeed(term, chunk) {
+  let s = term.pend + chunk;
+  term.pend = "";
+  // An escape sequence cut by the end of a chunk waits for the next one.
+  const i = s.lastIndexOf("\x1b");
+  if (i >= 0 && i > s.length - 16 && !/^(\x1b\[[0-9;?]*[ -\/]*[@-~]|\x1b\][^\x07]*\x07|\x1b[@-Z\\-_])/.test(s.slice(i))) {
+    term.pend = s.slice(i);
+    s = s.slice(0, i);
+  }
+  s = s.replace(ANSI, "");
+  const put = (ch) => {
+    const l = term.lines[term.row];
+    term.lines[term.row] = l.slice(0, term.col).padEnd(term.col, " ") + ch + l.slice(term.col + 1);
+    term.col++;
+  };
+  for (const ch of s) {
+    if (ch === "\n") {
+      term.row++;
+      if (term.row >= term.lines.length) term.lines.push("");
+    } else if (ch === "\r") term.col = 0;
+    else if (ch === "\b") term.col = Math.max(0, term.col - 1);
+    else if (ch === "\t") { do put(" "); while (term.col % 8); }
+    else if (ch >= " " && ch !== "\x7f") put(ch);
+  }
+  if (term.lines.length > TERM_LINES) {
+    const cortar = term.lines.length - TERM_LINES;
+    term.lines.splice(0, cortar);
+    term.row = Math.max(0, term.row - cortar);
+  }
+  return term;
+}
+
+// What a key sends to a terminal, or null when it is not ours (a shortcut of the browser's).
+function termKey(ev) {
+  const k = ev.key;
+  if (ev.ctrlKey && !ev.altKey && !ev.metaKey && k.length === 1 && /[a-z]/i.test(k)) {
+    if (k.toLowerCase() === "c" && typeof getSelection === "function" && String(getSelection()).length) return null;   // a copy
+    if (k.toLowerCase() === "v") return null;                                                            // a paste
+    return String.fromCharCode(k.toUpperCase().charCodeAt(0) - 64);
+  }
+  if (ev.ctrlKey || ev.metaKey || ev.altKey) return null;
+  return { Enter: "\r", Backspace: "\x7f", Tab: "\t", Escape: "\x1b", ArrowUp: "\x1b[A", ArrowDown: "\x1b[B",
+           ArrowRight: "\x1b[C", ArrowLeft: "\x1b[D", Home: "\x1b[H", End: "\x1b[F", Delete: "\x1b[3~" }[k]
+    ?? (k.length === 1 ? k : null);
+}
+
+function closeConsole() {
+  if (S.termWs) { try { S.termWs.close(); } catch (e) { /* already gone */ } S.termWs = null; }
+  clearTimeout(S.termTimer);
+}
+
+function showConsole(unit) {
+  closeLogs();
+  const term = termNew();
+  const tela = h("pre", { class: "term", tabindex: "0", "aria-label": t("console") });
+  const estado = h("span", { class: "muted" }, t("logConnecting"));
+  const enviar = (d) => { if (S.termWs && S.termWs.readyState === 1) S.termWs.send(JSON.stringify({ t: "in", d })); };
+  const pintar = () => {
+    S.termTimer = null;
+    tela.textContent = term.lines.join("\n");
+    tela.scrollTop = tela.scrollHeight;
+  };
+  tela.addEventListener("keydown", (ev) => {
+    const d = termKey(ev);
+    if (d === null || d === undefined) return;
+    ev.preventDefault();
+    enviar(d);
+  });
+  tela.addEventListener("paste", (ev) => {
+    ev.preventDefault();
+    enviar(((ev.clipboardData || {}).getData || (() => ""))("text").replace(/\r?\n/g, "\r"));
+  });
+  const atalho = (rotulo, d) => h("button", { type: "button", class: "ghost", onclick: () => { enviar(d); tela.focus(); } }, rotulo);
+  section(h("h3", {}, `${t("console")} — ${unit}`),
+    h("div", { class: "row" }, atalho("Ctrl-C", "\x03"), atalho("Ctrl-D", "\x04"), atalho("Tab", "\t"), estado),
+    h("p", { class: "help" }, t("consoleHint")), tela);
+  const proto = (typeof location !== "undefined" && location.protocol === "https:") ? "wss" : "ws";
+  const ws = new WebSocket(`${proto}://${(typeof location !== "undefined" && location.host) || ""}/api/shell?unit=${encodeURIComponent(unit)}`);
+  S.termWs = ws;
+  ws.onopen = () => {
+    estado.textContent = t("logLive");
+    ws.send(JSON.stringify({ t: "size", c: 100, r: 28 }));
+    tela.focus();
+  };
+  ws.onmessage = (ev) => { termFeed(term, String(ev.data)); if (!S.termTimer) S.termTimer = setTimeout(pintar, 30); };
+  ws.onclose = () => { estado.textContent = t("logEnded"); if (S.termWs === ws) S.termWs = null; pintar(); };
+  ws.onerror = () => { estado.textContent = t("consoleFailed"); };
 }
 
 // -- wiring -----------------------------------------------------------------

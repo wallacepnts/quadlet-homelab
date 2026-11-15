@@ -31,7 +31,7 @@ class El {
     return [];
   }
   querySelector(sel) { return this.querySelectorAll(sel)[0] || null; }
-  showModal() { this.open = true; } close() { this.open = false; }
+  focus() {} showModal() { this.open = true; } close() { this.open = false; }
 }
 const byId = {};
 global.document = {
@@ -47,6 +47,9 @@ global.location = {};
 global.setInterval = () => 0;
 // A stand-in for EventSource: the test pushes lines by hand.
 const fontes = [];
+const sockets = [];
+global.WebSocket = class { constructor(url) { this.url = url; this.readyState = 1; this.sent = []; sockets.push(this); }
+  send(d) { this.sent.push(JSON.parse(d)); } close() { this.readyState = 3; this.closed = true; } };
 global.EventSource = class { constructor(url) { this.url = url; this.closed = false; fontes.push(this); } close() { this.closed = true; } };
 
 const unidade = (nome, extra = {}) => ({ unit: nome, image: "x:1", installed_image: "x:1", installed: true,
@@ -98,7 +101,7 @@ global.fetch = async (url, opts = {}) => {
 };
 
 const codigo = fs.readFileSync(path.join(__dirname, "..", "app.js"), "utf8");
-const api = new Function(codigo + "; return { S, openPanel, showEnv, current, renderGrid, pollStats, pollHost, showLogs, openResources, hintClean, openHistory, setView };")();
+const api = new Function(codigo + "; return { S, openPanel, showEnv, current, renderGrid, pollStats, pollHost, showLogs, showConsole, termNew, termFeed, termKey, openResources, hintClean, openHistory, setView };")();
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 let falhas = 0;
 const confere = (cond, msg) => { if (!cond) { falhas++; console.log("FALHOU:", msg); } else console.log("ok   ", msg); };
@@ -280,6 +283,40 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   confere(fonte.closed === true && fontes[fontes.length - 1] !== fonte, "logs: abrir outro fecha o stream anterior");
   fontes[fontes.length - 1].onerror();
   confere(/encerrado/.test($("p-section").textContent), "logs: o fim do stream aparece");
+  $("panel").open = false;
+
+  // console: the screen engine, the keys, and the WebSocket
+  const tm = api.termNew();
+  api.termFeed(tm, "$ ls\r\nfile1  \x1b[1;34mdir\x1b[0m\r\n$ ");
+  confere(tm.lines.join("|") === "$ ls|file1  dir|$ ", `console: cores e quebras de linha (${tm.lines.join("|")})`);
+  api.termFeed(tm, "abc\b\b \bX\r$ Y");
+  confere(tm.lines[2] === "$ YXc", `console: backspace apaga, \\r volta ao começo e sobrescreve (${tm.lines[2]})`);
+  const t2 = api.termNew();
+  api.termFeed(t2, "olá\b \b\b \b");
+  api.termFeed(t2, "x\x1b[");           // an escape cut in two
+  api.termFeed(t2, "6ny");
+  confere(t2.lines[0] === "oxy", `console: uma sequência cortada no meio entre dois pedaços é descartada (${JSON.stringify(t2.lines[0])})`);
+  const t3 = api.termNew(); api.termFeed(t3, "a\tb");
+  confere(t3.lines[0] === "a       b", "console: tab anda até a próxima coluna de 8");
+  const tecla = (key, extra = {}) => api.termKey({ key, ctrlKey: false, altKey: false, metaKey: false, ...extra });
+  confere(tecla("Enter") === "\r" && tecla("Backspace") === "\x7f" && tecla("ArrowUp") === "\x1b[A" && tecla("a") === "a" && tecla("F5") === null,
+    "console: teclas viram o que o terminal espera, e as que não são dele passam");
+  confere(tecla("c", { ctrlKey: true }) === "\x03" && tecla("d", { ctrlKey: true }) === "\x04" && tecla("v", { ctrlKey: true }) === null && tecla("t", { altKey: true }) === null,
+    "console: Ctrl-C e Ctrl-D vão, Ctrl-V e Alt-… ficam com o navegador");
+  api.openPanel("homebox"); await esperar(30);
+  api.showConsole("homebox");
+  const sk = sockets[sockets.length - 1];
+  confere(/^wss?:\/\/.*\/api\/shell\?unit=homebox$/.test(sk.url) || sk.url === "ws:///api/shell?unit=homebox", `console: abre o WebSocket da unit (${sk.url})`);
+  sk.onopen();
+  confere(sk.sent[0].t === "size" && sk.sent[0].c === 100, "console: informa o tamanho ao abrir");
+  const telaC = [...$("p-section").walk()].find((e) => e.attrs && e.attrs.class === "term");
+  telaC.listeners.keydown({ key: "l", ctrlKey: false, altKey: false, metaKey: false, preventDefault() {} });
+  telaC.listeners.keydown({ key: "Enter", ctrlKey: false, altKey: false, metaKey: false, preventDefault() {} });
+  confere(sk.sent.slice(1).map((m) => m.d).join("") === "l\r", "console: o que se digita vai como entrada");
+  sk.onmessage({ data: "hello\r\n$ " }); await esperar(80);
+  confere(telaC.textContent === "hello\n$ ", `console: a saída aparece (${JSON.stringify(telaC.textContent)})`);
+  api.showLogs("homebox");
+  confere(sk.closed === true, "console: abrir os logs fecha a sessão");
   $("panel").open = false;
 
   // My apps: counters as filters (updates, problems) and a one-line summary

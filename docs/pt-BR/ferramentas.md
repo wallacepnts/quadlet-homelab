@@ -321,6 +321,18 @@ o deixa de fora; nomeá-lo ainda instala, porque o aviso não é uma proibição
 uma linha simples de até 300 caracteres. É uma decisão que uma pessoa registra:
 nada marca um serviço sozinho.
 
+**Console**: um botão Console numa unit rodando abre um shell dentro do container (`podman exec
+-it`, bash se a imagem tiver, senão sh) por WebSocket, escrito só com a biblioteca padrão
+(`wsterm.py`: o handshake, quadros de texto, ping/pong, fechamento e um pty). Quem tem o token já
+controla todos os serviços, então isto não dá poder novo, mas é um shell, então: o `Origin` do
+navegador tem de ser o do próprio servidor (um WebSocket não leva o cabeçalho `X-QH-Store`, e o
+cookie é `SameSite=Strict`), no máximo quatro consoles ficam abertos, um parado há 15 minutos é
+fechado, e cada sessão é uma linha no histórico. A página guarda a tela sozinha e entende o que um
+shell com `TERM=dumb` envia (quebras de linha, backspace, tab; as cores são descartadas), então
+programas de tela cheia (vim, top) não funcionam. Fechar a aba encerra a sessão com educação
+(Ctrl-C, `exit`) e, se o shell ignorar, mata tudo o que ele iniciou por uma marca de ambiente:
+fechar só o `podman exec` local deixa o shell do container rodando.
+
 **Logs ao vivo**: o botão Logs de uma unit abre as últimas 200 linhas e depois as segue conforme
 chegam (`journalctl -f`, enviado como Server-Sent Events), com uma caixa que filtra as linhas
 enquanto você digita (sem diferenciar maiúsculas, sobre as últimas 5000 recebidas) e uma marca

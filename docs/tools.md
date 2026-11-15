@@ -318,6 +318,18 @@ the warning is not a ban. `deprecated_pt` is optional, and the English reason
 stands in without it. `check.py` wants one plain line of at most 300 characters.
 It is a decision a person writes down: nothing marks a service by itself.
 
+**Console**: a Console button on a running unit opens a shell inside its container (`podman exec
+-it`, bash when the image has it, else sh) over a WebSocket, written with the standard library only
+(`wsterm.py`: the handshake, text frames, ping/pong, close, and a pty). Whoever holds the token
+already controls every service, so this adds no power, but it is a shell, so: the browser's `Origin`
+must be this server's own (a WebSocket cannot carry the `X-QH-Store` header, and the cookie is
+`SameSite=Strict`), at most four consoles are open, one idle for 15 minutes is closed, and each
+session is a line in the history. The page keeps the screen itself and understands what a shell with
+`TERM=dumb` sends (line breaks, backspace, tab; colours are dropped), so full-screen programs (vim,
+top) do not work. Closing the tab ends the session politely (Ctrl-C, `exit`) and, if the shell
+ignores that, kills everything started in it by an environment marker: closing the local
+`podman exec` alone leaves the container's shell running.
+
 **Live logs**: the Logs button on a unit opens its last 200 lines and then follows them as they
 arrive (`journalctl -f`, sent as Server-Sent Events), with a box that filters the lines as you type
 (case-insensitive, over the last 5000 received) and a "follow" tick that keeps the view at the end.

@@ -51,6 +51,7 @@ import overrides as O  # noqa: E402
 import qhui  # noqa: E402
 import resources  # noqa: E402
 import trials  # noqa: E402
+import wsterm  # noqa: E402
 
 _spec = importlib.util.spec_from_file_location("qh_install", ROOT / "install.py")
 I = importlib.util.module_from_spec(_spec)
@@ -89,6 +90,9 @@ PT = {
     "not a setting of this file, or not a single line":
         "não é uma opção deste arquivo, ou não é uma linha só",
     "set": "definido", "turned off": "desligado",
+    "this address takes a WebSocket": "este endereço espera um WebSocket",
+    "a sandbox has no containers to enter": "um sandbox não tem containers para entrar",
+    "too many consoles open": "consoles demais abertos",
     "too many log streams open": "muitos logs ao vivo abertos",
     "this service keeps no data to back up": "este serviço não guarda dados para copiar",
     "not a valid value for the type": "não é um valor válido para o tipo",
@@ -1141,6 +1145,16 @@ def control_cmds(app, verbo, estados=None):
     return cmds, ("resume" if parados and not faltam else "start") if cmds else None
 
 
+PODMAN = os.environ.get("QH_PODMAN", "podman")                      # tests point it at a stand-in
+SHELLS = threading.BoundedSemaphore(4)                               # each console is a thread, a pty and a process
+
+
+def same_origin(origin, host):
+    """Whether a browser's Origin header names this very server. A WebSocket carries no custom header
+    for the page to prove itself with, so this is what stops another site from opening a console."""
+    return bool(origin) and bool(host) and urlparse(origin).netloc == host and urlparse(origin).scheme in ("http", "https")
+
+
 JOURNALCTL = os.environ.get("QH_JOURNALCTL", "journalctl")      # tests point it at a stand-in
 STREAMS = threading.BoundedSemaphore(8)                              # a log stream is a thread and a process each
 HEARTBEAT = 15
@@ -1360,6 +1374,55 @@ class Handler(BaseHTTPRequestHandler):
 
     def _json(self, code, data):
         self._send(code, json.dumps(data, ensure_ascii=False).encode())
+
+    def _shell(self, unit):
+        """A console in the unit's container: `podman exec -it` on a pty, over a WebSocket.
+
+        Whoever holds the token already controls every service, so a console adds no power, only
+        convenience — but it is a shell, so the browser's Origin must be this server's own, the
+        session is limited in number and time, and each one is written to the history."""
+        if not same_origin(self.headers.get("Origin", ""), self.headers.get("Host", "")):
+            return self._json(403, {"error": "origin"})
+        chave = self.headers.get("Sec-WebSocket-Key", "")
+        if ("websocket" not in self.headers.get("Upgrade", "").lower() or self.headers.get("Sec-WebSocket-Version") != "13"
+                or not chave):
+            return self._json(400, {"error": loc("this address takes a WebSocket")})
+        if PREFIX and "QH_PODMAN" not in os.environ:
+            return self._json(400, {"error": loc("a sandbox has no containers to enter")})
+        if not SHELLS.acquire(blocking=False):
+            return self._json(429, {"error": loc("too many consoles open")})
+        job = None
+        try:
+            caminho = next(I.APPS.glob(f"*/{unit}.container"))
+            nome = I.container_name(caminho)
+            job = Job(caminho.parent.name, "shell", self.client_address[0], unit)
+            self.send_response(101, "Switching Protocols")
+            self.send_header("Upgrade", "websocket")
+            self.send_header("Connection", "Upgrade")
+            self.send_header("Sec-WebSocket-Accept", wsterm.accept_key(chave))
+            self.end_headers()
+            self.wfile.flush()
+            marca = secrets.token_hex(8)
+
+            def limpar():          # the shell on the container's side outlives our `podman exec`
+                subprocess.run([PODMAN, "exec", nome, "sh", "-c", wsterm.reap_cmd(marca)],
+                               capture_output=True, timeout=15)
+            motivo = wsterm.serve(self.connection, [PODMAN, "exec", "-it", "-e", "TERM=dumb", "-e", f"QH_CONSOLE={marca}",
+                                                    nome, "sh", "-c", wsterm.SHELL_CMD], limpar=limpar)
+            job.write(f"console in {nome}: {motivo}, {round(time.time() - job.started)}s\n")
+            job.rc = 0
+        except Exception as e:                       # the connection is gone either way
+            if job:
+                job.write(f"console failed: {type(e).__name__}: {e}\n")
+                job.rc = 1
+        finally:
+            SHELLS.release()
+            self.close_connection = True
+            if job:
+                try:
+                    history_add(job)
+                except Exception:
+                    pass
 
     def _stream_logs(self, unit):
         """`journalctl -f` for one unit as Server-Sent Events: the last 200 lines, then the new ones.
@@ -1581,6 +1644,11 @@ class Handler(BaseHTTPRequestHandler):
             desde = int(q.get("from", "0") or 0)
             return self._json(200, {"app": job.app, "action": job.action, "rc": job.rc,
                                     "next": len(job.out), "output": "".join(job.out[desde:])})
+        if url.path == "/api/shell":
+            unit = q.get("unit", "")
+            if not unit_exists(unit):
+                return self._json(400, {"error": loc("unknown unit")})
+            return self._shell(unit)
         if url.path == "/api/logs/stream":
             unit = q.get("unit", "")
             if not unit_exists(unit):
@@ -2254,6 +2322,59 @@ esac
                     os.environ.pop("QH_PODMAN", None)
                     resources.PODMAN = "podman"
 
+            # console: a WebSocket to `podman exec -it`; refused unless it is this server's own page asking
+            global PODMAN
+            import socket as _s
+            alvo = urlparse(base)
+            origem_certa = f"{alvo.scheme}://{alvo.netloc}"
+
+            def ws_abrir(unit, origin, extra=None):
+                c = _s.create_connection((alvo.hostname, alvo.port), timeout=10)
+                cab = [f"GET /api/shell?unit={unit} HTTP/1.1", f"Host: {alvo.netloc}", "Upgrade: websocket", "Connection: Upgrade",
+                       "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==", "Sec-WebSocket-Version: 13",
+                       f"Cookie: {ok['Cookie']}"] + ([f"Origin: {origin}"] if origin else []) + (extra or [])
+                c.sendall(("\r\n".join(cab) + "\r\n\r\n").encode())
+                resp = b""
+                while b"\r\n\r\n" not in resp:
+                    resp += c.recv(4096)
+                return c, resp
+            assert pedir("/api/shell?unit=homebox")[0] == 401, "the console needs the login"
+            for origin in (None, "http://evil.example", origem_certa + ".evil.example"):
+                c, resp = ws_abrir("homebox", origin)
+                assert resp.startswith(b"HTTP/1.0 403") or resp.startswith(b"HTTP/1.1 403"), (origin, resp[:40])
+                c.close()
+            st, _, _ = pedir("/api/shell?unit=homebox", headers={**ok, "Origin": origem_certa})
+            assert st == 400, "a plain GET is not a WebSocket"
+            assert ws_abrir("nope", origem_certa)[1][9:12] == b"400"
+            c, resp = ws_abrir("homebox", origem_certa)
+            assert resp[9:12] == b"400", "a sandbox has no containers"
+            c.close()
+            with tempfile.TemporaryDirectory() as fk:
+                falso = Path(fk, "podman")
+                falso.write_text("#!/bin/sh\nexec cat\n")
+                falso.chmod(0o755)
+                os.environ["QH_PODMAN"] = str(falso)
+                antes_podman, PODMAN = PODMAN, str(falso)
+                try:
+                    c, resp = ws_abrir("homebox", origem_certa)
+                    assert resp[9:12] == b"101" and b"s3pPLMBiTxaQ9kYGzzhZRbK+xOo=" in resp, resp[:200]
+                    c.sendall(wsterm._mascarado(wsterm.OP_TEXT, json.dumps({"t": "in", "d": "console-ok\r"}).encode()))
+                    c.settimeout(5)
+                    recebido = resp.split(b"\r\n\r\n", 1)[1]
+                    fim = time.time() + 5
+                    while b"console-ok" not in recebido and time.time() < fim:
+                        recebido += c.recv(4096)
+                    assert b"console-ok" in recebido, recebido
+                    c.sendall(wsterm._mascarado(wsterm.OP_CLOSE, b"\x03\xe8"))
+                    time.sleep(0.5)
+                    c.close()
+                    hist = json.loads(pedir("/api/history?app=homebox&limit=5", headers=ok)[2])["entries"]
+                    assert any(e["action"] == "shell" for e in hist), "a console leaves a line in the history"
+                finally:
+                    os.environ.pop("QH_PODMAN", None)
+                    PODMAN = antes_podman
+            assert SHELLS._value == 4, "every console gives its slot back"
+
             # live logs: Server-Sent Events from `journalctl -f`; a sandbox has no journal, a stand-in has lines
             assert pedir("/api/logs/stream?unit=homebox")[0] == 401, "the stream needs the login too"
             assert pedir("/api/logs/stream?unit=nope", headers=ok)[0] == 400
@@ -2295,7 +2416,8 @@ esac
                 assert pedir("/api/run", json.dumps(corpo).encode(), api)[0] == 400, corpo
 
             # history: every job is on disk, newest first, with who asked and how it ended
-            lista = json.loads(pedir("/api/history?app=homebox", headers=ok)[2])["entries"]
+            lista = [e for e in json.loads(pedir("/api/history?app=homebox", headers=ok)[2])["entries"]
+                     if e["action"] != "shell"]          # a console is recorded too, and is newer than all of these
             acoes = [e["action"] for e in lista]
             assert acoes[:2] == ["revert", "customize"], "the customization and its revert are in the history"
             assert "env" in acoes and "install" in acoes and "backup" in acoes, acoes
