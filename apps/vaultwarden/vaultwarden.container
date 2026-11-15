@@ -2,7 +2,7 @@
 Description=Vaultwarden
 
 [Container]
-Image=docker.io/vaultwarden/server:1.37.5-alpine
+Image=docker.io/vaultwarden/server
 ContainerName=vaultwarden
 
 Network=tsdproxy-net.network

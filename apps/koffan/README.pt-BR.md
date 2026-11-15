@@ -88,7 +88,7 @@ Os dois containers estão na `tsdproxy-net`, então `ntfy` resolve pelo nome.
 qh koffan --update --apply
 ```
 
-Fixado em `v2.15.0`.
+A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh koffan --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
 
 ## Backup
 

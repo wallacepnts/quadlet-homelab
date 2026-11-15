@@ -85,8 +85,7 @@ Other sources that make sense here:
 qh grafana --update --apply
 ```
 
-Pinned to `13.2.3`. Nothing updates on its own — a new version is applied when
-you run the command above.
+The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh grafana --update --latest --apply` (the store's Update button does the same).
 
 Note the image: `grafana/grafana` is the OSS build and the one that tracks the
 releases. `grafana/grafana-oss` is a mirror that lags behind it, and

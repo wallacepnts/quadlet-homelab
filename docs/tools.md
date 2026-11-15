@@ -162,11 +162,13 @@ Each installed unit shows its tag next to the project's latest release
 (`qh-updates --host`, cached on disk for a day, and re-asked only for the
 service an install, update or remove just touched; **Check now** forces it), so
 you can see what is behind without this repository having to be bumped first.
-When the repository still pins the installed version, **Update to X** takes
-it: `qh-updates <app> --bump --apply` for that one service (its `Image=` and
-Pinned lines, in the clone the store runs from), then `qh <app> --update
---apply`. The change stays in git for you to review and commit. A major is held
-back exactly as `--bump` holds it.
+**Update to X** takes the new release. For an app whose version is not in the
+repository (see [auto-update](./auto-update.md)) that is `qh <app> --update --latest
+--apply`: the new tag is pinned in the host's drop-in and nothing is left to commit. For an
+image that still has its tag in the unit (a sidecar, a digest) it is `qh-updates <app>
+--bump --apply` for that one service (its `Image=` and Pinned lines, in the clone the store
+runs from), then `qh <app> --update --apply`, and the change stays in git for you to review
+and commit. A major is held back both ways.
 There is one update button, and it shows up only when there is something to
 update, and clicking it runs the update right away, with no plan and no
 confirmation. While it runs, the panel shows every GitHub release between the

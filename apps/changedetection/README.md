@@ -85,7 +85,7 @@ of Chrome.
 qh changedetection --update --apply
 ```
 
-Pinned to `0.60.8`. Nothing updates on its own.
+The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh changedetection --update --latest --apply` (the store's Update button does the same).
 
 ## Backup
 

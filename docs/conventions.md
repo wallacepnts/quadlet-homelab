@@ -81,9 +81,16 @@ its own — start it by hand afterwards.
 
 A version tag, or a digest where upstream publishes no version. No `latest`,
 no `main`, no bare major (`16`, `17-alpine`), and no `AutoUpdate=`: `check.py`
-refuses all of them. An update is a bump in the repository and a
-`qh <app> --update` on the host. Why, and how one host can opt in on its own
-copy: [auto-update](./auto-update.md).
+refuses all of them.
+
+The one exception is an app's own image that follows a GitHub release: its unit has
+`Image=repo` with **no tag**, `install.ini` says what a tag looks like (`[image]
+app = v{version}`), and `qh` pins the latest release **on the host**, in a Quadlet
+drop-in. The host still runs a pinned, known tag; the repository just never needs the
+bump. `qh <app> --update --latest` moves it (a new major needs `--major`). Everything
+else — a database or cache pinned to what the app's compose validates, an image by digest
+— keeps its tag in the unit, and a bump is a commit. Why, and how one host can opt in on
+its own copy: [auto-update](./auto-update.md).
 
 ### 10. `PublishPort=` does not open the firewall
 

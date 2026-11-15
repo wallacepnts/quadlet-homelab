@@ -2,7 +2,7 @@
 Description=Dispatcharr (IPTV, EPG, VOD) — AIO mode (all in one container)
 
 [Container]
-Image=ghcr.io/dispatcharr/dispatcharr:0.31.0
+Image=ghcr.io/dispatcharr/dispatcharr
 ContainerName=dispatcharr
 
 Network=tsdproxy-net.network

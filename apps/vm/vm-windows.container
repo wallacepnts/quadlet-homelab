@@ -2,7 +2,7 @@
 Description=Windows in a container (QEMU/KVM)
 
 [Container]
-Image=docker.io/dockurr/windows:6.05
+Image=docker.io/dockurr/windows
 ContainerName=vm-windows
 
 Network=tsdproxy-net.network

@@ -30,6 +30,7 @@ jobs:
           python3 trials.py --selftest
           python3 resources.py --selftest
           python3 wsterm.py --selftest
+          python3 imagepin.py --selftest
 
       # Exits != 0 on an error; a warning does not fail it (it is a convention,
       # not an invariant).

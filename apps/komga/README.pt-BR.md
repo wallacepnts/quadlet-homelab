@@ -93,7 +93,7 @@ aqui antes da primeira varredura, e biblioteca fria demora mais.
 qh komga --update --apply
 ```
 
-Fixado em `1.28.1`.
+A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh komga --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
 
 ## Backup
 

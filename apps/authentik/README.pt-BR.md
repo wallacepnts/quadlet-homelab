@@ -80,8 +80,7 @@ Units da stack:
 qh authentik --update --apply
 ```
 
-Fixado em `16.15-alpine`, `2026.8.3`. Nada atualiza sozinho — versão nova entra quando você
-roda o comando acima.
+Fixado em `16.15-alpine`. A imagem do próprio app não tem versão aqui: o `qh` fixa a última release neste host, e `qh authentik --update --latest --apply` a muda.
 
 ## Backup
 

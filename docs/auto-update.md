@@ -6,11 +6,43 @@ the Arch and Fedora toolboxes, mdrop, two of immich's) — and `check.py` refuse
 a unit with `AutoUpdate=` or a floating tag (`latest`, `main`, a bare major like
 `16` or `17-alpine`). Rule 9 of the [conventions](./conventions.md).
 
-An update is a commit, then a command on the host:
+## Where the version lives
+
+An app's own image that follows a GitHub release has **no tag in the repository**:
+
+```ini
+# apps/memos/memos.container
+Image=docker.io/neosmemo/memos
+# apps/memos/install.ini
+[image]
+memos = {version}              # or v{version}, {version}-alpine, {version:2} ...
+```
+
+`qh` fills the template with the latest release when it installs, and writes the result where
+only that host sees it — a Quadlet drop-in, `memos.container.d/10-image.conf`, with an
+`Image=repo:tag` and a `# was:` line for the one it replaced. The host still runs a pinned,
+known tag, and `systemctl cat memos` shows it; the repository never needs a bump for it.
+
+```bash
+qh <app> --update --apply            # re-copies the unit; keeps the version pinned on the host
+qh <app> --update --latest --apply   # also moves each image to its latest release
+qh <app> --update --latest --major --apply   # ...including a jump to a new major
+qh-updates --host                    # what runs here, against what upstream released
+```
+
+A major jump is held back unless you say so: the release notes are read first (see below). A
+host installed before versions left the repository keeps running what it ran: the first
+`--update` writes the tag it finds on the installed unit into the drop-in. To go back, put
+the tag you want in `Image=` of the drop-in and restart.
+
+What keeps its tag in the unit — and is moved by a commit — is an image that is NOT the app's
+own release: a database or cache pinned to what the app's compose validates (`[upstream]`
+`compose:` or `-`), a distro image tracked on the registry (`registry:`), and anything pinned
+by digest.
 
 ```bash
 qh-updates                     # what is behind, against each project's own release page
-qh-updates --bump --apply      # rewrites Image= and each service README's Pinned line
+qh-updates --bump --apply      # for those: rewrites Image= and each service README's Pinned line
 qh <app> --update --apply      # puts it on the host
 ```
 

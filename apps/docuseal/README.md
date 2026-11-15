@@ -96,7 +96,7 @@ answering — not just with the container up.
 qh docuseal --update --apply
 ```
 
-Pinned to `3.3.0`.
+The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh docuseal --update --latest --apply` (the store's Update button does the same).
 
 ## Backup
 

@@ -4,7 +4,7 @@ After=owntracks-recorder.service
 Requires=owntracks-recorder.service
 
 [Container]
-Image=docker.io/owntracks/frontend:2.15.3
+Image=docker.io/owntracks/frontend
 ContainerName=owntracks-frontend
 
 Network=tsdproxy-net.network

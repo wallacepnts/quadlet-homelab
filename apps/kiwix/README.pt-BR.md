@@ -97,7 +97,7 @@ somente-leitura vale para o sistema de arquivos do container.
 qh kiwix --update --apply
 ```
 
-Fixado em `3.8.2`. As bibliotecas têm calendário próprio, que é o seu: baixe o
+A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh kiwix --update --latest --apply` (o botão Atualizar da loja faz o mesmo). As bibliotecas têm calendário próprio, que é o seu: baixe o
 `.zim` novo, apague o velho, reinicie.
 
 ## Backup

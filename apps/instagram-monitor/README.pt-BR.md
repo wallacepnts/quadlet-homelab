@@ -128,7 +128,7 @@ exporte cookies manualmente.
 qh instagram-monitor --update --apply
 ```
 
-Fixado em `v4.0.2`. Nada atualiza sozinho.
+A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh instagram-monitor --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
 
 ## Hardening
 

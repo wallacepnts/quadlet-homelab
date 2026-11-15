@@ -47,8 +47,7 @@ metube.container
 qh metube --update --apply
 ```
 
-Fixado em `2026.09.29`. Nada atualiza sozinho — versão nova entra quando você
-roda o comando acima.
+A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh metube --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
 
 ## Backup
 

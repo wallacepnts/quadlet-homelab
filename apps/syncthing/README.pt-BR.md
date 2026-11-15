@@ -56,8 +56,7 @@ syncthing.container
 qh syncthing --update --apply
 ```
 
-Fixado em `2.1.5`. Nada atualiza sozinho — versão nova entra quando você
-roda o comando acima.
+A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh syncthing --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
 
 ## Backup
 

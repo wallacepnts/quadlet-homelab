@@ -2,7 +2,7 @@
 Description=Frigate (NVR with AI object detection)
 
 [Container]
-Image=ghcr.io/blakeblackshear/frigate:0.18.0
+Image=ghcr.io/blakeblackshear/frigate
 ContainerName=frigate
 
 Network=tsdproxy-net.network

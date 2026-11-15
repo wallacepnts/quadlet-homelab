@@ -2,7 +2,7 @@
 Description=Omni Tools (offline toolbox)
 
 [Container]
-Image=docker.io/iib0011/omni-tools:0.6.0
+Image=docker.io/iib0011/omni-tools
 ContainerName=omni-tools
 
 Network=tsdproxy-net.network

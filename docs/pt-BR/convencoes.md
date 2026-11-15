@@ -82,8 +82,16 @@ subir manualmente depois.
 
 Tag de versão, ou digest onde o projeto não publica versão. Nada de `latest`,
 `main`, major sozinho (`16`, `17-alpine`) nem `AutoUpdate=`: o `check.py` recusa
-todos. Atualizar é um bump no repositório e um `qh <app> --update` no host. O
-porquê, e como um host pode ligar na própria cópia: [auto-update](./auto-update.md).
+todos.
+
+A exceção é a imagem do próprio app que acompanha uma release do GitHub: a unit traz
+`Image=repo` **sem tag**, o `install.ini` diz como é uma tag (`[image] app =
+v{version}`), e o `qh` fixa a última release **no host**, num drop-in do Quadlet. O host
+continua rodando uma tag fixa e conhecida; o repositório só nunca precisa do bump. O
+`qh <app> --update --latest` a muda (um major novo exige `--major`). O resto — banco ou
+cache fixado no que o compose do app valida, imagem por digest — mantém a tag na unit, e
+o bump é um commit. O porquê, e como um host pode ligar na própria cópia:
+[auto-update](./auto-update.md).
 
 ### 10. `PublishPort=` não abre firewall
 

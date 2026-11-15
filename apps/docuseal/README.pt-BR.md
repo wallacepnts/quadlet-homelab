@@ -95,7 +95,7 @@ respondendo —, não só com o container de pé.
 qh docuseal --update --apply
 ```
 
-Fixado em `3.3.0`.
+A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh docuseal --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
 
 ## Backup
 

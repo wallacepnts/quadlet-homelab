@@ -4,7 +4,7 @@ After=zabbix-postgres.service
 Requires=zabbix-postgres.service
 
 [Container]
-Image=docker.io/zabbix/zabbix-server-pgsql:alpine-7.4.16
+Image=docker.io/zabbix/zabbix-server-pgsql
 ContainerName=zabbix-server
 RunInit=true
 

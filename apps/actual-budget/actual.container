@@ -2,7 +2,7 @@
 Description=Actual Budget Server
 
 [Container]
-Image=docker.io/actualbudget/actual-server:26.11.0
+Image=docker.io/actualbudget/actual-server
 ContainerName=actual
 
 Network=tsdproxy-net.network

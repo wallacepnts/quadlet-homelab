@@ -76,8 +76,7 @@ Units in this stack:
 qh immich --update --apply
 ```
 
-Pinned to `70739f85ad2ee01a726a965584a0f94895f01b0c60b3cc8b0aeef11eaa6888cf`, `bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23`, `v3.2.4`. Nothing updates on its own — a new version is applied
-when you run the command above.
+Pinned to `70739f85ad2ee01a726a965584a0f94895f01b0c60b3cc8b0aeef11eaa6888cf`, `bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23`. The app's own image has no version here: `qh` pins the latest release on this host, and `qh immich --update --latest --apply` moves it.
 
 ## Backup
 

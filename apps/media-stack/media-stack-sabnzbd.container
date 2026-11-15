@@ -2,7 +2,7 @@
 Description=SABnzbd (usenet client)
 
 [Container]
-Image=lscr.io/linuxserver/sabnzbd:version-5.1.3
+Image=lscr.io/linuxserver/sabnzbd
 ContainerName=sabnzbd
 
 Network=tsdproxy-net.network

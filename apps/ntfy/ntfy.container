@@ -2,7 +2,7 @@
 Description=ntfy (push notification server)
 
 [Container]
-Image=docker.io/binwiederhier/ntfy:v2.28.0
+Image=docker.io/binwiederhier/ntfy
 ContainerName=ntfy
 Exec=serve
 

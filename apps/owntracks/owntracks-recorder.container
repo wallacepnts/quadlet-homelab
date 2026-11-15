@@ -4,7 +4,7 @@ After=owntracks-mosquitto.service
 Requires=owntracks-mosquitto.service
 
 [Container]
-Image=docker.io/owntracks/recorder:1.0.4
+Image=docker.io/owntracks/recorder
 ContainerName=owntracks-recorder
 
 Network=tsdproxy-net.network

@@ -83,7 +83,7 @@ of it — so `CMD-SHELL` would have no shell to run in.
 qh vikunja --update --apply
 ```
 
-Pinned to `2.7.0`. It migrates the database on start, which is why the release
+The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh vikunja --update --latest --apply` (the store's Update button does the same). It migrates the database on start, which is why the release
 notes are worth a look before a major bump.
 
 ## Backup

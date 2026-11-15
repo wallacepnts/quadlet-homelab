@@ -52,8 +52,7 @@ Data in `~/.config/containers/volumes/memos/data` on port **5230**.
 qh memos --update --apply
 ```
 
-Pinned to `0.31.0`. Nothing updates on its own — a new version is applied
-when you run the command above.
+The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh memos --update --latest --apply` (the store's Update button does the same).
 
 ## Backup
 

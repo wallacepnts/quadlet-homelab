@@ -98,8 +98,7 @@ Units da stack:
 qh owntracks --update --apply
 ```
 
-Fixado em `1.0.4`, `2.1.2-alpine`, `2.15.3`. Nada atualiza sozinho — versão nova entra quando você
-roda o comando acima.
+Fixado em `2.1.2-alpine`. A imagem do próprio app não tem versão aqui: o `qh` fixa a última release neste host, e `qh owntracks --update --latest --apply` a muda.
 
 ## Backup
 

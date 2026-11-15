@@ -88,8 +88,7 @@ Outras fontes que fazem sentido aqui:
 qh grafana --update --apply
 ```
 
-Fixado em `13.2.3`. Nada atualiza sozinho — a versão nova entra quando você
-roda o comando acima.
+A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh grafana --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
 
 Repare na imagem: a `grafana/grafana` é a compilação OSS e é a que acompanha as
 releases. A `grafana/grafana-oss` é um espelho atrasado, e a

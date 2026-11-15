@@ -2,7 +2,7 @@
 Description=Deluge (torrent client)
 
 [Container]
-Image=lscr.io/linuxserver/deluge:2.2.0
+Image=lscr.io/linuxserver/deluge
 ContainerName=deluge
 
 Network=tsdproxy-net.network

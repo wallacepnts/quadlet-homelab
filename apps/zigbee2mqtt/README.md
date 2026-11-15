@@ -65,8 +65,7 @@ Units in this stack:
 qh zigbee2mqtt --update --apply
 ```
 
-Pinned to `2.1.2-alpine`, `2.14.2`. Nothing updates on its own — a new version is applied
-when you run the command above.
+Pinned to `2.1.2-alpine`. The app's own image has no version here: `qh` pins the latest release on this host, and `qh zigbee2mqtt --update --latest --apply` moves it.
 
 ## Backup
 

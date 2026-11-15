@@ -6,11 +6,43 @@ toolboxes do Arch e do Fedora, mdrop, duas do immich) — e o `check.py` recusa
 unit com `AutoUpdate=` ou com tag flutuante (`latest`, `main`, um major sozinho
 como `16` ou `17-alpine`). Regra 9 das [convenções](./convencoes.md).
 
-Uma atualização é um commit, depois um comando no host:
+## Onde a versão vive
+
+A imagem do próprio app que acompanha uma release do GitHub **não tem tag no repositório**:
+
+```ini
+# apps/memos/memos.container
+Image=docker.io/neosmemo/memos
+# apps/memos/install.ini
+[image]
+memos = {version}              # ou v{version}, {version}-alpine, {version:2} ...
+```
+
+O `qh` preenche o formato com a última release quando instala, e grava o resultado onde só
+aquele host enxerga — um drop-in do Quadlet, `memos.container.d/10-image.conf`, com um
+`Image=repo:tag` e uma linha `# was:` com a que ele trocou. O host continua rodando uma tag
+fixa e conhecida, e o `systemctl cat memos` a mostra; o repositório nunca precisa de bump por ela.
+
+```bash
+qh <app> --update --apply            # recopia a unit; mantém a versão fixada no host
+qh <app> --update --latest --apply   # também leva cada imagem à última release
+qh <app> --update --latest --major --apply   # ...inclusive um salto para um major novo
+qh-updates --host                    # o que roda aqui, contra o que o upstream lançou
+```
+
+Um salto de major fica retido a menos que você diga: as notas da release se leem antes (veja
+abaixo). Um host instalado antes de as versões saírem do repositório continua rodando o que
+rodava: o primeiro `--update` grava no drop-in a tag que acha na unit instalada. Para voltar,
+ponha a tag que quer no `Image=` do drop-in e reinicie.
+
+O que mantém a tag na unit — e se muda por um commit — é a imagem que NÃO é a release do
+próprio app: banco ou cache fixado no que o compose do app valida (`[upstream]` com
+`compose:` ou `-`), imagem de distro acompanhada pelo registry (`registry:`) e tudo o que é
+fixado por digest.
 
 ```bash
 qh-updates                     # o que está atrasado, contra a página de releases de cada projeto
-qh-updates --bump --apply      # reescreve o Image= e a linha Fixado em de cada README
+qh-updates --bump --apply      # para essas: reescreve o Image= e a linha Fixado em de cada README
 qh <app> --update --apply      # leva para o host
 ```
 

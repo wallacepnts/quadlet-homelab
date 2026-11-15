@@ -84,7 +84,7 @@ form: the image ships no shell, so `CMD-SHELL` would fail.
 qh dozzle --update --apply
 ```
 
-Pinned to `v11.2.0`.
+The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh dozzle --update --latest --apply` (the store's Update button does the same).
 
 ## Backup
 

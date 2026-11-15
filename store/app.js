@@ -9,7 +9,7 @@ const T = {
     installedBadge: "instalado", deprecatedBadge: "descontinuado", deprecatedNote: "Descontinuado:",
     noInstall: "Não dá para instalar este app daqui.",
     worksWith: "Funciona com",
-    play: "Iniciar / retomar", pause: "Pausar", stopApp: "Parar", pausedBadge: "pausado",
+    play: "Iniciar / retomar", pause: "Pausar", stopApp: "Parar", pausedBadge: "pausado", pinnedOnHost: "versão no host",
     console: "Console", consoleFailed: "não foi possível abrir o console",
     consoleHint: "Um shell dentro do container (bash, ou sh). Clique na tela para digitar. Programas de tela cheia (vim, top) não funcionam.",
     logFilter: "Filtrar linhas…", logFollow: "seguir", logConnecting: "conectando…", logLive: "ao vivo", logEnded: "encerrado", logNoMatch: "(nenhuma linha casa com o filtro)",
@@ -105,7 +105,7 @@ const T = {
     installedBadge: "installed", deprecatedBadge: "discontinued", deprecatedNote: "Discontinued:",
     noInstall: "It cannot be installed from here.",
     worksWith: "Works with",
-    play: "Start / resume", pause: "Pause", stopApp: "Stop", pausedBadge: "paused",
+    play: "Start / resume", pause: "Pause", stopApp: "Stop", pausedBadge: "paused", pinnedOnHost: "version on the host",
     console: "Console", consoleFailed: "could not open the console",
     consoleHint: "A shell inside the container (bash, or sh). Click the screen to type. Full-screen programs (vim, top) do not work.",
     logFilter: "Filter lines…", logFollow: "follow", logConnecting: "connecting…", logLive: "live", logEnded: "ended", logNoMatch: "(no line matches the filter)",
@@ -688,7 +688,7 @@ function renderPanel() {
       h("td", { class: stateClass(u.container) }, u.container || "—"),
       h("td", {}, tagOf(u.installed_image)),
       h("td", { class: upstreamCell(u)[0] || null }, upstreamCell(u)[1]),
-      h("td", { class: u.drift ? stateClass(u.drift) : "ok" }, `${tagOf(u.image)} · ${t(u.drift || "synced")}`),
+      h("td", { class: u.drift ? stateClass(u.drift) : "ok" }, `${u.templated ? t("pinnedOnHost") : tagOf(u.image)} · ${t(u.drift || "synced")}`),
       h("td", {},
         ...(u.service === "active" ? ["restart", "stop"] : ["start"]).map((v) =>
           h("button", { type: "button", class: "ghost", onclick: () => unitVerb(u.unit, v) }, t(v))),
@@ -735,7 +735,7 @@ function renderPanel() {
       acoes.push(h("button", { type: "button", onclick: () => updateNow("upgrade") },
         t("upgradeTo")(S.upd[novo.unit].there)));
     else if (mudou) {
-      const alvo = tagOf(mudou.image) !== tagOf(mudou.installed_image) ? tagOf(mudou.image) : null;
+      const alvo = !mudou.templated && tagOf(mudou.image) !== tagOf(mudou.installed_image) ? tagOf(mudou.image) : null;
       acoes.push(h("button", { type: "button", onclick: () => updateNow("update") },
         alvo ? t("upgradeTo")(alvo) : t("update")));
     }

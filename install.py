@@ -34,6 +34,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+import imagepin
 import overrides
 import qhui
 import trials
@@ -266,6 +267,9 @@ PT = {
     'the backup leaves out': 'o backup deixa de fora',
     'they rebuild themselves; the restore recreates the empty folders': 'eles se refazem; a restauração recria as pastas vazias',
     '[backup] exclude matches nothing here:': '[backup] exclude não casa com nada aqui:',
+    'could not find the version to pin: ': 'não achei a versão para fixar: ',
+    'with --update: also move each image to its latest release (a major jump needs --major)': 'com --update: leva também cada imagem à última release (um salto de major exige --major)',
+    'with --update --latest: allow the jump to a new major version': 'com --update --latest: permite o salto para uma versão major nova',
     'this service needs Podman': 'este serviço precisa do Podman',
     'the host has': 'o host tem',
     'this service is marked deprecated:': 'este serviço está marcado como descontinuado:',
@@ -1132,6 +1136,9 @@ def plan_install(s, tailnet, force=False, interactive=False, access="tailnet",
     if razao:
         warnings.append("this service is marked deprecated: " + razao["pt" if qhui.PTBR else "en"])
 
+    pins, sem_versao = image_pins(s)
+    if sem_versao:
+        return [], [loc("could not find the version to pin: ") + "; ".join(sem_versao)]
     velho = podman_too_old(s)
     if velho:
         warnings.append(loc("this service needs Podman") + f" {velho[0]}+, " + loc("the host has") + f" {velho[1]}")
@@ -1235,7 +1242,9 @@ def plan_install(s, tailnet, force=False, interactive=False, access="tailnet",
 
     # Before the start, not during it: systemd would pull the image too, but
     # into the journal, leaving the terminal silent for gigabytes at a time.
-    steps.extend(pull_steps(s))
+    steps.extend(pin_steps(s, pins))
+    steps.extend(pull_steps(s, pins))
+    warnings.extend(pin_warnings(pins))
 
     steps.append(("systemctl --user daemon-reload",
                   lambda: run(["systemctl", "--user", "daemon-reload"])))
@@ -1541,7 +1550,7 @@ def restart_order(paths):
     return saida
 
 
-def plan_update(s, access="tailnet", href_local=False):
+def plan_update(s, access="tailnet", href_local=False, latest=False, major=False):
     """Re-copies the units over the installed ones and restarts. Touches no
     data, env or secret.
 
@@ -1581,10 +1590,14 @@ def plan_update(s, access="tailnet", href_local=False):
     # The version-bump path: a changed tag means a new image, which is exactly
     # the download worth watching. Read before the skip, since a moving tag is
     # reason enough to go on even with every file already in place.
-    pulls = pull_steps(s)
-    if not pulls and not s.strays() and all(
+    pins, sem_versao = image_pins(s, latest=latest, major=major)
+    if sem_versao:
+        return [], [loc("could not find the version to pin: ") + "; ".join(sem_versao)]
+    pulls = pull_steps(s, pins)
+    gravar = pin_steps(s, pins)
+    if not pulls and not gravar and not s.strays() and all(
             unit_current(u, dest / u.name, modos[u.name], href_local) for u in s.units):
-        return [], [EM_DIA]
+        return [], [EM_DIA] + pin_warnings(pins)
 
     steps.append((f"mkdir -p {dest}", lambda: dest.mkdir(parents=True, exist_ok=True)))
 
@@ -1663,7 +1676,9 @@ def plan_update(s, access="tailnet", href_local=False):
         steps.append((f"cp {u.relative_to(ROOT)} -> {target}  (--access {modo})",
                       lambda u=u, target=target, modo=modo:
                           write_unit(u, target, modo, href_local)))
+    steps.extend(gravar)
     steps.extend(pulls)
+    warnings.extend(pin_warnings(pins))
     steps.append(("systemctl --user daemon-reload",
                   lambda: run(["systemctl", "--user", "daemon-reload"])))
     # Every unit, not just the main one. A sidecar nothing declares as a
@@ -2054,6 +2069,10 @@ def plan_remove(s, purge):
                     steps.append((f"rm {overrides.dropin_path(target)}  (your customization)",
                                   rotulado("units removed",
                                            lambda target=target: overrides.remove_override(target))))
+    for u in s.units:
+        if u.suffix == ".container" and imagepin.read_pin(dest / u.name) is not None and (s.only or dest.name != s.name or not dest.is_dir()):
+            steps.append((f"rm {imagepin.dropin_path(dest / u.name)}  (the version it was pinned to)",
+                          rotulado("units removed", lambda alvo=dest / u.name: imagepin.remove_pin(alvo))))
     # The copy at the other address defines the same unit. plan_install and
     # plan_update both clear it; leaving it here is what let a --purge delete
     # the data while every file stayed on disk, and Quadlet went on generating
@@ -2648,15 +2667,97 @@ def moving_tag(image):
     return not tag or tag in FLOATING
 
 
-def pull_steps(s):
-    """A pull step per image the host does not have yet, or whose tag moves."""
-    out = []
-    for image in s.images():
-        # moving_tag first: it is string work, and when it is true the answer
-        # from image_exists is thrown away anyway.
-        if not SANDBOX and not moving_tag(image) and image_exists(image):
+def image_pins(s, latest=False, major=False):
+    """({unit: {image, was, write, note}}, [problem]) for the units whose version is not in the repository.
+
+    Such a unit has a bare `Image=` and a template in `[image]`; the host pins it in a drop-in. What
+    to pin, in this order: the drop-in already there; else the tag the installed unit itself carries
+    (a host installed before versions left the repository keeps running what it runs); else the
+    latest release. `latest=True` asks for the newest instead of keeping, and holds a major jump back
+    unless `major=True`. A sandbox has no network and pins nothing."""
+    tpls = imagepin.templates(s.ini)
+    fontes = dict(s.ini.items("upstream")) if s.ini.has_section("upstream") else {}
+    instaladas = {x.name: x for x in s.installed()}
+    pins, problemas = {}, []
+    for u in s.units:
+        if u.suffix != ".container" or u.stem not in tpls:
             continue
-        out.append((f"podman pull {image}", lambda image=image: pull(image)))
+        repo_image = next((v for k, v in directives_of(u) if k == "Image"), "")
+        inst = instaladas.get(u.name)
+        pin = imagepin.read_pin(inst) if inst else None
+        atual = pin["image"] if pin else None
+        if not atual and inst:
+            proprio = next((v for k, v in directives_of(inst) if k == "Image"), "")
+            atual = proprio if imagepin.tag_of(proprio) else None
+        semear = bool(atual) and pin is None          # a legacy host: write down what it runs
+        if atual and not latest:
+            pins[u.stem] = {"image": atual, "was": None, "write": semear, "note": None}
+            continue
+        if SANDBOX and not os.environ.get("QH_FAKE_LATEST"):
+            pins[u.stem] = {"image": atual, "was": None, "write": semear, "note": "sandbox"}
+            continue
+        tag, release, why = imagepin.latest(u.stem, repo_image, tpls[u.stem], fontes.get(u.stem) or None)
+        if not tag:
+            if atual:
+                pins[u.stem] = {"image": atual, "was": None, "write": semear, "note": why}
+            else:
+                problemas.append(f"{u.stem}: " + (why or "no release"))
+            continue
+        novo = f"{repo_image}:{tag}"
+        if atual:
+            import updates as U
+            antes = imagepin.tag_of(atual)
+            if U.numeros(tag) <= U.numeros(antes):
+                pins[u.stem] = {"image": atual, "was": None, "write": semear, "note": None}
+            elif U.major(antes, tag) and not major:
+                pins[u.stem] = {"image": atual, "was": None, "write": semear,
+                                "note": f"major {antes} -> {tag}: read the release notes, then --major"}
+            else:
+                pins[u.stem] = {"image": novo, "was": antes, "write": True, "note": None}
+        else:
+            pins[u.stem] = {"image": novo, "was": None, "write": True, "note": None}
+    return pins, problemas
+
+
+def pin_steps(s, pins):
+    """The steps that write each unit's pin (the drop-in) on the host."""
+    saida = []
+    for stem, p in pins.items():
+        if not p.get("write") or not p.get("image"):
+            continue
+        alvo = s.unit_dest / f"{stem}.container"
+        saida.append((f"pin {stem}: Image={p['image']}" + (f"  (was {p['was']})" if p.get("was") else ""),
+                      lambda alvo=alvo, p=p: imagepin.write_pin(alvo, p["image"], p.get("was"))))
+    return saida
+
+
+def pin_warnings(pins):
+    return [f"{stem}: {p['note']}" for stem, p in pins.items()
+            if p.get("note") and p["note"] != "sandbox"]
+
+
+def pull_steps(s, pins=None):
+    """A pull step per image the host does not have yet, or whose tag moves.
+
+    A unit with a bare `Image=` is pulled at the tag its pin says; one with no pin (a sandbox) is not pulled."""
+    out, vistos = [], set()
+    for u in s.units:
+        if u.suffix != ".container":
+            continue
+        for k, v in directives_of(u):
+            if k != "Image" or v.endswith((".build", ".image")):
+                continue
+            image = (pins or {}).get(u.stem, {}).get("image") or v
+            if imagepin.tag_of(image) == "" and "@" not in image and u.stem in imagepin.templates(s.ini):
+                continue                       # bare and unpinned: nothing to pull (a sandbox)
+            if image in vistos:
+                continue
+            vistos.add(image)
+            # moving_tag first: it is string work, and when it is true the answer
+            # from image_exists is thrown away anyway.
+            if not SANDBOX and not moving_tag(image) and image_exists(image):
+                continue
+            out.append((f"podman pull {image}", lambda image=image: pull(image)))
     return out
 
 
@@ -4239,8 +4340,8 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude, falhas=None):
             "unit": u.stem,
             "image": imagem,
             # What runs, which is not what the repository pins until --update.
-            "installed_image": next((v for k, v in directives_of(p) if k == "Image"), "")
-                               if p else None,
+            "installed_image": imagepin.effective_image(p) if p else None,
+            "templated": u.stem in imagepin.templates(s.ini),
             "installed": p is not None,
             # A drop-in beside the unit (overrides.py): the store's Customize screen wrote it.
             "override": bool(p and overrides.read_override(p) is not None),
@@ -4566,7 +4667,7 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
     for problem in preflight(s, tailnet, modo_efetivo == "local"):
         say(f"  !  {problem}")
     if a.update:
-        verb, (steps, warnings) = "update", plan_update(s, access, href_local)
+        verb, (steps, warnings) = "update", plan_update(s, access, href_local, a.latest, a.major)
     elif a.backup:
         verb, (steps, warnings) = "backup", plan_backup(s, a.out)
     elif a.restore:
@@ -4733,6 +4834,10 @@ def main():
     action = ap.add_mutually_exclusive_group()
     action.add_argument("--update", action="store_true",
                         help=loc("re-copies the units and restarts; touches no data, env or secret"))
+    ap.add_argument("--latest", action="store_true",
+                    help=loc("with --update: also move each image to its latest release (a major jump needs --major)"))
+    ap.add_argument("--major", action="store_true",
+                    help=loc("with --update --latest: allow the jump to a new major version"))
     action.add_argument("--reinstall", action="store_true",
                         help=loc("installs again, OVERWRITING env, config and secrets"))
     action.add_argument("--remove", action="store_true",

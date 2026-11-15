@@ -130,7 +130,7 @@ cookies manually.
 qh instagram-monitor --update --apply
 ```
 
-Pinned to `v4.0.2`. Nothing updates on its own.
+The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh instagram-monitor --update --latest --apply` (the store's Update button does the same).
 
 ## Hardening
 

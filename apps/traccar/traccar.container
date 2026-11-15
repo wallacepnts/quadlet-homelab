@@ -2,7 +2,7 @@
 Description=Traccar (GPS tracking)
 
 [Container]
-Image=docker.io/traccar/traccar:6.16.0
+Image=docker.io/traccar/traccar
 ContainerName=traccar
 
 Network=tsdproxy-net.network

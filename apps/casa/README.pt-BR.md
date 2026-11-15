@@ -82,7 +82,7 @@ install.ini
 qh casa --update --apply
 ```
 
-Fixado em `0.4.15`. Nada atualiza sozinho — uma versão nova é aplicada
+A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh casa --update --latest --apply` (o botão Atualizar da loja faz o mesmo). Nada atualiza sozinho — uma versão nova é aplicada
 quando você roda o comando acima.
 
 ## Backup

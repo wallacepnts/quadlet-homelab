@@ -75,8 +75,7 @@ ls /sys/fs/cgroup/user.slice/user-$(id -u).slice/user@$(id -u).service/ | grep m
 qh hermes-agent --update --apply
 ```
 
-Pinned to `v2026.9.24`. Nothing updates on its own — a new version is applied
-when you run the command above.
+The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh hermes-agent --update --latest --apply` (the store's Update button does the same).
 
 ## Backup
 

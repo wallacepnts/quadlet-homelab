@@ -2,7 +2,7 @@
 Description=wger (workout planning and tracking)
 
 [Container]
-Image=docker.io/wger/server:2.7
+Image=docker.io/wger/server
 ContainerName=wger
 
 Network=tsdproxy-net.network

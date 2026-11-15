@@ -5,7 +5,7 @@ Requires=authentik-postgres.service
 Wants=authentik-worker.service
 
 [Container]
-Image=ghcr.io/goauthentik/server:2026.8.3
+Image=ghcr.io/goauthentik/server
 ContainerName=authentik
 Exec=server
 

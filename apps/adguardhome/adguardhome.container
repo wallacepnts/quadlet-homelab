@@ -2,7 +2,7 @@
 Description=AdGuard Home (DNS ad-blocking)
 
 [Container]
-Image=docker.io/adguard/adguardhome:v0.107.79
+Image=docker.io/adguard/adguardhome
 ContainerName=adguardhome
 
 Network=tsdproxy-net.network

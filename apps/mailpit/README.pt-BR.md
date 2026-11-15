@@ -106,8 +106,7 @@ mensagens guardadas — mas também põe o `.env.example` de volta por cima de
 qh mailpit --update --apply
 ```
 
-Fixado em `v1.31.4`. Nada atualiza sozinho — a versão nova entra quando você
-roda o comando acima.
+A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh mailpit --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
 
 ## Backup
 

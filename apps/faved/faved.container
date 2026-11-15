@@ -2,7 +2,7 @@
 Description=Faved (bookmarks with nested tags)
 
 [Container]
-Image=docker.io/denho/faved:2.10.0
+Image=docker.io/denho/faved
 ContainerName=faved
 
 Network=tsdproxy-net.network

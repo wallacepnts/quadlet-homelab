@@ -2,7 +2,7 @@
 Description=FreshRSS (RSS/Atom feed aggregator)
 
 [Container]
-Image=ghcr.io/freshrss/freshrss:1.30.0-alpine
+Image=ghcr.io/freshrss/freshrss
 ContainerName=freshrss
 
 Network=tsdproxy-net.network

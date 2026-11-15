@@ -92,7 +92,7 @@ boot here before the first scan, and a cold library takes longer.
 qh komga --update --apply
 ```
 
-Pinned to `1.28.1`.
+The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh komga --update --latest --apply` (the store's Update button does the same).
 
 ## Backup
 

@@ -136,6 +136,12 @@ GRUPOS = {
 # A `# type: number` line in the comments above a setting in a `.env.example` says what
 # box the store shows and what it accepts. Without one a setting is plain text.
 
+def valid_template(texto):
+    """True for an image tag template with exactly one `{version}` (or `{version:N}`) and no other braces."""
+    quase = re.sub(r"\{version(?::\d+)?\}", "", texto or "", count=1)
+    return len(re.findall(r"\{version(?::\d+)?\}", texto or "")) == 1 and "{" not in quase and "}" not in quase
+
+
 ENV_TYPES = ("text", "password", "bool", "number", "email", "url", "ip")
 ENV_TYPE_LINE = re.compile(r"^type:\s*([A-Za-z]+)\s*$", re.I)
 BOOL_PAIRS = (("true", "false"), ("yes", "no"), ("on", "off"), ("y", "n"), ("1", "0"))

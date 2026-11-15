@@ -2,7 +2,7 @@
 Description=Postfix relay (null client) for the other containers
 
 [Container]
-Image=docker.io/boky/postfix:v5.1.0
+Image=docker.io/boky/postfix
 ContainerName=postfix
 
 PublishPort=1587:587

@@ -39,7 +39,7 @@ three tools share.
 Description=<app>
 
 [Container]
-Image=<registry>/<image>:<tag>
+Image=<registry>/<image>
 ContainerName=<app>
 
 Network=tsdproxy-net.network

@@ -2,7 +2,7 @@
 Description=Beaver Habit Tracker
 
 [Container]
-Image=docker.io/daya0576/beaverhabits:0.10.0
+Image=docker.io/daya0576/beaverhabits
 ContainerName=beaverhabits
 
 Network=tsdproxy-net.network

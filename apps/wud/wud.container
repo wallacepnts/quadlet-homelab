@@ -4,7 +4,7 @@ Requires=podman.socket
 After=podman.socket
 
 [Container]
-Image=docker.io/getwud/wud:9.2.1
+Image=docker.io/getwud/wud
 ContainerName=wud
 
 Network=tsdproxy-net.network

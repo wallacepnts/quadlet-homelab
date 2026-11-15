@@ -2,7 +2,7 @@
 Description=ChromeOS Flex in a VM
 
 [Container]
-Image=docker.io/dockurr/chromeos:1.05
+Image=docker.io/dockurr/chromeos
 ContainerName=vm-chromeos
 
 Network=tsdproxy-net.network

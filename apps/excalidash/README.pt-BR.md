@@ -73,7 +73,7 @@ ou `oidc_enforced` (só o Authentik) e preencha `OIDC_ISSUER_URL`,
 qh excalidash --update --apply
 ```
 
-Fixado em `0.6.9`. As duas imagens usam a mesma tag, e sobem juntas.
+A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh excalidash --update --latest --apply` (o botão Atualizar da loja faz o mesmo). As duas imagens usam a mesma tag, e sobem juntas.
 
 ## Backup
 

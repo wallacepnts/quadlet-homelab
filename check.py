@@ -21,7 +21,7 @@ from collections import defaultdict
 from pathlib import Path
 
 from qhui import (translator, directives, directives_of, published_port, format_unit,
-                  red, yellow, green, dim, GRUPOS, ENV_TYPES, ENV_TYPE_LINE, env_value_problem)
+                  red, yellow, green, dim, GRUPOS, valid_template, ENV_TYPES, ENV_TYPE_LINE, env_value_problem)
 
 PT = {
     "unit(s) reformatted": "unit(s) reformatada(s)",
@@ -241,6 +241,40 @@ def floating_tag(image):
 BARE_DOLLAR = re.compile(r"(?<!\$)\$(?!\$)[A-Za-z{]")
 
 
+def bare_image(value):
+    """An `Image=` with no tag and no digest: the version is not in the repository."""
+    return ":" not in value.rpartition("/")[2] and "@" not in value
+
+
+def image_templates(folder):
+    """{unit: template} from `[image]` in the folder's install.ini."""
+    ini = configparser.ConfigParser(interpolation=None)
+    ini.read(folder / "install.ini")
+    return dict(ini.items("image")) if ini.has_section("image") else {}
+
+
+def image_template_problemas(folder):
+    """What is wrong with a folder's `[image]` section, as [(unit, message)]."""
+    saida = []
+    ini = configparser.ConfigParser(interpolation=None)
+    ini.read(folder / "install.ini")
+    fontes = dict(ini.items("upstream")) if ini.has_section("upstream") else {}
+    for unit, tpl in image_templates(folder).items():
+        caminho = folder / f"{unit}.container"
+        if not caminho.exists():
+            saida.append((unit, "is not a unit of this folder"))
+            continue
+        if not valid_template(tpl):
+            saida.append((unit, f"template {tpl!r} needs exactly one {{version}} (or {{version:N}})"))
+        imagens = [v for k, v in directives_of(caminho) if k == "Image"]
+        if not imagens or not bare_image(imagens[0]):
+            saida.append((unit, "has a template but its Image= is not bare: one of them has to go"))
+        fonte = fontes.get(unit, "")
+        if fonte == "-" or fonte.startswith(("compose:", "registry")):
+            saida.append((unit, f"follows `{fonte}` in [upstream]: only a GitHub release can fill a template"))
+    return saida
+
+
 def check_container(path, folder):
     text = path.read_text()
     ds = directives(text)
@@ -249,14 +283,21 @@ def check_container(path, folder):
 
     check_podman_args(text, ref)
 
-    # Rule 9. The repository dropped auto-update on 2026-10-03: the version on the
-    # host is the version in the repository, and an update is a commit.
+    # Rule 9. Nothing in this repository updates on its own: AutoUpdate= is refused, and an image is
+    # either pinned here (a tag or a digest) or has NO tag and a `[image]` template in install.ini —
+    # `qh` then pins the latest release on the host, in a drop-in, and a person moves it.
     if "AutoUpdate" in keys:
         error("rule 9", f"{ref} has AutoUpdate= — nothing in this repository updates on "
                         f"its own, pin the image and remove it")
     if "floating" not in exemptions(text):
         for key, value in ds:
-            if key == "Image" and (tag := floating_tag(value)):
+            if key != "Image":
+                continue
+            if bare_image(value):
+                if path.stem not in image_templates(folder):
+                    error("rule 9", f"{ref} has an image with no tag and no `[image]` template for "
+                                    f"{path.stem} in install.ini — `qh` would pull `latest`")
+            elif tag := floating_tag(value):
                 error("rule 9", f"{ref} is on a floating tag (`{tag}`) — pin a version, "
                                 f"or a digest where upstream publishes none")
 
@@ -586,6 +627,8 @@ def check_manifest(folders):
             for key, value in directives_of(f):
                 if key == "Secret":
                     declared.add(value.split(",")[0])
+        for unit, msg in image_template_problemas(folder):
+            error("manifest", f"apps/{folder.name}: install.ini [image] {unit} {msg}")
         for exemplo in sorted(folder.glob("*.env.example")):
             for n, msg in env_type_problemas(exemplo.read_text()):
                 error("manifest", f"apps/{folder.name}/{exemplo.name}:{n}: {msg}")
@@ -858,8 +901,10 @@ def pinned_tags(folder):
     for unit in sorted(folder.glob("*.container")):
         for key, value in directives_of(unit):
             if key == "Image":
-                out.append(value.partition("@sha256:")[2]
-                           or value.rpartition(":")[2])
+                # A bare image (no tag, no digest) carries no version here: `qh` pins it on the host.
+                x = value.partition("@sha256:")[2] or (value.rpartition(":")[2] if ":" in value.rpartition("/")[2] else "")
+                if x:
+                    out.append(x)
     return sorted(set(out))
 
 

@@ -2,7 +2,7 @@
 Description=Calibre-Web-Automated
 
 [Container]
-Image=docker.io/crocodilestick/calibre-web-automated:v4.0.8
+Image=docker.io/crocodilestick/calibre-web-automated
 ContainerName=calibre-web-automated
 
 Network=tsdproxy-net.network

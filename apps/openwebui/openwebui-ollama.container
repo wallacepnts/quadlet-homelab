@@ -2,7 +2,7 @@
 Description=Ollama (local LLMs, Open WebUI's backend)
 
 [Container]
-Image=docker.io/ollama/ollama:0.35.1
+Image=docker.io/ollama/ollama
 ContainerName=ollama
 
 Network=tsdproxy-net.network

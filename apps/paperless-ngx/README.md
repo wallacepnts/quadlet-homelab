@@ -84,8 +84,7 @@ Units in this stack:
 qh paperless-ngx --update --apply
 ```
 
-Pinned to `3.2.1`, `3.3.1.0`, `8.37`, `9.1.1-alpine3.24`. Nothing updates on its own — a new version is applied
-when you run the command above.
+Pinned to `3.3.1.0`, `8.37`, `9.1.1-alpine3.24`. The app's own image has no version here: `qh` pins the latest release on this host, and `qh paperless-ngx --update --latest --apply` moves it.
 
 ## Backup
 

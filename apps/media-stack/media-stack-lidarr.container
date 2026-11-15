@@ -2,7 +2,7 @@
 Description=Lidarr (music automation)
 
 [Container]
-Image=lscr.io/linuxserver/lidarr:3.1.0
+Image=lscr.io/linuxserver/lidarr
 ContainerName=lidarr
 
 Network=tsdproxy-net.network

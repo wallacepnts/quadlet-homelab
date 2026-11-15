@@ -78,7 +78,7 @@ qh rclone --reinstall --ask-secrets --apply
 qh rclone --update --apply
 ```
 
-Pinned to `1.75.2`. Nothing updates on its own.
+The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh rclone --update --latest --apply` (the store's Update button does the same).
 
 **The web GUI is a separate project and is pinned too.** By default `rcd` asks
 GitHub for the newest GUI release at every start. `--rc-web-fetch-url` points it

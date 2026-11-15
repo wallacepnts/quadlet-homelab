@@ -161,11 +161,13 @@ ao lado da última release do projeto (`qh-updates --host`, guardado em disco
 por um dia e consultado de novo só para o serviço que uma instalação,
 atualização ou remoção acabou de mexer; o **Verificar agora** força), então dá pra ver o que está atrás sem
 depender de um bump neste repositório.
-Quando o repositório ainda fixa a versão instalada, o **Atualizar para X** faz
-o caminho todo: `qh-updates <app> --bump --apply` só daquele serviço (o
-`Image=` e as linhas Fixado em, no clone de onde a loja roda) e então
-`qh <app> --update --apply`. A mudança fica no git para você revisar e
-commitar. Uma major fica retida, exatamente como no `--bump`.
+O **Atualizar para X** leva a release nova. Num app cuja versão não está no repositório (veja
+[auto-update](./auto-update.md)) isso é `qh <app> --update --latest --apply`: a tag nova é
+fixada no drop-in do host e não sobra nada para commitar. Numa imagem que ainda tem a tag na
+unit (um apoio, um digest) é `qh-updates <app> --bump --apply` só daquele serviço (o
+`Image=` e as linhas Fixado em, no clone de onde a loja roda) e então `qh <app> --update
+--apply`, e a mudança fica no git para você revisar e commitar. Uma major fica retida nos
+dois caminhos.
 Existe um botão de atualizar só, e ele só aparece quando há algo para
 atualizar, e clicar nele já roda a atualização, sem plano e sem confirmação.
 Enquanto roda, o painel mostra todas as releases do GitHub entre a tag

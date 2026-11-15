@@ -4,7 +4,7 @@ Requires=podman.socket
 After=podman.socket
 
 [Container]
-Image=ghcr.io/dockur/casa:0.4.15
+Image=ghcr.io/dockur/casa
 ContainerName=casa
 
 Network=tsdproxy-net.network

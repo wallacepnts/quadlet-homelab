@@ -50,6 +50,7 @@ sys.path.insert(0, str(ROOT))
 import overrides as O  # noqa: E402
 import qhui  # noqa: E402
 import resources  # noqa: E402
+import imagepin  # noqa: E402
 import trials  # noqa: E402
 import wsterm  # noqa: E402
 
@@ -308,6 +309,18 @@ def backups(app):
 def bump_cmd(app, aplicar):
     """qh-updates --bump for this one service: the repository's Image= and Pinned lines."""
     return [sys.executable, str(ROOT / "updates.py"), app, "--bump"] + (["--apply"] if aplicar else [])
+
+
+def pinning(app):
+    """(some, all): whether some / every container of the service leaves its version to the host.
+
+    Those are moved by `qh --update --latest`, on the host; the others still have a tag in the
+    repository, and moving that is `qh-updates --bump`, a change to review and commit."""
+    s = I.Service(app, PREFIX)
+    stems = [u.stem for u in s.units if u.suffix == ".container"]
+    tpls = imagepin.templates(s.ini)
+    com = [x for x in stems if x in tpls]
+    return bool(com), bool(stems) and len(com) == len(stems)
 
 
 def bump_vazio(saida):
@@ -1564,10 +1577,15 @@ class Handler(BaseHTTPRequestHandler):
             recusa = install_refusal(app, lang) if action == "install" else None
             if recusa:
                 return self._json(400, {"error": recusa})
-            if action == "upgrade" and PREFIX:
+            algum, todos = pinning(app) if action == "upgrade" else (False, False)
+            if action == "upgrade" and PREFIX and not todos:
                 return self._json(400, {"error": loc("an upgrade edits the repository, "
                                                      "which a sandbox does not have")})
-            cmds = [bump_cmd(app, False)] if action == "upgrade" else [qh(app, *extra)]
+            if action == "upgrade":
+                # What leaves its version to the host is moved there; the rest is a bump in the repository.
+                cmds = ([] if todos else [bump_cmd(app, False)]) + ([qh(app, "--update", "--latest")] if algum else [])
+            else:
+                cmds = [qh(app, *extra)]
             if action == "install":
                 # The dry-run of each service the install takes along, in order.
                 cmds = [qh(x) for x in chain(app)]
@@ -1578,7 +1596,7 @@ class Handler(BaseHTTPRequestHandler):
                 saida += ("\n" + "─" * 60 + "\n" if i else "") + r.stdout + r.stderr
                 rc = rc or r.returncode
             r = subprocess.CompletedProcess(cmds[-1], rc)
-            vazio = bump_vazio(saida) if action == "upgrade" else em_dia(saida)
+            vazio = (em_dia(saida) if todos else bump_vazio(saida) and (not algum or em_dia(saida))) if action == "upgrade" else em_dia(saida)
             return self._json(200, {"rc": r.returncode, "output": saida, "nothing": vazio})
         if url.path in ("/api/login", "/api/backups", "/api/backup/file"):
             app = q.get("app", "")
@@ -1807,10 +1825,12 @@ class Handler(BaseHTTPRequestHandler):
                 # The version is taken in the repository first — it stays the
                 # source, and the change is there to review and commit — then
                 # brought to the host by the same --update as always.
-                if PREFIX:
+                algum, todos = pinning(app)
+                if PREFIX and not todos:
                     return self._json(400, {"error": loc("an upgrade edits the repository, "
                                                          "which a sandbox does not have")})
-                cmd = [bump_cmd(app, True), qh(app, "--update", "--apply")]
+                cmd = ([] if todos else [bump_cmd(app, True)]) + [
+                    qh(app, "--update", *(["--latest"] if algum else []), "--apply")]
             if d.get("backup_first"):
                 # Opt-in safety net: the same cold backup the Backups screen makes, then the update.
                 # Chained, so a backup that fails stops the update before it touches anything.
@@ -2018,13 +2038,31 @@ def selftest():
             st, _, _ = pedir("/api/run", json.dumps(
                 {"app": "homebox", "action": "access", "mode": "lan"}).encode(), api)
             assert st == 400, st
-            for caminho in ("/api/plan?app=homebox&action=upgrade", None):
+            for caminho in ("/api/plan?app=immich&action=upgrade", None):
                 if caminho:
                     st, _, _ = pedir(caminho, headers=ok)
                 else:
                     st, _, _ = pedir("/api/run", json.dumps(
-                        {"app": "homebox", "action": "upgrade"}).encode(), api)
-                assert st == 400, ("a sandbox never bumps the real repository", st)
+                        {"app": "immich", "action": "upgrade"}).encode(), api)
+                assert st == 400, ("a sandbox never bumps the real repository (immich keeps a pinned sidecar)", st)
+            # A service that leaves its version to the host can be upgraded in a sandbox: it edits no repository.
+            assert pinning("homebox") == (True, True) and pinning("immich")[0] and not pinning("immich")[1]
+            tpl = imagepin.templates(I.Service("homebox", PREFIX).ini)["homebox"]
+            os.environ["QH_FAKE_LATEST"] = json.dumps({"homebox": "v9.9.9"})
+            try:
+                st, _, corpo = pedir("/api/run", json.dumps({"app": "homebox", "action": "upgrade"}).encode(), api)
+                assert st == 202, (st, corpo)
+                job = json.loads(corpo)["job"]
+                for _ in range(300):
+                    estado = json.loads(pedir(f"/api/job/{job}", headers=ok)[2])
+                    if estado["rc"] is not None:
+                        break
+                    time.sleep(0.5)
+                assert estado["rc"] == 0, estado["output"]
+                pino = imagepin.read_pin(Path(tmp, ".config/containers/systemd/homebox.container"))
+                assert pino and pino["image"].endswith(":" + imagepin.fill(tpl, "v9.9.9")), pino
+            finally:
+                os.environ.pop("QH_FAKE_LATEST", None)
             assert bump_vazio("nada a subir.") and not bump_vazio("SUBIR (1):  (dry-run)")
             assert em_dia(f"homebox: {I.EM_DIA}") and em_dia("homebox: já está em dia — nada a mudar")
             assert not em_dia("homebox: update, 5 steps  (dry-run)")

@@ -2,7 +2,7 @@
 Description=macOS in a container (QEMU/KVM)
 
 [Container]
-Image=docker.io/dockurr/macos:3.12
+Image=docker.io/dockurr/macos
 ContainerName=vm-macos
 
 Network=tsdproxy-net.network

@@ -52,8 +52,7 @@ audiobookshelf.container
 qh audiobookshelf --update --apply
 ```
 
-Fixado em `2.37.1`. Nada atualiza sozinho — versão nova entra quando você
-roda o comando acima.
+A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh audiobookshelf --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
 
 ## Backup
 

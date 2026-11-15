@@ -2,7 +2,7 @@
 Description=ZimaOS in a VM (NAS and home-server OS)
 
 [Container]
-Image=docker.io/dockurr/zima:1.7.1
+Image=docker.io/dockurr/zima
 ContainerName=vm-zima
 
 Network=tsdproxy-net.network

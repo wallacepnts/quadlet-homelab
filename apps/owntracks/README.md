@@ -98,8 +98,7 @@ Units in this stack:
 qh owntracks --update --apply
 ```
 
-Pinned to `1.0.4`, `2.1.2-alpine`, `2.15.3`. Nothing updates on its own — a new version is applied
-when you run the command above.
+Pinned to `2.1.2-alpine`. The app's own image has no version here: `qh` pins the latest release on this host, and `qh owntracks --update --latest --apply` moves it.
 
 ## Backup
 

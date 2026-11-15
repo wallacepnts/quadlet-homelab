@@ -2,7 +2,7 @@
 Description=HomeBox (home inventory)
 
 [Container]
-Image=ghcr.io/sysadminsmedia/homebox:0.26.2
+Image=ghcr.io/sysadminsmedia/homebox
 ContainerName=homebox
 
 Network=tsdproxy-net.network

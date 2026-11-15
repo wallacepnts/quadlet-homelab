@@ -2,7 +2,7 @@
 Description=Invio (self-hosted invoicing)
 
 [Container]
-Image=ghcr.io/kittendevv/invio:v2.2.0
+Image=ghcr.io/kittendevv/invio
 ContainerName=invio
 
 Network=tsdproxy-net.network

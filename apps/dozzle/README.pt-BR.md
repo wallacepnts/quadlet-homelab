@@ -83,7 +83,7 @@ forma exec: a imagem não traz shell, então o `CMD-SHELL` falharia.
 qh dozzle --update --apply
 ```
 
-Fixado em `v11.2.0`.
+A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh dozzle --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
 
 ## Backup
 

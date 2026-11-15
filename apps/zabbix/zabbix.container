@@ -4,7 +4,7 @@ After=zabbix-server.service
 Requires=zabbix-server.service
 
 [Container]
-Image=docker.io/zabbix/zabbix-web-nginx-pgsql:alpine-7.4.16
+Image=docker.io/zabbix/zabbix-web-nginx-pgsql
 ContainerName=zabbix
 
 Network=tsdproxy-net.network

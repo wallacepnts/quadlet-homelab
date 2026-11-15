@@ -2,7 +2,7 @@
 Description=instagram_monitor (real-time Instagram OSINT monitor)
 
 [Container]
-Image=docker.io/misiektoja/instagram-monitor:v4.0.2
+Image=docker.io/misiektoja/instagram-monitor
 ContainerName=instagram-monitor
 Exec=--env-file /data/.env --web-dashboard
 RunInit=true

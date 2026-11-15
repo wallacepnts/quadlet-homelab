@@ -34,6 +34,7 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+import imagepin
 import qhui
 from qhui import (translator, directives, directives_of, ref_parts, FLOATING,
                   red, yellow, green, dim)
@@ -684,8 +685,9 @@ def services(host=None):
             principal = instaladas[principal.name]
         ref = ""
         if principal.exists():
-            img = next((v for k, v in directives_of(principal) if k == "Image"), "")
-            ref = img.split("@")[0].rpartition(":")[2]
+            img = imagepin.effective_image(principal) if host is not None else next(
+                (v for k, v in directives_of(principal) if k == "Image"), "")
+            ref = img.split("@")[0].rpartition(":")[2] if imagepin.tag_of(img) else ""
         for cont in conts:
             fonte = cont
             if host is not None:
@@ -694,6 +696,12 @@ def services(host=None):
                     continue
             for key, value in directives_of(fonte):
                 if key == "Image":
+                    # On the host the image is the one pinned there (the drop-in); in the repository a
+                    # bare image has no version to compare: `qh` pins it on each host.
+                    if host is not None:
+                        value = imagepin.effective_image(fonte)
+                    if imagepin.tag_of(value) == "" and "@" not in value:
+                        continue
                     yield folder.name, cont.stem, value, overrides.get(cont.stem), ref
 
 
@@ -997,7 +1005,9 @@ def tags_de(pasta):
     for unit in sorted(pasta.glob("*.container")):
         for chave, valor in directives_of(unit):
             if chave == "Image":
-                out.append(valor.partition("@sha256:")[2] or valor.rpartition(":")[2])
+                x = valor.partition("@sha256:")[2] or (valor.rpartition(":")[2] if ":" in valor.rpartition("/")[2] else "")
+                if x:                    # a bare image has no version in the repository
+                    out.append(x)
     return sorted(set(out))
 
 

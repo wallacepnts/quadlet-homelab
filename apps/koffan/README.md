@@ -87,7 +87,7 @@ Both containers are on `tsdproxy-net`, so `ntfy` resolves by name.
 qh koffan --update --apply
 ```
 
-Pinned to `v2.15.0`.
+The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh koffan --update --latest --apply` (the store's Update button does the same).
 
 ## Backup
 

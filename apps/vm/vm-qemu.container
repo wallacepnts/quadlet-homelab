@@ -2,7 +2,7 @@
 Description=QEMU (any OS in a VM, viewed in the browser)
 
 [Container]
-Image=docker.io/qemux/qemu:7.50
+Image=docker.io/qemux/qemu
 ContainerName=vm-qemu
 
 Network=tsdproxy-net.network

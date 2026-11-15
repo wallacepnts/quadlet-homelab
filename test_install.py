@@ -607,7 +607,7 @@ def scenario_deprecated(tmp):
     import json
     raiz = Path(tmp, "dep-repo")
     raiz.mkdir()
-    for f in ("install.py", "qhui.py", "overrides.py", "trials.py"):
+    for f in ("install.py", "qhui.py", "overrides.py", "trials.py", "imagepin.py"):
         shutil.copy(ROOT / f, raiz / f)
     shutil.copytree(ROOT / "apps", raiz / "apps", ignore_dangling_symlinks=True)   # apps/durockrj may point nowhere
     import configparser
@@ -684,7 +684,7 @@ def scenario_backup_exclude(tmp):
     """`[backup] exclude` leaves rebuildable folders out of the archive, says how much, and the restore brings the folders back."""
     raiz = Path(tmp, "bx-repo")
     raiz.mkdir()
-    for f in ("install.py", "qhui.py", "overrides.py", "trials.py"):
+    for f in ("install.py", "qhui.py", "overrides.py", "trials.py", "imagepin.py"):
         shutil.copy(ROOT / f, raiz / f)
     shutil.copytree(ROOT / "apps", raiz / "apps", ignore_dangling_symlinks=True)
     with open(raiz / "apps" / APP / "install.ini", "a") as fh:
@@ -734,6 +734,54 @@ def scenario_stopped(tmp):
     check(not masc.exists() and not masc.is_symlink(), "--remove lifts the mask, or the next install of this name would not start")
 
 
+def scenario_pins(tmp):
+    """A unit with no version in the repository: `qh` pins one on the host, keeps it, moves it on request."""
+    import json
+    home = str(Path(tmp, "pin-home"))
+    unit = Path(home, ".config/containers/systemd", f"{APP}.container")
+    drop = I.imagepin.dropin_path(unit)
+    tpl = I.imagepin.templates(I.Service(APP).ini)[APP]
+    repo = I.imagepin.image_repo(next(v for k, v in I.directives_of(ROOT / "apps" / APP / f"{APP}.container") if k == "Image"))
+
+    def com_fake(release, *args):
+        r = subprocess.run([sys.executable, str(ROOT / "install.py"), *args], capture_output=True, text=True, cwd=ROOT,
+                           env={**os.environ, "QH_LANG": "en", "QH_FAKE_LATEST": json.dumps({APP: release})})
+        return r.stdout + r.stderr
+    run(APP, "--apply", "--prefix", home)
+    check(not drop.exists(), "a sandbox install, with no network, pins nothing")
+    check(I.imagepin.tag_of(next(v for k, v in I.directives_of(unit) if k == "Image")) == "", "the unit on the host is as bare as the repository's")
+    run(APP, "--remove", "--apply", "--prefix", home)
+
+    out = com_fake("v1.2.3", APP, "--apply", "--prefix", home)
+    check(drop.is_file() and I.imagepin.read_pin(unit)["image"] == f"{repo}:{I.imagepin.fill(tpl, 'v1.2.3')}",
+          "an install pins the latest release in a drop-in beside the unit")
+    check(f"pin {APP}: Image={repo}:" in out, "and the plan says which version it pins")
+    antes = drop.read_text()
+    run(APP, "--update", "--apply", "--prefix", home)
+    check(drop.read_text() == antes, "a plain --update keeps the pinned version")
+    out = com_fake("v1.3.0", APP, "--update", "--latest", "--apply", "--prefix", home)
+    check(I.imagepin.read_pin(unit)["image"].endswith(I.imagepin.fill(tpl, "v1.3.0")) and
+          I.imagepin.read_pin(unit)["was"] == I.imagepin.fill(tpl, "v1.2.3"), "--update --latest moves it, and remembers what it was")
+    out = com_fake("v2.0.0", APP, "--update", "--latest", "--apply", "--prefix", home)
+    check(I.imagepin.read_pin(unit)["image"].endswith(I.imagepin.fill(tpl, "v1.3.0")) and "major" in out,
+          "a major jump is held back, and says so")
+    com_fake("v2.0.0", APP, "--update", "--latest", "--major", "--apply", "--prefix", home)
+    check(I.imagepin.read_pin(unit)["image"].endswith(I.imagepin.fill(tpl, "v2.0.0")), "--major takes it")
+    out = com_fake("v2.0.0", APP, "--update", "--latest", "--prefix", home)
+    check(f"pin {APP}:" not in out, "nothing newer: no new pin is planned")
+    run(APP, "--remove", "--apply", "--prefix", home)
+    check(not drop.exists() and not drop.parent.exists(), "--remove takes the pin along")
+
+    # A host installed before versions left the repository runs a tagged unit: the first update writes that down
+    legacy = str(Path(tmp, "pin-legacy"))
+    lu = Path(legacy, ".config/containers/systemd", f"{APP}.container")
+    run(APP, "--apply", "--prefix", legacy)
+    lu.write_text(lu.read_text().replace(f"Image={repo}", f"Image={repo}:7.7.7"))
+    run(APP, "--update", "--apply", "--prefix", legacy)
+    check(I.imagepin.read_pin(lu) == {"image": f"{repo}:7.7.7", "was": None}, "an old host keeps running what it ran: its tag becomes the pin")
+    check(I.imagepin.tag_of(next(v for k, v in I.directives_of(lu) if k == "Image")) == "", "while the unit itself goes back to the repository's")
+
+
 def main():
     with tempfile.TemporaryDirectory() as tmp:
         home, out = str(Path(tmp) / "home"), str(Path(tmp) / "backups")
@@ -759,6 +807,7 @@ def main():
 
         print("backup exclude:");      scenario_backup_exclude(tmp)
         print("stopped on purpose:");  scenario_stopped(tmp)
+        print("version pins:");        scenario_pins(tmp)
         print("trials:");              scenario_trial(tmp)
         print("recovery:");           scenario_recovery(tmp)
 

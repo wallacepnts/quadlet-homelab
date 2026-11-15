@@ -85,7 +85,7 @@ gigabyte de Chrome.
 qh changedetection --update --apply
 ```
 
-Fixado em `0.60.8`. Nada atualiza sozinho.
+A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh changedetection --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
 
 ## Backup
 

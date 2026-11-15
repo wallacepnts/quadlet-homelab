@@ -55,8 +55,7 @@ install.ini
 qh actual-budget --update --apply
 ```
 
-Fixado em `26.11.0`. Nada atualiza sozinho — versão nova entra quando você
-roda o comando acima.
+A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh actual-budget --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
 
 ## Backup
 

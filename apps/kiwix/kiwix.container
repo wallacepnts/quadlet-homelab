@@ -2,7 +2,7 @@
 Description=Kiwix (Wikipedia and other libraries, offline)
 
 [Container]
-Image=ghcr.io/kiwix/kiwix-serve:3.8.2
+Image=ghcr.io/kiwix/kiwix-serve
 ContainerName=kiwix
 # The image's own start.sh runs `kiwix-serve --port=8080 $@` unquoted, so the
 # glob is expanded there, in /data. Every .zim in the volume is served, and a

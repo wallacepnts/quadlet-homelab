@@ -54,8 +54,7 @@ install.ini
 qh lubelogger --update --apply
 ```
 
-Pinned to `v1.7.4`. Nothing updates on its own — a new version is applied
-when you run the command above.
+The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh lubelogger --update --latest --apply` (the store's Update button does the same).
 
 ## Backup
 

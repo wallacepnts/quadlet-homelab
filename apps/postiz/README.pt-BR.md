@@ -234,7 +234,7 @@ qh postiz --backup --apply --out ~/backups    # antes: veja "Como ele parte"
 qh postiz --update --apply
 ```
 
-Fixado em `1.28.1`, `16.15`, `17.11-alpine`, `9.1.1-alpine3.24`, `v2.25.0`. Nada atualiza
+Fixado em `1.28.1`, `16.15`, `17.11-alpine`, `9.1.1-alpine3.24`. A imagem do próprio app não tem versão aqui: o `qh` fixa a última release neste host, e `qh postiz --update --latest --apply` a muda. Nada atualiza
 sozinho. O Postgres segue o compose da versão do Postiz para a qual você vai, então
 um salto de major da imagem dele é uma migração à parte.
 

@@ -2,7 +2,7 @@
 Description=FileBrowser Quantum (web file manager)
 
 [Container]
-Image=ghcr.io/gtsteffaniak/filebrowser:1.5.6-stable
+Image=ghcr.io/gtsteffaniak/filebrowser
 ContainerName=filebrowser
 
 Network=tsdproxy-net.network

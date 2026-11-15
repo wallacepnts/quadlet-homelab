@@ -83,7 +83,7 @@ tudo o que há dentro —, então o `CMD-SHELL` não teria shell onde rodar.
 qh vikunja --update --apply
 ```
 
-Fixado em `2.7.0`. Ele migra o banco no start, e é por isso que as notas da
+A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh vikunja --update --latest --apply` (o botão Atualizar da loja faz o mesmo). Ele migra o banco no start, e é por isso que as notas da
 release valem uma lida antes de uma major.
 
 ## Backup

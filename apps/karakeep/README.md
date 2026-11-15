@@ -80,8 +80,7 @@ Units in this stack:
 qh karakeep --update --apply
 ```
 
-Pinned to `0.33.2`, `151.0.7922.47-r1`, `v1.41.0`. Nothing updates on its own — a new version is applied
-when you run the command above.
+Pinned to `151.0.7922.47-r1`, `v1.41.0`. The app's own image has no version here: `qh` pins the latest release on this host, and `qh karakeep --update --latest --apply` moves it.
 
 ## Backup
 

@@ -53,8 +53,7 @@ install.ini
 qh node-red --update --apply
 ```
 
-Fixado em `5.0.7-minimal`. Nada atualiza sozinho — versão nova entra quando você
-roda o comando acima.
+A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh node-red --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
 
 ## Backup
 

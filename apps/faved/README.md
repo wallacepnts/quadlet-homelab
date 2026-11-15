@@ -71,7 +71,7 @@ chown` for you because the unit declares `User=`.
 qh faved --update --apply
 ```
 
-Pinned to `2.10.0`.
+The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh faved --update --latest --apply` (the store's Update button does the same).
 
 ## Backup
 

@@ -102,8 +102,7 @@ sem mudar a senha.
 qh filebrowser --update --apply
 ```
 
-Fixado em `1.5.6-stable`. Nada atualiza sozinho — versão nova entra quando
-você roda o comando acima. O `config.yaml` é versionado aqui, então leia as
+A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh filebrowser --update --latest --apply` (o botão Atualizar da loja faz o mesmo). O `config.yaml` é versionado aqui, então leia as
 notas da release atrás de mudança de schema antes de subir uma major.
 
 ## Backup

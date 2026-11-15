@@ -2,7 +2,7 @@
 Description=LubeLogger
 
 [Container]
-Image=ghcr.io/hargata/lubelogger:v1.7.4
+Image=ghcr.io/hargata/lubelogger
 ContainerName=lubelogger
 
 Network=tsdproxy-net.network

@@ -88,7 +88,7 @@ host on port **10051** (active checks) or let the server reach the agent on
 qh zabbix --update --apply
 ```
 
-Pinned to `17.11-alpine`, `alpine-7.4.16`. Nothing updates on its own. The server and the web
+Pinned to `17.11-alpine`. The app's own image has no version here: `qh` pins the latest release on this host, and `qh zabbix --update --latest --apply` moves it. The server and the web
 interface share one tag and must move together. The server upgrades its own schema on start,
 so take a backup before a minor jump. Postgres stays on 17.
 

@@ -76,7 +76,7 @@ qh rclone --reinstall --ask-secrets --apply
 qh rclone --update --apply
 ```
 
-Fixado em `1.75.2`. Nada atualiza sozinho.
+A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh rclone --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
 
 **A interface web é outro projeto e também está fixada.** Por padrão o `rcd`
 pergunta ao GitHub pela release mais nova da interface a cada start.

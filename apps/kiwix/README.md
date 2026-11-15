@@ -98,7 +98,7 @@ read-only applies to the container's own filesystem.
 qh kiwix --update --apply
 ```
 
-Pinned to `3.8.2`. The libraries update on their own schedule, which is yours:
+The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh kiwix --update --latest --apply` (the store's Update button does the same). The libraries update on their own schedule, which is yours:
 download the newer `.zim`, delete the old one, restart.
 
 ## Backup

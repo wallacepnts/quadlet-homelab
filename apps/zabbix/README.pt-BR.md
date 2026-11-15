@@ -86,7 +86,7 @@ agente na **10050** (passivas). As duas são TCP simples, na tailnet ou na LAN.
 qh zabbix --update --apply
 ```
 
-Fixado em `17.11-alpine`, `alpine-7.4.16`. Nada atualiza sozinho. O server e a interface web
+Fixado em `17.11-alpine`. A imagem do próprio app não tem versão aqui: o `qh` fixa a última release neste host, e `qh zabbix --update --latest --apply` a muda. O server e a interface web
 compartilham uma tag e têm de andar juntos. O server atualiza o próprio schema ao subir, então
 faça um backup antes de um salto de minor. O Postgres fica na 17.
 

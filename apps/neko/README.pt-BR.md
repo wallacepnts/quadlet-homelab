@@ -75,8 +75,7 @@ derivados do Chromium pedem mais memória compartilhada que o Firefox — o
 qh neko --update --apply
 ```
 
-Fixado em `3.1.6`. Nada atualiza sozinho — a versão nova entra quando você roda
-o comando acima.
+A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh neko --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
 
 ## Backup
 

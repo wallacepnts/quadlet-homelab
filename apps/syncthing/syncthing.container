@@ -2,7 +2,7 @@
 Description=Syncthing
 
 [Container]
-Image=docker.io/syncthing/syncthing:2.1.5
+Image=docker.io/syncthing/syncthing
 ContainerName=syncthing
 
 Network=tsdproxy-net.network

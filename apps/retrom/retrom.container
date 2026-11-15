@@ -2,7 +2,7 @@
 Description=Retrom (game library and emulation)
 
 [Container]
-Image=ghcr.io/jmberesford/retrom-service:0.8.4
+Image=ghcr.io/jmberesford/retrom-service
 ContainerName=retrom
 
 Network=tsdproxy-net.network

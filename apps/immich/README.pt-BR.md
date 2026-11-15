@@ -76,8 +76,7 @@ Units da stack:
 qh immich --update --apply
 ```
 
-Fixado em `70739f85ad2ee01a726a965584a0f94895f01b0c60b3cc8b0aeef11eaa6888cf`, `bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23`, `v3.2.4`. Nada atualiza sozinho — versão nova entra quando você
-roda o comando acima.
+Fixado em `70739f85ad2ee01a726a965584a0f94895f01b0c60b3cc8b0aeef11eaa6888cf`, `bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23`. A imagem do próprio app não tem versão aqui: o `qh` fixa a última release neste host, e `qh immich --update --latest --apply` a muda.
 
 ## Backup
 
