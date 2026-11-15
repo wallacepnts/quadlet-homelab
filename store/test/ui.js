@@ -254,6 +254,25 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   hb.units = [unidade("homebox")];
   $("panel").open = false;
 
+  // My apps: counters as filters (updates, problems) and a one-line summary
+  const mh = api.S.apps.find((x) => x.id === "homebox"), mm = api.S.apps.find((x) => x.id === "memos");
+  mh.units = [unidade("homebox", { drift: "changed", image: "x:2" })];
+  mm.units = [unidade("memos", { service: "failed", container: "down" })];
+  api.setView("apps");
+  const chips = () => botoes($("groups")).map((b) => b.textContent.trim());
+  confere(chips().join("|") === "Todos 2|Com atualização 1|Com problema 1", `filtros com contadores (${chips().join("|")})`);
+  confere(/1 rodando · 1 parado/.test($("summary").textContent), `resumo no topo (${$("summary").textContent})`);
+  botoes($("groups"))[1].listeners.click();
+  confere($("grid").kids.length === 1 && /Homebox/.test($("grid").textContent), "filtro 'com atualização' mostra só o app com atualização");
+  botoes($("groups"))[2].listeners.click();
+  confere($("grid").kids.length === 1 && /Memos/.test($("grid").textContent), "filtro 'com problema' mostra só o app com problema");
+  botoes($("groups"))[2].listeners.click();
+  confere($("grid").kids.length === 2, "clicar de novo no filtro ativo volta a mostrar todos");
+  api.setView("store"); api.setView("apps");
+  confere($("grid").kids.length === 2, "trocar de aba zera o filtro");
+  mh.units = [unidade("homebox")]; mm.units = [unidade("memos")];
+  api.renderGrid();
+
   // failure state: loop, failed with the exit code, and a recovered restart; details and last failure in the panel
   const bf = api.S.apps.find((x) => x.id === "homebox");
   const falha = (extra) => ({ restarts: 0, exit: 0, result: "success", state: "active", sub: "running", last: 1700000000, ...extra });
@@ -387,7 +406,8 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   confere(!/Gitea/.test(grade.textContent), "Meus apps: o que não está instalado não aparece");
   const abas = ["tab-apps", "tab-store"].map($);
   confere(/Meus apps2/.test(abas[0].textContent) && /Loja3/.test(abas[1].textContent), "abas com contagem");
-  confere(abas[0].attrs["aria-selected"] === "true" && $("groups").hidden === true, "a aba ativa é Meus apps, sem categorias");
+  confere(abas[0].attrs["aria-selected"] === "true" && $("groups").hidden === false
+    && botoes($("groups")).length === 3 && !/Ferramentas|Produtividade/.test($("groups").textContent), "a aba ativa é Meus apps, com filtros e sem categorias");
   const doMemos = tiles.find((k) => /Memos/.test(k.textContent)), doHome = tiles.find((k) => /Homebox/.test(k.textContent));
   const ancora = [...doMemos.walk()].find((e) => e.tag === "a");
   confere(ancora && ancora.attrs.href === "https://memos.example.ts" && ancora.attrs.target === "_blank" && /noopener/.test(ancora.attrs.rel),

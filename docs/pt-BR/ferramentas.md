@@ -321,6 +321,13 @@ o deixa de fora; nomeá-lo ainda instala, porque o aviso não é uma proibição
 uma linha simples de até 300 caracteres. É uma decisão que uma pessoa registra:
 nada marca um serviço sozinho.
 
+**Filtros e resumo** em Meus apps: sob as abas, "Todos", "Com atualização" e "Com problema" são
+botões que trazem a contagem, e uma linha diz quantos apps estão rodando, parados ou pausados. Um
+serviço tem atualização quando há versão nova no upstream ou o repositório mudou desde a instalação;
+problema é o que o selo mostra em vermelho (unit que falhou, loop de restart, container doente,
+imagem que sumiu). Clicar de novo no filtro ativo o limpa, e trocar de aba também; a busca vale por
+cima dele.
+
 **Estado de falha** no card: uma unit que o systemd reiniciou, que falhou ou que espera para ser
 reiniciada mostra o selo vermelho "loop de restart (7×)" ou "falhou (saída 125)", ou o amarelo
 "reiniciou 2×" quando já se recuperou, com os detalhes ao passar o mouse e no painel: reinícios,

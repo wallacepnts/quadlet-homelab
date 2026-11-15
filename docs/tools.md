@@ -318,6 +318,13 @@ the warning is not a ban. `deprecated_pt` is optional, and the English reason
 stands in without it. `check.py` wants one plain line of at most 300 characters.
 It is a decision a person writes down: nothing marks a service by itself.
 
+**Filters and summary** in My apps: under the tabs, "All", "With updates" and "With problems" are
+buttons that carry their counts, and one line says how many apps are running, stopped or paused. A
+service has an update when a newer release exists upstream or the repository changed since it was
+installed; a problem is whatever the badge shows in red (a unit that failed, a restart loop, an
+unhealthy container, an image that is gone). Clicking the active filter again clears it, and so does
+switching tab; the search box works on top of it.
+
 **Failure state** on the card: a unit that systemd restarted, that failed, or that is waiting to
 be restarted shows a red "restart loop (7×)" or "failed (exit 125)" badge, or a yellow "restarted
 2×" once it recovered, with the details on hover and in the panel: restarts, exit code, result and

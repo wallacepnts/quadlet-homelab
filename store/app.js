@@ -10,6 +10,8 @@ const T = {
     noInstall: "Não dá para instalar este app daqui.",
     worksWith: "Funciona com",
     play: "Iniciar / retomar", pause: "Pausar", stopApp: "Parar", pausedBadge: "pausado",
+    filterUpdates: "Com atualização", filterProblems: "Com problema",
+    summaryLine: (r, p, z) => `${r} rodando · ${p} parado(s)${z ? ` · ${z} pausado(s)` : ""}`,
     failFailed: "falhou", failLoop: "reiniciando em loop", failRestarted: "reiniciou", failExit: "saída", failLast: "última falha",
     loopBadge: (n) => `loop de restart (${n}×)`, failedBadge: (c) => `falhou (saída ${c})`, restartedBadge: (n) => `reiniciou ${n}×`, stoppedBadge: "parado", ctlFailed: "Não foi possível:",
     backupFirst: "Backup antes",
@@ -101,6 +103,8 @@ const T = {
     noInstall: "It cannot be installed from here.",
     worksWith: "Works with",
     play: "Start / resume", pause: "Pause", stopApp: "Stop", pausedBadge: "paused",
+    filterUpdates: "With updates", filterProblems: "With problems",
+    summaryLine: (r, p, z) => `${r} running · ${p} stopped${z ? ` · ${z} paused` : ""}`,
     failFailed: "failed", failLoop: "restart loop", failRestarted: "restarted", failExit: "exit", failLast: "last failure",
     loopBadge: (n) => `restart loop (${n}×)`, failedBadge: (c) => `failed (exit ${c})`, restartedBadge: (n) => `restarted ${n}×`, stoppedBadge: "stopped", ctlFailed: "Could not:",
     backupFirst: "Back up first",
@@ -191,7 +195,7 @@ const S = {
   lang: localStorage.getItem("qh-lang") || (navigator.language.startsWith("pt") ? "pt" : "en"),
   backupFirst: localStorage.getItem("qh-backup-first") === "1",   // the box next to Update, remembered
   rule: "tailnet",          // the host's access rule (qh --set-access)
-  apps: [], group: null, search: "", current: null,
+  apps: [], group: null, filter: null, search: "", current: null,
   view: null,               // "apps" (what is installed) or "store" (the catalog); kept in the URL hash
   stats: {},                // unit -> {cpu, mem}, from /api/stats
   upd: {}, checked: null,   // unit -> qh-updates --host row; when it was asked
@@ -410,14 +414,40 @@ function renderTabs() {
 function setView(view) {
   S.view = view;
   S.group = null;
+  S.filter = null;
   if (typeof history !== "undefined" && history.replaceState) history.replaceState(null, "", `#${view}`);
   renderTabs();
   renderGroups();
   renderGrid();
 }
 
+// What needs a look among the installed: something newer to take (a release upstream, or the
+// repository changed since the install), and anything the badge calls a problem.
+const hasUpdate = (a) => behind(a).length > 0 || a.units.some((u) => u.installed && u.drift);
+const hasProblem = (a) => { const st = health(a); return !!st && st[0] === "bad"; };
+const FILTERS = { updates: hasUpdate, problems: hasProblem };
+
+// Meus apps: counters as filters, and one line of what is running. Categories are for the catalog.
+function renderFilters() {
+  const mine = installed();
+  const contar = (f) => mine.filter(f).length;
+  const chip = (key, label, n) => h("button", {
+    type: "button", "aria-pressed": String(S.filter === key),
+    onclick: () => { S.filter = S.filter === key ? null : key; renderGroups(); renderGrid(); },
+  }, `${label} `, h("span", { class: "count" }, String(n)));
+  const rodando = mine.filter((a) => runState(a) === "running").length;
+  const pausados = mine.filter((a) => runState(a) === "paused").length;
+  const parados = mine.length - rodando - pausados;
+  $("groups").hidden = !mine.length;
+  fill($("groups"), chip(null, t("all"), mine.length),
+    chip("updates", t("filterUpdates"), contar(hasUpdate)), chip("problems", t("filterProblems"), contar(hasProblem)));
+  $("summary").hidden = !mine.length;
+  $("summary").textContent = t("summaryLine")(rodando, parados, pausados);
+}
+
 function renderGroups() {
-  // Categories are for browsing the catalog; a handful of installed apps needs none.
+  if (S.view === "apps") return renderFilters();
+  $("summary").hidden = true;
   $("groups").hidden = S.view !== "store";
   const groups = [...new Set(S.apps.map(groupOf))].sort((a, b) => a.localeCompare(b, S.lang));
   const chip = (g, label) => h("button", {
@@ -513,7 +543,8 @@ function storeCard(a) {
 function renderGrid() {
   const q = S.search.trim().toLowerCase();
   const meus = S.view === "apps";
-  const pool = meus ? installed() : S.apps.filter((a) => !S.group || groupOf(a) === S.group);
+  const pool = meus ? installed().filter(FILTERS[S.filter] || (() => true))
+                    : S.apps.filter((a) => !S.group || groupOf(a) === S.group);
   const shown = pool.filter((a) => matches(a, q));
   $("grid").className = meus ? "apps" : "";
   fill($("grid"), ...shown.map(meus ? tile : storeCard));
@@ -550,6 +581,7 @@ async function loadUpdates(refresh) {
     const u = await api(`/api/updates${refresh ? "?refresh=1" : ""}`);
     S.upd = Object.fromEntries(u.rows.map((r) => [r.unit, r]));
     S.checked = u.checked;
+    renderGroups();
     renderGrid();
     if (S.current && $("panel").open) renderPanel();
   } catch (e) { /* the store works without it */ }
