@@ -939,6 +939,47 @@ def stats():
         return resultado
 
 
+def host_summary(proc="/proc", sys_="/sys"):
+    """Load, memory, temperature and uptime of the host: four small file reads, no sampling.
+
+    Load is the 1-minute average over the CPU count (what the kernel already keeps), not an
+    instantaneous percentage — that would need two readings and a clock. Each field is None
+    when the host does not say (no sensor in a VM, say)."""
+    def ler(caminho):
+        try:
+            return Path(caminho).read_text()
+        except OSError:
+            return ""
+    r = {"cpus": os.cpu_count() or 1, "load": None, "mem": None, "temp": None, "uptime": None}
+    try:
+        r["load"] = float(ler(f"{proc}/loadavg").split()[0])
+    except (ValueError, IndexError):
+        pass
+    mem = dict(re.findall(r"^(\w+):\s+(\d+)", ler(f"{proc}/meminfo"), re.M))
+    if mem.get("MemTotal") and mem.get("MemAvailable"):
+        total = int(mem["MemTotal"])
+        r["mem"] = {"total": total * 1024, "used": (total - int(mem["MemAvailable"])) * 1024}
+    temps = []
+    for f in Path(sys_, "class/thermal").glob("thermal_zone*/temp"):
+        try:
+            temps.append(int(ler(f).strip()) / 1000)
+        except ValueError:
+            pass
+    if not temps:
+        for f in Path(sys_, "class/hwmon").glob("hwmon*/temp*_input"):
+            try:
+                temps.append(int(ler(f).strip()) / 1000)
+            except ValueError:
+                pass
+    temps = [x for x in temps if 0 < x < 130]
+    r["temp"] = round(max(temps), 1) if temps else None
+    try:
+        r["uptime"] = int(float(ler(f"{proc}/uptime").split()[0]))
+    except (ValueError, IndexError):
+        pass
+    return r
+
+
 def disk(app):
     """{bytes, paths: [{name, bytes}]} for the data volumes this service owns, or bytes None.
 
@@ -1385,6 +1426,8 @@ class Handler(BaseHTTPRequestHandler):
             if not f:
                 return self._json(404, {"error": loc("no such backup of this service")})
             return self._download(f)
+        if url.path == "/api/host":
+            return self._json(200, host_summary())
         if url.path == "/api/links":
             app = q.get("app", "")
             if not service_dir(app):
@@ -1982,6 +2025,19 @@ def selftest():
                     assert install_refusal("gitea") is None, "and an unmarked one is not"
                 finally:
                     I.APPS = original
+
+            # host summary: parsed from /proc and /sys, each field None when the host does not say
+            with tempfile.TemporaryDirectory() as fk:
+                Path(fk, "proc").mkdir()
+                Path(fk, "proc/loadavg").write_text("2.00 1.00 0.5 1/100 99\n")
+                Path(fk, "proc/meminfo").write_text("MemTotal: 1000 kB\nMemAvailable: 250 kB\n")
+                Path(fk, "proc/uptime").write_text("7200.5 100.0\n")
+                Path(fk, "sys/class/thermal/thermal_zone0").mkdir(parents=True)
+                Path(fk, "sys/class/thermal/thermal_zone0/temp").write_text("48500\n")
+                r = host_summary(f"{fk}/proc", f"{fk}/sys")
+                assert (r["load"], r["uptime"], r["temp"], r["mem"]["used"]) == (2.0, 7200, 48.5, 750 * 1024), r
+                assert host_summary(f"{fk}/none", f"{fk}/none")["mem"] is None, "a host that says nothing gives None, not a crash"
+            assert "uptime" in json.loads(pedir("/api/host", headers=ok)[2]), "/api/host answers"
 
             # trial: a duration that does not parse, or a trial on anything but an install, never starts a job
             for corpo in ({"app": "memos", "action": "install", "trial": "soon"},

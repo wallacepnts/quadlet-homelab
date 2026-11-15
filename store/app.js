@@ -8,6 +8,7 @@ const T = {
     noneInstalled: "Nenhum app instalado ainda.", goStore: "Abrir a Loja", manage: "Gerenciar",
     installedBadge: "instalado", deprecatedBadge: "descontinuado", deprecatedNote: "Descontinuado:",
     noInstall: "Não dá para instalar este app daqui.",
+    hostCpu: "carga", hostMem: "RAM", hostUp: "ligado há",
     trialLabel: "Experimentar", trialKeep: "Manter", trialBadge: "experimento",
     trialNone: "instalar de vez", trialReboot: "até reiniciar o servidor",
     trialPurge: "apagar também os dados no fim",
@@ -85,6 +86,7 @@ const T = {
     noneInstalled: "No app installed yet.", goStore: "Open the Store", manage: "Manage",
     installedBadge: "installed", deprecatedBadge: "discontinued", deprecatedNote: "Discontinued:",
     noInstall: "It cannot be installed from here.",
+    hostCpu: "load", hostMem: "RAM", hostUp: "up",
     trialLabel: "Try it", trialKeep: "Keep", trialBadge: "trial",
     trialNone: "install for good", trialReboot: "until the server reboots",
     trialPurge: "also delete the data at the end",
@@ -1119,3 +1121,22 @@ $("recheck").addEventListener("click", () => loadUpdates(true));
 renderChrome();
 load();
 setInterval(pollStats, 10000);
+
+// The host in one line, at the top: load over the CPUs, memory used, hottest sensor, uptime.
+// A few file reads on the server; a field the host does not report is simply left out.
+function hostLine(h) {
+  const gb = (b) => (b / 2 ** 30).toFixed(1);
+  const up = h.uptime === null ? null : h.uptime >= 86400 ? `${Math.floor(h.uptime / 86400)} d` : `${Math.floor(h.uptime / 3600)} h`;
+  const partes = [
+    h.load === null ? null : `${t("hostCpu")} ${Math.round((h.load / h.cpus) * 100)}%`,
+    h.mem ? `${t("hostMem")} ${gb(h.mem.used)}/${gb(h.mem.total)} GB` : null,
+    h.temp === null ? null : `${h.temp} °C`,
+    up ? `${t("hostUp")} ${up}` : null,
+  ].filter(Boolean);
+  return partes.join(" · ");
+}
+async function pollHost() {
+  try { $("host").textContent = hostLine(await api("/api/host")); } catch (e) { /* the line just stays */ }
+}
+pollHost();
+setInterval(pollHost, 30000);

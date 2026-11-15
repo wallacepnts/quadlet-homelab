@@ -95,7 +95,7 @@ global.fetch = async (url, opts = {}) => {
 };
 
 const codigo = fs.readFileSync(path.join(__dirname, "..", "app.js"), "utf8");
-const api = new Function(codigo + "; return { S, openPanel, showEnv, current, renderGrid, pollStats, openHistory, setView };")();
+const api = new Function(codigo + "; return { S, openPanel, showEnv, current, renderGrid, pollStats, pollHost, openHistory, setView };")();
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 let falhas = 0;
 const confere = (cond, msg) => { if (!cond) { falhas++; console.log("FALHOU:", msg); } else console.log("ok   ", msg); };
@@ -149,6 +149,7 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   $("history").open = false;
 
   // an app that is not installed, and a host the image supports
+  rotas["/api/host"] = { cpus: 4, load: 1, mem: { total: 8 * 2 ** 30, used: 2 * 2 ** 30 }, temp: 50, uptime: 90000 };
   rotas["/api/arch"] = { host: "amd64", runs: ["amd64", "arm64"], units: [{ unit: "homebox", ok: true }] };
   api.openPanel("gitea"); await esperar(100);
   confere($("p-actions").textContent === "InstalarHistórico", `app não instalado: só Instalar e Histórico (${$("p-actions").textContent})`);
@@ -181,6 +182,10 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   $("panel").open = false;
   api.S.apps.find((x) => x.id === "gitea").deprecated = null;
   api.S.apps.find((x) => x.id === "memos").deprecated = null;
+
+  // host summary: one line at the top
+  await api.pollHost();
+  confere($("host").textContent === "carga 25% · RAM 2.0/8.0 GB · 50 °C · ligado há 1 d", `topo: resumo do servidor (${$("host").textContent})`);
 
   // trial: the notice says when it ends, there is a Keep button, and the install form offers the choice
   api.S.apps.find((x) => x.id === "homebox").trial = { mode: "time", expires: Date.now() / 1000 + 5 * 3600 + 60, purge: false };
