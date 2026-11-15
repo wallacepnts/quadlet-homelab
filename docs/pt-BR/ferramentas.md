@@ -279,6 +279,47 @@ navegador carrega as imagens de lá, então o host do projeto vê a requisição
 como já vê nos ícones. Alguns serviços trazem capturas como exemplo; os demais
 ficam sem até alguém acrescentar uma imagem que valha a pena.
 
+A **Personalizar** muda um serviço instalado sem tocar na unit do repositório:
+portas, volumes, variáveis extras, dispositivos, capabilities extras e a
+política de reinício, no desenho do formulário que o CasaOS tem para um app. A
+mudança é um drop-in do Quadlet, `<unit>.container.d/50-store.conf`, ao lado da
+unit. O `qh --update` não mexe nele e avisa (e avisa também quando a unit mudou
+por baixo de uma personalização que zera uma lista, porque isso esconde o que é
+novo), o `qh --status` marca o serviço, e o `qh --remove` leva o arquivo junto
+com a unit. **Reverter**, ou apagar o arquivo, volta para a unit como o
+repositório publica. A **Pré-visualização** mostra o arquivo exato e a linha do
+`podman run` que o Quadlet faz dele; **Salvar e aplicar** grava, reinicia o
+serviço e, se ele não subir, devolve o estado anterior e imprime as últimas
+linhas do journal.
+
+Só o que é novo é conferido, e o que a unit já tem é sempre aceito como está. Um
+volume novo tem de ficar dentro de `~/.config/containers/volumes`, de uma pasta
+que as units já pedem a você (`${MEDIA_DATA_DIR}`) ou de uma que você liste em
+`~/.config/quadlet-homelab/store-roots` (um caminho por linha); uma porta tem de
+estar a partir do piso sem privilégio e livre (não ser de outra unit nem estar
+em uso); uma capability tem de estar numa lista curta (as padrão do Podman mais
+`NET_RAW`, `SYS_NICE`, `MKNOD`, `AUDIT_WRITE`); um dispositivo tem de existir em
+`/dev`. Não há campo de imagem ou tag, porque a versão é do repositório (regra
+9), nem chave de privilégio: com o token da loja, qualquer das duas viraria um
+shell no seu host. Para isso, edite a unit à mão. O arquivo `.env` continua em
+**Configurar**; o formulário edita as linhas `Environment=`.
+
+Limite de memória e de CPU não são oferecidos, de propósito. Rootless, eles
+precisam que o systemd do usuário delegue esses controladores, e onde ele não
+delega o `--memory` impede o container de subir (`memory.swap.max: no such file
+or directory`), o que foi medido aqui, onde só o `pids` é delegado. Confira o
+seu com
+`cat /sys/fs/cgroup/user.slice/user-$(id -u).slice/user@$(id -u).service/cgroup.controllers`.
+Delegá-los é uma mudança de root no `user@.service` (`Delegate=cpu cpuset io
+memory pids`) que este repositório não faz por você.
+
+O `store/test/ui.js` roda a página no Node contra um DOM de mentira, e o
+`store/test/browser.js` a conduz num Chromium de verdade (`node
+store/test/browser.js <url> <arquivo-do-token> <pasta-de-saída> [real|sandbox]`;
+o `real` só lê e pré-visualiza, o `sandbox` também aplica, então aponte-o só
+para uma loja iniciada com `--prefix`). Nenhum dos dois está no CI, que é só
+Python.
+
 Quem tiver o token instala e remove serviços como você. Trate-o como uma chave
 SSH. Para revogar, apague o arquivo e reinicie o serviço.
 

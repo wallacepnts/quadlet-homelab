@@ -108,6 +108,8 @@ memos                      active     healthy    —
 `repo` says the file here differs from the one installed, which is what
 `--update` would fix. Versions are not here: that needs the network, and it is
 what `qh-updates` is for. It exits non-zero when anything needs attention.
+A trailing `customized` marks a service with a local customization (the store's
+Customize screen, see [tools](./tools.md)); `--update` keeps it and says so.
 
 `qh --catalog` gives the same answer as JSON, for a front end. It also includes
 what the shop window needs: name, icon and description (en/pt), all read from

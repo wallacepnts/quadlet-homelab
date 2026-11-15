@@ -556,6 +556,41 @@ def scenario_catalog(home):
     check([a["id"] for a in one["apps"]] == [APP], "--catalog APP narrows to that service")
 
 
+def scenario_override(tmp):
+    """A customization is a drop-in beside the unit: qh sees it, keeps it, and removes it with the unit."""
+    import json
+    O = I.overrides
+    home = str(Path(tmp, "ov"))
+    run(APP, "--apply", "--prefix", home)
+    unit = path(home, "systemd", f"{APP}.container")
+    base = O.base_of(unit.read_text())
+    texto = f"# base={O.base_hash(base)}\n[Container]\nEnvironment=\nEnvironment=NOVA=1\n"
+    O.write_override(unit, texto)
+
+    cat = json.loads(run("--catalog", APP, "--prefix", home).stdout)["apps"][0]
+    check(cat["units"][0]["override"] is True, "--catalog says which unit carries a customization")
+    check(json.loads(run("--catalog", "--prefix", str(Path(tmp, "vazio"))).stdout)["apps"][0]["units"][0]["override"] is False,
+          "and false where there is none")
+    # exit 1: nothing is running in a sandbox, which --status counts as needing attention
+    check("customized" in run("--status", "--prefix", home, expected=1).stdout, "--status marks it")
+
+    # An update leaves the drop-in alone and says so; the unit is made stale so there is something to update.
+    unit.write_text(unit.read_text() + "# stale\n")
+    out = run(APP, "--update", "--prefix", home).stdout
+    check("keeps its customization" in out, "--update says it keeps the customization")
+    check(O.read_override(unit) == texto, "and does not touch the file")
+    # One written against another version of the unit is flagged, not silently kept.
+    O.write_override(unit, texto.replace(O.base_hash(base), "0" * 16))
+    check("older version of the unit" in run(APP, "--update", "--prefix", home).stdout,
+          "a customization written against an older unit is flagged")
+    run(APP, "--update", "--apply", "--prefix", home)
+    check(O.read_override(unit) is not None, "--update --apply keeps the drop-in")
+
+    run(APP, "--remove", "--apply", "--prefix", home)
+    check(O.read_override(unit) is None and not O.dropin_path(unit).parent.exists(),
+          "--remove takes the customization with the unit")
+
+
 def main():
     with tempfile.TemporaryDirectory() as tmp:
         home, out = str(Path(tmp) / "home"), str(Path(tmp) / "backups")
@@ -564,6 +599,7 @@ def main():
         print("install:");            scenario_install(home)
         print("user files:");         scenario_no_overwrite(home)
         print("catalog:");            scenario_catalog(home)
+        print("customization:");      scenario_override(tmp)
         print("drift:");              scenario_drift(home)
         print("failure:");            scenario_failure(home, tmp)
         print("remove safety:");      scenario_remove_safety(tmp)

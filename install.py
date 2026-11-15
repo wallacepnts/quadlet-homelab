@@ -33,6 +33,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+import overrides
 import qhui
 
 # The docstring `--help` opens with. It is prose, not a phrase, so it is a
@@ -230,6 +231,11 @@ PT = {
     'save the rule every install and update follows ': 'salva a regra que toda instalação e atualização segue ',
     '(local, tailnet or both), and exit': '(local, tailnet ou both), e sai',
     'rule saved:': 'regra salva:',
+    'customized': 'personalizada',
+    'keeps its customization (50-store.conf)': 'mantém a personalização dela (50-store.conf)',
+    'its customization was written against an older version of the unit — review it in the store (Customize)':
+        'a personalização foi feita sobre uma versão mais antiga da unit — revise na loja (Personalizar)',
+    '(your customization)': '(a sua personalização)',
     'with services named, an exception for them (`default` drops it)':
         'com serviços nomeados, uma exceção para eles (`default` remove)',
     'follows the rule again': 'volta a seguir a regra',
@@ -1414,6 +1420,22 @@ def plan_update(s, access="tailnet", href_local=False):
     # href_local follows the same chain: without it an update reverted a link
     # deliberately pointed at the LAN, every time.
     href_local = effective_access(s, access, href_local)[1]
+    # A customization is a drop-in beside the unit, so this update leaves it alone.
+    # One that resets a list was written against the unit as it was, though, and
+    # hides whatever the repository added to that list since — which is said here.
+    instaladas = {x.name: x for x in s.installed()}
+    for u in s.units:
+        antiga = instaladas.get(u.name)
+        texto = overrides.read_override(antiga) if antiga else None
+        if texto is None or u.suffix != ".container":
+            continue
+        novo = overrides.base_of(unit_bytes(u, modos[u.name], href_local).decode())
+        gravado = overrides.recorded_base(texto)
+        warnings.append(f"{u.stem}: " + (
+            "its customization was written against an older version of the unit — "
+            "review it in the store (Customize)"
+            if gravado and gravado != overrides.base_hash(novo)
+            else "keeps its customization (50-store.conf)"))
     # The version-bump path: a changed tag means a new image, which is exactly
     # the download worth watching. Read before the skip, since a moving tag is
     # reason enough to go on even with every file already in place.
@@ -1795,6 +1817,10 @@ def plan_remove(s, purge):
                 steps.append((f"rm {target}",
                               rotulado("units removed",
                                        lambda target=target: target.unlink())))
+                if overrides.read_override(target) is not None:
+                    steps.append((f"rm {overrides.dropin_path(target)}  (your customization)",
+                                  rotulado("units removed",
+                                           lambda target=target: overrides.remove_override(target))))
     # The copy at the other address defines the same unit. plan_install and
     # plan_update both clear it; leaving it here is what let a --purge delete
     # the data while every file stayed on disk, and Quadlet went on generating
@@ -3889,7 +3915,7 @@ def show_status(apps=None, home=None):
                 problemas += 1
             if deriva:
                 mudados += 1
-            detalhe.append((u.stem, e, c, deriva or "—"))
+            detalhe.append((u.stem, e, c, deriva or "—", overrides.read_override(u) is not None))
         # In a folder of independent services, an inactive unit is one you chose
         # not to start — noise, not news. In a real stack (its own .network) an
         # inactive piece is why the service is down, so those stay. `failed`
@@ -3914,10 +3940,11 @@ def show_status(apps=None, home=None):
         return cor(texto) + " " * max(0, largura - len(texto))
 
     say(dim(f"  {est('service'):<26} {est('unit'):<10} {est('container'):<10} {est('repo')}"))
-    for n, e, c, dv in linhas:
+    for n, e, c, dv, ov in linhas:
         say(f"  {n:<26} {coluna(e, 10, ('active',), ('failed',))}"
             f" {coluna(c, 10, ('healthy', 'up'), ('unhealthy', 'down'))}"
-            f" {yellow(est(dv)) if dv == 'changed' else dim(dv)}")
+            f" {yellow(est(dv)) if dv == 'changed' else dim(dv)}"
+            + (f"  {dim(loc('customized'))}" if ov else ""))
     say("")
     say(loc("  installed:") + f" {sum(1 for _ in linhas)}  "
         + loc("needing attention:") + f" {problemas}  "
@@ -3978,6 +4005,8 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude):
             "installed_image": next((v for k, v in directives_of(p) if k == "Image"), "")
                                if p else None,
             "installed": p is not None,
+            # A drop-in beside the unit (overrides.py): the store's Customize screen wrote it.
+            "override": bool(p and overrides.read_override(p) is not None),
             "service": ativos.get(u.stem) if p else None,
             "container": estado_do_container(saude.get(container_name(p), "—")) if p else None,
             "drift": (unit_deriva(s, p) or None) if p else None,

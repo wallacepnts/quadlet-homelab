@@ -7,6 +7,27 @@ const T = {
     search: "Buscar apps", tabApps: "Meus apps", tabStore: "Loja", all: "Todos", other: "Outros",
     noneInstalled: "Nenhum app instalado ainda.", goStore: "Abrir a Loja", manage: "Gerenciar",
     installedBadge: "instalado",
+    customize: "Personalizar", customizedBadge: "personalizado", cPorts: "Portas", cVolumes: "Volumes",
+    cEnv: "Variáveis de ambiente", cDevices: "Dispositivos", cCaps: "Capabilities extras",
+    cRestart: "Política de reinício", add: "Adicionar", fromUnit: "(vem da unit)", removeRow: "Remover",
+    ipOpt: "IP (opcional)", hostPort: "Porta no host", contPort: "Porta no container",
+    hostPath: "Pasta no host", contPath: "Caminho no container", labelZ: "rótulo privado (Z)",
+    labelz: "compartilhado (z)", labelNone: "sem rótulo", readOnly: "só leitura", envKey: "NOME",
+    envValue: "valor", devPath: "/dev/…", previewBtn: "Pré-visualizar", saveApply: "Salvar e aplicar",
+    revertBtn: "Reverter ao padrão", fileToWrite: "Arquivo que será gravado", generated: "Comando que o Quadlet gera",
+    nothingChanged: "Nada diferente da unit do repositório.", filePath: "Arquivo",
+    custIntro: "Muda esta instalação sem tocar na unit do repositório: a mudança fica num arquivo ao lado, " +
+      "sobrevive ao Atualizar e some ao Reverter. Imagem e versão são do repositório, e não há chave de privilégio " +
+      "(para isso, edite a unit à mão).",
+    portsHint: "Publicar uma porta abre o app na rede local, qualquer que seja a regra de acesso.",
+    volumesHint: (r) => `Pastas permitidas para volumes novos: ${r.join(", ")}. Para liberar outra, escreva o ` +
+      "caminho em ~/.config/quadlet-homelab/store-roots.",
+    custEnvHint: "As variáveis do arquivo .env ficam em Configurar; aqui entram as extras.",
+    capsHint: "Só as da lista. Para outra, edite a unit à mão.",
+    limitsOff: "Limite de memória e CPU: indisponível aqui. O systemd do seu usuário não delega esses " +
+      "controladores, e com um limite o container não sobe (veja docs/tools.md).",
+    baseChanged: "A unit do repositório mudou desde que você personalizou. A personalização zera listas e pode " +
+      "esconder o que é novo: reveja e salve de novo.",
     none: "Nenhum app encontrado.", installed: "instalado", running: "rodando",
     attention: "atenção", changed: "repo mudou", install: "Instalar", update: "Atualizar",
     remove: "Remover", logs: "Logs", open: "Abrir", confirm: "Confirmar", cancel: "Cancelar",
@@ -45,7 +66,8 @@ const T = {
     history: "Histórico", noHistory: "Nenhuma ação registrada ainda.", when: "Quando", what: "Ação", result: "Resultado",
     took: "Duração", from: "de", output: "Saída",
     act: { install: "Instalar", update: "Atualizar", upgrade: "Atualizar versão", remove: "Remover", backup: "Backup",
-           restore: "Restaurar", access: "Acesso", env: "Configuração", start: "Iniciar", stop: "Parar", restart: "Reiniciar" },
+           restore: "Restaurar", access: "Acesso", env: "Configuração", start: "Iniciar", stop: "Parar", restart: "Reiniciar",
+           customize: "Personalizar", revert: "Reverter" },
     link: { repo: "Projeto", releases: "Releases", image: "Imagem", recipe: "Receita neste repositório" },
     shots: "Capturas de tela",
     lang: "English",
@@ -54,6 +76,27 @@ const T = {
     search: "Search apps", tabApps: "My apps", tabStore: "Store", all: "All", other: "Other",
     noneInstalled: "No app installed yet.", goStore: "Open the Store", manage: "Manage",
     installedBadge: "installed",
+    customize: "Customize", customizedBadge: "customized", cPorts: "Ports", cVolumes: "Volumes",
+    cEnv: "Environment variables", cDevices: "Devices", cCaps: "Extra capabilities",
+    cRestart: "Restart policy", add: "Add", fromUnit: "(from the unit)", removeRow: "Remove",
+    ipOpt: "IP (optional)", hostPort: "Host port", contPort: "Container port",
+    hostPath: "Host folder", contPath: "Path in the container", labelZ: "private label (Z)",
+    labelz: "shared (z)", labelNone: "no label", readOnly: "read-only", envKey: "NAME",
+    envValue: "value", devPath: "/dev/…", previewBtn: "Preview", saveApply: "Save and apply",
+    revertBtn: "Revert to default", fileToWrite: "File that will be written", generated: "Command Quadlet generates",
+    nothingChanged: "Nothing different from the repository's unit.", filePath: "File",
+    custIntro: "Changes this installation without touching the repository's unit: the change lives in a file " +
+      "beside it, survives Update and goes away on Revert. The image and version belong to the repository, and " +
+      "there is no privilege switch (for that, edit the unit by hand).",
+    portsHint: "Publishing a port opens the app on the local network, whatever the access rule says.",
+    volumesHint: (r) => `Folders allowed for new volumes: ${r.join(", ")}. To allow another, write its path ` +
+      "in ~/.config/quadlet-homelab/store-roots.",
+    custEnvHint: "Variables of the .env file are under Configure; extras go here.",
+    capsHint: "Only the ones on the list. For another, edit the unit by hand.",
+    limitsOff: "Memory and CPU limits: not available here. Your user's systemd does not delegate those " +
+      "controllers, and with a limit the container does not start (see docs/tools.md).",
+    baseChanged: "The repository's unit changed since you customized it. The customization resets lists and may " +
+      "hide what is new: review it and save again.",
     none: "No app found.", installed: "installed", running: "running",
     attention: "attention", changed: "repo changed", install: "Install", update: "Update",
     remove: "Remove", logs: "Logs", open: "Open", confirm: "Confirm", cancel: "Cancel",
@@ -92,7 +135,8 @@ const T = {
     history: "History", noHistory: "No action recorded yet.", when: "When", what: "Action", result: "Result",
     took: "Took", from: "from", output: "Output",
     act: { install: "Install", update: "Update", upgrade: "Update version", remove: "Remove", backup: "Backup",
-           restore: "Restore", access: "Access", env: "Settings", start: "Start", stop: "Stop", restart: "Restart" },
+           restore: "Restore", access: "Access", env: "Settings", start: "Start", stop: "Stop", restart: "Restart",
+           customize: "Customize", revert: "Revert" },
     link: { repo: "Project", releases: "Releases", image: "Image", recipe: "Recipe in this repository" },
     shots: "Screenshots",
     lang: "Português",
@@ -426,6 +470,7 @@ function renderInfo() {
   const r = a.installed && resources(a);
   if (r) partes.push(`${t("cpu")} ${r.cpu.toFixed(1)}%`, `${t("mem")} ${mib(r.mem)}`);
   if (a.installed) partes.push(`${t("disk")} ${info.disk ? (info.disk.bytes === null ? "—" : mib(info.disk.bytes)) : t("counting")}`);
+  if (a.units.some((u) => u.installed && u.override)) partes.push(t("customizedBadge"));
   const arq = info.arch;
   if (arq && arq.runs && arq.runs.length) partes.push(`${t("runsOn")} ${arq.runs.join(", ")}`);
   const sem = arq ? arq.units.filter((u) => u.ok === false).map((u) => u.unit) : [];
@@ -499,6 +544,7 @@ function renderPanel() {
       acoes.push(h("button", { type: "button", onclick: () => updateNow("update") },
         alvo ? t("upgradeTo")(alvo) : t("update")));
     }
+    acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showCustom(a) }, t("customize")));
     if (a.has_env)
       acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showEnv(a) }, t("configure")));
     if (a.has_login)
@@ -609,6 +655,137 @@ async function showRun(e) {
     $("h-out").hidden = false;
     $("h-out").scrollTop = 0;
   } catch (err) { $("h-out").textContent = String(err.message); $("h-out").hidden = false; }
+}
+
+// -- Customize: a drop-in beside the unit, the way CasaOS lets you edit an app -------------
+// The unit stays the repository's. Each group is shown as the unit carries it now (with
+// any earlier customization applied); what the person edits is sent whole, and the
+// server decides what differs from the unit, checks it, and writes only that.
+
+const campo = (type, value, placeholder, extra = {}) =>
+  h("input", { type, value: value ?? "", placeholder, autocomplete: "off", ...extra });
+const escolha = (opcoes, atual) => {
+  const s = h("select", {}, ...opcoes.map(([v, rotulo]) => h("option", { value: v, selected: v === atual }, rotulo)));
+  s.value = atual;
+  return s;
+};
+
+const linhas = {
+  ports(it) {
+    if (it && it.opaque) return opaca(it);
+    const bind = campo("text", it && it.bind, t("ipOpt")), host = campo("number", it ? it.host : "", t("hostPort"));
+    const cont = campo("number", it ? it.container : "", t("contPort"));
+    const proto = escolha([["tcp", "TCP"], ["udp", "UDP"]], (it && it.proto) || "tcp");
+    return { els: [bind, host, cont, proto], read: () => host.value === "" ? null :
+      { bind: bind.value.trim(), host: Number(host.value), container: Number(cont.value), proto: proto.value } };
+  },
+  volumes(it) {
+    if (it && it.opaque) return opaca(it);
+    const host = campo("text", it && it.host, t("hostPath")), cont = campo("text", it && it.container, t("contPath"));
+    const rotulo = escolha([["Z", t("labelZ")], ["z", t("labelz")], ["", t("labelNone")]], it ? it.label : "Z");
+    const ro = h("input", { type: "checkbox", checked: !!(it && it.ro), "aria-label": t("readOnly") });
+    return { els: [host, cont, rotulo, h("label", { class: "check" }, ro, ` ${t("readOnly")}`)],
+      read: () => host.value.trim() === "" ? null :
+        { host: host.value.trim(), container: cont.value.trim(), label: rotulo.value, ro: ro.checked, extra: (it && it.extra) || [] } };
+  },
+  env(it) {
+    if (it && it.opaque) return opaca(it);
+    const k = campo("text", it && it.key, t("envKey")), v = campo("text", it && it.value, t("envValue"));
+    return { els: [k, v], read: () => k.value.trim() === "" ? null : { key: k.value.trim(), value: v.value } };
+  },
+  devices(it) {
+    if (it && it.opaque) return opaca(it);
+    const d = campo("text", it && it.path, t("devPath"));
+    return { els: [d], read: () => d.value.trim() === "" ? null : { path: d.value.trim() } };
+  },
+};
+
+// An entry that is not a plain shape (a ${VAR} in a port, say): shown, kept as it is, removable.
+const opaca = (it) => ({ els: [h("code", {}, it.raw), h("span", { class: "cust-note" }, t("fromUnit"))],
+                         read: () => ({ raw: it.raw, opaque: true }) });
+
+function grupo(nome, titulo, dica, itens) {
+  const rows = [], caixa = h("div");
+  const mostrar = () => fill(caixa, ...rows.map((r) => r.row));
+  const juntar = (it) => {
+    const r = linhas[nome](it);
+    r.row = h("div", { class: "cust-row" }, ...r.els,
+      h("button", { type: "button", class: "x", title: t("removeRow"), "aria-label": t("removeRow"),
+                    onclick: () => { rows.splice(rows.indexOf(r), 1); mostrar(); } }, "✕"));
+    rows.push(r);
+  };
+  itens.forEach(juntar);
+  mostrar();
+  return { el: h("div", { class: "cust-group" },
+      h("h4", {}, titulo, h("button", { type: "button", class: "ghost", onclick: () => { juntar(null); mostrar(); } }, `+ ${t("add")}`)),
+      dica && h("p", { class: "cust-note" }, dica), caixa),
+    read: () => rows.map((r) => r.read()).filter(Boolean) };
+}
+
+async function showCustom(a, unit) {
+  const instaladas = a.units.filter((u) => u.installed);
+  unit = unit || (mainUnit(a) || instaladas[0]).unit;
+  let d;
+  try { d = await api(`/api/custom?unit=${encodeURIComponent(unit)}`); }
+  catch (e) { return section(h("p", { class: "note" }, String(e.message))); }
+
+  const G = {
+    ports: grupo("ports", t("cPorts"), t("portsHint"), d.effective.ports),
+    volumes: grupo("volumes", t("cVolumes"), t("volumesHint")(d.roots), d.effective.volumes),
+    env: grupo("env", t("cEnv"), t("custEnvHint"), d.effective.env),
+    devices: grupo("devices", t("cDevices"), null, d.effective.devices),
+  };
+  const tem = new Set(d.effective.caps.map((c) => c.name));
+  const caps = [...new Set([...d.caps_ok, ...tem])].map((n) =>
+    ({ n, box: h("input", { type: "checkbox", id: `cap-${n}`, checked: tem.has(n) }) }));
+  const reinicio = escolha(d.restarts.map((r) => [r, r]), d.restart || "always");
+  const saida = h("div", { class: "cust-out" });
+  const config = () => ({ ports: G.ports.read(), volumes: G.volumes.read(), env: G.env.read(), devices: G.devices.read(),
+    caps: caps.filter((c) => c.box.checked).map((c) => ({ name: c.n })), restart: reinicio.value });
+
+  async function previa() {
+    try {
+      const r = await api("/api/custom/preview", { unit, config: config() });
+      fill(saida,
+        r.errors.length ? h("ul", { class: "cust-errors" }, ...r.errors.map((e) => h("li", {}, e))) : null,
+        r.warnings.length ? h("ul", { class: "cust-warn" }, ...r.warnings.map((w) => h("li", {}, w))) : null,
+        r.changed ? h("details", { open: true }, h("summary", {}, t("fileToWrite")), h("pre", {}, r.text))
+                  : (r.errors.length ? null : h("p", { class: "cust-note" }, t("nothingChanged"))),
+        r.generated ? h("details", {}, h("summary", {}, t("generated")), h("pre", {}, r.generated)) : null);
+      return r;
+    } catch (e) { fill(saida, h("p", { class: "note" }, String(e.message))); return { errors: [String(e.message)], changed: false }; }
+  }
+
+  const aplicar = async () => {
+    const r = await previa();
+    if (r.errors.length || !r.changed) return;
+    await follow(() => api("/api/custom/apply", { unit, config: config() }));
+    showCustom(current(), unit);
+  };
+  const reverter = async () => {
+    await follow(() => api("/api/custom/reset", { unit }));
+    showCustom(current(), unit);
+  };
+
+  section(h("form", { class: "cust", onsubmit: (ev) => ev.preventDefault() },
+    h("h3", {}, `${t("customize")} · ${unit}`),
+    instaladas.length > 1
+      ? h("select", { "aria-label": "unit", onchange: (ev) => showCustom(a, ev.target.value) },
+          ...instaladas.map((u) => h("option", { value: u.unit, selected: u.unit === unit }, u.unit)))
+      : null,
+    h("p", { class: "help" }, t("custIntro")),
+    d.base_changed ? h("p", { class: "note" }, t("baseChanged")) : null,
+    d.override ? h("p", { class: "cust-note" }, `${t("filePath")}: ${d.file}`) : null,
+    G.ports.el, G.volumes.el, G.env.el, G.devices.el,
+    h("div", { class: "cust-group" }, h("h4", {}, t("cCaps")), h("p", { class: "cust-note" }, t("capsHint")),
+      h("div", { class: "caps" }, ...caps.map((c) => h("label", { class: "check", for: `cap-${c.n}` }, c.box, ` ${c.n}`)))),
+    h("div", { class: "cust-group" }, h("h4", {}, t("cRestart")), reinicio),
+    d.limits.memory && d.limits.cpu ? null : h("p", { class: "cust-note" }, t("limitsOff")),
+    h("div", { class: "row" },
+      h("button", { type: "button", class: "ghost", onclick: previa }, t("previewBtn")),
+      h("button", { type: "button", onclick: aplicar }, t("saveApply")),
+      d.override ? h("button", { type: "button", class: "danger", onclick: reverter }, t("revertBtn")) : null),
+    saida));
 }
 
 // The settings of a service: its .env, as the .example files lay it out. An

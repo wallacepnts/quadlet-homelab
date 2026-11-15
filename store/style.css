@@ -152,3 +152,19 @@ main.apps { grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); }
 .tile .gear:hover, .tile .gear:focus-visible { color: var(--fg); border-color: var(--line); }
 #empty button { margin-left: .6rem; }
 .badge.plain { color: var(--muted); }
+
+/* Customize */
+.cust { display: grid; gap: 1rem; }
+.cust-group h4 { margin: 0 0 .3rem; display: flex; align-items: center; justify-content: space-between; gap: .6rem; }
+.cust-group h4 button { padding: .15rem .6rem; font-size: .8rem; font-weight: 400; }
+.cust-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr)) auto; gap: .4rem; align-items: center; margin: .3rem 0; }
+.cust-row input[type=text], .cust-row input[type=number], .cust-row select { width: 100%; min-width: 0; }
+.cust-row .x { background: transparent; color: var(--muted); border: 1px solid var(--line); padding: .3rem .55rem; }
+.cust-row code { overflow-wrap: anywhere; }
+.cust-note { color: var(--muted); font-size: .82rem; margin: .1rem 0 .3rem; }
+.cust-errors { color: var(--bad); margin: .3rem 0; padding-left: 1.2rem; }
+.cust-warn { color: var(--warn); margin: .3rem 0; padding-left: 1.2rem; }
+.cust .caps { display: flex; flex-wrap: wrap; gap: .3rem 1rem; }
+.check { display: inline-flex; align-items: center; gap: .3rem; font-weight: 400; white-space: nowrap; }
+.cust-out details { margin: .4rem 0; } .cust-out summary { cursor: pointer; font-weight: 600; }
+@media (max-width: 640px) { .cust-row { grid-template-columns: 1fr auto; } .cust-row > :not(.x) { grid-column: 1 / 2; } }

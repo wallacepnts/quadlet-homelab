@@ -106,6 +106,9 @@ O `unit` é o que o systemd diz, o `container` é o que o podman diz — uma uni
 pode estar `active` com o app morto lá dentro, então não são a mesma pergunta.
 O `repo` avisa que o arquivo aqui difere do instalado, que é o que o `--update`
 resolve. Versão não está aqui: isso exige rede, e é o que o `qh-updates` faz.
+Um `personalizada` no fim da linha marca um serviço com personalização local (a
+tela Personalizar da loja, veja [ferramentas](./ferramentas.md)); o `--update`
+a mantém e avisa.
 Sai com código diferente de zero quando há algo precisando de atenção.
 
 `qh --catalog` dá a mesma resposta em JSON, para uma interface. Ele traz também

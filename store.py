@@ -47,6 +47,7 @@ from urllib.parse import parse_qs, urlparse
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
+import overrides as O  # noqa: E402
 import qhui  # noqa: E402
 
 _spec = importlib.util.spec_from_file_location("qh_install", ROOT / "install.py")
@@ -73,6 +74,15 @@ PT = {
         "já existe um backup com esse nome; tente de novo em um segundo",
     "not installed": "não instalado",
     "unknown file": "arquivo desconhecido",
+    "invalid form": "formulário inválido",
+    "no Quadlet generator here: only the form's own rules were checked":
+        "sem o gerador do Quadlet aqui: só as regras do próprio formulário foram conferidas",
+    "customization removed": "personalização removida", "written": "gravado",
+    "restarted — it came up": "reiniciado — subiu",
+    "The service did not come up with this customization. Going back to the previous one:":
+        "O serviço não subiu com esta personalização. Voltando para a anterior:",
+    "back as it was, and running": "voltou como estava, e está rodando",
+    "back as it was, but it still does not start": "voltou como estava, mas ainda não sobe",
     "not a setting of this file, or not a single line":
         "não é uma opção deste arquivo, ou não é uma linha só",
     "set": "definido", "turned off": "desligado",
@@ -477,6 +487,231 @@ def links(app):
     if base:
         saida.append({"kind": "recipe", "url": f"{base}/tree/main/apps/{app}"})
     return saida
+
+
+# -- customizing a unit: the drop-in ---------------------------------------------------
+
+def systemd_dir():
+    return Path(PREFIX or Path.home()) / ".config/containers/systemd"
+
+
+def installed_unit(unit):
+    """The unit's installed file, flat or in its folder, or None."""
+    return next(iter(systemd_dir().rglob(f"{unit}.container")), None)
+
+
+def listening():
+    """{(port, proto)} bound on the host now. Empty in a sandbox: it has no host to ask."""
+    if PREFIX:
+        return set()
+    saida = set()
+    for linha in (I.run_read(["ss", "-H", "-ltun"]) or "").splitlines():
+        c = linha.split()
+        m = re.search(r":(\d+)$", c[4]) if len(c) >= 5 else None
+        if m:
+            saida.add((int(m.group(1)), "udp" if c[0].startswith("udp") else "tcp"))
+    return saida
+
+
+def volume_roots():
+    """Where a NEW volume may live. The containers' own folder, the folders the person
+    wrote in `store-roots`, and the ones the repository's units already ask them for
+    (${MEDIA_DATA_DIR}): they chose those, so the store trusts them."""
+    casa = Path(PREFIX or Path.home())
+    raizes = [str(casa / ".config/containers/volumes")]
+    arq = casa / ".config/quadlet-homelab/store-roots"
+    if arq.is_file():
+        raizes += [l.strip() for l in arq.read_text().splitlines()
+                   if l.strip().startswith("/")]
+    if not PREFIX:
+        for u in systemd_dir().rglob("*.container"):
+            for k, v in I.directives_of(u):
+                if k == "Volume":
+                    for nome in re.findall(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}", v.split(":")[0]):
+                        if I.manager_var(nome):
+                            raizes.append(I.manager_var(nome))
+    return list(dict.fromkeys(raizes))
+
+
+def cgroup_limits():
+    """Whether this user's systemd delegates the memory and CPU controllers.
+
+    Without them `--memory` and `--cpu-shares` stop the container from starting
+    (`memory.swap.max: no such file or directory`), so the form does not offer them."""
+    uid = os.getuid()
+    f = Path(f"/sys/fs/cgroup/user.slice/user-{uid}.slice/user@{uid}.service/cgroup.controllers")
+    try:
+        c = f.read_text().split()
+    except OSError:
+        return {"memory": False, "cpu": False}
+    return {"memory": "memory" in c, "cpu": "cpu" in c}
+
+
+def custom_context(unit, efetivo):
+    """What validation needs to know about this host, for this unit."""
+    try:
+        floor = int(Path("/proc/sys/net/ipv4/ip_unprivileged_port_start").read_text())
+    except (OSError, ValueError):
+        floor = 1024
+    em_uso = {}
+    for outra in systemd_dir().rglob("*.container"):
+        if outra.stem == unit:
+            continue
+        listas, _ = O.merged(O.base_of(outra.read_text()), O.read_override(outra))
+        for raw in listas["ports"]:
+            it = O.parse_item("ports", raw)
+            if not it.get("opaque"):
+                em_uso[(it["host"], it["proto"])] = outra.stem
+    proprias = {(i["host"], i["proto"]) for i in O.describe(efetivo[0])["ports"] if not i.get("opaque")}
+    return O.Contexto(Path(PREFIX or Path.home()), roots=volume_roots(), floor=floor, em_uso=em_uso,
+                      escutando=listening() - proprias, var=I.manager_var)
+
+
+def custom_state(unit):
+    """What the Customize screen starts from: the unit, what it carries now, and the rules."""
+    p = installed_unit(unit)
+    if p is None:
+        raise LookupError(loc("not installed"))
+    base = O.base_of(p.read_text())
+    texto = O.read_override(p)
+    efetivo = O.merged(base, texto)
+    gravada = O.recorded_base(texto) if texto else None
+    casa = str(Path(PREFIX or Path.home()))
+    return {"unit": unit, "file": str(O.dropin_path(p)).replace(casa, "~"),
+            "override": texto is not None, "text": texto,
+            "base_changed": bool(gravada and gravada != O.base_hash(base)),
+            "base": O.describe(base[0]), "base_restart": base[1],
+            "effective": O.describe(efetivo[0]), "restart": efetivo[1],
+            "roots": [r.replace(casa, "~") for r in volume_roots()], "caps_ok": list(O.CAPS_OK),
+            "restarts": list(O.RESTARTS), "quadlet": O.quadlet_binary() is not None,
+            "limits": cgroup_limits()}
+
+
+def clean_config(config):
+    """The form's payload as items of the right types, or ValueError."""
+    if not isinstance(config, dict):
+        raise ValueError("config")
+    saida = {}
+    for grupo, _ in O.GROUPS:
+        itens = config.get(grupo)
+        if itens is None:
+            continue
+        if not isinstance(itens, list) or len(itens) > 200:
+            raise ValueError(grupo)
+        limpos = []
+        for i in itens:
+            if not isinstance(i, dict):
+                raise ValueError(grupo)
+            if i.get("opaque") or "raw" in i:
+                limpos.append({"raw": str(i.get("raw", "")), "opaque": True})
+            elif grupo == "ports":
+                if i.get("proto") not in ("tcp", "udp"):
+                    raise ValueError("proto")
+                limpos.append({"bind": str(i.get("bind") or ""), "host": int(i["host"]),
+                               "container": int(i["container"]), "proto": i["proto"]})
+            elif grupo == "volumes":
+                limpos.append({"host": str(i["host"]), "container": str(i["container"]),
+                               "label": str(i.get("label") or ""), "ro": bool(i.get("ro")),
+                               "extra": [str(x) for x in (i.get("extra") or [])]})
+            elif grupo == "env":
+                limpos.append({"key": str(i["key"]), "value": str(i.get("value", ""))})
+            elif grupo == "devices":
+                limpos.append({"path": str(i["path"])})
+            else:
+                limpos.append({"name": str(i["name"]).upper().removeprefix("CAP_")})
+        saida[grupo] = limpos
+    restart = config.get("restart")
+    if restart is not None and not isinstance(restart, str):
+        raise ValueError("restart")
+    return saida, (restart or None)
+
+
+def custom_plan(unit, config):
+    """{text, errors, warnings, generated, changed}: what saving would write, and whether it holds.
+
+    The form's own rules first, then the host's Quadlet generator on a scratch copy —
+    which knows the keys but not the values, so the first is not optional."""
+    p = installed_unit(unit)
+    if p is None:
+        raise LookupError(loc("not installed"))
+    try:
+        desejado, restart = clean_config(config)
+    except (ValueError, KeyError, TypeError) as e:
+        return {"text": None, "errors": [f"{loc('invalid form')}: {e}"], "warnings": [], "generated": "",
+                "changed": False}
+    base = O.base_of(p.read_text())
+    ctx = custom_context(unit, O.merged(base, O.read_override(p)))
+    texto, erros, avisos = O.validate_and_render(base, desejado, restart, ctx, propria=unit)
+    gerado = ""
+    if not erros:
+        ok, mensagens, gerado = O.quadlet_check(systemd_dir(), p, texto)
+        if ok is False:
+            erros += mensagens
+        elif ok is None:
+            avisos.append(loc("no Quadlet generator here: only the form's own rules were checked"))
+    return {"text": texto, "errors": erros, "warnings": avisos, "generated": gerado,
+            "changed": texto is not None, "desired": desejado}
+
+
+def new_volume_dirs(p, plano):
+    """The host folders of volumes the person ADDED, which apply_override creates.
+
+    Only the ones the unit did not already carry; the validation has by now
+    confirmed each sits inside a permitted root, so mkdir cannot reach elsewhere."""
+    antigos = {O.canon("volumes", r) for r in O.base_of(p.read_text())[0]["volumes"]}
+    casa = Path(PREFIX or Path.home())
+    saida = []
+    for item in plano["desired"].get("volumes", []):
+        if item.get("opaque") or O.render_item("volumes", item) in antigos:
+            continue
+        real = O.resolve_host(item["host"], casa, I.manager_var)
+        if real:
+            saida.append(real)
+    return saida
+
+
+def systemctl(*args, tempo=300):
+    r = subprocess.run(["systemctl", "--user", *args], capture_output=True, text=True, timeout=tempo)
+    if r.returncode and (r.stdout or r.stderr).strip():
+        print((r.stderr or r.stdout).strip())
+    return r.returncode == 0
+
+
+def apply_override(unit, texto, novos_volumes=()):
+    """Writes (or removes) the drop-in, reloads, restarts — and goes back if the service does not come up.
+
+    A volume that does not exist, a port the app refuses: the person would be left
+    with a broken service and a form. Instead the previous state is restored and the
+    reason is printed. Runs inside a job, so print() is the job's output."""
+    p = installed_unit(unit)
+    anterior = O.read_override(p)
+    for pasta in novos_volumes:
+        Path(pasta).mkdir(parents=True, exist_ok=True)
+        print(f"  mkdir -p {pasta}")
+    if texto is None:
+        O.remove_override(p)
+        print("  " + loc("customization removed"))
+    else:
+        O.write_override(p, texto)
+        print(f"  {loc('written')}: {O.dropin_path(p)}")
+    if PREFIX:
+        print(f"  ({loc('sandbox, not executed')}: systemctl --user daemon-reload; try-restart {unit})")
+        return True
+    if systemctl("daemon-reload", tempo=60) and systemctl("try-restart", unit):
+        print("  " + loc("restarted — it came up"))
+        return True
+    print("\n" + loc("The service did not come up with this customization. Going back to the previous one:"))
+    log = subprocess.run(["journalctl", "--user", "-u", f"{unit}.service", "-n", "12", "--no-pager", "-o", "cat"],
+                         capture_output=True, text=True).stdout
+    print(log.rstrip())
+    if anterior is None:
+        O.remove_override(p)
+    else:
+        O.write_override(p, anterior)
+    systemctl("daemon-reload", tempo=60)
+    ok = systemctl("try-restart", unit)
+    print("  " + (loc("back as it was, and running") if ok else loc("back as it was, but it still does not start")))
+    return False
 
 
 # -- the .env of a service ------------------------------------------------------
@@ -1088,6 +1323,14 @@ class Handler(BaseHTTPRequestHandler):
             if not service_dir(app):
                 return self._json(400, {"error": loc("unknown service")})
             return self._json(200, {"links": links(app)})
+        if url.path == "/api/custom":
+            unit = q.get("unit", "")
+            if not unit_exists(unit):
+                return self._json(400, {"error": loc("unknown unit")})
+            try:
+                return self._json(200, custom_state(unit))
+            except LookupError as e:
+                return self._json(404, {"error": str(e)})
         if url.path in ("/api/env", "/api/disk", "/api/arch"):
             app = q.get("app", "")
             if not service_dir(app):
@@ -1163,6 +1406,30 @@ class Handler(BaseHTTPRequestHandler):
         except ValueError:
             return self._json(400, {"error": "json"})
         lang = "pt" if d.get("lang") == "pt" else "en"
+
+        if url.path in ("/api/custom/preview", "/api/custom/apply", "/api/custom/reset"):
+            unit = d.get("unit", "")
+            if not unit_exists(unit):
+                return self._json(400, {"error": loc("unknown unit")})
+            if installed_unit(unit) is None:
+                return self._json(404, {"error": loc("not installed")})
+            reverter = url.path.endswith("/reset")
+            try:
+                plano = custom_plan(unit, {} if reverter else d.get("config") or {})
+            except LookupError as e:
+                return self._json(404, {"error": str(e)})
+            if url.path.endswith("/preview"):
+                return self._json(200, {k: v for k, v in plano.items() if k != "desired"})
+            if plano["errors"] and not reverter:
+                return self._json(400, {"error": "; ".join(plano["errors"]), "errors": plano["errors"]})
+            novos = [] if reverter else new_volume_dirs(installed_unit(unit), plano)
+            texto = None if reverter else plano["text"]
+            pasta = next(I.APPS.glob(f"*/{unit}.container")).parent.name
+            job = start_job(pasta, "revert" if reverter else "customize", [], lang,
+                            lambda: apply_override(unit, texto, novos), origem=self.client_address[0], unit=unit)
+            if job is None:
+                return self._json(409, {"error": loc("another job is running")})
+            return self._json(202, {"job": job.id})
 
         if url.path == "/api/env/save":
             app = d.get("app", "")
@@ -1529,10 +1796,86 @@ def selftest():
             st, _, _ = pedir("/api/links?app=../x", headers=ok)
             assert st == 400, st
 
+            # customize: a drop-in beside the unit, with rules for what is new
+            unidade = Path(tmp, ".config/containers/systemd/homebox.container")
+            est = json.loads(pedir("/api/custom?unit=homebox", headers=ok)[2])
+            assert est["override"] is False and est["roots"] and est["restart"] == "always", est
+            assert "SYS_ADMIN" not in est["caps_ok"] and set(est["limits"]) == {"memory", "cpu"}
+            for ruim in ("../x", "nao-existe"):
+                assert pedir(f"/api/custom?unit={ruim}", headers=ok)[0] == 400, ruim
+            assert pedir("/api/custom?unit=memos", headers=ok)[0] == 404, "a unit that is not installed"
+
+            def cfg(**mudar):
+                efet = est["effective"]
+                return {"ports": efet["ports"], "volumes": efet["volumes"], "env": efet["env"],
+                        "devices": efet["devices"], "caps": efet["caps"], **mudar}
+
+            def previa(c, rota="preview"):
+                st, _, corpo = pedir(f"/api/custom/{rota}", json.dumps({"unit": "homebox", "config": c}).encode(), api)
+                return st, json.loads(corpo)
+            boa = cfg(ports=est["effective"]["ports"] + [{"bind": "", "host": 8123, "container": 7745, "proto": "tcp"}],
+                      volumes=est["effective"]["volumes"] + [{"host": "%h/.config/containers/volumes/extra",
+                                                               "container": "/extra", "label": "Z", "ro": False, "extra": []}],
+                      env=est["effective"]["env"] + [{"key": "NOVA", "value": 'a b $x 100%'}],
+                      caps=est["effective"]["caps"] + [{"name": "NET_RAW"}], restart="on-failure")
+            st, pre = previa(boa)
+            assert st == 200 and not pre["errors"] and pre["changed"], pre
+            assert "PublishPort=8123:7745" in pre["text"] and "Restart=on-failure" in pre["text"] and "AddCapability=NET_RAW" in pre["text"]
+            assert 'NOVA="a b $$x 100%%"' in pre["text"], pre["text"]
+            assert any("rede local" in w for w in pre["warnings"]), "a new published port says it opens the LAN"
+            if O.quadlet_binary():
+                assert "--publish 8123:7745" in pre["generated"], pre["generated"]
+            assert not O.dropin_path(unidade).exists(), "a preview writes nothing"
+            texto_boa = pre["text"]
+
+            for ruim, parte in ((cfg(volumes=est["effective"]["volumes"] + [{"host": "/etc", "container": "/e", "label": "Z", "ro": False, "extra": []}]), "fora das pastas"),
+                                (cfg(caps=[{"name": "SYS_ADMIN"}]), "lista permitida"),
+                                (cfg(ports=[{"bind": "", "host": 80, "container": 80, "proto": "tcp"}]), "a partir da"),
+                                (cfg(env=[{"key": "1X", "value": "a"}]), "variável"),
+                                (cfg(devices=[{"path": "/dev/nao-existe"}]), "não existe"),
+                                (cfg(ports=[{"raw": "8080", "opaque": True}]), "não vem da unit"),
+                                (dict(cfg(), restart="sempre"), "reinício")):
+                st, pre = previa(ruim)
+                assert pre["errors"] and any(parte in e for e in pre["errors"]), (parte, pre["errors"])
+                st, rec = previa(ruim, "apply")
+                assert st == 400 and not O.dropin_path(unidade).exists(), ("apply refuses what preview refused", parte)
+            assert previa({"ports": "nao-lista"})[1]["errors"], "a malformed payload is an error, not a crash"
+            st, _, _ = pedir("/api/custom/apply", json.dumps({"unit": "homebox", "config": boa}).encode(), ok)
+            assert st == 403, "and it needs the X-QH-Store header like every write"
+
+            st, aplicado = previa(boa, "apply")
+            assert st == 202, aplicado
+            estado = esperar(json.dumps(aplicado).encode())
+            assert estado["rc"] == 0 and "extra" in estado["output"], estado["output"]
+            assert O.read_override(unidade) == texto_boa and oct(O.dropin_path(unidade).stat().st_mode)[-3:] == "600"
+            assert Path(tmp, ".config/containers/volumes/extra").is_dir(), "the new volume's folder is created"
+            est = json.loads(pedir("/api/custom?unit=homebox", headers=ok)[2])
+            assert est["override"] and any(i.get("host") == 8123 for i in est["effective"]["ports"]), est["effective"]["ports"]
+            assert est["effective"]["env"][-1] == {"key": "NOVA", "value": "a b $x 100%"}, "the value reads back unescaped"
+            assert est["restart"] == "on-failure" and est["base_changed"] is False
+            hb2 = next(a for a in json.loads(pedir("/api/catalog", headers=ok)[2])["apps"] if a["id"] == "homebox")
+            assert hb2["units"][0]["override"] is True, "the catalog says it is customized"
+            # saving what the form already shows again is not a conflict with itself
+            st, de_novo = previa(cfg(ports=est["effective"]["ports"], volumes=est["effective"]["volumes"],
+                                     env=est["effective"]["env"], caps=est["effective"]["caps"], restart="on-failure"))
+            assert not de_novo["errors"], de_novo["errors"]
+
+            # the unit moved under the customization: flagged
+            antes = O.read_override(unidade)
+            O.write_override(unidade, antes.replace(O.recorded_base(antes), "0" * 16))
+            assert json.loads(pedir("/api/custom?unit=homebox", headers=ok)[2])["base_changed"] is True
+            O.write_override(unidade, antes)
+
+            st, rev = pedir("/api/custom/reset", json.dumps({"unit": "homebox"}).encode(), api)[0:3:2]
+            assert st == 202, rev
+            assert esperar(rev)["rc"] == 0 and O.read_override(unidade) is None, "revert removes the file"
+            assert json.loads(pedir("/api/custom?unit=homebox", headers=ok)[2])["override"] is False
+
             # history: every job is on disk, newest first, with who asked and how it ended
             lista = json.loads(pedir("/api/history?app=homebox", headers=ok)[2])["entries"]
             acoes = [e["action"] for e in lista]
-            assert acoes[0] == "env" and "install" in acoes and "backup" in acoes, acoes
+            assert acoes[:2] == ["revert", "customize"], "the customization and its revert are in the history"
+            assert "env" in acoes and "install" in acoes and "backup" in acoes, acoes
             assert all("output" not in e and e["from"] == "127.0.0.1" for e in lista)
             assert all(e["app"] == "homebox" for e in lista) and lista[0]["start"] <= lista[0]["end"]
             todos = json.loads(pedir("/api/history?limit=3", headers=ok)[2])["entries"]

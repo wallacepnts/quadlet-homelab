@@ -276,6 +276,44 @@ browser loads them from there, so the project's host sees the request, as it
 already does for the icons. A few services carry them as examples; the rest
 have none until someone adds an image worth showing.
 
+**Customize** changes an installed service without touching the repository's
+unit: ports, volumes, extra variables, devices, extra capabilities and the
+restart policy, laid out like the form CasaOS has for an app. The change is a
+Quadlet drop-in, `<unit>.container.d/50-store.conf`, beside the unit. `qh
+--update` leaves it alone and says so (and says it too when the unit changed
+under a customization that resets a list, since that hides what is new),
+`qh --status` marks the service, and `qh --remove` takes it away with the unit.
+**Revert**, or deleting the file, goes back to the unit as published. **Preview**
+shows the exact file and the `podman run` line Quadlet makes of it; **Save and
+apply** writes it, restarts the service, and, if the service does not come up,
+puts the previous state back and prints the last lines of its journal.
+
+Only what is new is checked, and what the unit already carries is always
+accepted as it is. A new volume must sit inside `~/.config/containers/volumes`,
+a folder the units already ask you for (`${MEDIA_DATA_DIR}`) or one you list in
+`~/.config/quadlet-homelab/store-roots` (one path per line); a port must be at
+or above the unprivileged floor and free (not another unit's, not listening); a
+capability must be on a short list (Podman's defaults plus `NET_RAW`,
+`SYS_NICE`, `MKNOD`, `AUDIT_WRITE`); a device must exist under `/dev`. There is
+no image or tag field, because the version belongs to the repository (rule 9),
+and no privileged switch: with the store's token, either would make it a shell
+on your host. For those, edit the unit by hand. The `.env` file stays under
+**Configure**; the form edits the `Environment=` lines.
+
+Memory and CPU limits are not offered, on purpose. Rootless, they need the user's
+systemd to delegate those controllers, and where it does not, `--memory` stops
+the container from starting (`memory.swap.max: no such file or directory`),
+which was measured here, where only `pids` is delegated. Check yours with
+`cat /sys/fs/cgroup/user.slice/user-$(id -u).slice/user@$(id -u).service/cgroup.controllers`.
+Delegating them is a root change to `user@.service` (`Delegate=cpu cpuset io
+memory pids`) that this repository does not make for you.
+
+`store/test/ui.js` runs the page in Node against a stand-in DOM, and
+`store/test/browser.js` drives a real Chromium through it (`node
+store/test/browser.js <url> <token-file> <out-dir> [real|sandbox]`; `real` only
+reads and previews, `sandbox` also applies, so point it only at a store started
+with `--prefix`). Neither is in the CI, which is Python only.
+
 Anyone holding the token can install and remove services as you. Treat it like
 an SSH key. To revoke it, delete the file and restart the service.
 
