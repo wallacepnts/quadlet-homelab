@@ -74,6 +74,7 @@ PT = {
         "já existe um backup com esse nome; tente de novo em um segundo",
     "not installed": "não instalado",
     "unknown file": "arquivo desconhecido",
+    "marked deprecated, no install:": "marcado como descontinuado, sem instalação:",
     "invalid form": "formulário inválido",
     "no Quadlet generator here: only the form's own rules were checked":
         "sem o gerador do Quadlet aqui: só as regras do próprio formulário foram conferidas",
@@ -1015,6 +1016,18 @@ def chain(app):
     return I.install_order(faltam) + [app]
 
 
+def install_refusal(app, lang="en"):
+    """Why an install of `app` is refused, or None: it, or a service it would bring, is marked
+    deprecated and not installed yet. What is already installed is never refused — it
+    can still be managed, and removing it is the likeliest next thing a person wants."""
+    for x in chain(app):
+        s = I.Service(x, PREFIX)
+        razao = I.deprecation(s.ini)
+        if razao and not s.installed():
+            return f"{x}: " + loc("marked deprecated, no install:") + " " + razao["pt" if lang == "pt" else "en"]
+    return None
+
+
 def asks(app):
     """({manual secret names}, {Volume= variable names}) — the only answers accepted."""
     s = I.Service(app, PREFIX)
@@ -1290,6 +1303,9 @@ class Handler(BaseHTTPRequestHandler):
             if extra is None:
                 return self._json(400, {"error": loc("unknown action") if action not in ACOES
                                         else loc("no such backup of this service")})
+            recusa = install_refusal(app, lang) if action == "install" else None
+            if recusa:
+                return self._json(400, {"error": recusa})
             if action == "upgrade" and PREFIX:
                 return self._json(400, {"error": loc("an upgrade edits the repository, "
                                                      "which a sandbox does not have")})
@@ -1463,6 +1479,9 @@ class Handler(BaseHTTPRequestHandler):
             if extra is None:
                 return self._json(400, {"error": loc("unknown action") if action not in ACOES
                                         else loc("no such backup of this service")})
+            recusa = install_refusal(app, lang) if action == "install" else None
+            if recusa:
+                return self._json(400, {"error": recusa})
             segredos, variaveis = d.get("secrets") or {}, d.get("vars") or {}
             if not (isinstance(segredos, dict) and isinstance(variaveis, dict)
                     and all(isinstance(v, str) for v in [*segredos.values(), *variaveis.values()])):
@@ -1870,6 +1889,36 @@ def selftest():
             assert st == 202, rev
             assert esperar(rev)["rc"] == 0 and O.read_override(unidade) is None, "revert removes the file"
             assert json.loads(pedir("/api/custom?unit=homebox", headers=ok)[2])["override"] is False
+
+            # deprecated: a service marked in install.ini is not offered for install, but stays manageable
+            with tempfile.TemporaryDirectory() as dep:
+                copia = Path(dep, "apps")
+                shutil.copytree(I.APPS, copia, ignore_dangling_symlinks=True)
+                import configparser
+                for nome in ("memos", "homebox"):
+                    ini = copia / nome / "install.ini"
+                    cp = configparser.ConfigParser(interpolation=None)
+                    cp.optionxform = str
+                    cp.read(ini)
+                    if not cp.has_section("store"):      # memos already has one, for its screenshots
+                        cp.add_section("store")
+                    cp.set("store", "deprecated", "Archived upstream.")
+                    cp.set("store", "deprecated_pt", "Arquivado no upstream.")
+                    with open(ini, "w") as fh:
+                        cp.write(fh)
+                original, I.APPS = I.APPS, copia
+                try:
+                    st, _, corpo = pedir("/api/run", json.dumps({"app": "memos", "action": "install"}).encode(), api)
+                    assert st == 400 and "Archived upstream." in json.loads(corpo)["error"], (st, corpo)
+                    st, _, corpo = pedir("/api/run", json.dumps({"app": "memos", "action": "install", "lang": "pt"}).encode(), api)
+                    assert st == 400 and "Arquivado no upstream." in json.loads(corpo)["error"], "the reason follows the page's language"
+                    st, _, corpo = pedir("/api/plan?app=memos&action=install", headers=ok)
+                    assert st == 400 and "memos" in json.loads(corpo)["error"], "the plan of an install is refused too"
+                    assert pedir("/api/plan?app=memos&action=update", headers=ok)[0] == 200, "only the install is refused"
+                    assert install_refusal("homebox") is None, "one that is already installed is never refused"
+                    assert install_refusal("gitea") is None, "and an unmarked one is not"
+                finally:
+                    I.APPS = original
 
             # history: every job is on disk, newest first, with who asked and how it ended
             lista = json.loads(pedir("/api/history?app=homebox", headers=ok)[2])["entries"]

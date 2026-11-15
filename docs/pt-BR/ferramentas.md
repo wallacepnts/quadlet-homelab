@@ -279,6 +279,23 @@ navegador carrega as imagens de lá, então o host do projeto vê a requisição
 como já vê nos ícones. Alguns serviços trazem capturas como exemplo; os demais
 ficam sem até alguém acrescentar uma imagem que valha a pena.
 
+Um serviço descontinuado — arquivado no upstream, ou com a imagem fixada que sumiu
+do registry — é marcado na mesma seção:
+
+```ini
+[store]
+deprecated = Archived upstream on 2026-03-01; no release since 1.4.2.
+deprecated_pt = Arquivado no upstream em 01/03/2026; sem release desde a 1.4.2.
+```
+
+A loja mostra um selo "descontinuado" com o motivo e não oferece a instalação, e o
+servidor recusa uma também. Um serviço já instalado continua gerenciável, já que
+remover é o passo mais provável. O `qh` avisa antes de instalá-lo e o `qh --all`
+o deixa de fora; nomeá-lo ainda instala, porque o aviso não é uma proibição. O
+`deprecated_pt` é opcional, e sem ele vale o motivo em inglês. O `check.py` pede
+uma linha simples de até 300 caracteres. É uma decisão que uma pessoa registra:
+nada marca um serviço sozinho.
+
 A **Personalizar** muda um serviço instalado sem tocar na unit do repositório:
 portas, volumes, variáveis extras, dispositivos, capabilities extras e a
 política de reinício, no desenho do formulário que o CasaOS tem para um app. A

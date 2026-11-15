@@ -149,6 +149,33 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   confere(!/null|undefined/.test($("p-info").textContent) && /Roda em amd64, arm64$/.test($("p-info").textContent), "app não instalado: info sem 'null'");
   $("panel").open = false;
 
+  // discontinued: the badge, the reason in the page's language, and no install for what is not installed
+  const marca = { en: "Archived upstream.", pt: "Arquivado no upstream." };
+  api.S.apps.find((x) => x.id === "gitea").deprecated = marca;
+  api.S.apps.find((x) => x.id === "memos").deprecated = marca;
+  api.setView("store");
+  const cartaoGitea = $("grid").kids.find((k) => /Gitea/.test(k.textContent));
+  confere(/descontinuado/.test(cartaoGitea.textContent) && !/instalado/.test(cartaoGitea.textContent.replace("descontinuado", "")),
+    "Loja: o cartão de um app descontinuado leva o selo");
+  api.openPanel("gitea"); await esperar(50);
+  confere(!$("p-notice").hidden && /Descontinuado: Arquivado no upstream\./.test($("p-notice").textContent) && /Não dá para instalar/.test($("p-notice").textContent),
+    "painel: o motivo, em português, e o aviso de que não instala");
+  confere($("p-actions").textContent === "Histórico", `painel: sem botão de instalar (${$("p-actions").textContent})`);
+  $("panel").open = false;
+  api.setView("apps");
+  const azulejoMemos = $("grid").kids.find((k) => /Memos/.test(k.textContent));
+  confere(/descontinuado/.test(azulejoMemos.textContent), "Meus apps: o azulejo de um instalado também leva o selo");
+  api.openPanel("memos"); await esperar(50);
+  confere(/Descontinuado: Arquivado no upstream\./.test($("p-notice").textContent) && !/Não dá para instalar/.test($("p-notice").textContent),
+    "instalado: mostra o motivo, sem dizer que não instala");
+  confere(botoes($("p-actions")).some((b) => b.textContent === "Remover"), "instalado: continua dando para gerenciar e remover");
+  $("panel").open = false;
+  api.openPanel("homebox"); await esperar(50);
+  confere($("p-notice").hidden === true, "um app sem marca não mostra aviso");
+  $("panel").open = false;
+  api.S.apps.find((x) => x.id === "gitea").deprecated = null;
+  api.S.apps.find((x) => x.id === "memos").deprecated = null;
+
   // Customize: the form shows what the unit carries, and sends the whole list back
   api.openPanel("homebox"); await esperar(100);
   const personalizar = porTexto($("p-actions"), "Personalizar")[0];

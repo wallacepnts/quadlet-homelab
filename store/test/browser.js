@@ -65,6 +65,28 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
   console.log("exemplo de link:", mascara(await ev("(document.querySelector('.tile a.tile-open')||{}).href")).slice(0, 60), "| 'null' solto:", await ev("/null|undefined/.test(document.getElementById('grid').textContent)"));
   await foto("01-meus-apps");
 
+  if (MODO === "deprecated") {
+    // needs a store whose repository marks one installed and one uninstalled service as deprecated
+    console.log("selos 'descontinuado' em Meus apps:", await ev("[...document.querySelectorAll('.tile .badge')].filter((b) => b.textContent === 'descontinuado').length"));
+    await foto("01-meus-apps-descontinuado");
+    await tab("tab-store");
+    console.log("cartões com o selo na Loja:", await ev("[...document.querySelectorAll('#grid .card')].filter((c) => /descontinuado/.test(c.textContent)).map((c) => c.querySelector('h3').textContent).join(', ')"));
+    await foto("02-loja-descontinuado");
+    console.log("abrir Gitea:", await abrir("Gitea")); await esperar(1200);
+    console.log("painel aberto:", await ev("document.getElementById('panel').open"), "| nome:", await ev("document.getElementById('p-name').textContent"));
+    console.log("painel de um não instalado → aviso:", await ev("document.getElementById('p-notice').textContent"), "| botões:", await ev("[...document.querySelectorAll('#p-actions button')].map((b) => b.textContent).join(' | ')"));
+    await foto("03-painel-descontinuado");
+    await ev("document.getElementById('p-close').click()"); await esperar(300);
+    await abrir("HomeBox"); await esperar(1200);
+    console.log("painel de um instalado → aviso:", await ev("document.getElementById('p-notice').textContent"), "| botões:", await ev("[...document.querySelectorAll('#p-actions button')].map((b) => b.textContent).join(' | ')"));
+    await foto("04-painel-instalado-descontinuado");
+    await send("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 2, mobile: true });
+    await esperar(800); await ev("document.getElementById('p-close').click()"); await esperar(300);
+    console.log("celular: scrollWidth", await ev("document.documentElement.scrollWidth"), "innerWidth", await ev("innerWidth"));
+    await foto("05-celular-descontinuado");
+    return fim();
+  }
+
   // Customize, on the first installed app that offers it
   const app = MODO === "sandbox" ? "HomeBox" : "Actual Budget";
   await abrir(app); await ate("document.getElementById('p-info').textContent.includes('Disco') && !document.getElementById('p-info').textContent.includes('calculando')", 25000);

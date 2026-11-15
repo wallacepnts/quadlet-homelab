@@ -6,7 +6,8 @@ const T = {
   pt: {
     search: "Buscar apps", tabApps: "Meus apps", tabStore: "Loja", all: "Todos", other: "Outros",
     noneInstalled: "Nenhum app instalado ainda.", goStore: "Abrir a Loja", manage: "Gerenciar",
-    installedBadge: "instalado",
+    installedBadge: "instalado", deprecatedBadge: "descontinuado", deprecatedNote: "Descontinuado:",
+    noInstall: "Não dá para instalar este app daqui.",
     customize: "Personalizar", customizedBadge: "personalizado", cPorts: "Portas", cVolumes: "Volumes",
     cEnv: "Variáveis de ambiente", cDevices: "Dispositivos", cCaps: "Capabilities extras",
     cRestart: "Política de reinício", add: "Adicionar", fromUnit: "(vem da unit)", removeRow: "Remover",
@@ -75,7 +76,8 @@ const T = {
   en: {
     search: "Search apps", tabApps: "My apps", tabStore: "Store", all: "All", other: "Other",
     noneInstalled: "No app installed yet.", goStore: "Open the Store", manage: "Manage",
-    installedBadge: "installed",
+    installedBadge: "installed", deprecatedBadge: "discontinued", deprecatedNote: "Discontinued:",
+    noInstall: "It cannot be installed from here.",
     customize: "Customize", customizedBadge: "customized", cPorts: "Ports", cVolumes: "Volumes",
     cEnv: "Environment variables", cDevices: "Devices", cCaps: "Extra capabilities",
     cRestart: "Restart policy", add: "Add", fromUnit: "(from the unit)", removeRow: "Remove",
@@ -277,6 +279,7 @@ function health(app) {
     return ["bad", t("attention")];
   const rows = inst.map((u) => S.upd[u.unit]).filter(Boolean);
   if (rows.some((r) => r.bucket === "GONE")) return ["bad", t("gone")];
+  if (app.deprecated) return ["warn", t("deprecatedBadge")];
   const atras = rows.find((r) => r.bucket === "BEHIND");
   if (atras) return ["warn", `${t("newVersion")} ${atras.there}`];
   if (inst.some((u) => u.drift)) return ["warn", t("changed")];
@@ -293,6 +296,9 @@ function upstreamCell(u) {
   if (r.bucket === "PENDING") return ["warn", `${r.there} (${t("pending")})`];
   return ["", r.status];
 }
+
+// Marked in install.ini [store]: why a service is discontinued, in the page's language.
+const depReason = (a) => (a.deprecated ? a.deprecated[S.lang] || a.deprecated.en : null);
 
 const groupOf = (app) => (app.group ? app.group[S.lang] : t("other"));
 
@@ -377,7 +383,9 @@ function storeCard(a) {
       h("div", {}, h("h3", {}, a.name),
         h("p", { class: "version" }, a.installed ? tagOf((mainUnit(a) || {}).installed_image) : ""))),
     h("p", { class: "desc" }, plain(a.description[S.lang] || a.description.en)),
-    a.installed && h("span", { class: "badge plain" }, t("installedBadge")));
+    a.deprecated
+      ? h("span", { class: "badge warn" }, a.installed ? `${t("deprecatedBadge")} · ${t("installedBadge")}` : t("deprecatedBadge"))
+      : a.installed && h("span", { class: "badge plain" }, t("installedBadge")));
 }
 
 function renderGrid() {
@@ -522,11 +530,17 @@ function renderPanel() {
           h("button", { type: "button", class: "ghost", onclick: () => unitVerb(u.unit, v) }, t(v))),
         h("button", { type: "button", class: "ghost", onclick: () => showLogs(u.unit) }, t("logs"))))));
 
+  // The reason, where it is read; and a service that is discontinued is not offered for install.
+  const motivo = depReason(a);
+  $("p-notice").hidden = !motivo;
+  if (motivo) $("p-notice").textContent = `${t("deprecatedNote")} ${motivo}${a.installed ? "" : ` ${t("noInstall")}`}`;
   const acoes = [];
   if (!a.installed) {
-    const deps = needs(a);
-    acoes.push(h("button", { type: "button", onclick: () => plan("install") },
-      deps.length ? t("installWith")(deps.map((x) => x.name).join(", ")) : t("install")));
+    if (!a.deprecated) {
+      const deps = needs(a);
+      acoes.push(h("button", { type: "button", onclick: () => plan("install") },
+        deps.length ? t("installWith")(deps.map((x) => x.name).join(", ")) : t("install")));
+    }
   }
   else {
     // One update button, and only when there is something to update: a newer

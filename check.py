@@ -346,6 +346,24 @@ def screenshots_problemas(valor):
     return saida
 
 
+def deprecated_problemas(valor):
+    """What is wrong with a `[store] deprecated` reason, as a list; empty when it will do.
+
+    It is shown to a person in the store, in a badge and a sentence: one line,
+    saying what happened (archived, the image is gone, the project moved), not
+    just that it is old.
+    """
+    v = valor.strip()
+    if not v:
+        return ["is empty — say why"]
+    saida = []
+    if len(v) > 300:
+        saida.append(f"is {len(v)} characters; keep it to one short sentence (300 at most)")
+    if re.search(r"[\r\n<>]", valor):
+        saida.append("has a line break or a < >; it is shown as plain text, on one line")
+    return saida
+
+
 def upstream_problema(valor):
     """What is wrong with an [upstream] value, or None when it parses.
 
@@ -538,12 +556,16 @@ def check_manifest(folders):
         # `screenshots` exists; any other key is a typo that would be ignored.
         if ini.has_section("store"):
             for key, valor in ini.items("store"):
-                if key != "screenshots":
+                if key not in ("screenshots", "deprecated", "deprecated_pt"):
                     error("manifest", f"apps/{folder.name}: install.ini [store] has no key {key!r} "
-                                      f"(only `screenshots`)")
+                                      f"(only `screenshots`, `deprecated` and `deprecated_pt`)")
                     continue
-                for problema in screenshots_problemas(valor):
-                    error("manifest", f"apps/{folder.name}: install.ini [store] screenshots {problema}")
+                for problema in (screenshots_problemas(valor) if key == "screenshots"
+                                 else deprecated_problemas(valor)):
+                    error("manifest", f"apps/{folder.name}: install.ini [store] {key} {problema}")
+            if ini.has_option("store", "deprecated_pt") and not ini.get("store", "deprecated", fallback="").strip():
+                error("manifest", f"apps/{folder.name}: install.ini [store] deprecated_pt without `deprecated`: "
+                                  f"the English reason is the one that counts")
         # [vars]: every ${VAR} a Volume= of this folder names needs a default
         # here, because it is what the install offers when it asks — and a
         # variable left unset turns `${MEDIA_DATA_DIR}/downloads` into
@@ -894,6 +916,12 @@ def check_per_unit(folder):
 # --------------------------------------------------------------------------
 
 def selftest():
+    # [store] deprecated: one plain line that says why
+    assert deprecated_problemas("Archived upstream on 2026-03-01; no release since 1.4.2.") == []
+    assert deprecated_problemas("   ") == ["is empty — say why"]
+    assert deprecated_problemas("x" * 301)[0].startswith("is 301 characters")
+    assert deprecated_problemas("two\nlines") and deprecated_problemas("a <b>bold</b> claim")
+
     # [store] screenshots: https URLs, at most six, no repeats
     assert screenshots_problemas("https://a.example/x.png\n    https://b.example/y.jpg") == []
     assert screenshots_problemas("https://a.example/x.png, https://b.example/y.png") == []

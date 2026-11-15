@@ -232,6 +232,8 @@ PT = {
     '(local, tailnet or both), and exit': '(local, tailnet ou both), e sai',
     'rule saved:': 'regra salva:',
     'customized': 'personalizada',
+    'this service is marked deprecated:': 'este serviço está marcado como descontinuado:',
+    'skipped, marked deprecated:': 'ignorado, marcado como descontinuado:',
     'keeps its customization (50-store.conf)': 'mantém a personalização dela (50-store.conf)',
     'its customization was written against an older version of the unit — review it in the store (Customize)':
         'a personalização foi feita sobre uma versão mais antiga da unit — revise na loja (Personalizar)',
@@ -991,10 +993,27 @@ class Service:
 # plan
 # --------------------------------------------------------------------------
 
+def deprecation(ini):
+    """{en, pt} from `[store] deprecated` (and `deprecated_pt`) in an install.ini, or None.
+
+    A service the project no longer maintains, or whose image can no longer be
+    pulled, is marked there with the reason. The store then offers no install and
+    shows the badge; `qh` warns, and `--all` leaves it out. An installed one stays
+    manageable — removing it is exactly what a person may want next.
+    """
+    en = ini.get("store", "deprecated", fallback="").strip() if ini.has_section("store") else ""
+    if not en:
+        return None
+    return {"en": en, "pt": ini.get("store", "deprecated_pt", fallback="").strip() or en}
+
+
 def plan_install(s, tailnet, force=False, interactive=False, access="tailnet",
                  href_local=False, ask_secrets=False):
     steps = []      # (description, callable, or None when it is only a warning)
     warnings = []
+    razao = deprecation(s.ini)
+    if razao:
+        warnings.append("this service is marked deprecated: " + razao["pt" if qhui.PTBR else "en"])
 
     dest = s.unit_dest
     steps.append((f"mkdir -p {dest}", lambda: dest.mkdir(parents=True, exist_ok=True)))
@@ -3186,6 +3205,19 @@ def selftest():
         "the active line wins over a commented one"
     assert parse_env("# Leave it true until the first account exists\n") == []
 
+    # the deprecation notice: English by default, its own Portuguese when there is one
+    from configparser import ConfigParser
+    ini = ConfigParser(interpolation=None)
+    assert deprecation(ini) is None
+    ini.read_string("[store]\nscreenshots = https://a.example/x.png\n")
+    assert deprecation(ini) is None, "another [store] key does not deprecate"
+    ini.read_string("[store]\ndeprecated = Archived upstream.\n")
+    assert deprecation(ini) == {"en": "Archived upstream.", "pt": "Archived upstream."}, "no pt: the English one stands in"
+    ini.read_string("[store]\ndeprecated = Archived upstream.\ndeprecated_pt = Arquivado no upstream.\n")
+    assert deprecation(ini) == {"en": "Archived upstream.", "pt": "Arquivado no upstream."}
+    ini.read_string("[store]\ndeprecated =   \n")
+    assert deprecation(ini) is None, "an empty reason is not a deprecation"
+
     # every preflight message has a Portuguese entry: `say` falls back to English without a word
     for aviso in (SEM_TAILNET, SEM_TAILSCALE, TAILSCALED_PARADO):
         assert aviso in PT, f"no Portuguese for the preflight message: {aviso[:40]}..."
@@ -4037,6 +4069,8 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude):
         # Whether there is a typed credential to show after the install
         # ([login] in install.ini); the value itself is asked for apart.
         "has_login": s.login() is not None,
+        # Marked in install.ini [store]: the store shows the reason and offers no install.
+        "deprecated": deprecation(s.ini),
         # How it is reached: the mode in force for it, and whether that is an
         # exception of its own (`qh --set-access MODE APP`) or the rule.
         "access": {"mode": effective_access(s)[0],
@@ -4542,6 +4576,16 @@ def main():
             # remove: there the right order is the reverse, and taking the
             # network down first would be the same mistake upside down.
             a.app = install_order(a.app)
+            # `--all` installs everything there is, and a deprecated service is the
+            # one thing it must not bring in by surprise. Updating what is installed
+            # is another matter, and stays.
+            if not a.update:
+                for x in list(a.app):
+                    sv = Service(x, a.prefix)
+                    motivo = deprecation(sv.ini)
+                    if motivo and not sv.installed():
+                        say(f"{x}: " + loc("skipped, marked deprecated:") + " " + motivo["pt" if qhui.PTBR else "en"])
+                        a.app.remove(x)
 
     if not a.app:
         for p in sorted(x.name for x in APPS.iterdir() if x.is_dir()):

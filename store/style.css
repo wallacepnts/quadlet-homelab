@@ -168,3 +168,4 @@ main.apps { grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); }
 .check { display: inline-flex; align-items: center; gap: .3rem; font-weight: 400; white-space: nowrap; }
 .cust-out details { margin: .4rem 0; } .cust-out summary { cursor: pointer; font-weight: 600; }
 @media (max-width: 640px) { .cust-row { grid-template-columns: 1fr auto; } .cust-row > :not(.x) { grid-column: 1 / 2; } }
+#p-notice { color: var(--warn); font-weight: 600; margin: .3rem 0 .6rem; }

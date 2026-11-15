@@ -276,6 +276,23 @@ browser loads them from there, so the project's host sees the request, as it
 already does for the icons. A few services carry them as examples; the rest
 have none until someone adds an image worth showing.
 
+A service that is discontinued — archived upstream, or with its pinned image gone
+from the registry — is marked in the same section:
+
+```ini
+[store]
+deprecated = Archived upstream on 2026-03-01; no release since 1.4.2.
+deprecated_pt = Arquivado no upstream em 01/03/2026; sem release desde a 1.4.2.
+```
+
+The store shows a "discontinued" badge with the reason and offers no install
+for it, and the server refuses one too. A service already installed stays
+manageable, since removing it is the likeliest next step. `qh` warns before
+installing it, and `qh --all` leaves it out; naming it still installs, because
+the warning is not a ban. `deprecated_pt` is optional, and the English reason
+stands in without it. `check.py` wants one plain line of at most 300 characters.
+It is a decision a person writes down: nothing marks a service by itself.
+
 **Customize** changes an installed service without touching the repository's
 unit: ports, volumes, extra variables, devices, extra capabilities and the
 restart policy, laid out like the form CasaOS has for an app. The change is a

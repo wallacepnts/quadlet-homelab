@@ -591,6 +591,48 @@ def scenario_override(tmp):
           "--remove takes the customization with the unit")
 
 
+def scenario_deprecated(tmp):
+    """A service marked deprecated in install.ini: qh warns, the catalog says so, `--all` leaves it out.
+
+    Run from a copy of the repository, because the marking lives in a file of the repo."""
+    import json
+    raiz = Path(tmp, "dep-repo")
+    raiz.mkdir()
+    for f in ("install.py", "qhui.py", "overrides.py"):
+        shutil.copy(ROOT / f, raiz / f)
+    shutil.copytree(ROOT / "apps", raiz / "apps", ignore_dangling_symlinks=True)   # apps/durockrj may point nowhere
+    import configparser
+    ini = raiz / "apps" / APP / "install.ini"
+    cp = configparser.ConfigParser(interpolation=None)
+    cp.optionxform = str
+    cp.read(ini)
+    if not cp.has_section("store"):          # an app may already carry one, for its screenshots
+        cp.add_section("store")
+    cp.set("store", "deprecated", "Archived upstream.")
+    cp.set("store", "deprecated_pt", "Arquivado no upstream.")
+    with open(ini, "w") as fh:
+        cp.write(fh)
+    home = str(Path(tmp, "dep-home"))
+
+    def executa(*args, lang="en"):
+        r = subprocess.run([sys.executable, str(raiz / "install.py"), *args], capture_output=True, text=True,
+                           cwd=raiz, env={**os.environ, "QH_LANG": lang})
+        return r.stdout + r.stderr, r.returncode
+    out, _ = executa(APP, "--prefix", home)
+    check("this service is marked deprecated: Archived upstream." in out, "qh warns, with the reason, before installing")
+    out, _ = executa(APP, "--prefix", home, lang="pt")
+    check("descontinuado: Arquivado no upstream." in out, "…in Portuguese, with the Portuguese reason")
+    cat = json.loads(executa("--catalog", APP, "--prefix", home)[0])["apps"][0]
+    check(cat["deprecated"] == {"en": "Archived upstream.", "pt": "Arquivado no upstream."}, "--catalog carries the reason in both languages")
+    outro = json.loads(executa("--catalog", STACK, "--prefix", home)[0])["apps"][0]
+    check(outro["deprecated"] is None, "and null for a service that is not marked")
+    out, rc = executa("--all", "--prefix", home)
+    check(f"{APP}: skipped, marked deprecated: Archived upstream." in out, "`--all` leaves it out and says why")
+    check(f"{STACK}: skipped" not in out, "…and only that one")
+    out, rc = executa(APP, "--apply", "--prefix", home)
+    check(rc == 0 and (path(home, "systemd", f"{APP}.container")).is_file(), "naming it still installs: the warning is not a ban")
+
+
 def main():
     with tempfile.TemporaryDirectory() as tmp:
         home, out = str(Path(tmp) / "home"), str(Path(tmp) / "backups")
@@ -600,6 +642,7 @@ def main():
         print("user files:");         scenario_no_overwrite(home)
         print("catalog:");            scenario_catalog(home)
         print("customization:");      scenario_override(tmp)
+        print("deprecated:");         scenario_deprecated(tmp)
         print("drift:");              scenario_drift(home)
         print("failure:");            scenario_failure(home, tmp)
         print("remove safety:");      scenario_remove_safety(tmp)
