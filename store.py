@@ -31,6 +31,7 @@ import hmac
 import importlib.util
 import json
 import os
+import platform
 import re
 import secrets
 import shutil
@@ -38,6 +39,7 @@ import subprocess
 import sys
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -70,6 +72,10 @@ PT = {
     "a backup with this name already exists; try again in a second":
         "já existe um backup com esse nome; tente de novo em um segundo",
     "not installed": "não instalado",
+    "unknown file": "arquivo desconhecido",
+    "not a setting of this file, or not a single line":
+        "não é uma opção deste arquivo, ou não é uma linha só",
+    "set": "definido", "turned off": "desligado",
     "an upgrade edits the repository, which a sandbox does not have":
         "atualizar a versão edita o repositório, que um sandbox não tem",
     "a restore overwrites the data: type the service name to confirm":
@@ -300,6 +306,270 @@ def flags(app, action, arquivo=""):
             "backup": ["--backup", "--out", str(backup_dir())]}.get(action)
 
 
+# -- the .env of a service ------------------------------------------------------
+
+SENSIVEL = re.compile(r"PASS|SECRET|TOKEN|KEY|CREDENTIAL|AUTH", re.I)
+
+
+def env_files(app):
+    """The .env files this service reads that exist on the host, by name."""
+    s = I.Service(app, PREFIX)
+    return s, {Path(p).name: Path(p) for p in s.env_files() if Path(p).is_file()}
+
+
+def env_view(app):
+    """[{file, units, entries}]: what the form edits, from the installed files."""
+    s, arquivos = env_files(app)
+    saida = []
+    for nome, f in arquivos.items():
+        usam = [u.stem for u in s.units if u.suffix == ".container"
+                and f in {Path(s._expand(v)) for k, v in I.directives_of(u) if k == "EnvironmentFile"}]
+        entradas = I.parse_env(f.read_text())
+        for e in entradas:
+            e["sensitive"] = bool(SENSIVEL.search(e["key"]))
+        saida.append({"file": nome, "units": usam, "entries": entradas})
+    return saida
+
+
+def env_check(app, nome, mudar, desligar):
+    """The file to edit, or ValueError saying why the request is refused.
+
+    Only keys the file already names (active or commented) are accepted: the
+    form edits the app's settings, it does not add lines to a file the unit
+    feeds straight into a container. Values are one line, because a newline
+    would be a second setting.
+    """
+    f = env_files(app)[1].get(nome)
+    if f is None:
+        raise ValueError(loc("unknown file"))
+    conhecidas = {e["key"] for e in I.parse_env(f.read_text())}
+    for k, v in mudar.items():
+        if k not in conhecidas or not isinstance(v, str) or "\n" in v or "\r" in v:
+            raise ValueError(f"{k}: " + loc("not a setting of this file, or not a single line"))
+    for k in desligar:
+        if k not in conhecidas:
+            raise ValueError(f"{k}: " + loc("not a setting of this file, or not a single line"))
+    return f
+
+
+def env_save(app, nome, mudar, desligar):
+    """Writes the form's changes into one .env, keeping a .bak of what it was."""
+    f = env_check(app, nome, mudar, desligar)
+    bak = f.with_name(f.name + ".bak")
+    fd = os.open(bak, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w") as fh:
+        fh.write(f.read_text())
+    for k, v in mudar.items():
+        I.set_env_value(f, k, v)
+        print(f"  {k}: " + loc("set"))
+    for k in desligar:
+        if k not in mudar:
+            I.unset_env_value(f, k)
+            print(f"  {k}: " + loc("turned off"))
+
+
+
+# -- resources: CPU, memory, disk ------------------------------------------------
+
+STATS = {"t": None, "raw": None, "result": None}
+STATS_LOCK, DISK = threading.Lock(), {}
+DISK_TTL = 600
+NOMES = {}                  # container name -> unit, built once from the repository
+
+
+def parse_cgroup(texto):
+    """The cgroup v2 path in /proc/<pid>/cgroup (`0::/path`), or None (v1, or none)."""
+    for linha in texto.splitlines():
+        if linha.startswith("0::"):
+            return linha[3:].strip() or None
+    return None
+
+
+def vm_rss(pid):
+    """Resident memory of a process in bytes, 0 if it is gone or unreadable."""
+    try:
+        for linha in Path(f"/proc/{pid}/status").read_text().splitlines():
+            if linha.startswith("VmRSS:"):
+                return int(linha.split()[1]) * 1024
+    except (OSError, ValueError):
+        pass
+    return 0
+
+
+def cgroup_usage(caminho):
+    """(resident bytes, cpu microseconds) of a cgroup and everything under it.
+
+    Read from /proc and cgroupfs because `podman stats` answers 0B for memory
+    here: rootless, the memory controller is not delegated to the user's
+    cgroup. RSS counts a page shared between a container's processes once per
+    process, so it can read high for a multi-process app; it is a size to
+    compare, not an accounting.
+    """
+    base = Path("/sys/fs/cgroup") / caminho.lstrip("/")
+    rss = 0
+    for pasta, _, arquivos in os.walk(base):
+        if "cgroup.procs" in arquivos:
+            try:
+                rss += sum(vm_rss(p) for p in Path(pasta, "cgroup.procs").read_text().split())
+            except OSError:
+                pass
+    cpu = 0
+    try:
+        for linha in (base / "cpu.stat").read_text().splitlines():
+            if linha.startswith("usage_usec"):
+                cpu = int(linha.split()[1])
+    except (OSError, ValueError):
+        pass
+    return rss, cpu
+
+
+def container_units():
+    if not NOMES:
+        for u in I.APPS.glob("*/*.container"):
+            NOMES[I.container_name(u)] = u.stem
+    return NOMES
+
+
+def sample():
+    """{container name: (resident bytes, cpu usec)} for the containers running now."""
+    lido = I.run_read(["podman", "ps", "--format", "json"])
+    saida = {}
+    try:
+        containers = json.loads(lido or "[]")
+    except ValueError:
+        return saida
+    for c in containers:
+        try:
+            cg = parse_cgroup(Path(f"/proc/{c['Pid']}/cgroup").read_text())
+        except (OSError, KeyError):
+            continue
+        if cg and c.get("Names"):
+            saida[c["Names"][0]] = cgroup_usage(cg)
+    return saida
+
+
+def stats():
+    """{unit: {cpu, mem}}: CPU as percent of one core over the last interval, memory in bytes.
+
+    CPU is a rate, so it takes two readings: the first call waits a second for
+    the second one, and later calls reuse the reading the previous call left.
+    A call within 3 seconds of the last gets the same answer — several open
+    pages must not make the host read /proc for each of them.
+    """
+    if PREFIX:
+        return {}
+    with STATS_LOCK:
+        agora = time.time()
+        if STATS["result"] is not None and agora - STATS["t"] < 3:
+            return STATS["result"]
+        antes, ta = STATS["raw"], STATS["t"]
+        if antes is None:
+            antes, ta = sample(), time.time()
+            time.sleep(1.0)
+        raw, tb = sample(), time.time()
+        nomes, resultado = container_units(), {}
+        for nome, (rss, usec) in raw.items():
+            unit = nomes.get(nome)
+            if not unit:
+                continue
+            dt = max(tb - ta, 0.001)
+            cpu = (usec - antes[nome][1]) / (dt * 1e6) * 100 if nome in antes else 0.0
+            resultado[unit] = {"cpu": round(max(cpu, 0.0), 1), "mem": rss}
+        STATS.update(t=tb, raw=raw, result=resultado)
+        return resultado
+
+
+def disk(app):
+    """{bytes, paths: [{name, bytes}]} for the data volumes this service owns, or bytes None.
+
+    Through `podman unshare`, because rootless the files belong to subuids the
+    plain user cannot read. The same set `qh --backup` packs: a service's own
+    volumes, not a shared media root. Cached, since a big library can take a
+    while to walk and the number does not need to be fresh.
+    """
+    if PREFIX:
+        return {"bytes": None, "paths": []}
+    guardado = DISK.get(app)
+    if guardado and time.time() - guardado[0] < DISK_TTL:
+        return guardado[1]
+    s = I.Service(app)
+    proprios = s.exclusive_volumes()
+    raizes = [r for r in (proprios if proprios is not None else s.volume_roots()) if Path(r).exists()]
+    saida = {"bytes": 0, "paths": []}
+    if raizes:
+        try:
+            r = subprocess.run(["podman", "unshare", "du", "-sk", *raizes],
+                               capture_output=True, text=True, timeout=120)
+        except (OSError, subprocess.TimeoutExpired):
+            return {"bytes": None, "paths": []}
+        for linha in r.stdout.splitlines():
+            kb, _, caminho = linha.partition("\t")
+            if kb.isdigit():
+                saida["paths"].append({"name": Path(caminho).name, "bytes": int(kb) * 1024})
+        saida["bytes"] = sum(x["bytes"] for x in saida["paths"])
+    DISK[app] = (time.time(), saida)
+    return saida
+
+
+# -- architecture ----------------------------------------------------------------
+
+ARCH_TTL = 7 * 24 * 3600     # a pinned tag does not change what it is built for
+ARCH_NOMES = {"x86_64": "amd64", "amd64": "amd64", "aarch64": "arm64", "arm64": "arm64",
+              "armv7l": "arm", "armv6l": "arm"}
+
+
+def host_arch():
+    return ARCH_NOMES.get(platform.machine(), platform.machine())
+
+
+def arch_report(units, host, lookup):
+    """What each unit's image is built for, and whether it runs on `host`.
+
+    `units` is [(unit, image)]; `lookup(image)` gives a set like
+    {"linux/amd64"} or None when the registry would not say. `ok` is None for
+    an unknown answer: not knowing is not a warning.
+    """
+    saida = []
+    for unit, imagem in units:
+        plataformas = lookup(imagem)
+        linux = sorted(p.split("/", 1)[1] for p in (plataformas or ()) if p.startswith("linux/"))
+        saida.append({"unit": unit, "image": imagem, "platforms": linux or None,
+                      "ok": None if not plataformas else f"linux/{host}" in plataformas})
+    return saida
+
+
+def arch_cache_file():
+    return Path(PREFIX or Path.home()) / ".cache/quadlet-homelab/store-arch.json"
+
+
+def arch(app):
+    """{host, units: [{unit, image, platforms, ok}], runs: [common platforms]} for a service."""
+    s = I.Service(app, PREFIX)
+    units = [(u.stem, next((v for k, v in I.directives_of(u) if k == "Image"), ""))
+             for u in s.units if u.suffix == ".container"]
+    host = host_arch()
+    if PREFIX:             # a sandbox must not reach the network
+        return {"host": host, "units": arch_report(units, host, lambda _i: None), "runs": None}
+    try:
+        guardado = json.loads(arch_cache_file().read_text())
+    except (OSError, ValueError):
+        guardado = {}
+    agora = time.time()
+    faltam = sorted({i for _, i in units if i and not (
+        i in guardado and agora - guardado[i]["at"] < ARCH_TTL)})
+    if faltam:
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            for imagem, plataformas in zip(faltam, pool.map(U.architectures, faltam)):
+                if plataformas is not None:      # a failed lookup is asked again next time
+                    guardado[imagem] = {"at": agora, "platforms": sorted(plataformas)}
+        arch_cache_file().parent.mkdir(parents=True, exist_ok=True)
+        arch_cache_file().write_text(json.dumps(guardado))
+    relatorio = arch_report(units, host, lambda i: set(guardado.get(i, {}).get("platforms", [])) or None)
+    conjuntos = [set(x["platforms"]) for x in relatorio if x["platforms"]]
+    return {"host": host, "units": relatorio,
+            "runs": sorted(set.intersection(*conjuntos)) if conjuntos else None}
+
+
 def em_dia(saida):
     """Whether a dry-run said there is nothing to change.
 
@@ -419,15 +689,15 @@ def start_job(app, action, cmd, lang, prepare=None, entrada=None, refrescar=None
                 if seguir is False:
                     job.rc = 1
                     return
-            if PREFIX and cmd[0] == "systemctl":
-                job.write(f"({loc('sandbox, not executed')}: {' '.join(cmd)})\n")
-                job.rc = 0
-                return
+            rc = 0
             # One command, or several in order (an upgrade is a bump, then an
             # update): each runs only if the one before it succeeded.
-            for i, uno in enumerate(cmd if isinstance(cmd[0], list) else [cmd]):
+            for i, uno in enumerate(cmd if cmd and isinstance(cmd[0], list) else [cmd] if cmd else []):
                 if i:
                     job.write("\n" + "─" * 60 + "\n")
+                if PREFIX and uno[0] == "systemctl":
+                    job.write(f"({loc('sandbox, not executed')}: {' '.join(uno)})\n")
+                    continue
                 # `entrada` is what the person typed where the terminal asks —
                 # the app name a restore wants before overwriting. qh checks it.
                 # The host's language, not the page's: qh translates the
@@ -627,6 +897,17 @@ class Handler(BaseHTTPRequestHandler):
             if not f:
                 return self._json(404, {"error": loc("no such backup of this service")})
             return self._download(f)
+        if url.path in ("/api/env", "/api/disk", "/api/arch"):
+            app = q.get("app", "")
+            if not service_dir(app):
+                return self._json(400, {"error": loc("unknown service")})
+            if url.path == "/api/env":
+                return self._json(200, {"files": env_view(app)})
+            if url.path == "/api/disk":
+                return self._json(200, disk(app))
+            return self._json(200, arch(app))
+        if url.path == "/api/stats":
+            return self._json(200, {"stats": stats()})
         if url.path == "/api/notes":
             unit = q.get("unit", "")
             if not unit_exists(unit):
@@ -682,6 +963,29 @@ class Handler(BaseHTTPRequestHandler):
         except ValueError:
             return self._json(400, {"error": "json"})
         lang = "pt" if d.get("lang") == "pt" else "en"
+
+        if url.path == "/api/env/save":
+            app = d.get("app", "")
+            if not service_dir(app):
+                return self._json(400, {"error": loc("unknown service")})
+            mudar, desligar = d.get("set") or {}, d.get("off") or []
+            if not (isinstance(mudar, dict) and isinstance(desligar, list)
+                    and all(isinstance(k, str) for k in [*mudar, *desligar])):
+                return self._json(400, {"error": "set/off"})
+            nome = d.get("file", "")
+            try:                                   # refused here, before any job exists
+                env_check(app, nome, mudar, desligar)
+            except ValueError as e:
+                return self._json(400, {"error": str(e)})
+            principal = I.Service(app, PREFIX).main_unit()
+            usam = next((x["units"] for x in env_view(app) if x["file"] == nome), []) \
+                or ([principal.stem] if principal else [])
+            # try-restart: a stopped service is not started by editing its settings.
+            cmd = [["systemctl", "--user", "try-restart", u] for u in usam]
+            job = start_job(app, "env", cmd, lang, lambda: env_save(app, nome, mudar, desligar))
+            if job is None:
+                return self._json(409, {"error": loc("another job is running")})
+            return self._json(202, {"job": job.id})
 
         if url.path == "/api/run":
             app, action = d.get("app", ""), d.get("action", "")
@@ -969,11 +1273,60 @@ def selftest():
             estado = esperar(corpo)
             assert estado["rc"] == 0, estado["output"]
 
+            # the .env form: only keys the file names, one line, a .bak of what was there
+            st, _, corpo = pedir("/api/env?app=homebox", headers=ok)
+            arquivos = json.loads(corpo)["files"]
+            assert st == 200 and arquivos and arquivos[0]["entries"], corpo
+            nome_env, chave = arquivos[0]["file"], arquivos[0]["entries"][0]["key"]
+            alvo = Path(tmp, ".config/containers/env", nome_env)
+            modo = oct(alvo.stat().st_mode)[-3:]
+
+            def salvar(corpo_json, esperado):
+                st, _, resp = pedir("/api/env/save", json.dumps(corpo_json).encode(), api)
+                assert st == esperado, (corpo_json, st, resp)
+                return resp
+            salvar({"app": "homebox", "file": nome_env, "set": {"NAO_EXISTE": "1"}}, 400)
+            salvar({"app": "homebox", "file": nome_env, "set": {chave: "a\nB=2"}}, 400)
+            salvar({"app": "homebox", "file": "../x.env", "set": {chave: "1"}}, 400)
+            salvar({"app": "homebox", "file": nome_env, "off": ["NAO_EXISTE"]}, 400)
+            st, _, _ = pedir("/api/env/save", json.dumps({}).encode(), ok)
+            assert st == 403, "the form needs the X-QH-Store header too"
+            estado = esperar(salvar({"app": "homebox", "file": nome_env, "set": {chave: "valor-novo"}}, 202))
+            assert estado["rc"] == 0, estado["output"]
+            assert f"{chave}=valor-novo" in alvo.read_text()
+            assert oct(alvo.stat().st_mode)[-3:] == modo, "the file keeps its permissions"
+            bak = alvo.with_name(alvo.name + ".bak")
+            assert bak.is_file() and oct(bak.stat().st_mode)[-3:] == "600", "a private .bak is kept"
+            assert f"{chave}=valor-novo" not in bak.read_text(), "and it holds what the file was before"
+            estado = esperar(salvar({"app": "homebox", "file": nome_env, "off": [chave]}, 202))
+            assert estado["rc"] == 0 and f"# {chave}=valor-novo" in alvo.read_text()
+            entrada = next(e for e in json.loads(pedir("/api/env?app=homebox", headers=ok)[2])["files"][0]["entries"]
+                           if e["key"] == chave)
+            assert not entrada["active"], "a key turned off shows as optional"
+
+            # resources: a sandbox has no host to measure, and no network to ask
+            assert json.loads(pedir("/api/stats", headers=ok)[2]) == {"stats": {}}
+            assert json.loads(pedir("/api/disk?app=homebox", headers=ok)[2]) == {"bytes": None, "paths": []}
+            a = json.loads(pedir("/api/arch?app=homebox", headers=ok)[2])
+            assert a["host"] == host_arch() and a["runs"] is None and a["units"][0]["ok"] is None, a
+
             # release notes: a unit that is not installed answers without the network
             st, _, corpo = pedir("/api/notes?unit=memos", headers=ok)
             assert st == 200 and json.loads(corpo)["releases"] == [], corpo
         finally:
             srv.shutdown()
+    # CPU and memory are read from /proc and cgroupfs: the parsing is pure, the reading is real
+    assert parse_cgroup("0::/user.slice/a.scope\n") == "/user.slice/a.scope"
+    assert parse_cgroup("12:memory:/x\n11:cpu:/x\n") is None, "cgroup v1 has no unified path"
+    assert vm_rss(os.getpid()) > 0 and vm_rss(2 ** 22 + 1) == 0
+
+    # which platforms an image runs on, against the host's
+    amd, dois = {"linux/amd64", "linux/unknown"}, {"linux/amd64", "linux/arm64"}
+    r = arch_report([("a", "i/a"), ("b", "i/b"), ("c", "i/c")], "arm64",
+                    {"i/a": amd, "i/b": dois, "i/c": None}.get)
+    assert [x["ok"] for x in r] == [False, True, None], "an unknown answer is not a warning"
+    assert r[0]["platforms"] == ["amd64", "unknown"] and r[2]["platforms"] is None
+    assert ARCH_NOMES["x86_64"] == "amd64" and ARCH_NOMES["aarch64"] == "arm64"
     print("store selftest: ok")
 
 

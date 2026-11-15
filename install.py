@@ -2150,6 +2150,53 @@ def set_env_value(path, key, value):
     p.write_text(text.rstrip("\n") + f"\n{line}\n")
 
 
+ENV_CHAVE = r"[A-Za-z_][A-Za-z0-9_]*"
+
+
+def parse_env(texto):
+    """[{key, value, active, help}] for a .env the way the `.example` files write them.
+
+    A setting is `KEY=value`; an optional one ships commented out
+    (`# KEY=value`), which is the shape set_env_value and unset_env_value
+    already speak. The comment lines just above an entry, up to the last blank
+    line, are its help. A key written both ways is one entry, the active one:
+    the file means what the active line says.
+    """
+    ativo = re.compile(rf"^({ENV_CHAVE})=(.*)$")
+    comentado = re.compile(rf"^#\s*({ENV_CHAVE})=(.*)$")
+    entradas, vistos, ajuda = [], {}, []
+    for linha in texto.splitlines():
+        m_ativo, m_com = ativo.match(linha), comentado.match(linha)
+        if m_ativo or m_com:
+            m = m_ativo or m_com
+            chave = m.group(1)
+            entrada = {"key": chave, "value": m.group(2), "active": bool(m_ativo),
+                       "help": " ".join(ajuda)[:300]}
+            if chave not in vistos:
+                vistos[chave] = len(entradas)
+                entradas.append(entrada)
+            elif m_ativo and not entradas[vistos[chave]]["active"]:
+                entradas[vistos[chave]] = entrada
+            ajuda = []
+        elif linha.startswith("#"):
+            ajuda.append(linha.lstrip("#").strip())
+        elif not linha.strip():
+            ajuda = []
+    return entradas
+
+
+def unset_env_value(path, key):
+    """Comments out an active KEY= line, keeping its value for when it comes back.
+
+    The opposite of set_env_value, and in the shape the `.example` files use
+    for an optional setting, so set_env_value finds it again.
+    """
+    p = Path(path)
+    texto = p.read_text()
+    ativo = re.compile(rf"^{re.escape(key)}=.*$", re.M)
+    p.write_text(ativo.sub(lambda m: "# " + m.group(0), texto, count=1))
+
+
 def ask_choices(path, choices):
     """Asks for each [choices] key and writes the answers into the .env."""
     for key, question, options in choices:
@@ -3088,6 +3135,24 @@ def selftest():
     assert set(SINGULAR) == {r for _, r in FEITO} | ROTULOS, \
         "every label — matched or stated — needs a singular"
 
+    # the form's view of a .env: active, optional (commented) and the help above each
+    env = parse_env("# Zone.\nTZ=UTC\n\n# Optional.\n# Pick one.\n# PORT=8080\n#   BOOT=alpine\nTZ=other\n")
+    assert [(e["key"], e["value"], e["active"]) for e in env] == [
+        ("TZ", "UTC", True), ("PORT", "8080", False), ("BOOT", "alpine", False)], env
+    assert env[0]["help"] == "Zone." and env[1]["help"] == "Optional. Pick one."
+    assert parse_env("# A=1\nA=2\n")[0] == {"key": "A", "value": "2", "active": True, "help": ""}, \
+        "the active line wins over a commented one"
+    assert parse_env("# Leave it true until the first account exists\n") == []
+
+    # unset_env_value comments a key out, and set_env_value brings it back
+    with tempfile.TemporaryDirectory() as d:
+        f = Path(d) / "x.env"
+        f.write_text("A=1\nB=2\n")
+        unset_env_value(f, "A")
+        assert f.read_text() == "# A=1\nB=2\n"
+        set_env_value(f, "A", "3")
+        assert f.read_text() == "A=3\nB=2\n", f.read_text()
+
     # the saved rule: command line beats it, it beats what the host has
     with tempfile.TemporaryDirectory() as d:
         h = Path(d)
@@ -3914,6 +3979,8 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude):
         # exception of its own (`qh --set-access MODE APP`) or the rule.
         "access": {"mode": effective_access(s)[0],
                    "exception": app_accesses(s.home).get(d)},
+        # A .env it ships an example of, which a form can edit.
+        "has_env": any(dest in s.env_files() for _, dest in s.examples() if dest),
         # Whoever owns a network it needs and is not installed: install
         # refuses until they are, so a front end offers them first.
         "requires": sorted({dono for dono, _ in missing_prereqs(s)}),

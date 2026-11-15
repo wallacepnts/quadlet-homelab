@@ -139,9 +139,11 @@ def _repo_ref(image):
     return ("registry-1.docker.io" if host == "docker.io" else host), repo
 
 
-def _registry_get(url, token=None):
+def _registry_get(url, token=None, aceita=None):
     """GET with the registry's token dance. (body, token) or (None, None)."""
     cab = {"User-Agent": UA}
+    if aceita:
+        cab["Accept"] = aceita
     if token:
         cab["Authorization"] = f"Bearer {token}"
     try:
@@ -161,9 +163,62 @@ def _registry_get(url, token=None):
             tok = dados.get("token") or dados.get("access_token")
         except Exception:
             return None, None
-        return _registry_get(url, tok)
+        return _registry_get(url, tok, aceita)
     except Exception:
         return None, token
+
+
+MANIFESTOS = ("application/vnd.oci.image.index.v1+json,"
+              "application/vnd.docker.distribution.manifest.list.v2+json,"
+              "application/vnd.oci.image.manifest.v1+json,"
+              "application/vnd.docker.distribution.manifest.v2+json")
+
+
+def plataformas(manifesto):
+    """{"linux/amd64", ...} from an index manifest, or None when it is a single image.
+
+    Entries for `unknown/unknown` are build attestations riding in the index,
+    not something that runs.
+    """
+    if "manifests" not in manifesto:
+        return None
+    saida = set()
+    for m in manifesto["manifests"]:
+        p = m.get("platform") or {}
+        if p.get("os") and p.get("architecture") and "unknown" not in (p["os"], p["architecture"]):
+            saida.add(f"{p['os']}/{p['architecture']}")
+    return saida
+
+
+def architectures(image):
+    """The platforms an image is published for, as a set, or None when it cannot be told.
+
+    An index names them all. A single-platform image does not: its config blob
+    holds the one it is for, and that costs one more request — worth it, since
+    the single-platform images are exactly the ones that leave ARM out.
+    """
+    host, repo = _repo_ref(image)
+    marca, digest = ref_parts(image)
+    ref = digest or marca or "latest"
+    corpo, tok = _registry_get(f"https://{host}/v2/{repo}/manifests/{ref}", aceita=MANIFESTOS)
+    if not corpo:
+        return None
+    try:
+        manifesto = json.loads(corpo)
+    except ValueError:
+        return None
+    lista = plataformas(manifesto)
+    if lista is not None:
+        return lista
+    config = (manifesto.get("config") or {}).get("digest")
+    if not config:
+        return None
+    corpo, _ = _registry_get(f"https://{host}/v2/{repo}/blobs/{config}", tok)
+    try:
+        c = json.loads(corpo or "")
+    except ValueError:
+        return None
+    return {f"{c['os']}/{c['architecture']}"} if c.get("os") and c.get("architecture") else None
 
 
 def _registry_get_link(url, token=None):
@@ -751,6 +806,13 @@ def selftest():
     Everything here is pure, so it runs in CI beside check.py's — the network
     half cannot be tested there and is not the half that has broken.
     """
+    # the platforms in an index, attestations left out; a single image is None
+    assert plataformas({"manifests": [
+        {"platform": {"os": "linux", "architecture": "amd64"}},
+        {"platform": {"os": "linux", "architecture": "arm64", "variant": "v8"}},
+        {"platform": {"os": "unknown", "architecture": "unknown"}}]}) == {"linux/amd64", "linux/arm64"}
+    assert plataformas({"config": {"digest": "sha256:x"}}) is None
+
     # the release notes between what is installed and what upstream released
     rel = [{"tag_name": t, "prerelease": t.endswith("rc1"), "draft": False}
            for t in ("v1.37.5", "v1.38.0-rc1", "v1.37.4", "v1.37.3", "v1.37.2", "v1.36.0")]

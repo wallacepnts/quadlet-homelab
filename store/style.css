@@ -95,3 +95,10 @@ table.backups td { padding: .3rem .4rem; border-bottom: 1px solid var(--line); }
 select { font: inherit; color: inherit; background: var(--card); border: 1px solid var(--line);
          border-radius: 8px; padding: .4rem .6rem; }
 .access { margin-left: auto; color: var(--muted); display: flex; align-items: center; gap: .4rem; }
+.env { display: grid; gap: .5rem; }
+.env-row { display: grid; grid-template-columns: auto 12rem 1fr; gap: .2rem .6rem; align-items: center; }
+.env-row .help { grid-column: 2 / -1; margin: 0 0 .3rem; }
+.env-row label { font-family: ui-monospace, monospace; font-size: .8rem; font-weight: 600; overflow-wrap: anywhere; }
+.env-row input[type=text], .env-row input[type=password] { width: 100%; }
+.env-row input:disabled { opacity: .5; }
+#p-info { margin: .2rem 0 .6rem; }

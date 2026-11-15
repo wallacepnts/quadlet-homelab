@@ -180,6 +180,24 @@ What the terminal would ask during an install, the form asks first: `manual`
 secrets and unset `[vars]`. They are stored with the same functions and the
 same `[validate]` check that `qh` uses.
 
+**Configure** edits the service's `.env`, the file `qh` installed from
+`.env.example`. An optional setting ships commented out: ticking it turns it on,
+and unticking an active one comments it out again. Only keys the file already
+names are accepted, a value is a single line, and the previous file is kept as
+`<name>.env.bak` (mode 0600). Saving restarts the units that read the file with
+`try-restart`, so a stopped service stays stopped. Keys that look like
+credentials are password fields.
+
+The panel also shows CPU, memory and disk, and the architectures the images are
+built for, with a warning when the host's is not among them. CPU and memory are
+read from `/proc` and cgroupfs, because `podman stats` answers 0B of memory for
+rootless containers here (the memory controller is not delegated to the user's
+cgroup); memory is resident size, which counts a page shared between a
+container's processes once per process, so it is a size to compare, not an
+accounting. Disk is `podman unshare du` over the volumes `qh --backup` would
+pack, never a shared media root, and is cached for ten minutes. Architectures
+come from the image's registry manifest and are cached for a week.
+
 It runs on the host as a systemd `--user` service, not as a Quadlet. Its job is
 driving systemd and podman as you, so a container would need your home, your
 podman socket and your systemd bus. That is the same access, just less obvious.

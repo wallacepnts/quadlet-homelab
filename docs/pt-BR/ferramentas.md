@@ -180,6 +180,25 @@ uma instalação, o formulário pergunta antes: secrets `manual` e `[vars]` aind
 não definidas. Eles são gravados com as mesmas funções e a mesma checagem
 `[validate]` que o `qh` usa.
 
+**Configurar** edita o `.env` do serviço, o arquivo que o `qh` instalou a partir
+do `.env.example`. Uma opção opcional vem comentada: marcar liga, e desmarcar
+uma ativa a comenta de novo. Só são aceitas chaves que o arquivo já cita, o
+valor é uma linha só, e o arquivo anterior fica em `<nome>.env.bak` (modo
+0600). Salvar reinicia as units que leem o arquivo com `try-restart`, então um
+serviço parado continua parado. Chaves com cara de credencial viram campo de
+senha.
+
+O painel também mostra CPU, memória e disco, e as arquiteturas para as quais as
+imagens são construídas, com um aviso quando a do host não está entre elas. CPU
+e memória vêm de `/proc` e do cgroupfs, porque o `podman stats` responde 0B de
+memória para containers rootless aqui (o controlador de memória não é delegado
+ao cgroup do usuário); a memória é o tamanho residente, que conta uma página
+compartilhada entre os processos de um container uma vez por processo, então é
+um tamanho para comparar, não uma contabilidade. O disco é o
+`podman unshare du` sobre os volumes que o `qh --backup` empacotaria, nunca uma
+raiz de mídia compartilhada, e fica em cache por dez minutos. As arquiteturas
+vêm do manifest da imagem no registry e ficam em cache por uma semana.
+
 Ela roda no host como serviço `systemd --user`, não como Quadlet. O trabalho
 dela é comandar o systemd e o podman como você, então um container precisaria
 do seu home, do socket do podman e do barramento do systemd. É o mesmo acesso,

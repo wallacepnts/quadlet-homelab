@@ -35,6 +35,11 @@ const T = {
       `A instalação instala antes, na ordem certa.`,
     access: "Acesso", followRule: (m) => `Seguir a regra (${m})`,
     modes: { local: "Rede local", tailnet: "Tailnet", both: "Rede local e tailnet" },
+    configure: "Configurar", envSave: "Salvar e reiniciar", envHint: "Marque para ativar uma opção; desmarcar a comenta.",
+    envNote: "Salvar reinicia o serviço (se estiver rodando). O arquivo anterior fica em .bak.",
+    noEnv: "Este serviço não tem arquivo de configuração para editar.", active: "ativa",
+    disk: "Disco", cpu: "CPU", mem: "Memória", runsOn: "Roda em", counting: "calculando…",
+    noArm: (host, units) => `Sem imagem para ${host}: ${units}. Não vai rodar neste servidor.`,
     lang: "English",
   },
   en: {
@@ -69,6 +74,11 @@ const T = {
       `The install puts it in first, in the right order.`,
     access: "Access", followRule: (m) => `Follow the rule (${m})`,
     modes: { local: "Local network", tailnet: "Tailnet", both: "Local network and tailnet" },
+    configure: "Configure", envSave: "Save and restart", envHint: "Tick to turn an option on; unticking comments it out.",
+    envNote: "Saving restarts the service (if it is running). The previous file stays as .bak.",
+    noEnv: "This service has no settings file to edit.", active: "on",
+    disk: "Disk", cpu: "CPU", mem: "Memory", runsOn: "Runs on", counting: "counting…",
+    noArm: (host, units) => `No image for ${host}: ${units}. It will not run on this server.`,
     lang: "Português",
   },
 };
@@ -77,6 +87,7 @@ const S = {
   lang: localStorage.getItem("qh-lang") || (navigator.language.startsWith("pt") ? "pt" : "en"),
   rule: "tailnet",          // the host's access rule (qh --set-access)
   apps: [], group: null, search: "", onlyInstalled: false, current: null,
+  stats: {},                // unit -> {cpu, mem}, from /api/stats
   upd: {}, checked: null,   // unit -> qh-updates --host row; when it was asked
 };
 const t = (k) => T[S.lang][k];
@@ -252,6 +263,7 @@ function renderGrid() {
         h("img", { src: a.icon, alt: "", loading: "lazy", referrerpolicy: "no-referrer" }),
         h("div", {}, h("h3", {}, a.name),
           h("p", { class: "version" }, a.installed ? tagOf((mainUnit(a) || {}).installed_image) : ""))),
+      a.installed && h("p", { class: "version", "data-res": a.id }, resText(a)),
       h("p", { class: "desc" }, plain(a.description[S.lang] || a.description.en)),
       st && h("span", { class: `badge ${st[0]}` }, st[1]));
   }));
@@ -267,6 +279,7 @@ async function load() {
   renderGrid();
   if (S.current && $("panel").open) renderPanel();
   loadUpdates(false);
+  pollStats();
 }
 
 // Asked after the catalog, never before it: the grid does not wait on GitHub.
@@ -292,7 +305,9 @@ async function loadUpdates(refresh) {
 
 function openPanel(id) {
   S.current = id;
+  S.info = { disk: null, arch: null };       // asked per app, when its panel opens
   renderPanel();
+  loadInfo(id);
   $("p-form").hidden = true;
   $("p-out").hidden = true;
   $("p-section").hidden = true;
@@ -300,6 +315,33 @@ function openPanel(id) {
 }
 
 const current = () => S.apps.find((a) => a.id === S.current);
+
+// Disk and architecture are not in the catalog: they cost a walk of the volumes
+// and a registry lookup, so they are asked for when someone opens the panel.
+async function loadInfo(id) {
+  const a = current();
+  const pedidos = [];
+  if (a.installed) pedidos.push(api(`/api/disk?app=${encodeURIComponent(id)}`).then((d) => { S.info.disk = d; }));
+  pedidos.push(api(`/api/arch?app=${encodeURIComponent(id)}`).then((d) => { S.info.arch = d; }));
+  renderInfo();
+  await Promise.allSettled(pedidos);
+  if (S.current === id && $("panel").open) renderInfo();
+}
+
+function renderInfo() {
+  const a = current(), info = S.info || {};
+  if (!a) return;
+  const partes = [];
+  const r = a.installed && resources(a);
+  if (r) partes.push(`${t("cpu")} ${r.cpu.toFixed(1)}%`, `${t("mem")} ${mib(r.mem)}`);
+  if (a.installed) partes.push(`${t("disk")} ${info.disk ? (info.disk.bytes === null ? "—" : mib(info.disk.bytes)) : t("counting")}`);
+  const arq = info.arch;
+  if (arq && arq.runs && arq.runs.length) partes.push(`${t("runsOn")} ${arq.runs.join(", ")}`);
+  const sem = arq ? arq.units.filter((u) => u.ok === false).map((u) => u.unit) : [];
+  $("p-info").replaceChildren(
+    partes.join(" · "),
+    sem.length ? h("span", { class: "note" }, " ", t("noArm")(arq.host, sem.join(", "))) : null);
+}
 
 function stateClass(v) {
   if (["active", "healthy", "up"].includes(v)) return "ok";
@@ -360,6 +402,8 @@ function renderPanel() {
       acoes.push(h("button", { type: "button", onclick: () => updateNow("update") },
         alvo ? t("upgradeTo")(alvo) : t("update")));
     }
+    if (a.has_env)
+      acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showEnv(a) }, t("configure")));
     if (a.has_login)
       acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showLogin(a) }, t("login")));
     acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showBackups(a) }, t("backups")));
@@ -423,6 +467,48 @@ async function showNotes(a) {
   section(...blocos);
 }
 
+// The settings of a service: its .env, as the .example files lay it out. An
+// optional setting ships commented out; ticking it turns it on, unticking an
+// active one comments it out again. Only what changed is sent.
+async function showEnv(a) {
+  try {
+    const { files } = await api(`/api/env?app=${encodeURIComponent(a.id)}`);
+    if (!files.length) return section(h("p", { class: "muted" }, t("noEnv")));
+    const linhas = [];
+    for (const f of files) {
+      const campos = f.entries.map((e, i) => {
+        const id = `e-${f.file}-${i}`;
+        const caixa = h("input", { type: "checkbox", id: `${id}-on`, checked: e.active, "aria-label": t("active") });
+        const valor = h("input", { id, type: e.sensitive ? "password" : "text", value: e.value,
+                                   autocomplete: "off", disabled: !e.active });
+        caixa.onchange = () => { valor.disabled = !caixa.checked; };
+        return { e, caixa, valor, linha: h("div", { class: "env-row" },
+          caixa, h("label", { for: id }, e.key), valor,
+          e.help && h("p", { class: "help" }, plain(e.help))) };
+      });
+      linhas.push(h("h4", {}, f.file), ...campos.map((c) => c.linha));
+      f.campos = campos;
+    }
+    const form = h("form", { class: "env" }, h("h3", {}, t("configure")),
+      h("p", { class: "help" }, `${t("envHint")} ${t("envNote")}`), ...linhas,
+      h("div", { class: "row" }, h("button", { type: "submit" }, t("envSave"))));
+    form.onsubmit = async (ev) => {
+      ev.preventDefault();
+      for (const f of files) {
+        const mudar = {}, off = [];
+        for (const { e, caixa, valor } of f.campos) {
+          if (caixa.checked && (!e.active || valor.value !== e.value)) mudar[e.key] = valor.value;
+          else if (!caixa.checked && e.active) off.push(e.key);
+        }
+        if (!Object.keys(mudar).length && !off.length) continue;
+        $("p-section").hidden = true;
+        await follow(() => api("/api/env/save", { app: a.id, file: f.file, set: mudar, off }));
+      }
+    };
+    section(form);
+  } catch (e) { section(h("p", { class: "note" }, String(e.message))); }
+}
+
 async function showLogin(a) {
   try {
     const l = await api(`/api/login?app=${encodeURIComponent(a.id)}`);
@@ -448,6 +534,31 @@ async function showLogin(a) {
     linhas.push(h("div", { class: "cred" }, h("label", {}, t("password")), senha, ver, cp));
     section(...linhas);
   } catch (e) { section(h("p", { class: "note" }, String(e.message))); }
+}
+
+const mib = (n) => n >= 1 << 30 ? `${(n / (1 << 30)).toFixed(1)} GB` : `${Math.round(n / (1 << 20))} MB`;
+
+// CPU and memory of an app: the sum over its units that are running.
+function resources(a) {
+  const us = a.units.filter((u) => u.installed && S.stats[u.unit]).map((u) => S.stats[u.unit]);
+  if (!us.length) return null;
+  return { cpu: us.reduce((s, x) => s + x.cpu, 0), mem: us.reduce((s, x) => s + x.mem, 0) };
+}
+
+const resText = (a) => { const r = resources(a); return r ? `${r.cpu.toFixed(1)}% · ${mib(r.mem)}` : ""; };
+
+// In place, not a re-render: it runs every few seconds and must not reset hover or focus.
+function updateResources() {
+  for (const a of S.apps) {
+    const el = document.querySelector(`[data-res="${a.id}"]`);
+    if (el) el.textContent = resText(a);
+  }
+  if (S.current && $("panel").open) renderInfo();
+}
+
+async function pollStats() {
+  if (document.hidden || !S.apps.some((a) => a.installed)) return;
+  try { S.stats = (await api("/api/stats")).stats; updateResources(); } catch (e) { /* next turn */ }
 }
 
 const tamanho = (n) => n > 1 << 30 ? `${(n / (1 << 30)).toFixed(1)} GB`
@@ -629,3 +740,4 @@ $("p-close").addEventListener("click", () => $("panel").close());
 $("recheck").addEventListener("click", () => loadUpdates(true));
 renderChrome();
 load();
+setInterval(pollStats, 10000);
