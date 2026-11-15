@@ -9,6 +9,7 @@ const T = {
     installedBadge: "instalado", deprecatedBadge: "descontinuado", deprecatedNote: "Descontinuado:",
     noInstall: "Não dá para instalar este app daqui.",
     worksWith: "Funciona com",
+    envType: { bool: "sim/não", number: "número", email: "e-mail", url: "URL", ip: "IP", password: "senha" },
     resources: "Recursos", resLoading: "Verificando o Podman…",
     resImages: "Imagens sem uso", resNetworks: "Redes sem uso", resVolumes: "Volumes sem uso",
     resImagesNote: (n, s) => `${n} imagem(ns) que nenhuma unit instalada nem container usa, até ${s}. Cada atualização deixa a anterior aqui. O espaço real pode ser menor: camadas são compartilhadas entre imagens.`,
@@ -95,6 +96,7 @@ const T = {
     installedBadge: "installed", deprecatedBadge: "discontinued", deprecatedNote: "Discontinued:",
     noInstall: "It cannot be installed from here.",
     worksWith: "Works with",
+    envType: { bool: "yes/no", number: "number", email: "email", url: "URL", ip: "IP", password: "password" },
     resources: "Resources", resLoading: "Asking Podman…",
     resImages: "Unused images", resNetworks: "Unused networks", resVolumes: "Unused volumes",
     resImagesNote: (n, s) => `${n} image(s) that no installed unit or container uses, up to ${s}. Every update leaves the previous one here. The real space may be less: layers are shared between images.`,
@@ -863,6 +865,29 @@ async function showCustom(a, unit) {
 // The settings of a service: its .env, as the .example files lay it out. An
 // optional setting ships commented out; ticking it turns it on, unticking an
 // active one comments it out again. Only what changed is sent.
+// The box for one setting, by the type its .env.example declares (`# type: number`): the right input
+// for the browser to validate, and `read()` for what goes back. A value the type would not hold
+// (the file says `4G` for a number) stays a text box, so opening the form never blanks it.
+const unquote = (v) => String(v).trim().replace(/^["']|["']$/g, "");
+function envInput(e, id) {
+  const tipo = e.type || "text";
+  if (tipo === "bool" && e.bool) {
+    const [on, off] = e.bool;
+    const el = h("input", { id, type: "checkbox", checked: unquote(e.value).toLowerCase() === on.toLowerCase(), disabled: !e.active });
+    return { el, read: () => (el.checked ? on : off) };
+  }
+  const v = unquote(e.value);
+  const servePara = { number: v === "" || (v.trim() !== "" && !Number.isNaN(Number(v))),
+                      email: true, url: true, ip: true, password: true }[tipo];
+  const html = !servePara ? (e.sensitive ? "password" : "text")
+    : { password: "password", number: "number", email: "email", url: "url" }[tipo] || (e.sensitive ? "password" : "text");
+  const el = h("input", { id, type: html, value: e.value, autocomplete: "off", disabled: !e.active,
+                          step: html === "number" ? "any" : null,
+                          pattern: tipo === "ip" && servePara ? "[0-9A-Fa-f:.]+" : null,
+                          title: tipo === "ip" ? "IPv4 / IPv6" : null });
+  return { el, read: () => el.value };
+}
+
 async function showEnv(a) {
   try {
     const { files } = await api(`/api/env?app=${encodeURIComponent(a.id)}`);
@@ -872,11 +897,11 @@ async function showEnv(a) {
       const campos = f.entries.map((e, i) => {
         const id = `e-${f.file}-${i}`;
         const caixa = h("input", { type: "checkbox", id: `${id}-on`, checked: e.active, "aria-label": t("active") });
-        const valor = h("input", { id, type: e.sensitive ? "password" : "text", value: e.value,
-                                   autocomplete: "off", disabled: !e.active });
+        const { el: valor, read } = envInput(e, id);
         caixa.onchange = () => { valor.disabled = !caixa.checked; };
-        return { e, caixa, valor, linha: h("div", { class: "env-row" },
+        return { e, caixa, valor, read, linha: h("div", { class: "env-row" },
           caixa, h("label", { for: id }, e.key), valor,
+          e.type && e.type !== "text" ? h("span", { class: "muted env-type" }, t("envType")[e.type] || e.type) : null,
           e.help && h("p", { class: "help" }, plain(e.help))) };
       });
       linhas.push(h("h4", {}, f.file), ...campos.map((c) => c.linha));
@@ -889,8 +914,9 @@ async function showEnv(a) {
       ev.preventDefault();
       for (const f of files) {
         const mudar = {}, off = [];
-        for (const { e, caixa, valor } of f.campos) {
-          if (caixa.checked && (!e.active || valor.value !== e.value)) mudar[e.key] = valor.value;
+        for (const { e, caixa, read } of f.campos) {
+          const novo = read();
+          if (caixa.checked && (!e.active || (e.type === "bool" ? novo.toLowerCase() !== unquote(e.value).toLowerCase() : novo !== e.value))) mudar[e.key] = novo;
           else if (!caixa.checked && e.active) off.push(e.key);
         }
         if (!Object.keys(mudar).length && !off.length) continue;

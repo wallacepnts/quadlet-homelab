@@ -188,6 +188,20 @@ names are accepted, a value is a single line, and the previous file is kept as
 `try-restart`, so a stopped service stays stopped. Keys that look like
 credentials are password fields.
 
+A setting can say what it holds with a `# type:` line among the comments right above
+it in the `.env.example`: `number`, `bool`, `email`, `url`, `ip` or `password`
+(plain text when there is none). The form then shows the right box — a number field, a
+checkbox that writes the file's own style (`Y`/`N`, `yes`/`no`, `1`/`0`, `true`/`false`),
+a masked field — and the server refuses a value that is not one. An empty value is never
+refused: it means unset. `check.py` fails an unknown type, a hint with no setting under
+it, and an example value that is not of its type. Only declare `bool` where the app takes
+nothing else (`GPU=Y` also takes `intel` or `nvidia`, so it stays text).
+```
+# How many cores the VM gets.
+# type: number
+CPU_CORES=2
+```
+
 The panel also shows CPU, memory and disk, and the architectures the images are
 built for, with a warning when the host's is not among them. CPU and memory are
 read from `/proc` and cgroupfs, because `podman stats` answers 0B of memory for

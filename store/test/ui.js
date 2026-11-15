@@ -131,6 +131,31 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
     "só o que mudou é enviado");
   confere(!JSON.stringify(envio.corpo).includes("s3cret"), "o valor que não mudou não vai junto");
 
+  // typed settings: the right box for each, and what goes back follows the file's own style
+  const envAntes = rotas["/api/env"];
+  rotas["/api/env"] = { files: [{ file: "t.env", units: ["homebox"], entries: [
+    { key: "CORES", value: "2", active: true, help: "", sensitive: false, type: "number" },
+    { key: "RAM", value: "4G", active: true, help: "", sensitive: false, type: "number" },
+    { key: "GPU", value: "Y", active: true, help: "", sensitive: false, type: "bool", bool: ["Y", "N"] },
+    { key: "MAIL", value: "a@b.co", active: true, help: "", sensitive: false, type: "email" },
+    { key: "HOME_URL", value: "http://x:1", active: true, help: "", sensitive: false, type: "url" },
+    { key: "ADDR", value: "10.0.0.1", active: true, help: "", sensitive: false, type: "ip" },
+    { key: "PW", value: "x", active: true, help: "", sensitive: true, type: "password" }] }] };
+  await api.showEnv(api.current());
+  const tf = [...$("p-section").walk()].find((e) => e.tag === "form");
+  const tc = (id) => [...$("p-section").walk()].find((e) => e.id === id);
+  const tipos = [0, 1, 2, 3, 4, 5, 6].map((i) => tc(`e-t.env-${i}`).attrs.type).join(",");
+  confere(tipos === "number,text,checkbox,email,url,text,password", `formulário tipado: a caixa de cada tipo (${tipos})`);
+  confere(tc("e-t.env-2").attrs.checked !== undefined, "bool: Y vem marcado");
+  confere(/número/.test(tf.textContent) && /sim\/não/.test(tf.textContent), "o tipo aparece ao lado do campo");
+  tc("e-t.env-2").checked = false;
+  tc("e-t.env-0").value = "4";
+  await tf.onsubmit({ preventDefault() {} });
+  const tipado = posts.filter((x) => x.rota === "/api/env/save").pop().corpo;
+  confere(JSON.stringify(tipado.set) === '{"CORES":"4","GPU":"N"}', `o bool volta no estilo do arquivo (Y/N), só o que mudou (${JSON.stringify(tipado.set)})`);
+  rotas["/api/env"] = envAntes;
+  $("p-section").hidden = true;
+
   // gallery, project links, history
   const shots = $("p-shots");
   confere(!shots.hidden && [...shots.walk()].filter((e) => e.tag === "img").length === 2, "galeria: duas capturas");

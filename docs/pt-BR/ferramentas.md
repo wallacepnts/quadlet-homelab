@@ -188,6 +188,20 @@ valor é uma linha só, e o arquivo anterior fica em `<nome>.env.bak` (modo
 serviço parado continua parado. Chaves com cara de credencial viram campo de
 senha.
 
+Uma opção pode dizer o que guarda com uma linha `# type:` entre os comentários logo
+acima dela no `.env.example`: `number`, `bool`, `email`, `url`, `ip` ou `password`
+(texto, quando não há). O formulário mostra a caixa certa — campo numérico, caixa de
+marcar que escreve no estilo do próprio arquivo (`Y`/`N`, `yes`/`no`, `1`/`0`,
+`true`/`false`), campo mascarado — e o servidor recusa valor que não seja do tipo. Valor
+vazio nunca é recusado: significa não definido. O `check.py` reprova tipo desconhecido,
+dica sem opção embaixo e valor de exemplo que não é do tipo. Só declare `bool` onde o app
+não aceita outra coisa (`GPU=Y` também aceita `intel` ou `nvidia`, então fica texto).
+```
+# Quantos núcleos a VM recebe.
+# type: number
+CPU_CORES=2
+```
+
 O painel também mostra CPU, memória e disco, e as arquiteturas para as quais as
 imagens são construídas, com um aviso quando a do host não está entre elas. CPU
 e memória vêm de `/proc` e do cgroupfs, porque o `podman stats` responde 0B de

@@ -114,6 +114,55 @@ def published_port(value):
     return parts[-2], proto or "tcp"
 
 
+# -- typed .env settings ---------------------------------------------------------------
+# A `# type: number` line in the comments above a setting in a `.env.example` says what
+# box the store shows and what it accepts. Without one a setting is plain text.
+
+ENV_TYPES = ("text", "password", "bool", "number", "email", "url", "ip")
+ENV_TYPE_LINE = re.compile(r"^type:\s*([A-Za-z]+)\s*$", re.I)
+BOOL_PAIRS = (("true", "false"), ("yes", "no"), ("on", "off"), ("y", "n"), ("1", "0"))
+
+
+def bool_pair(valor):
+    """(on, off) in the style `valor` is written in — `Y`/`N`, `yes`/`no`, `1`/`0`, `True`/`False` — default true/false."""
+    v = (valor or "").strip().strip("\"'")
+    for ligado, desligado in BOOL_PAIRS:
+        if v.lower() in (ligado, desligado):
+            if v.isupper() and not v.isdigit():
+                return ligado.upper(), desligado.upper()
+            if v[:1].isupper() and len(v) > 1:
+                return ligado.capitalize(), desligado.capitalize()
+            return ligado, desligado
+    return "true", "false"
+
+
+def env_value_problem(tipo, valor):
+    """The type name when `valor` is not one, else None. An empty value is never a problem: it means unset."""
+    import ipaddress
+    v = (valor or "").strip().strip("\"'")
+    if v == "" or tipo in (None, "text", "password"):
+        return None
+    if tipo == "bool":
+        return None if v.lower() in {x for par in BOOL_PAIRS for x in par} else tipo
+    if tipo == "number":
+        try:
+            float(v)
+            return None if v.lower() not in ("nan", "inf", "-inf", "infinity") else tipo
+        except ValueError:
+            return tipo
+    if tipo == "email":
+        return None if re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", v) else tipo
+    if tipo == "url":
+        return None if re.fullmatch(r"https?://[^\s/]+(/\S*)?", v) else tipo
+    if tipo == "ip":
+        try:
+            ipaddress.ip_address(v)
+            return None
+        except ValueError:
+            return tipo
+    return tipo
+
+
 def translator(phrases):
     """A loc(s) for this script's phrases, longest first.
 
@@ -314,6 +363,15 @@ def format_unit(text):
 
 
 def selftest():
+    assert bool_pair("Y") == ("Y", "N") and bool_pair("no") == ("yes", "no") and bool_pair("1") == ("1", "0")
+    assert bool_pair("True") == ("True", "False") and bool_pair("whatever") == ("true", "false")
+    assert env_value_problem("number", "2") is None and env_value_problem("number", "2.5") is None
+    assert env_value_problem("number", "4G") == "number" and env_value_problem("number", "nan") == "number"
+    assert env_value_problem("email", "a@b.co") is None and env_value_problem("email", "a@b") == "email"
+    assert env_value_problem("url", "http://gitea:3000") is None and env_value_problem("url", "gitea:3000") == "url"
+    assert env_value_problem("ip", "10.0.0.1") is None and env_value_problem("ip", "::1") is None and env_value_problem("ip", "10.0.0") == "ip"
+    assert env_value_problem("bool", "Y") is None and env_value_problem("bool", "maybe") == "bool"
+    assert env_value_problem("number", "") is None and env_value_problem("text", "anything") is None
     """The three things here that can be wrong without anyone noticing.
 
     Nothing tested this file, and it speaks for all three tools: a bug here is

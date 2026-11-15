@@ -21,7 +21,7 @@ from collections import defaultdict
 from pathlib import Path
 
 from qhui import (translator, directives, directives_of, published_port, format_unit,
-                  red, yellow, green, dim)
+                  red, yellow, green, dim, ENV_TYPES, ENV_TYPE_LINE, env_value_problem)
 
 PT = {
     "unit(s) reformatted": "unit(s) reformatada(s)",
@@ -364,6 +364,37 @@ def deprecated_problemas(valor):
     return saida
 
 
+def env_type_problemas(texto):
+    """What is wrong with the `# type:` hints of a `.env.example`, as [(line, message)].
+
+    A hint belongs to the setting just below it: a known type, followed by a KEY= line before
+    any blank line, and the value the example ships has to be one of that type."""
+    saida, pendente = [], None
+    for n, linha in enumerate(texto.splitlines(), 1):
+        corpo = linha.lstrip("#").strip() if linha.startswith("#") else None
+        m = ENV_TYPE_LINE.match(corpo) if corpo is not None else None
+        if m:
+            tipo = m.group(1).lower()
+            if tipo not in ENV_TYPES:
+                saida.append((n, f"unknown type {tipo!r} (one of {', '.join(ENV_TYPES)})"))
+                pendente = None
+            else:
+                pendente = (n, tipo)
+        elif re.match(r"^#?\s*[A-Za-z_][A-Za-z0-9_]*=", linha):
+            if pendente:
+                valor = linha.split("=", 1)[1]
+                if env_value_problem(pendente[1], valor):
+                    saida.append((n, f"the value {valor.strip()!r} is not a {pendente[1]}"))
+            pendente = None
+        elif not linha.strip():
+            if pendente:
+                saida.append((pendente[0], "a type hint with no setting below it"))
+            pendente = None
+    if pendente:
+        saida.append((pendente[0], "a type hint with no setting below it"))
+    return saida
+
+
 def backup_problemas(ini):
     """What is wrong with an install.ini [backup] section, as a list."""
     saida = []
@@ -562,6 +593,9 @@ def check_manifest(folders):
             for key, value in directives_of(f):
                 if key == "Secret":
                     declared.add(value.split(",")[0])
+        for exemplo in sorted(folder.glob("*.env.example")):
+            for n, msg in env_type_problemas(exemplo.read_text()):
+                error("manifest", f"apps/{folder.name}/{exemplo.name}:{n}: {msg}")
         for missing in sorted(declared - recipes):
             error("manifest", f"apps/{folder.name}: Secret={missing} has no recipe in "
                               f"install.ini [secrets] — install.py cannot generate it")
@@ -971,6 +1005,12 @@ def selftest():
     # [store] repo: owner/repo on GitHub, or a full https URL
     assert repo_problemas("netbootxyz/netboot.xyz") == [] and repo_problemas("https://codeberg.org/o/r") == []
     assert repo_problemas("") and repo_problemas("not a repo") and repo_problemas("http://github.com/o/r") and repo_problemas("a/b/c")
+
+    # .env.example type hints
+    assert env_type_problemas("# CPU\n# type: number\nCORES=2\n") == []
+    assert env_type_problemas("# type: number\nRAM=4G\n") and env_type_problemas("# type: nope\nX=1\n")
+    assert env_type_problemas("# type: bool\n\nX=1\n"), "a hint must sit right above its setting"
+    assert env_type_problemas("# type: bool\n# X=Y\n") == [], "an optional (commented) setting carries one too"
 
     # [backup]: mode and exclude only; exclude is relative
     import configparser as _cp

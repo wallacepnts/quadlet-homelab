@@ -1076,6 +1076,14 @@ def podman_too_old(s):
     return None
 
 
+def _selftest_env_types():
+    es = parse_env("# Cores\n# type: number\nCORES=2\n# plain\nNAME=x\n\n# type: bool\n# FLAG=Y\n")
+    por = {e["key"]: e for e in es}
+    assert por["CORES"]["type"] == "number" and por["CORES"]["help"] == "Cores", "the hint is a type, not help"
+    assert por["NAME"]["type"] == "text", "a hint belongs to the setting right below it only"
+    assert por["FLAG"]["type"] == "bool" and not por["FLAG"]["active"]
+
+
 def _selftest_podman():
     assert parse_version("5.4.2") == (5, 4, 2) and parse_version("v6.0") == (6, 0, 0) and parse_version("5.4.0-dev") == (5, 4, 0)
     assert parse_version("") is None and parse_version("x") is None
@@ -2411,27 +2419,35 @@ def parse_env(texto):
     already speak. The comment lines just above an entry, up to the last blank
     line, are its help. A key written both ways is one entry, the active one:
     the file means what the active line says.
+
+    A `# type: number|bool|email|url|ip|password` line among those comments gives the
+    entry its `type` (default `text`), which the store turns into the right box.
     """
     ativo = re.compile(rf"^({ENV_CHAVE})=(.*)$")
     comentado = re.compile(rf"^#\s*({ENV_CHAVE})=(.*)$")
-    entradas, vistos, ajuda = [], {}, []
+    entradas, vistos, ajuda, tipo = [], {}, [], "text"
     for linha in texto.splitlines():
         m_ativo, m_com = ativo.match(linha), comentado.match(linha)
         if m_ativo or m_com:
             m = m_ativo or m_com
             chave = m.group(1)
             entrada = {"key": chave, "value": m.group(2), "active": bool(m_ativo),
-                       "help": " ".join(ajuda)[:300]}
+                       "help": " ".join(ajuda)[:300], "type": tipo}
             if chave not in vistos:
                 vistos[chave] = len(entradas)
                 entradas.append(entrada)
             elif m_ativo and not entradas[vistos[chave]]["active"]:
                 entradas[vistos[chave]] = entrada
-            ajuda = []
+            ajuda, tipo = [], "text"
         elif linha.startswith("#"):
-            ajuda.append(linha.lstrip("#").strip())
+            texto_linha = linha.lstrip("#").strip()
+            tem_tipo = qhui.ENV_TYPE_LINE.match(texto_linha)
+            if tem_tipo:                # `# type: number`: a hint to the form, not part of the help
+                tipo = tem_tipo.group(1).lower()
+            else:
+                ajuda.append(texto_linha)
         elif not linha.strip():
-            ajuda = []
+            ajuda, tipo = [], "text"
     return entradas
 
 
@@ -2967,6 +2983,7 @@ def find_tailnet():
 
 def selftest():
     _selftest_podman()
+    _selftest_env_types()
     """Checks the internal-port -> host-port match, which is the part of
     `addresses()` that is easy to get silently wrong."""
     import tempfile, types
@@ -3391,7 +3408,7 @@ def selftest():
     assert [(e["key"], e["value"], e["active"]) for e in env] == [
         ("TZ", "UTC", True), ("PORT", "8080", False), ("BOOT", "alpine", False)], env
     assert env[0]["help"] == "Zone." and env[1]["help"] == "Optional. Pick one."
-    assert parse_env("# A=1\nA=2\n")[0] == {"key": "A", "value": "2", "active": True, "help": ""}, \
+    assert parse_env("# A=1\nA=2\n")[0] == {"key": "A", "value": "2", "active": True, "help": "", "type": "text"}, \
         "the active line wins over a commented one"
     assert parse_env("# Leave it true until the first account exists\n") == []
 

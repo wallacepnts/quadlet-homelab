@@ -89,6 +89,7 @@ PT = {
     "not a setting of this file, or not a single line":
         "não é uma opção deste arquivo, ou não é uma linha só",
     "set": "definido", "turned off": "desligado",
+    "not a valid value for the type": "não é um valor válido para o tipo",
     "an upgrade edits the repository, which a sandbox does not have":
         "atualizar a versão edita o repositório, que um sandbox não tem",
     "a restore overwrites the data: type the service name to confirm":
@@ -787,7 +788,9 @@ def env_view(app):
                 and f in {Path(s._expand(v)) for k, v in I.directives_of(u) if k == "EnvironmentFile"}]
         entradas = I.parse_env(f.read_text())
         for e in entradas:
-            e["sensitive"] = bool(SENSIVEL.search(e["key"]))
+            e["sensitive"] = bool(SENSIVEL.search(e["key"])) or e["type"] == "password"
+            if e["type"] == "bool":
+                e["bool"] = list(qhui.bool_pair(e["value"]))     # what the checkbox writes: (on, off)
         saida.append({"file": nome, "units": usam, "entries": entradas})
     return saida
 
@@ -803,10 +806,13 @@ def env_check(app, nome, mudar, desligar):
     f = env_files(app)[1].get(nome)
     if f is None:
         raise ValueError(loc("unknown file"))
-    conhecidas = {e["key"] for e in I.parse_env(f.read_text())}
+    tipos = {e["key"]: e["type"] for e in I.parse_env(f.read_text())}
+    conhecidas = set(tipos)
     for k, v in mudar.items():
         if k not in conhecidas or not isinstance(v, str) or "\n" in v or "\r" in v:
             raise ValueError(f"{k}: " + loc("not a setting of this file, or not a single line"))
+        if qhui.env_value_problem(tipos[k], v):
+            raise ValueError(f"{k}: " + loc("not a valid value for the type") + f" {tipos[k]}")
     for k in desligar:
         if k not in conhecidas:
             raise ValueError(f"{k}: " + loc("not a setting of this file, or not a single line"))
@@ -1933,6 +1939,15 @@ def selftest():
             entrada = next(e for e in json.loads(pedir("/api/env?app=homebox", headers=ok)[2])["files"][0]["entries"]
                            if e["key"] == chave)
             assert not entrada["active"], "a key turned off shows as optional"
+            # typed settings: a `# type:` hint gives the box and refuses a value that is not one
+            alvo.write_text("# type: number\nCORES=2\n# type: bool\nFLAG=Y\nPLAIN=x\n")
+            tip = {e["key"]: e for e in json.loads(pedir("/api/env?app=homebox", headers=ok)[2])["files"][0]["entries"]}
+            assert tip["CORES"]["type"] == "number" and tip["PLAIN"]["type"] == "text" and tip["FLAG"]["bool"] == ["Y", "N"], tip
+            salvar({"app": "homebox", "file": nome_env, "set": {"CORES": "four"}}, 400)
+            assert "CORES=2" in alvo.read_text(), "a refused value changes nothing"
+            salvar({"app": "homebox", "file": nome_env, "set": {"FLAG": "maybe"}}, 400)
+            esperar(salvar({"app": "homebox", "file": nome_env, "set": {"CORES": "4", "FLAG": "N"}}, 202))
+            assert "CORES=4" in alvo.read_text() and "FLAG=N" in alvo.read_text()
 
             # resources: a sandbox has no host to measure, and no network to ask
             assert json.loads(pedir("/api/stats", headers=ok)[2]) == {"stats": {}}
