@@ -9,7 +9,11 @@ const T = {
     installedBadge: "instalado", deprecatedBadge: "descontinuado", deprecatedNote: "Descontinuado:",
     noInstall: "Não dá para instalar este app daqui.",
     worksWith: "Funciona com",
-    play: "Iniciar / retomar", pause: "Pausar", stopApp: "Parar", pausedBadge: "pausado", pinnedOnHost: "versão no host",
+    play: "Iniciar / retomar", pause: "Pausar", stopApp: "Parar", pausedBadge: "pausado",
+    preIntro: "Antes de instalar: o que você escolher aqui é conferido agora e aplicado logo depois da instalação.",
+    preSave: "Guardar para a instalação", preDiscard: "Descartar", preSaved: "Guardado: vai junto com a instalação.",
+    preNone: "Nada mudou em relação ao padrão: nada a guardar.",
+    preRides: (u) => `Personalização guardada para ${u}: será aplicada depois da instalação.`, pinnedOnHost: "versão no host",
     console: "Console", consoleFailed: "não foi possível abrir o console",
     consoleHint: "Um shell dentro do container (bash, ou sh). Clique na tela para digitar. Programas de tela cheia (vim, top) não funcionam.",
     logFilter: "Filtrar linhas…", logFollow: "seguir", logConnecting: "conectando…", logLive: "ao vivo", logEnded: "encerrado", logNoMatch: "(nenhuma linha casa com o filtro)",
@@ -107,7 +111,11 @@ const T = {
     installedBadge: "installed", deprecatedBadge: "discontinued", deprecatedNote: "Discontinued:",
     noInstall: "It cannot be installed from here.",
     worksWith: "Works with",
-    play: "Start / resume", pause: "Pause", stopApp: "Stop", pausedBadge: "paused", pinnedOnHost: "version on the host",
+    play: "Start / resume", pause: "Pause", stopApp: "Stop", pausedBadge: "paused",
+    preIntro: "Before installing: what you choose here is checked now and applied right after the install.",
+    preSave: "Keep for the install", preDiscard: "Discard", preSaved: "Kept: it goes with the install.",
+    preNone: "Nothing differs from the default: nothing to keep.",
+    preRides: (u) => `Customization kept for ${u}: it will be applied after the install.`, pinnedOnHost: "version on the host",
     console: "Console", consoleFailed: "could not open the console",
     consoleHint: "A shell inside the container (bash, or sh). Click the screen to type. Full-screen programs (vim, top) do not work.",
     logFilter: "Filter lines…", logFollow: "follow", logConnecting: "connecting…", logLive: "live", logEnded: "ended", logNoMatch: "(no line matches the filter)",
@@ -205,7 +213,7 @@ const S = {
   lang: localStorage.getItem("qh-lang") || (navigator.language.startsWith("pt") ? "pt" : "en"),
   backupFirst: localStorage.getItem("qh-backup-first") === "1",   // the box next to Update, remembered
   rule: "tailnet",          // the host's access rule (qh --set-access)
-  apps: [], group: null, filter: null, search: "", current: null,
+  apps: [], group: null, filter: null, search: "", current: null, preCustom: {},
   view: null,               // "apps" (what is installed) or "store" (the catalog); kept in the URL hash
   stats: {},                // unit -> {cpu, mem}, from /api/stats
   upd: {}, checked: null,   // unit -> qh-updates --host row; when it was asked
@@ -725,6 +733,8 @@ function renderPanel() {
       const deps = needs(a);
       acoes.push(h("button", { type: "button", onclick: () => plan("install") },
         deps.length ? t("installWith")(deps.map((x) => x.name).join(", ")) : t("install")));
+      acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showCustom(a, null, true) },
+        S.preCustom[a.id] ? `${t("customize")} ✓` : t("customize")));
     }
   }
   else {
@@ -928,12 +938,20 @@ function grupo(nome, titulo, dica, itens) {
     read: () => rows.map((r) => r.read()).filter(Boolean) };
 }
 
-async function showCustom(a, unit) {
-  const instaladas = a.units.filter((u) => u.installed);
+// `pre`: the form before an install. It works on the unit as it will be written, keeps what you choose
+// in S.preCustom, and the install applies it once the unit exists.
+async function showCustom(a, unit, pre = false) {
+  const instaladas = pre ? a.units : a.units.filter((u) => u.installed);
   unit = unit || (mainUnit(a) || instaladas[0]).unit;
   let d;
-  try { d = await api(`/api/custom?unit=${encodeURIComponent(unit)}`); }
+  try { d = await api(`/api/custom?unit=${encodeURIComponent(unit)}${pre ? "&pre=1" : ""}`); }
   catch (e) { return section(h("p", { class: "note" }, String(e.message))); }
+  const guardada = pre && (S.preCustom[a.id] || {})[unit];
+  if (guardada) {          // what was chosen before comes back in the form
+    d = { ...d, effective: { ...d.effective, ports: guardada.ports, volumes: guardada.volumes, env: guardada.env,
+                             devices: guardada.devices, caps: guardada.caps },
+          restart: guardada.restart || d.restart, limit_values: { memory: guardada.limits.memory, cpus: guardada.limits.cpus } };
+  }
 
   const G = {
     ports: grupo("ports", t("cPorts"), t("portsHint"), d.effective.ports),
@@ -959,7 +977,7 @@ async function showCustom(a, unit) {
 
   async function previa() {
     try {
-      const r = await api("/api/custom/preview", { unit, config: config() });
+      const r = await api("/api/custom/preview", { unit, config: config(), ...(pre ? { pre: true } : {}) });
       fill(saida,
         r.errors.length ? h("ul", { class: "cust-errors" }, ...r.errors.map((e) => h("li", {}, e))) : null,
         r.warnings.length ? h("ul", { class: "cust-warn" }, ...r.warnings.map((w) => h("li", {}, w))) : null,
@@ -980,11 +998,26 @@ async function showCustom(a, unit) {
     await follow(() => api("/api/custom/reset", { unit }));
     showCustom(current(), unit);
   };
+  // Before an install nothing is written: the choice is checked, remembered, and sent with the install.
+  const guardar = async () => {
+    const r = await previa();
+    if (r.errors.length) return;
+    S.preCustom[a.id] = { ...(S.preCustom[a.id] || {}) };
+    if (r.changed) S.preCustom[a.id][unit] = config(); else delete S.preCustom[a.id][unit];
+    if (!Object.keys(S.preCustom[a.id]).length) delete S.preCustom[a.id];
+    out(r.changed ? t("preSaved") : t("preNone"));
+  };
+  const descartar = () => {
+    if (S.preCustom[a.id]) delete S.preCustom[a.id][unit];
+    if (S.preCustom[a.id] && !Object.keys(S.preCustom[a.id]).length) delete S.preCustom[a.id];
+    showCustom(a, unit, true);
+  };
 
   section(h("form", { class: "cust", onsubmit: (ev) => ev.preventDefault() },
     h("h3", {}, `${t("customize")} · ${unit}`),
+    pre ? h("p", { class: "note" }, t("preIntro")) : null,
     instaladas.length > 1
-      ? h("select", { "aria-label": "unit", onchange: (ev) => showCustom(a, ev.target.value) },
+      ? h("select", { "aria-label": "unit", onchange: (ev) => showCustom(a, ev.target.value, pre) },
           ...instaladas.map((u) => h("option", { value: u.unit, selected: u.unit === unit }, u.unit)))
       : null,
     h("p", { class: "help" }, t("custIntro")),
@@ -1001,8 +1034,9 @@ async function showCustom(a, unit) {
         h("label", { for: "lim-cpu" }, t("limCpus")), limCpu, h("span", { class: "muted" }, t("limCpusHint")))),
     h("div", { class: "row" },
       h("button", { type: "button", class: "ghost", onclick: previa }, t("previewBtn")),
-      h("button", { type: "button", onclick: aplicar }, t("saveApply")),
-      d.override ? h("button", { type: "button", class: "danger", onclick: reverter }, t("revertBtn")) : null),
+      pre ? h("button", { type: "button", onclick: guardar }, t("preSave")) : h("button", { type: "button", onclick: aplicar }, t("saveApply")),
+      pre && guardada ? h("button", { type: "button", class: "danger", onclick: descartar }, t("preDiscard")) : null,
+      !pre && d.override ? h("button", { type: "button", class: "danger", onclick: reverter }, t("revertBtn")) : null),
     saida));
 }
 
@@ -1191,6 +1225,8 @@ function buildForm(a, action, file = "") {
     campos.push(h("label", { class: "check" }, h("input", { id: "trial-purge", type: "checkbox" }), " " + t("trialPurge")));
     campos.push(h("p", { class: "help" }, t("trialHint")));
   }
+  if (action === "install" && S.preCustom[a.id])
+    campos.push(h("p", { class: "note" }, t("preRides")(Object.keys(S.preCustom[a.id]).join(", "))));
   if (action === "remove") campos.push(h("p", { class: "note" }, t("removeNote")));
   campos.push(h("div", {},
     h("button", { type: "submit", class: ["remove", "restore"].includes(action) ? "danger" : null },
@@ -1215,7 +1251,10 @@ async function run(action, file = "") {
   const trial = action === "install" ? ($("trial") || {}).value || "" : "";
   const trial_purge = !!trial && !!($("trial-purge") || {}).checked;
   $("p-form").hidden = true;
-  await follow(() => api("/api/run", { app: a.id, action, secrets, vars, file, confirm, ...(trial ? { trial, trial_purge } : {}) }));
+  const custom = action === "install" && S.preCustom[a.id] ? S.preCustom[a.id] : null;
+  await follow(() => api("/api/run", { app: a.id, action, secrets, vars, file, confirm,
+                                       ...(trial ? { trial, trial_purge } : {}), ...(custom ? { custom } : {}) }));
+  if (custom) delete S.preCustom[a.id];
   if (action === "backup" || action === "restore") showBackups(a);
 }
 

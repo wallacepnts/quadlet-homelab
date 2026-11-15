@@ -396,6 +396,14 @@ min_podman = 5.4` raises that floor for a service that uses a newer Quadlet key.
 `qh` warns before installing on an older host and the store shows it in the panel;
 it does not refuse. `QH_PODMAN_VERSION` overrides what the host reports.
 
+**Customize before installing**: an app that is not installed has a Customize button beside Install.
+The form is the same, but it works on the unit as `qh` would write it (the repository's, rendered
+for the access rule in force); **Keep for the install** checks the choice with the same rules and
+the same Quadlet generator, remembers it, and the install carries it: it is validated again when
+the install starts (a bad one refuses the install before anything runs) and written into the drop-in
+right after the unit exists, with the same rollback if the service does not come up. Only an install
+takes one, and only for units of that app; nothing is written to the host until then.
+
 **Customize** changes an installed service without touching the repository's
 unit: ports, volumes, extra variables, devices, extra capabilities and the
 restart policy, laid out like the form CasaOS has for an app. The change is a

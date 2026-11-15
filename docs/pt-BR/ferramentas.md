@@ -399,6 +399,14 @@ min_podman = 5.4` sobe esse piso para um serviço que usa uma chave de Quadlet m
 nova. O `qh` avisa antes de instalar num host mais antigo e a loja mostra no
 painel; não recusa. `QH_PODMAN_VERSION` substitui o que o host informa.
 
+**Personalizar antes de instalar**: um app que não está instalado tem um botão Personalizar ao
+lado de Instalar. O formulário é o mesmo, mas trabalha sobre a unit como o `qh` a escreveria (a do
+repositório, renderizada para a regra de acesso em vigor); **Guardar para a instalação** confere a
+escolha com as mesmas regras e o mesmo gerador do Quadlet, lembra dela, e a instalação a leva: ela é
+validada de novo quando a instalação começa (uma ruim recusa a instalação antes de rodar qualquer
+coisa) e gravada no drop-in logo depois de a unit existir, com a mesma volta atrás se o serviço não
+subir. Só uma instalação leva uma, e só para units daquele app; nada é escrito no host até lá.
+
 A **Personalizar** muda um serviço instalado sem tocar na unit do repositório:
 portas, volumes, variáveis extras, dispositivos, capabilities extras e a
 política de reinício, no desenho do formulário que o CasaOS tem para um app. A

@@ -37,6 +37,7 @@ import secrets
 import shutil
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -91,6 +92,7 @@ PT = {
     "not a setting of this file, or not a single line":
         "não é uma opção deste arquivo, ou não é uma linha só",
     "set": "definido", "turned off": "desligado",
+    "applying the customization of": "aplicando a personalização de",
     "this address takes a WebSocket": "este endereço espera um WebSocket",
     "a sandbox has no containers to enter": "um sandbox não tem containers para entrar",
     "too many consoles open": "consoles demais abertos",
@@ -648,24 +650,38 @@ def custom_context(unit, efetivo):
                       mem_total=mem_total, ncpu=os.cpu_count() or 0)
 
 
-def custom_state(unit):
-    """What the Customize screen starts from: the unit, what it carries now, and the rules."""
+def unit_source(unit, pre=False):
+    """(installed path or None, the unit's text, its drop-in text or None).
+
+    The text is the installed file's. With `pre` and no installed file it is what `qh` WOULD write
+    — the repository's unit rendered for the access rule in force — which is what a customization
+    made before the install has to be measured against."""
     p = installed_unit(unit)
-    if p is None:
-        raise LookupError(loc("not installed"))
-    base = O.base_of(p.read_text())
-    texto = O.read_override(p)
+    if p is not None:
+        return p, p.read_text(), O.read_override(p)
+    if pre and unit_exists(unit):
+        caminho = next(I.APPS.glob(f"*/{unit}.container"))
+        modo, href = I.effective_access(I.Service(caminho.parent.name, PREFIX))
+        return None, I.unit_bytes(caminho, modo, href).decode(), None
+    raise LookupError(loc("not installed"))
+
+
+def custom_state(unit, pre=False):
+    """What the Customize screen starts from: the unit, what it carries now, and the rules."""
+    p, unit_texto, texto = unit_source(unit, pre)
+    base = O.base_of(unit_texto)
     efetivo = O.merged(base, texto)
     gravada = O.recorded_base(texto) if texto else None
     casa = str(Path(PREFIX or Path.home()))
-    return {"unit": unit, "file": str(O.dropin_path(p)).replace(casa, "~"),
+    destino = O.dropin_path(p or systemd_dir() / f"{unit}.container")
+    return {"unit": unit, "file": str(destino).replace(casa, "~"), "pre": p is None,
             "override": texto is not None, "text": texto,
             "base_changed": bool(gravada and gravada != O.base_hash(base)),
             "base": O.describe(base[0]), "base_restart": base[1],
             "effective": O.describe(efetivo[0]), "restart": efetivo[1],
             "roots": [r.replace(casa, "~") for r in volume_roots()], "caps_ok": list(O.CAPS_OK),
             "restarts": list(O.RESTARTS), "quadlet": O.quadlet_binary() is not None,
-            "limits": cgroup_limits(), "limit_values": O.merged_limits(p.read_text(), texto)}
+            "limits": cgroup_limits(), "limit_values": O.merged_limits(unit_texto, texto)}
 
 
 def clean_config(config):
@@ -712,40 +728,58 @@ def clean_config(config):
     return saida, (restart or None)
 
 
-def custom_plan(unit, config):
+def pre_check(unit, unit_texto, texto):
+    """quadlet_check for a unit that is not installed yet: a scratch tree with the rendered unit in it.
+
+    The tree is the host's own (so units it names resolve) plus the repository's `.network` files,
+    since the owner of a network may be installed in the same run."""
+    import shutil
+    with tempfile.TemporaryDirectory() as tmp:
+        arvore = Path(tmp, "systemd")
+        if systemd_dir().is_dir():
+            shutil.copytree(systemd_dir(), arvore, ignore=shutil.ignore_patterns("*.tmp"))
+        arvore.mkdir(exist_ok=True)
+        for rede in I.APPS.glob("*/*.network"):
+            if not any(arvore.rglob(rede.name)):
+                shutil.copy(rede, arvore / rede.name)
+        alvo = arvore / f"{unit}.container"
+        alvo.write_text(unit_texto)
+        return O.quadlet_check(arvore, alvo, texto)
+
+
+def custom_plan(unit, config, pre=False):
     """{text, errors, warnings, generated, changed}: what saving would write, and whether it holds.
 
     The form's own rules first, then the host's Quadlet generator on a scratch copy —
     which knows the keys but not the values, so the first is not optional."""
-    p = installed_unit(unit)
-    if p is None:
-        raise LookupError(loc("not installed"))
+    p, unit_texto, drop = unit_source(unit, pre)
     try:
         desejado, restart = clean_config(config)
     except (ValueError, KeyError, TypeError) as e:
         return {"text": None, "errors": [f"{loc('invalid form')}: {e}"], "warnings": [], "generated": "",
                 "changed": False}
-    base = O.base_of(p.read_text())
-    ctx = custom_context(unit, O.merged(base, O.read_override(p)))
+    base = O.base_of(unit_texto)
+    ctx = custom_context(unit, O.merged(base, drop))
     texto, erros, avisos = O.validate_and_render(base, desejado, restart, ctx, propria=unit,
-                                                 base_limits=O.limits_in(O.parse_sections(p.read_text())))
+                                                 base_limits=O.limits_in(O.parse_sections(unit_texto)))
     gerado = ""
     if not erros:
-        ok, mensagens, gerado = O.quadlet_check(systemd_dir(), p, texto)
+        ok, mensagens, gerado = (O.quadlet_check(systemd_dir(), p, texto) if p is not None
+                                 else pre_check(unit, unit_texto, texto))
         if ok is False:
             erros += mensagens
         elif ok is None:
             avisos.append(loc("no Quadlet generator here: only the form's own rules were checked"))
     return {"text": texto, "errors": erros, "warnings": avisos, "generated": gerado,
-            "changed": texto is not None, "desired": desejado}
+            "changed": texto is not None, "desired": desejado, "base_text": unit_texto}
 
 
-def new_volume_dirs(p, plano):
+def new_volume_dirs(unit_texto, plano):
     """The host folders of volumes the person ADDED, which apply_override creates.
 
     Only the ones the unit did not already carry; the validation has by now
     confirmed each sits inside a permitted root, so mkdir cannot reach elsewhere."""
-    antigos = {O.canon("volumes", r) for r in O.base_of(p.read_text())[0]["volumes"]}
+    antigos = {O.canon("volumes", r) for r in O.base_of(unit_texto)[0]["volumes"]}
     casa = Path(PREFIX or Path.home())
     saida = []
     for item in plano["desired"].get("volumes", []):
@@ -1284,7 +1318,7 @@ class Job:
 
 
 def start_job(app, action, cmd, lang, prepare=None, entrada=None, refrescar=None, origem="",
-              unit=""):
+              unit="", depois=None):
     """The job, running in the background — or None when another one still is.
 
     One at a time: two `qh --apply` racing each other over the same
@@ -1333,6 +1367,12 @@ def start_job(app, action, cmd, lang, prepare=None, entrada=None, refrescar=None
                 rc = p.wait()
                 if rc:
                     break
+            # What has to follow a successful run: the customization chosen before an install, which is
+            # written into the unit's drop-in only once the unit exists.
+            if rc == 0 and depois:
+                with contextlib.redirect_stdout(job):
+                    if depois() is False:
+                        rc = 1
             # Refreshed BEFORE the exit code is published: the page asks for
             # the comparison as soon as it sees the job end, and it got the
             # pre-update answer — 26.11.0 installed, "new version 26.11.0".
@@ -1641,7 +1681,7 @@ class Handler(BaseHTTPRequestHandler):
             if not unit_exists(unit):
                 return self._json(400, {"error": loc("unknown unit")})
             try:
-                return self._json(200, custom_state(unit))
+                return self._json(200, custom_state(unit, pre=q.get("pre") == "1"))
             except LookupError as e:
                 return self._json(404, {"error": str(e)})
         if url.path in ("/api/env", "/api/disk", "/api/arch"):
@@ -1734,18 +1774,20 @@ class Handler(BaseHTTPRequestHandler):
             unit = d.get("unit", "")
             if not unit_exists(unit):
                 return self._json(400, {"error": loc("unknown unit")})
-            if installed_unit(unit) is None:
+            # Only a preview may look at a unit that is not installed yet (the form before an install).
+            pre = bool(d.get("pre")) and url.path.endswith("/preview")
+            if installed_unit(unit) is None and not pre:
                 return self._json(404, {"error": loc("not installed")})
             reverter = url.path.endswith("/reset")
             try:
-                plano = custom_plan(unit, {} if reverter else d.get("config") or {})
+                plano = custom_plan(unit, {} if reverter else d.get("config") or {}, pre=pre)
             except LookupError as e:
                 return self._json(404, {"error": str(e)})
             if url.path.endswith("/preview"):
-                return self._json(200, {k: v for k, v in plano.items() if k != "desired"})
+                return self._json(200, {k: v for k, v in plano.items() if k not in ("desired", "base_text")})
             if plano["errors"] and not reverter:
                 return self._json(400, {"error": "; ".join(plano["errors"]), "errors": plano["errors"]})
-            novos = [] if reverter else new_volume_dirs(installed_unit(unit), plano)
+            novos = [] if reverter else new_volume_dirs(plano["base_text"], plano)
             texto = None if reverter else plano["text"]
             pasta = next(I.APPS.glob(f"*/{unit}.container")).parent.name
             job = start_job(pasta, "revert" if reverter else "customize", [], lang,
@@ -1824,6 +1866,32 @@ class Handler(BaseHTTPRequestHandler):
                     return self._json(400, {"error": loc("a restore overwrites the data: "
                                                          "type the service name to confirm")})
             cmd = qh(app, *extra, "--apply")
+            custom = d.get("custom") or {}
+            depois = None
+            if custom:
+                # A customization made before the install: validated now, against the unit as it will be
+                # written, and applied once the install has put the unit there.
+                if action != "install" or not isinstance(custom, dict):
+                    return self._json(400, {"error": loc("unknown action")})
+                planos = {}
+                for nome, cfg in custom.items():
+                    caminho = next(I.APPS.glob(f"*/{nome}.container"), None) if unit_exists(nome) else None
+                    if caminho is None or caminho.parent.name != app:
+                        return self._json(400, {"error": loc("unknown unit")})
+                    plano = custom_plan(nome, cfg, pre=True)
+                    if plano["errors"]:
+                        return self._json(400, {"error": f"{nome}: " + "; ".join(plano["errors"]), "errors": plano["errors"]})
+                    if plano["text"] is not None:
+                        planos[nome] = plano
+
+                def depois(planos=planos):
+                    feito = True
+                    for nome, plano in planos.items():
+                        print(f"\n{loc('applying the customization of')} {nome}:")
+                        feito = apply_override(nome, plano["text"], new_volume_dirs(plano["base_text"], plano)) and feito
+                    return feito
+                if not planos:
+                    depois = None
             quando = d.get("trial")
             if quando:
                 # Install to try it: qh removes it by itself, by a timer. Only the service asked
@@ -1866,7 +1934,7 @@ class Handler(BaseHTTPRequestHandler):
                 if I.Service(app, PREFIX).installed():
                     cmd.append(qh(app, "--update", "--apply"))
             job = start_job(app, action, cmd, lang, prepare, entrada, refrescar=cadeia,
-                            origem=self.client_address[0])
+                            origem=self.client_address[0], depois=depois)
         elif url.path == "/api/prune":
             tipo = d.get("kind", "")
             if tipo not in resources.KINDS:
@@ -2339,6 +2407,39 @@ def selftest():
                     assert st == 202 and esperar(rev)["rc"] == 0 and O.read_override(unidade) is None
                 finally:
                     os.environ.pop("QH_CGROUP_CONTROLLERS", None)
+
+            # customize BEFORE the install: the form works on the unit as it will be written; the install
+            # applies it once the unit exists; and a preview is the only thing allowed on what is not installed
+            assert installed_unit("mailpit") is None
+            assert pedir("/api/custom?unit=mailpit", headers=ok)[0] == 404, "without `pre`, an uninstalled unit is still not there"
+            pre = json.loads(pedir("/api/custom?unit=mailpit&pre=1", headers=ok)[2])
+            assert pre["pre"] is True and pre["override"] is False and pre["effective"]["env"] is not None, pre
+            assert pedir("/api/custom/apply", json.dumps({"unit": "mailpit", "pre": True, "config": {}}).encode(), api)[0] == 404, \
+                "apply never works on an uninstalled unit"
+            cfg_pre = {"ports": pre["effective"]["ports"], "volumes": pre["effective"]["volumes"],
+                       "env": pre["effective"]["env"] + [{"key": "PRE_NOVA", "value": "antes"}],
+                       "devices": pre["effective"]["devices"], "caps": pre["effective"]["caps"], "restart": "on-failure"}
+            st, corpo = pedir("/api/custom/preview", json.dumps({"unit": "mailpit", "pre": True, "config": cfg_pre}).encode(), api)[0:3:2]
+            vis = json.loads(corpo)
+            assert st == 200 and not vis["errors"] and "PRE_NOVA=antes" in vis["text"] and "base_text" not in vis, vis
+            ruim_pre = {**cfg_pre, "env": [{"key": "1ruim", "value": "x"}]}
+            st, _, corpo = pedir("/api/run", json.dumps({"app": "mailpit", "action": "install", "custom": {"mailpit": ruim_pre}}).encode(), api)
+            assert st == 400 and "variável" in json.loads(corpo)["error"], "a bad customization refuses the install before it starts"
+            st, _, corpo = pedir("/api/run", json.dumps({"app": "mailpit", "action": "install", "custom": {"homebox": cfg_pre}}).encode(), api)
+            assert st == 400, "a customization of another app's unit does not ride on this install"
+            st, _, corpo = pedir("/api/run", json.dumps({"app": "mailpit", "action": "update", "custom": {"mailpit": cfg_pre}}).encode(), api)
+            assert st == 400, "only an install takes one"
+            st, _, corpo = pedir("/api/run", json.dumps({"app": "mailpit", "action": "install", "custom": {"mailpit": cfg_pre}}).encode(), api)
+            assert st == 202, (st, corpo)
+            job = json.loads(corpo)["job"]
+            for _ in range(600):
+                estado = json.loads(pedir(f"/api/job/{job}", headers=ok)[2])
+                if estado["rc"] is not None:
+                    break
+                time.sleep(0.5)
+            assert estado["rc"] == 0 and "mailpit" in estado["output"], estado["output"][-400:]
+            gravado = O.read_override(installed_unit("mailpit"))
+            assert gravado and "PRE_NOVA=antes" in gravado and "Restart=on-failure" in gravado, gravado
 
             # deprecated: a service marked in install.ini is not offered for install, but stays manageable
             with tempfile.TemporaryDirectory() as dep:

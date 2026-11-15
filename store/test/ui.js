@@ -183,7 +183,7 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   rotas["/api/host"] = { cpus: 4, load: 1, mem: { total: 8 * 2 ** 30, used: 2 * 2 ** 30 }, temp: 50, uptime: 90000 };
   rotas["/api/arch"] = { host: "amd64", runs: ["amd64", "arm64"], units: [{ unit: "homebox", ok: true }] };
   api.openPanel("gitea"); await esperar(100);
-  confere($("p-actions").textContent === "InstalarHistórico", `app não instalado: só Instalar e Histórico (${$("p-actions").textContent})`);
+  confere($("p-actions").textContent === "InstalarPersonalizarHistórico", `app não instalado: Instalar, Personalizar e Histórico (${$("p-actions").textContent})`);
   confere(!/null|undefined/.test($("p-info").textContent) && /Roda em amd64, arm64$/.test($("p-info").textContent), "app não instalado: info sem 'null'");
   $("panel").open = false;
 
@@ -379,6 +379,37 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   const antesCtl = posts.length;
   [...$("p-actions").walk()].filter((e) => e.attrs && e.attrs.class === "ctl")[1].listeners.click(); await esperar(900);
   confere(posts.slice(antesCtl).some((x) => x.rota === "/api/control" && x.corpo.verb === "pause" && x.corpo.app === "homebox"), "o botão pausar chama /api/control");
+  $("panel").open = false;
+
+  // customize before installing: the form opens on an app that is not installed, keeps the choice, and the install carries it
+  const gi = api.S.apps.find((x) => x.id === "gitea");
+  api.openPanel("gitea"); await esperar(30);
+  porTexto($("p-actions"), "Personalizar")[0].listeners.click(); await esperar(100);
+  const formPre = () => [...$("p-section").walk()].find((e) => e.tag === "form");
+  confere(!!formPre() && /Antes de instalar/.test(formPre().textContent) && porTexto(formPre(), "Guardar para a instalação").length === 1
+    && porTexto(formPre(), "Salvar e aplicar").length === 0, "antes de instalar: o formulário abre, com Guardar e sem Salvar e aplicar");
+  const urlsPre = []; const fetchAntes = global.fetch;
+  global.fetch = async (u, o) => { urlsPre.push(u); return fetchAntes(u, o); };
+  const previaAntes = rotas["/api/custom/preview"];
+  rotas["/api/custom/preview"] = { text: "# base=x\n[Container]\nEnvironment=A=1\n", errors: [], warnings: [], generated: "", changed: true };
+  porTexto(formPre(), "Guardar para a instalação")[0].listeners.click(); await esperar(100);
+  global.fetch = fetchAntes;
+  if (previaAntes === undefined) delete rotas["/api/custom/preview"]; else rotas["/api/custom/preview"] = previaAntes;
+  const prev = posts.filter((x) => x.rota === "/api/custom/preview").pop().corpo;
+  confere(prev.pre === true && prev.unit === "gitea", "a prévia leva pre: true");
+  confere(urlsPre.some((u) => /\/api\/custom\?unit=gitea&pre=1|\/api\/custom\/preview/.test(u)), "e pede o estado da unit ainda não instalada");
+  confere(/Guardado: vai junto/.test($("p-out").textContent), "guardar avisa que vai junto com a instalação");
+  api.openPanel("gitea"); await esperar(30);
+  confere(porTexto($("p-actions"), "Personalizar ✓").length === 1, "o botão mostra que há personalização guardada");
+  rotas["/api/plan"] = { rc: 0, output: "x", nothing: false };
+  rotas["/api/run"] = { job: "jr" }; rotas["/api/job/jr"] = { output: "ok\n", next: 1, rc: 0 };
+  porTexto($("p-actions"), "Instalar")[0].listeners.click(); await esperar(100);
+  confere(/Personalização guardada para gitea/.test($("p-form").textContent), "o formulário de instalação diz que a personalização vai junto");
+  const antesRun = posts.length;
+  await $("p-form").onsubmit({ preventDefault() {} }); await esperar(1000);
+  const instalou = posts.slice(antesRun).find((x) => x.rota === "/api/run");
+  confere(instalou && instalou.corpo.action === "install" && instalou.corpo.custom && instalou.corpo.custom.gitea, `a instalação leva a personalização (${JSON.stringify(instalou && Object.keys(instalou.corpo))})`);
+  confere(!api.S.preCustom.gitea, "depois de instalar, o que estava guardado é descartado");
   $("panel").open = false;
 
   // minimum Podman: the panel says when the host is older than the app needs
