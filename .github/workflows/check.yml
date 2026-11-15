@@ -27,6 +27,7 @@ jobs:
           python3 updates.py --selftest
           python3 store.py --selftest
           python3 overrides.py --selftest
+          python3 trials.py --selftest
 
       # Exits != 0 on an error; a warning does not fail it (it is a convention,
       # not an invariant).

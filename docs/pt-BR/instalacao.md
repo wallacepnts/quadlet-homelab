@@ -313,6 +313,26 @@ VERSION — qual Windows instalar
 
 Enter aceita o padrão. Sem terminal, os padrões ficam e a instalação avisa.
 
+## Experimentar um serviço
+
+```bash
+qh memos --trial 6h --apply        # se remove sozinho depois de 6 horas (1h–30d: 90m, 2d...)
+qh memos --trial reboot --apply    # ...ou no próximo reinício do servidor
+qh memos --trial 1d --trial-purge --apply   # e apaga os dados também
+qh --trials                        # o que está armado, e quando cada um termina
+qh memos --trial-keep --apply      # mudou de ideia: ele fica
+```
+
+Quem remove é um timer do systemd do usuário (hora absoluta com `Persistent=true`:
+a máquina desligada na hora ainda o encerra quando volta; "reboot" é um serviço
+ligado ao `default.target` que ignora o boot em que foi armado). O que roda é
+`qh <app> --trial-expire`, que obedece ao registro e nada além, e recusa agir
+antes da hora. Os dados ficam, a menos que `--trial-purge` tenha sido dado ao
+armar — e isso é recusado se já existirem dados de antes. Experimento só vale
+para instalação nova de um serviço inteiro; um que já está instalado nunca é
+armado. Dependências trazidas junto (tsdproxy) ficam. A loja oferece "Experimentar"
+no formulário de instalação, mostra quando termina e tem o botão Manter.
+
 ## Sandbox
 
 ```bash

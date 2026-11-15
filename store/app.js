@@ -8,6 +8,13 @@ const T = {
     noneInstalled: "Nenhum app instalado ainda.", goStore: "Abrir a Loja", manage: "Gerenciar",
     installedBadge: "instalado", deprecatedBadge: "descontinuado", deprecatedNote: "Descontinuado:",
     noInstall: "Não dá para instalar este app daqui.",
+    trialLabel: "Experimentar", trialKeep: "Manter", trialBadge: "experimento",
+    trialNone: "instalar de vez", trialReboot: "até reiniciar o servidor",
+    trialPurge: "apagar também os dados no fim",
+    trialHint: "Remove sozinho no fim, por um timer do systemd. Só o serviço pedido, não o que ele trouxe junto.",
+    trialEnds: (q, purge) => `Experimento: ${q}. Os dados ${purge ? "serão apagados" : "ficam"} no fim.`,
+    trialIn: (s) => `termina em ${s}`, trialAtReboot: "termina no próximo reinício",
+    trialUnits: { h: "h", d: "dias" },
     customize: "Personalizar", customizedBadge: "personalizado", cPorts: "Portas", cVolumes: "Volumes",
     cEnv: "Variáveis de ambiente", cDevices: "Dispositivos", cCaps: "Capabilities extras",
     cRestart: "Política de reinício", add: "Adicionar", fromUnit: "(vem da unit)", removeRow: "Remover",
@@ -78,6 +85,13 @@ const T = {
     noneInstalled: "No app installed yet.", goStore: "Open the Store", manage: "Manage",
     installedBadge: "installed", deprecatedBadge: "discontinued", deprecatedNote: "Discontinued:",
     noInstall: "It cannot be installed from here.",
+    trialLabel: "Try it", trialKeep: "Keep", trialBadge: "trial",
+    trialNone: "install for good", trialReboot: "until the server reboots",
+    trialPurge: "also delete the data at the end",
+    trialHint: "Removes itself at the end, by a systemd timer. Only the service asked for, not what it pulled in.",
+    trialEnds: (q, purge) => `Trial: ${q}. The data ${purge ? "will be deleted" : "stays"} at the end.`,
+    trialIn: (s) => `ends in ${s}`, trialAtReboot: "ends at the next reboot",
+    trialUnits: { h: "h", d: "days" },
     customize: "Customize", customizedBadge: "customized", cPorts: "Ports", cVolumes: "Volumes",
     cEnv: "Environment variables", cDevices: "Devices", cCaps: "Extra capabilities",
     cRestart: "Restart policy", add: "Add", fromUnit: "(from the unit)", removeRow: "Remove",
@@ -280,6 +294,7 @@ function health(app) {
   const rows = inst.map((u) => S.upd[u.unit]).filter(Boolean);
   if (rows.some((r) => r.bucket === "GONE")) return ["bad", t("gone")];
   if (app.deprecated) return ["warn", t("deprecatedBadge")];
+  if (app.trial) return ["warn", t("trialBadge")];
   const atras = rows.find((r) => r.bucket === "BEHIND");
   if (atras) return ["warn", `${t("newVersion")} ${atras.there}`];
   if (inst.some((u) => u.drift)) return ["warn", t("changed")];
@@ -298,6 +313,14 @@ function upstreamCell(u) {
 }
 
 // Marked in install.ini [store]: why a service is discontinued, in the page's language.
+// "ends in 5 h 20 min" / "ends at the next reboot", from the record the catalog carries.
+function trialWhen(tr) {
+  if (tr.expires === null || tr.expires === undefined) return t("trialAtReboot");
+  const min = Math.max(1, Math.round((tr.expires - Date.now() / 1000) / 60));
+  const q = min < 60 ? `${min} min` : min < 2880 ? `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, "0")} min`
+    : `${Math.round(min / 1440)} ${t("trialUnits").d}`;
+  return t("trialIn")(q);
+}
 const depReason = (a) => (a.deprecated ? a.deprecated[S.lang] || a.deprecated.en : null);
 
 const groupOf = (app) => (app.group ? app.group[S.lang] : t("other"));
@@ -532,8 +555,10 @@ function renderPanel() {
 
   // The reason, where it is read; and a service that is discontinued is not offered for install.
   const motivo = depReason(a);
-  $("p-notice").hidden = !motivo;
+  const trial = a.installed && a.trial ? t("trialEnds")(trialWhen(a.trial), a.trial.purge) : null;
+  $("p-notice").hidden = !motivo && !trial;
   if (motivo) $("p-notice").textContent = `${t("deprecatedNote")} ${motivo}${a.installed ? "" : ` ${t("noInstall")}`}`;
+  else if (trial) $("p-notice").textContent = trial;
   const acoes = [];
   if (!a.installed) {
     if (!a.deprecated) {
@@ -558,6 +583,8 @@ function renderPanel() {
       acoes.push(h("button", { type: "button", onclick: () => updateNow("update") },
         alvo ? t("upgradeTo")(alvo) : t("update")));
     }
+    if (a.trial)
+      acoes.push(h("button", { type: "button", onclick: () => keepTrial() }, t("trialKeep")));
     acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showCustom(a) }, t("customize")));
     if (a.has_env)
       acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showEnv(a) }, t("configure")));
@@ -956,6 +983,12 @@ function buildForm(a, action, file = "") {
     const deps = needs(a);
     if (deps.length) campos.push(h("p", { class: "note" }, t("requiresNote")(deps.map((x) => x.name).join(", "))));
     for (const x of [...deps, a]) campos.push(...asksFields(x));
+    campos.push(h("label", { for: "trial" }, t("trialLabel")));
+    campos.push(h("select", { id: "trial", "data-trial": "1" },
+      ...[["", t("trialNone")], ["1h", "1 h"], ["6h", "6 h"], ["1d", "1 d"], ["7d", "7 d"], ["reboot", t("trialReboot")]]
+        .map(([v, r]) => h("option", { value: v }, r))));
+    campos.push(h("label", { class: "check" }, h("input", { id: "trial-purge", type: "checkbox" }), " " + t("trialPurge")));
+    campos.push(h("p", { class: "help" }, t("trialHint")));
   }
   if (action === "remove") campos.push(h("p", { class: "note" }, t("removeNote")));
   campos.push(h("div", {},
@@ -967,14 +1000,21 @@ function buildForm(a, action, file = "") {
   form.hidden = false;
 }
 
+async function keepTrial() {
+  const a = current();
+  await follow(() => api("/api/run", { app: a.id, action: "trial-keep" }));
+}
+
 async function run(action, file = "") {
   const a = current();
   const secrets = {}, vars = {};
   const confirm = ($("p-form").querySelector("[data-confirm]") || {}).value || "";
   for (const i of $("p-form").querySelectorAll("[data-secret]")) if (i.value) secrets[i.dataset.secret] = i.value;
   for (const i of $("p-form").querySelectorAll("[data-var]")) if (i.value) vars[i.dataset.var] = i.value;
+  const trial = action === "install" ? ($("trial") || {}).value || "" : "";
+  const trial_purge = !!trial && !!($("trial-purge") || {}).checked;
   $("p-form").hidden = true;
-  await follow(() => api("/api/run", { app: a.id, action, secrets, vars, file, confirm }));
+  await follow(() => api("/api/run", { app: a.id, action, secrets, vars, file, confirm, ...(trial ? { trial, trial_purge } : {}) }));
   if (action === "backup" || action === "restore") showBackups(a);
 }
 

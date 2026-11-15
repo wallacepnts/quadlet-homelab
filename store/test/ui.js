@@ -182,6 +182,21 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   api.S.apps.find((x) => x.id === "gitea").deprecated = null;
   api.S.apps.find((x) => x.id === "memos").deprecated = null;
 
+  // trial: the notice says when it ends, there is a Keep button, and the install form offers the choice
+  api.S.apps.find((x) => x.id === "homebox").trial = { mode: "time", expires: Date.now() / 1000 + 5 * 3600 + 60, purge: false };
+  api.openPanel("homebox"); await esperar(50);
+  confere(/Experimento: termina em 5 h/.test($("p-notice").textContent) && /ficam no fim/.test($("p-notice").textContent),
+    `painel: o aviso de experimento diz quando termina (${$("p-notice").textContent})`);
+  confere(botoes($("p-actions")).some((b) => b.textContent === "Manter"), "painel: botão Manter");
+  api.S.apps.find((x) => x.id === "homebox").trial = { mode: "reboot", expires: null, purge: true };
+  api.openPanel("homebox"); await esperar(50);
+  confere(/próximo reinício/.test($("p-notice").textContent) && /serão apagados/.test($("p-notice").textContent), "até reiniciar, com os dados apagados");
+  $("panel").open = false;
+  api.S.apps.find((x) => x.id === "homebox").trial = null;
+  api.openPanel("homebox"); await esperar(50);
+  confere($("p-notice").hidden === true && !botoes($("p-actions")).some((b) => b.textContent === "Manter"), "sem experimento: sem aviso nem Manter");
+  $("panel").open = false;
+
   // Customize: the form shows what the unit carries, and sends the whole list back
   api.openPanel("homebox"); await esperar(100);
   const personalizar = porTexto($("p-actions"), "Personalizar")[0];

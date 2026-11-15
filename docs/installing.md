@@ -314,6 +314,26 @@ VERSION — which Windows to install
 Enter takes the default. Without a terminal the defaults are kept and the
 install says so.
 
+## Trying a service
+
+```bash
+qh memos --trial 6h --apply        # removes itself after 6 hours (1h–30d: 90m, 2d...)
+qh memos --trial reboot --apply    # ...or at the next reboot of the server
+qh memos --trial 1d --trial-purge --apply   # and deletes the data too
+qh --trials                        # what is armed, and when each ends
+qh memos --trial-keep --apply      # changed your mind: it stays
+```
+
+A systemd user timer does the removal (absolute time with `Persistent=true`, so
+a machine that was off at the hour still ends it when it comes back; "reboot" is
+a service wanted by `default.target` that ignores the boot it was armed in). What
+runs is `qh <app> --trial-expire`, which obeys the record and nothing more, and
+refuses to act before its time. The data stays unless `--trial-purge` was given
+when it was armed — and that is refused if data from before already exists.
+A trial is only for a fresh install of a whole service; one that is already there
+is never armed. Dependencies pulled in along (tsdproxy) stay. The store offers it
+as "Try it" in the install form, shows when it ends, and has a Keep button.
+
 ## Sandbox
 
 ```bash

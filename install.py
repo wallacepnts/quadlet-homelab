@@ -35,6 +35,7 @@ from pathlib import Path
 
 import overrides
 import qhui
+import trials
 
 # The docstring `--help` opens with. It is prose, not a phrase, so it is a
 # second text rather than an entry in a translation table.
@@ -232,6 +233,35 @@ PT = {
     '(local, tailnet or both), and exit': '(local, tailnet ou both), e sai',
     'rule saved:': 'regra salva:',
     'customized': 'personalizada',
+    'no trial armed.': 'nenhum experimento armado.',
+    'Nothing to do.': 'Nada a fazer.',
+    'not due yet:': 'ainda não venceu:',
+    'already removed; clearing the trial.': 'já removido; limpando o experimento.',
+    'kept: the trial is cancelled.': 'mantido: o experimento foi cancelado.',
+    'would keep it: the timer and the record go, the service stays':
+        'manteria: o timer e o registro saem, o serviço fica',
+    'confirmed when the trial was armed; nobody is here to type it.':
+        'confirmado quando o experimento foi armado; ninguém está aqui para digitar.',
+    '--trial refused: it is already installed, and a trial is for a new install':
+        '--trial recusado: já está instalado, e um experimento é para uma instalação nova',
+    '--trial-purge refused: there is data from before, and the trial would delete it:':
+        '--trial-purge recusado: há dados de antes, e o experimento os apagaria:',
+    '--trial-purge only makes sense with --trial': '--trial-purge só faz sentido com --trial',
+    '--trial is for a NEW install of the services named, and nothing else with it':
+        '--trial é para uma instalação NOVA dos serviços nomeados, e nada mais junto',
+    '--trial takes a whole service, not one unit of a stack': '--trial recebe um serviço inteiro, não uma unit de uma stack',
+    '--trial-keep and --trial-expire name the services': '--trial-keep e --trial-expire nomeiam os serviços',
+    '--trial-keep and --trial-expire are opposites': '--trial-keep e --trial-expire são opostos',
+    'install to try it: remove it by itself after `6h`, `2d`... or at the next `reboot`':
+        'instala para experimentar: remove sozinho depois de `6h`, `2d`... ou no próximo `reboot`',
+    'with --trial: delete the data too, at the end (refused if there is data already)':
+        'com --trial: apaga os dados também, no fim (recusado se já há dados)',
+    'cancel the trial of the services named: they stay': 'cancela o experimento dos serviços nomeados: eles ficam',
+    'end the trial now — what its timer runs (refused before its time)':
+        'encerra o experimento agora — o que o timer dele roda (recusado antes da hora)',
+    'the trials armed, and when each ends': 'os experimentos armados, e quando cada um termina',
+    'at the next reboot': 'no próximo reinício',
+    'and DELETES its data': 'e APAGA os dados', 'keeping its data': 'mantendo os dados',
     'this service is marked deprecated:': 'este serviço está marcado como descontinuado:',
     'skipped, marked deprecated:': 'ignorado, marcado como descontinuado:',
     'keeps its customization (50-store.conf)': 'mantém a personalização dela (50-store.conf)',
@@ -1849,6 +1879,9 @@ def plan_remove(s, purge):
                       rotulado("units removed", lambda velha=velha: velha.unlink())))
     steps.append(("systemctl --user daemon-reload",
                   lambda: run(["systemctl", "--user", "daemon-reload"])))
+    if trials.read(s.home, s.name) is not None:
+        steps.append((f"disarm the trial of {s.name}  ({trials.unit_names(s.name)[1]})",
+                      lambda: disarm_trial(s.home, s.name)))
 
     # With a single unit picked, only what is that unit's own: its siblings keep
     # their directories, the shared .env and the secrets they also read.
@@ -3892,6 +3925,81 @@ def unit_deriva(s, u):
     return deriva
 
 
+# -- trial installs: an app that removes itself (trials.py has the why) -----------------
+
+def trial_preexisting(s):
+    """What this service already has on the host before an install: volumes with data, env
+    files, secrets. A trial that deletes its data at the end must never be armed over any
+    of it — the data would be the app the person already uses, not the one they are trying."""
+    achados = []
+    proprios = s.exclusive_volumes()
+    for raiz in (proprios if proprios is not None else s.volume_roots()):
+        p = Path(raiz)
+        if p.is_dir() and any(p.iterdir()):
+            achados.append(str(p))
+    achados += [str(e) for e in s.env_files() if Path(e).exists()]
+    achados += [f"secret {n}" for n in s.secrets() if secret_exists(n)]
+    return achados
+
+
+def trial_steps(s, spec, purge):
+    """The steps that arm a trial, run AFTER the install steps: the record, its units, the enable.
+
+    The deadline is taken when the record is written, not when the plan is made, so
+    a slow pull does not eat into the time the person asked for."""
+    modo, segundos = trials.parse_duration(spec)
+    servico, timer = trials.unit_names(s.name)
+    # Not loc("in"): the translator swaps any substring, and a key that short would
+    # turn "install" into "emstall" in every message it does not have its own entry for.
+    quando = (loc("at the next reboot") if modo == "reboot"
+              else ("em " if qhui.PTBR else "in ") + trials.humanize(segundos))
+    fim = loc("and DELETES its data") if purge else loc("keeping its data")
+
+    def grava():
+        agora = time.time()
+        trials.write_all(s.home, trials.new_record(s.name, modo, None if modo == "reboot" else agora + segundos,
+                                                  purge, agora, trials.boot_id()),
+                         sys.executable, str(Path(__file__).resolve()))
+    # `enable`, and `--now` only for the timer: the reboot service must not run until the next boot.
+    alvo = ["--now", timer] if modo == "time" else [servico]
+    return [(f"trial: remove {s.name} {quando}, {fim}  ({servico})", grava),
+            ("systemctl --user daemon-reload", lambda: run(["systemctl", "--user", "daemon-reload"])),
+            (f"systemctl --user enable {' '.join(alvo)}", lambda: run(["systemctl", "--user", "enable", *alvo]))]
+
+
+def disarm_trial(home, app):
+    """Stops the timer, deletes the record and the units. Safe to run twice, and from inside the very
+    service the timer started: `disable` without `--now` on that one, so it does not stop itself."""
+    servico, timer = trials.unit_names(app)
+    run_lenient(["systemctl", "--user", "disable", "--now", timer])
+    run_lenient(["systemctl", "--user", "disable", servico])
+    trials.remove_all(home, app)
+    run_lenient(["systemctl", "--user", "daemon-reload"])
+
+
+def trial_info(s):
+    """What the store needs of a trial: when it ends and whether the data goes with it."""
+    rec = trials.read(s.home, s.name)
+    return None if rec is None else {"mode": rec["mode"], "expires": rec["expires"], "purge": rec["purge"]}
+
+
+def show_trials(home=None):
+    recs = trials.read_all(Path(home) if home else Path.home())
+    if not recs:
+        say(loc("no trial armed."))
+        return 0
+    agora = time.time()
+    cab = ("serviço", "termina", "dados") if qhui.PTBR else ("service", "ends", "data")
+    say(dim(f"  {cab[0]:<26} {cab[1]:<36} {cab[2]}"))
+    for app, r in sorted(recs.items()):
+        fim = (loc("at the next reboot") if r["mode"] == "reboot" else
+               f"{time.strftime('%Y-%m-%d %H:%M', time.localtime(r['expires']))}  "
+               f"({trials.humanize(trials.remaining(r, agora))})")
+        rotulo = (("APAGADOS", "mantidos") if qhui.PTBR else ("DELETED", "kept"))[0 if r["purge"] else 1]
+        say(f"  {app:<26} {fim:<36} {rotulo}")
+    return 0
+
+
 def host_state():
     """({unit: systemd ActiveState}, {container: podman Status}) for every unit and container."""
     ativos, saude = {}, {}
@@ -3947,7 +4055,8 @@ def show_status(apps=None, home=None):
                 problemas += 1
             if deriva:
                 mudados += 1
-            detalhe.append((u.stem, e, c, deriva or "—", overrides.read_override(u) is not None))
+            detalhe.append((u.stem, e, c, deriva or "—", overrides.read_override(u) is not None,
+                            trials.read(s.home, d) is not None))
         # In a folder of independent services, an inactive unit is one you chose
         # not to start — noise, not news. In a real stack (its own .network) an
         # inactive piece is why the service is down, so those stay. `failed`
@@ -3972,11 +4081,12 @@ def show_status(apps=None, home=None):
         return cor(texto) + " " * max(0, largura - len(texto))
 
     say(dim(f"  {est('service'):<26} {est('unit'):<10} {est('container'):<10} {est('repo')}"))
-    for n, e, c, dv, ov in linhas:
+    for n, e, c, dv, ov, tr in linhas:
         say(f"  {n:<26} {coluna(e, 10, ('active',), ('failed',))}"
             f" {coluna(c, 10, ('healthy', 'up'), ('unhealthy', 'down'))}"
             f" {yellow(est(dv)) if dv == 'changed' else dim(dv)}"
-            + (f"  {dim(loc('customized'))}" if ov else ""))
+            + (f"  {dim(loc('customized'))}" if ov else "")
+            + (f"  {yellow(('experimento' if qhui.PTBR else 'trial'))}" if tr else ""))
     say("")
     say(loc("  installed:") + f" {sum(1 for _ in linhas)}  "
         + loc("needing attention:") + f" {problemas}  "
@@ -4071,6 +4181,8 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude):
         "has_login": s.login() is not None,
         # Marked in install.ini [store]: the store shows the reason and offers no install.
         "deprecated": deprecation(s.ini),
+        # Armed with `--trial`: the store shows when it ends, and offers to keep it.
+        "trial": trial_info(s),
         # How it is reached: the mode in force for it, and whether that is an
         # exception of its own (`qh --set-access MODE APP`) or the rule.
         "access": {"mode": effective_access(s)[0],
@@ -4264,6 +4376,21 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
     folder, only = find_app(app)
     s = Service(folder, a.prefix, only)
 
+    if a.trial:
+        # A trial ends by removing the service. So it may only ever be armed on one this very
+        # command installs: not on one that is already here (it is somebody's app), and not
+        # with the data deleted when there was data before (it is somebody's data).
+        if s.installed():
+            say(f"{app}: " + red(loc("--trial refused: it is already installed, and a trial is for a new install")))
+            return 1
+        if a.trial_purge:
+            antes = trial_preexisting(s)
+            if antes:
+                say(f"{app}: " + red(loc("--trial-purge refused: there is data from before, and the trial would delete it:")))
+                for x in antes[:6]:
+                    say(f"    {x}")
+                return 1
+
     if a.verify:
         # Read-only, so it does not wait for --apply: the whole point is to be
         # cheap enough to run whenever you are unsure.
@@ -4359,6 +4486,8 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
                                        access=modo_efetivo,
                                        href_local=href_local,
                                        ask_secrets=a.ask_secrets)
+        if a.trial and steps:
+            steps += trial_steps(s, a.trial, a.trial_purge)
 
     if not steps:
         # With no steps, "done" would be a lie: the reason is in the warnings
@@ -4390,14 +4519,17 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
         # With several services, each one asks for its own — on purpose.
         say("\nThis OVERWRITES the current data, with no way back."
               if a.restore else "\nThis DELETES the data listed above, with no way back.")
-        try:
-            # loc() by hand: input() does not go through say()
-            if input(loc(f"type `{app}` to confirm: ")).strip() != app:
-                say("cancelled.")
+        if a.confirmed:
+            say(loc("confirmed when the trial was armed; nobody is here to type it."))
+        else:
+            try:
+                # loc() by hand: input() does not go through say()
+                if input(loc(f"type `{app}` to confirm: ")).strip() != app:
+                    say("cancelled.")
+                    return 1
+            except (EOFError, KeyboardInterrupt):
+                say("\ncancelled.")
                 return 1
-        except (EOFError, KeyboardInterrupt):
-            say("\ncancelled.")
-            return 1
 
     for n, (desc, action) in enumerate(steps):
         try:
@@ -4525,6 +4657,17 @@ def main():
                     help=loc("act on ALL the services in apps/"))
     ap.add_argument("--zerobyte", action="store_true",
                     help=loc("create the Zerobyte backup jobs (`--zerobyte --help` for its own flags)"))
+    ap.add_argument("--trial", metavar="WHEN",
+                    help=loc("install to try it: remove it by itself after `6h`, `2d`... or at the next `reboot`"))
+    ap.add_argument("--trial-purge", action="store_true",
+                    help=loc("with --trial: delete the data too, at the end (refused if there is data already)"))
+    ap.add_argument("--trial-keep", action="store_true",
+                    help=loc("cancel the trial of the services named: they stay"))
+    ap.add_argument("--trial-expire", action="store_true",
+                    help=loc("end the trial now — what its timer runs (refused before its time)"))
+    ap.add_argument("--trials", action="store_true", help=loc("the trials armed, and when each ends"))
+    # Set by --trial-expire: the consent for what it deletes was given when the trial was armed.
+    ap.set_defaults(confirmed=False)
     a = ap.parse_args()
 
     if a.selftest:
@@ -4539,6 +4682,9 @@ def main():
 
     if a.catalog:
         return show_catalog(a.app or None, a.prefix)
+
+    if a.trials:
+        return show_trials(a.prefix)
 
 
     if a.set_access:
@@ -4621,6 +4767,66 @@ def main():
         ap.error(loc("not found in apps/: ") + ", ".join(unknown)
                  + loc("  (run it with no arguments to see the list)"))
 
+    if a.trial_purge and not a.trial:
+        ap.error(loc("--trial-purge only makes sense with --trial"))
+    if a.trial:
+        try:
+            trials.parse_duration(a.trial)
+        except ValueError as e:
+            ap.error(f"--trial: {e}")
+        if (a.update or a.remove or a.backup or a.restore or a.reinstall or a.verify or a.all
+                or a.trial_keep or a.trial_expire):
+            ap.error(loc("--trial is for a NEW install of the services named, and nothing else with it"))
+        if any(find_app(x)[1] for x in a.app):
+            ap.error(loc("--trial takes a whole service, not one unit of a stack"))
+    if (a.trial_keep or a.trial_expire) and not a.app:
+        ap.error(loc("--trial-keep and --trial-expire name the services"))
+    if a.trial_keep and a.trial_expire:
+        ap.error(loc("--trial-keep and --trial-expire are opposites"))
+    casa = Path(a.prefix) if a.prefix else Path.home()
+
+    if a.trial_keep:
+        rc = 0
+        for x in a.app:
+            nome = find_app(x)[0]
+            if trials.read(casa, nome) is None:
+                say(f"{x}: " + loc("no trial armed."))
+                rc = 1
+            elif not a.apply:
+                say(f"{x}: " + loc("would keep it: the timer and the record go, the service stays")
+                    + "  " + loc("(dry-run)"))
+            else:
+                disarm_trial(casa, nome)
+                say(f"{x}: " + loc("kept: the trial is cancelled."))
+        if not a.apply:
+            say("\n" + loc("nothing was done. repeat with --apply"))
+        return rc
+
+    pendentes, nao_vencidos = {}, []
+    if a.trial_expire:
+        # What the timer runs. It does what the RECORD says — remove, and delete the data only if
+        # that was asked when the trial was armed — and it asks nobody, so nothing here may go
+        # beyond that record. Too early is refused: a timer is a little early at most.
+        a.remove, a.apply, a.confirmed = True, True, True
+        for x in a.app:
+            nome = find_app(x)[0]
+            rec = trials.read(casa, nome)
+            if rec is None:
+                say(f"{x}: " + loc("no trial armed.") + " " + loc("Nothing to do."))
+                continue
+            vencido, porque = trials.due(rec, time.time(), trials.boot_id())
+            if not vencido:
+                say(f"{x}: " + loc("not due yet:") + f" {porque}")
+                nao_vencidos.append(x)
+            elif not Service(nome, a.prefix).installed():
+                say(f"{x}: " + loc("already removed; clearing the trial."))
+                disarm_trial(casa, nome)
+            else:
+                pendentes[x] = rec
+        a.app = list(pendentes)
+        if not a.app:
+            return 1 if nao_vencidos else 0
+
     # Backup and restore always take the folder: the archive is the service's,
     # and restoring one piece of a stack over data the others share is how you
     # corrupt it. Remove is allowed on a single unit when that unit's volumes
@@ -4659,7 +4865,11 @@ def main():
     for i, app in enumerate(a.app):
         if len(a.app) > 1:
             say(("\n" if i else "") + "─" * 62)
+        if a.trial_expire:
+            a.purge = pendentes[app]["purge"]
         rc = run_one(a, ap, app, access, href_local, feitos, verbos)
+        if a.trial_expire and rc == 0:
+            disarm_trial(casa, find_app(app)[0])     # idempotent: plan_remove already did it
         if rc == EM_SINCRONIA:
             sincronizados += 1
         elif rc:
@@ -4681,7 +4891,7 @@ def main():
         # Not when everything was already in sync: --apply would do nothing, and
         # telling someone to run it again is a nudge into a no-op.
         say("\nnothing was done. repeat with --apply")
-    return 1 if failures else 0
+    return 1 if failures or nao_vencidos else 0
 
 
 if __name__ == "__main__":

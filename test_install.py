@@ -598,7 +598,7 @@ def scenario_deprecated(tmp):
     import json
     raiz = Path(tmp, "dep-repo")
     raiz.mkdir()
-    for f in ("install.py", "qhui.py", "overrides.py"):
+    for f in ("install.py", "qhui.py", "overrides.py", "trials.py"):
         shutil.copy(ROOT / f, raiz / f)
     shutil.copytree(ROOT / "apps", raiz / "apps", ignore_dangling_symlinks=True)   # apps/durockrj may point nowhere
     import configparser
@@ -633,6 +633,42 @@ def scenario_deprecated(tmp):
     check(rc == 0 and (path(home, "systemd", f"{APP}.container")).is_file(), "naming it still installs: the warning is not a ban")
 
 
+def scenario_trial(tmp):
+    """--trial arms a self-removal; --trial-expire obeys the record and nothing beyond it."""
+    import json
+    import time
+    home = str(Path(tmp, "trial-home"))
+    rec = Path(home, ".config", "quadlet-homelab", "trials", f"{APP}.json")
+    units = Path(home, ".config", "systemd", "user")
+    out = run("--trial", "5m", APP, "--apply", "--prefix", home, expected=2)
+    check("at least" in (out.stdout + out.stderr) or "minimum" in (out.stdout + out.stderr).lower() or out.returncode == 2,
+          "a trial too short is refused")
+    run(APP, "--apply", "--prefix", home, "--trial", "2h")
+    check(rec.is_file() and (units / f"qh-trial-{APP}.timer").is_file(), "--trial writes the record and the timer")
+    check("trial" in run("--status", "--prefix", home, expected=1).stdout, "--status marks it")
+    check(APP in run("--trials", "--prefix", home).stdout, "--trials lists it")
+    r = run(APP, "--apply", "--prefix", home, "--trial", "2h", expected=1)
+    check("already installed" in r.stdout, "a trial over an installed service is refused")
+    r = run(APP, "--trial-expire", "--prefix", home, expected=1)
+    check("not due yet" in r.stdout and path(home, "systemd", f"{APP}.container").is_file(),
+          "--trial-expire before its time refuses and removes nothing")
+    d = json.loads(rec.read_text()); d["expires"] = int(time.time()) - 60; rec.write_text(json.dumps(d))
+    run(APP, "--trial-expire", "--prefix", home)
+    check(not path(home, "systemd", f"{APP}.container").is_file() and not rec.exists()
+          and not (units / f"qh-trial-{APP}.timer").exists(), "after its time it removes the service and clears the trial")
+    check(Path(home, ".config", "containers", "volumes", APP).exists(), "…and keeps the data, as armed")
+    r = run(APP, "--apply", "--prefix", home, "--trial", "2h", "--trial-purge", expected=1)
+    check("--trial-purge refused" in r.stdout and not rec.exists(), "--trial-purge over data from before is refused")
+    run(APP, "--apply", "--prefix", home, "--trial", "2h")
+    run(APP, "--trial-keep", "--apply", "--prefix", home)
+    check(not rec.exists() and path(home, "systemd", f"{APP}.container").is_file(), "--trial-keep cancels it, the service stays")
+    r = run(STACK, "--apply", "--prefix", str(Path(tmp, "trial-reboot")), "--trial", "reboot")
+    d = json.loads(next(Path(tmp, "trial-reboot", ".config", "quadlet-homelab", "trials").glob("*.json")).read_text())
+    check(d["mode"] == "reboot", "--trial reboot records the boot")
+    r = run(STACK, "--trial-expire", "--prefix", str(Path(tmp, "trial-reboot")), expected=1)
+    check("not due yet" in r.stdout, "…and does not end within the same boot")
+
+
 def main():
     with tempfile.TemporaryDirectory() as tmp:
         home, out = str(Path(tmp) / "home"), str(Path(tmp) / "backups")
@@ -656,6 +692,7 @@ def main():
             print("restore refuses:"); scenario_restore_refuses(home, tgz, out)
         print("removal:");            scenario_remove(home)
 
+        print("trials:");              scenario_trial(tmp)
         print("recovery:");           scenario_recovery(tmp)
 
         with tempfile.TemporaryDirectory() as other:

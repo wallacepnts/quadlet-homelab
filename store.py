@@ -49,6 +49,7 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 import overrides as O  # noqa: E402
 import qhui  # noqa: E402
+import trials  # noqa: E402
 
 _spec = importlib.util.spec_from_file_location("qh_install", ROOT / "install.py")
 I = importlib.util.module_from_spec(_spec)
@@ -117,9 +118,9 @@ TIPOS = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=u
 # shows goes in through textContent, and this is the second fence behind that.
 CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; img-src https: data:; "
        "connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'")
+ACOES = ("install", "update", "remove", "backup", "restore", "upgrade", "access", "trial-keep")
 COOKIE = "qh_store"
 NOME = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
-ACOES = ("install", "update", "remove", "backup", "restore", "upgrade", "access")
 BACKUP = re.compile(r"-\d{8}-\d{6}\.tar\.gz")     # what --backup names its archive after the app
 VERBOS = {"start", "stop", "restart"}
 
@@ -313,6 +314,8 @@ def flags(app, action, arquivo=""):
         return ["--restore", str(f)] if f else None
     if action in ("upgrade", "access"):
         return []           # not a single qh flag: built in the handler
+    if action == "trial-keep":
+        return ["--trial-keep"]
     return {"install": [], "update": ["--update"], "remove": ["--remove"],
             "backup": ["--backup", "--out", str(backup_dir())]}.get(action)
 
@@ -1565,6 +1568,17 @@ class Handler(BaseHTTPRequestHandler):
                     return self._json(400, {"error": loc("a restore overwrites the data: "
                                                          "type the service name to confirm")})
             cmd = qh(app, *extra, "--apply")
+            quando = d.get("trial")
+            if quando:
+                # Install to try it: qh removes it by itself, by a timer. Only the service asked
+                # for — what it pulled in along stays, as it may be somebody else's.
+                if action != "install":
+                    return self._json(400, {"error": loc("unknown action")})
+                try:
+                    trials.parse_duration(quando)
+                except (ValueError, TypeError) as e:
+                    return self._json(400, {"error": str(e)})
+                cmd = qh(app, "--apply", "--trial", quando, *(["--trial-purge"] if d.get("trial_purge") else []))
             if action == "upgrade":
                 # The version is taken in the repository first — it stays the
                 # source, and the change is there to review and commit — then
@@ -1574,7 +1588,7 @@ class Handler(BaseHTTPRequestHandler):
                                                          "which a sandbox does not have")})
                 cmd = [bump_cmd(app, True), qh(app, "--update", "--apply")]
             if action == "install" and len(cadeia) > 1:
-                cmd = [qh(x, "--apply") for x in cadeia]
+                cmd = [qh(x, "--apply") for x in cadeia[:-1]] + [cmd] if quando else [qh(x, "--apply") for x in cadeia]
             if action == "access":
                 # An exception for this service, then the update that writes it
                 # into the unit. `default` drops it, back to the rule.
@@ -1968,6 +1982,12 @@ def selftest():
                     assert install_refusal("gitea") is None, "and an unmarked one is not"
                 finally:
                     I.APPS = original
+
+            # trial: a duration that does not parse, or a trial on anything but an install, never starts a job
+            for corpo in ({"app": "memos", "action": "install", "trial": "soon"},
+                          {"app": "memos", "action": "install", "trial": "5m"},
+                          {"app": "memos", "action": "update", "trial": "2h"}):
+                assert pedir("/api/run", json.dumps(corpo).encode(), api)[0] == 400, corpo
 
             # history: every job is on disk, newest first, with who asked and how it ended
             lista = json.loads(pedir("/api/history?app=homebox", headers=ok)[2])["entries"]
