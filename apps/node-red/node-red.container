@@ -29,15 +29,6 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=node-red
 Label=tsdproxy.port.web=443/https:1880/http
 
-Label=homepage.group=Automation
-Label=homepage.name=Node-RED
-Label=homepage.icon=node-red.svg
-Label=homepage.href=https://node-red.${TAILNET}.ts.net
-Label=homepage.description="Flow automation via a visual node editor"
-
-Label=wud.watch=true
-Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+-minimal$
-
 [Service]
 Restart=always
 TimeoutStartSec=60

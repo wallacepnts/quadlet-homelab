@@ -31,15 +31,6 @@ Label=tsdproxy.name=prometheus
 Label=tsdproxy.port.web=443/https:9090/http
 Label=tsdproxy.dash.icon=sh/prometheus
 
-Label=homepage.group=Monitoring
-Label=homepage.name=Prometheus
-Label=homepage.icon=prometheus.svg
-Label=homepage.href=https://prometheus.${TAILNET}.ts.net
-Label=homepage.description="Collects metrics on a schedule and keeps the history"
-
-Label=wud.watch=true
-Label=wud.tag.include=^v[0-9]+.[0-9]+.[0-9]+$
-
 [Service]
 Restart=always
 TimeoutStartSec=90

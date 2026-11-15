@@ -220,14 +220,14 @@ def scenario_access(tmp):
         alvo.write_bytes(I.unit_bytes(fonte, modo, False))
         lido = I.installed_access(alvo, fonte)
         check(lido[0] == modo, f"a unit written as --access {modo} reads back as {modo}")
-    alvo.write_bytes(I.unit_bytes(fonte, "both", True))
-    check(I.installed_access(alvo, fonte)[1] is True,
-          "--href-local is representable, not invisible")
+    alvo.write_bytes(I.unit_bytes(fonte, "tailnet", True))
+    check(I.installed_access(alvo, fonte) == ("both", False),
+          "--href-local is the same unit as --access both: it reads back as both")
 
     # A unit the mode does not change says so, instead of guessing "both".
     sidecar = Path(ROOT, "apps", "immich", "immich-postgres.container")
     alvo.write_bytes(I.unit_bytes(sidecar, "local", False))
-    check(I.installed_access(alvo, sidecar) == (None, None),
+    check(I.installed_access(alvo, sidecar) == (None, False),
           "a unit with no tsdproxy label admits the mode cannot be told")
 
     # And the two paths that were silently reverting it.
@@ -242,11 +242,10 @@ def scenario_access(tmp):
     casa = str(Path(tmp, "acc2"))
     run(APP, "--apply", "--access", "both", "--href-local", "--prefix", casa)
     u2 = path(casa, "systemd", f"{APP}.container")
-    href = [l for l in u2.read_text().splitlines() if "homepage.href" in l]
+    antes_both = u2.read_bytes()
     os.utime(u2, (0, 0))
     run(APP, "--update", "--apply", "--prefix", casa)
-    check([l for l in u2.read_text().splitlines() if "homepage.href" in l] == href,
-          "and --update does not revert --href-local")
+    check(u2.read_bytes() == antes_both, "and --update keeps it")
 
     # A per-service exception survives the update that follows the rule.
     casa3 = str(Path(tmp, "acc3"))
@@ -385,7 +384,13 @@ def scenario_sandbox(tmp):
           "a sandbox run does not print the tailnet name")
     check("segredo-de-teste" not in escrito,
           "and does not write it into the files it creates")
-    check("${TAILNET}" in escrito, "the unit keeps the variable instead")
+    # postiz is one of the few units that still names the tailnet (in Environment=), so the
+    # variable has something to stay a variable in
+    r2 = subprocess.run([sys.executable, str(ROOT / "install.py"), "postiz", "--apply", "--prefix", home],
+                        capture_output=True, text=True, cwd=ROOT, env=env)
+    escrito2 = "".join(f.read_text(errors="replace") for f in Path(home).rglob("postiz*.container"))
+    check("segredo-de-teste" not in (r2.stdout + r2.stderr) + escrito2, "a unit that names the tailnet does not get the real name either")
+    check("${TAILNET}" in escrito2, "the unit keeps the variable instead")
 
     # Credentials are not world-readable, wherever they land.
     for f in [path(home, "env", f"{APP}.env"),
@@ -516,13 +521,17 @@ def scenario_recovery(tmp):
 
 
 def scenario_local(home):
+    import json
     run("memos", "--apply", "--prefix", home, "--local")
     # A glob rather than a fixed path: a service with 2+ Quadlet files goes into
     # a subfolder under systemd/, and memos is one of them (it has a .network).
     unit = next(path(home, "systemd").rglob("memos.container")).read_text()
-    href = next((l for l in unit.splitlines() if l.startswith("Label=homepage.href")), "")
-    check("${TAILNET}" not in href and href.startswith("Label=homepage.href=http://"),
-          f"--local swaps the href for the LAN address ({href.split('=')[-1]})")
+    check("# disabled by --access local: Label=tsdproxy.enable" in unit and "Label=homepage" not in unit,
+          "--local turns the tsdproxy labels off, and the unit carries no dashboard labels")
+    cat = json.loads(run("--catalog", "memos", "--prefix", home).stdout)["apps"][0]
+    web = cat["web"][0]
+    check(web["local"] and web["local"].startswith("http://") and web["tailnet"] is None,
+          f"--catalog still gives the LAN address, and no tailnet one without a tailnet ({web['local']})")
 
 
 def scenario_catalog(home):
@@ -544,7 +553,7 @@ def scenario_catalog(home):
     grupos = {x["group"]["en"] for x in apps.values() if x["group"]}
     check(apps["vm"]["group"] == {"en": "Virtual Machines", "pt": "Máquinas Virtuais"}
           and all(g and '"' not in g for g in grupos),
-          "--catalog takes the category from homepage.group, quotes stripped, in both languages")
+          "--catalog takes the category from install.ini [store] group, in both languages")
     check(apps[APP]["installed"] and all(u["installed"] for u in apps[APP]["units"]),
           "--catalog sees the sandbox install")
     check(not apps[STACK]["installed"], "--catalog does not see what was never installed")

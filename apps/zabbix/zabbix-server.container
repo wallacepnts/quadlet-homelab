@@ -32,9 +32,6 @@ HealthRetries=5
 HealthStartPeriod=120s
 Notify=healthy
 
-Label=wud.watch=true
-Label=wud.tag.include=^alpine-[0-9]+[.][0-9]+[.][0-9]+$
-
 [Service]
 Restart=always
 TimeoutStartSec=300

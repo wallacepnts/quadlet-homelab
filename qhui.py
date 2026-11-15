@@ -114,6 +114,24 @@ def published_port(value):
     return parts[-2], proto or "tcp"
 
 
+# Where an app sits in the catalog: `[store] group` in its install.ini names one of these (English),
+# and the page shows the Portuguese beside it. Only here are the names a person can pick.
+GRUPOS = {
+    "AI": "IA",
+    "Automation": "Automação",
+    "Downloads": "Downloads",
+    "Files": "Arquivos",
+    "Home": "Casa",
+    "Media": "Mídia",
+    "Monitoring": "Monitoramento",
+    "Network & Security": "Rede e Segurança",
+    "Personal": "Pessoal",
+    "Productivity": "Produtividade",
+    "Tools": "Ferramentas",
+    "Virtual Machines": "Máquinas Virtuais",
+}
+
+
 # -- typed .env settings ---------------------------------------------------------------
 # A `# type: number` line in the comments above a setting in a `.env.example` says what
 # box the store shows and what it accepts. Without one a setting is plain text.

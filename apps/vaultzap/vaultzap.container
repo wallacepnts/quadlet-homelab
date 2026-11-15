@@ -34,15 +34,6 @@ Label=tsdproxy.name=vaultzap
 Label=tsdproxy.port.web=443/https:8927/http
 Label=tsdproxy.dash.icon=mdi/message-text-lock
 
-Label=homepage.group=Personal
-Label=homepage.name=VaultZap
-Label=homepage.icon=/icons/vaultzap.svg
-Label=homepage.href=https://vaultzap.${TAILNET}.ts.net
-Label=homepage.description="A local, browsable archive of exported WhatsApp conversations"
-
-Label=wud.watch=true
-Label=wud.tag.include=^v[0-9]+[.][0-9]+[.][0-9]+$
-
 [Service]
 Restart=always
 TimeoutStartSec=120

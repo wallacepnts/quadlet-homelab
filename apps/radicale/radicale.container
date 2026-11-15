@@ -37,14 +37,6 @@ Label=tsdproxy.name=radicale
 Label=tsdproxy.port.web=443/https:5232/http
 Label=tsdproxy.dash.icon=sh/radicale
 
-Label=homepage.group=Productivity
-Label=homepage.name=Radicale
-Label=homepage.icon=radicale.svg
-Label=homepage.href=https://radicale.${TAILNET}.ts.net
-Label=homepage.description="A light, minimal CalDAV/CardDAV server"
-
-Label=wud.watch=true
-
 [Service]
 Restart=always
 TimeoutStartSec=30

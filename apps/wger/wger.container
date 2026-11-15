@@ -38,15 +38,6 @@ Label=tsdproxy.name=wger
 Label=tsdproxy.port.web=443/https:8000/http
 Label=tsdproxy.dash.icon=sh/wger
 
-Label=homepage.group=Personal
-Label=homepage.name=wger
-Label=homepage.icon=wger.svg
-Label=homepage.href=https://wger.${TAILNET}.ts.net
-Label=homepage.description="Workout planning and tracking, with an exercise database and body measurements"
-
-Label=wud.watch=true
-Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+$
-
 [Service]
 Restart=always
 TimeoutStartSec=300

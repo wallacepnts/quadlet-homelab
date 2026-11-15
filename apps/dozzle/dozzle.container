@@ -36,15 +36,6 @@ Label=tsdproxy.name=dozzle
 Label=tsdproxy.port.web=443/https:8080/http
 Label=tsdproxy.dash.icon=sh/dozzle
 
-Label=homepage.group=Monitoring
-Label=homepage.name=Dozzle
-Label=homepage.icon=dozzle.svg
-Label=homepage.href=https://dozzle.${TAILNET}.ts.net
-Label=homepage.description="Live logs of every container, without opening a terminal"
-
-Label=wud.watch=true
-Label=wud.tag.include=^v[0-9]+.[0-9]+.[0-9]+$
-
 [Service]
 Restart=always
 TimeoutStartSec=60

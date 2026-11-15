@@ -36,15 +36,6 @@ Label=tsdproxy.name=ghost
 Label=tsdproxy.port.web=443/https:2368/http
 Label=tsdproxy.dash.icon=si/ghost
 
-Label=homepage.group=Productivity
-Label=homepage.name=Ghost
-Label=homepage.icon=https://cdn.jsdelivr.net/gh/selfhst/icons/webp/ghost.webp
-Label=homepage.href=https://ghost.${TAILNET}.ts.net
-Label=homepage.description="Self-hosted blog/newsletter (SQLite, development mode)"
-
-Label=wud.watch=true
-Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+-alpine$
-
 [Service]
 Restart=always
 TimeoutStartSec=60

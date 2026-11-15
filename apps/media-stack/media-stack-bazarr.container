@@ -33,14 +33,6 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=bazarr
 Label=tsdproxy.port.web=443/https:6767/http
 
-Label=homepage.group=Downloads
-Label=homepage.name=Bazarr
-Label=homepage.icon=bazarr.svg
-Label=homepage.href=https://bazarr.${TAILNET}.ts.net
-Label=homepage.description="Automatic subtitles"
-
-Label=wud.watch=true
-
 [Service]
 Restart=always
 TimeoutStartSec=60

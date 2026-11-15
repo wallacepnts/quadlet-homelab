@@ -42,14 +42,6 @@ Label=tsdproxy.name=deluge
 Label=tsdproxy.port.web=443/https:8112/http
 Label=tsdproxy.dash.icon=sh/deluge
 
-Label=homepage.group=Downloads
-Label=homepage.name=Deluge
-Label=homepage.icon=deluge.svg
-Label=homepage.href=https://deluge.${TAILNET}.ts.net
-Label=homepage.description="Torrent client, with the queue in the browser"
-
-Label=wud.watch=true
-
 [Service]
 Restart=always
 TimeoutStartSec=60

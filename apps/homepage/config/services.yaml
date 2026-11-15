@@ -1,7 +1,8 @@
 ---
-# Empty on purpose: every service here comes from the container labels, read
-# through docker.yaml. Homepage writes a sample file when this one is missing,
-# and that sample is what puts "My First Group" on the dashboard.
+# The units of this repository carry no `homepage.*` labels any more, so nothing is discovered
+# through docker.yaml unless you add labels to a unit yourself. List services here by hand.
+# Homepage writes a sample file when this one is missing, and that sample is what puts
+# "My First Group" on the dashboard — so the file stays, even when it lists only Cockpit.
 
 # The exception to the rule above: Cockpit is a host service, not a container,
 # so it has no labels to read. It is published on the tailnet through

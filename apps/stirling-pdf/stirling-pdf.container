@@ -35,15 +35,6 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=stirling-pdf
 Label=tsdproxy.port.web=443/https:8080/http
 
-Label=homepage.group=Tools
-Label=homepage.name=Stirling-PDF
-Label=homepage.icon=stirling-pdf.svg
-Label=homepage.href=https://stirling-pdf.${TAILNET}.ts.net
-Label=homepage.description="PDF manipulation — merge, split, convert, OCR, sign"
-
-Label=wud.watch=true
-Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+$
-
 [Service]
 Restart=always
 TimeoutStartSec=120

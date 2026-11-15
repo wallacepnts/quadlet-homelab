@@ -43,15 +43,6 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=openwa
 Label=tsdproxy.port.web=443/https:2785/http
 
-Label=homepage.group=Automation
-Label=homepage.name=OpenWA
-Label=homepage.icon=https://cdn.jsdelivr.net/gh/rmyndharis/OpenWA@main/docs/logo/openwa.svg
-Label=homepage.href=https://openwa.${TAILNET}.ts.net
-Label=homepage.description="WhatsApp API gateway — sessions, webhooks and message sending over HTTP"
-
-Label=wud.watch=true
-Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+$
-
 [Service]
 Restart=always
 TimeoutStartSec=180

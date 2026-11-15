@@ -31,15 +31,6 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=nginx
 Label=tsdproxy.port.web=443/https:80/http
 
-Label=homepage.group="Network & Security"
-Label=homepage.name=nginx
-Label=homepage.icon=nginx.svg
-Label=homepage.href=https://nginx.${TAILNET}.ts.net
-Label=homepage.description="Static file server"
-
-Label=wud.watch=true
-Label=wud.tag.include=^1.30.[0-9]+-alpine$
-
 [Service]
 Restart=always
 TimeoutStartSec=60

@@ -21,7 +21,7 @@ from collections import defaultdict
 from pathlib import Path
 
 from qhui import (translator, directives, directives_of, published_port, format_unit,
-                  red, yellow, green, dim, ENV_TYPES, ENV_TYPE_LINE, env_value_problem)
+                  red, yellow, green, dim, GRUPOS, ENV_TYPES, ENV_TYPE_LINE, env_value_problem)
 
 PT = {
     "unit(s) reformatted": "unit(s) reformatada(s)",
@@ -44,7 +44,6 @@ PT = {
         "Label com barra invertida — o Quadlet descarta a linha inteira",
     "Label with an unquoted space, truncates at the first one":
         "Label com espaço sem aspas, corta no primeiro",
-    "has no wud.watch —": "não tem wud.watch —",
     "has AutoUpdate= — nothing in this repository updates on its own, pin the image and remove it":
         "tem AutoUpdate= — nada neste repositório atualiza sozinho, fixe a imagem e remova-o",
     "is on a floating tag": "está em tag flutuante",
@@ -288,12 +287,6 @@ def check_container(path, folder):
             if " " in content and not (content.startswith(('"', "'"))):
                 error("rule 12", f"{ref}: Label with an unquoted space, truncates at the "
                                  f"first one ({value[:40]}…)")
-
-    # Main container only: a sidecar (database, broker, worker) usually follows
-    # the version the app's own compose validates, not its own upstream.
-    if path == main_unit(folder) and "wud" not in exemptions(text):
-        if not any(c == "Label" and v.startswith("wud.watch") for c, v in ds):
-            warn("wud", f"{ref} has no wud.watch — nothing will report a new version")
 
     # Rule 20 applies this one without testing, and nothing tracked it: 54 of
     # the 110 units had drifted without it, 16 already carrying ReadOnly and
@@ -638,12 +631,14 @@ def check_manifest(folders):
         # `screenshots` exists; any other key is a typo that would be ignored.
         if ini.has_section("store"):
             for key, valor in ini.items("store"):
-                if key not in ("screenshots", "deprecated", "deprecated_pt", "repo", "works_with", "min_podman"):
+                if key not in ("screenshots", "deprecated", "deprecated_pt", "repo", "works_with", "min_podman", "group"):
                     error("manifest", f"apps/{folder.name}: install.ini [store] has no key {key!r} "
-                                      f"(only `screenshots`, `deprecated`, `deprecated_pt`, `repo`, `works_with` and `min_podman`)")
+                                      f"(only `screenshots`, `deprecated`, `deprecated_pt`, `repo`, `works_with`, `min_podman` and `group`)")
                     continue
                 for problema in (screenshots_problemas(valor) if key == "screenshots"
                                  else repo_problemas(valor) if key == "repo"
+                                 else [] if key == "group" and valor.strip() in GRUPOS
+                                 else [f"is not one of: {', '.join(GRUPOS)}"] if key == "group"
                                  else [] if key == "min_podman" and re.fullmatch(r"\d+\.\d+(\.\d+)?", valor.strip())
                                  else ["is not a version like 5.4"] if key == "min_podman"
                                  else works_with_problemas(valor, folder.name, {p.name for p in APPS.iterdir()}) if key == "works_with"

@@ -38,15 +38,6 @@ Label=tsdproxy.name=pkvault
 Label=tsdproxy.port.web=443/https:3000/http
 Label=tsdproxy.dash.icon=mdi/pokeball
 
-Label=homepage.group=Personal
-Label=homepage.name=PKVault
-Label=homepage.icon=https://cdn.jsdelivr.net/gh/selfhst/icons/svg/pkvault.svg
-Label=homepage.href=https://pkvault.${TAILNET}.ts.net
-Label=homepage.description="Pokémon storage across every game's saves, with a shared Pokédex"
-
-Label=wud.watch=true
-Label=wud.tag.include=^[0-9]+[.][0-9]+[.][0-9]+$
-
 [Service]
 Restart=always
 TimeoutStartSec=180

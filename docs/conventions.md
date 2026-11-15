@@ -98,7 +98,7 @@ own README, linking the original repository and author.
 ### 12. `Label=` values with a space need quotes
 
 ```ini
-Label=homepage.description="Publishes containers on the tailnet automatically"
+Label=example.description="Publishes containers on the tailnet automatically"
 ```
 
 Without the quotes, Quadlet truncates the value at the first space (it becomes
@@ -274,11 +274,11 @@ genuinely resolved path, because the expansion happens in the generated
 file is generated. Test with `podman inspect <container> --format
 '{{json .Mounts}}'`, do not trust `systemctl cat` alone.
 
-**It works in `Label=` too, not only in `Volume=`** — every `homepage.href` in
-this repository uses `${TAILNET}` for that reason:
+**It works in `Environment=` and `Label=` too, not only in `Volume=`** — a unit that
+has to know its own public address uses `${TAILNET}` for that reason (postiz does):
 
 ```ini
-Label=homepage.href=https://my-app.${TAILNET}.ts.net
+Environment=MAIN_URL=https://postiz.${TAILNET}.ts.net
 ```
 
 ```bash
@@ -290,8 +290,7 @@ It keeps the repo publishable without exposing the tailnet's name, and it
 survives a `wget` of an updated unit — unlike editing the value directly in
 the file, which the next download overwrites. **An undefined variable expands
 to an empty string, silently** (`https://my-app..ts.net`) — check with `podman
-inspect` after setting it, see
-homepage.
+inspect` after setting it.
 
 ### 20. Hardening (`ReadOnly`/`DropCapability`): test the app, not the container
 

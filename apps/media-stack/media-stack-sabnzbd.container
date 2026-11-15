@@ -33,15 +33,6 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=sabnzbd
 Label=tsdproxy.port.web=443/https:8080/http
 
-Label=homepage.group=Downloads
-Label=homepage.name=SABnzbd
-Label=homepage.icon=sabnzbd.svg
-Label=homepage.href=https://sabnzbd.${TAILNET}.ts.net
-Label=homepage.description="Usenet client"
-
-Label=wud.watch=true
-Label=wud.tag.include=^version-[0-9]+.[0-9]+.[0-9]+$
-
 [Service]
 Restart=always
 TimeoutStartSec=60

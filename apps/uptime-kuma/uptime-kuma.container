@@ -29,14 +29,6 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=uptime-kuma
 Label=tsdproxy.port.web=443/https:3001/http
 
-Label=homepage.group=Monitoring
-Label=homepage.name="Uptime Kuma"
-Label=homepage.icon=uptime-kuma.svg
-Label=homepage.href=https://uptime-kuma.${TAILNET}.ts.net
-Label=homepage.description="Uptime monitor for the services and the tailnet"
-
-Label=wud.watch=true
-
 [Service]
 Restart=always
 TimeoutStartSec=60

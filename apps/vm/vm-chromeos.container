@@ -35,15 +35,6 @@ Label=tsdproxy.name=chromeos
 Label=tsdproxy.port.web=443/https:8006/http
 Label=tsdproxy.dash.icon=si/googlechrome
 
-Label=homepage.group="Virtual Machines"
-Label=homepage.name=ChromeOS
-Label=homepage.icon=https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/chrome.svg
-Label=homepage.href=https://chromeos.${TAILNET}.ts.net
-Label=homepage.description="ChromeOS Flex in a VM, with GPU acceleration and a login on the viewer"
-
-Label=wud.watch=true
-Label=wud.tag.include=^[0-9]+.[0-9]+$
-
 [Service]
 Restart=always
 TimeoutStartSec=600

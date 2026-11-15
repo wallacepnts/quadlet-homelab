@@ -33,15 +33,6 @@ Label=tsdproxy.name=instagram-monitor
 Label=tsdproxy.port.web=443/https:8000/http
 Label=tsdproxy.dash.icon=si/instagram
 
-Label=homepage.group=Monitoring
-Label=homepage.name="Instagram Monitor"
-Label=homepage.icon=si-instagram
-Label=homepage.href=https://instagram-monitor.${TAILNET}.ts.net
-Label=homepage.description="Real-time Instagram OSINT monitor with web dashboard, activity feeds and media downloads"
-
-Label=wud.watch=true
-Label=wud.tag.include=^v[0-9]+[.][0-9]+[.][0-9]+$
-
 [Service]
 Restart=always
 TimeoutStartSec=120

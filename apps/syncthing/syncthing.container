@@ -35,14 +35,6 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=syncthing
 Label=tsdproxy.port.web=443/https:8384/http
 
-Label=homepage.group=Files
-Label=homepage.name=Syncthing
-Label=homepage.icon=syncthing.svg
-Label=homepage.href=https://syncthing.${TAILNET}.ts.net
-Label=homepage.description="P2P file sync between devices, with no central server"
-
-Label=wud.watch=true
-
 [Service]
 Restart=always
 TimeoutStartSec=60

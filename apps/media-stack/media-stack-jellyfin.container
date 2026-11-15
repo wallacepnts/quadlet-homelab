@@ -28,14 +28,6 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=jellyfin
 Label=tsdproxy.port.web=443/https:8096/http
 
-Label=homepage.group=Media
-Label=homepage.name=Jellyfin
-Label=homepage.icon=jellyfin.svg
-Label=homepage.href=https://jellyfin.${TAILNET}.ts.net
-Label=homepage.description="Self-hosted media server"
-
-Label=wud.watch=true
-
 [Service]
 Restart=always
 TimeoutStartSec=120

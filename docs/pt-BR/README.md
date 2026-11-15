@@ -245,8 +245,7 @@ Sem tailnet, defina a regra uma vez e toda instalação a segue:
 qh --set-access local
 ```
 
-Ele aponta o link do dashboard pro endereço da LAN e comenta as labels
-`tsdproxy.*` em vez de apagá-las. Ligar depois é uma atualização, que preserva
+Ele comenta as labels `tsdproxy.*` em vez de apagá-las. Ligar depois é uma atualização, que preserva
 os dados:
 
 ```bash

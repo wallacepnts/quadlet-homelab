@@ -21,14 +21,6 @@ Label=tsdproxy.name=collabora
 Label=tsdproxy.port.web=443/https:9980/http
 Label=tsdproxy.dash.icon=mdi/file-document-edit
 
-Label=homepage.group=Files
-Label=homepage.name=Collabora
-Label=homepage.icon=https://sdk.collaboraonline.com/_static/collabora.svg
-Label=homepage.href=https://collabora.${TAILNET}.ts.net
-Label=homepage.description="Editing documents inside ownCloud, with no cloud in between"
-
-Label=wud.watch=true
-
 [Service]
 Restart=always
 TimeoutStartSec=300

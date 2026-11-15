@@ -120,7 +120,7 @@ Customize screen, see [tools](./tools.md)); `--update` keeps it and says so.
 
 `qh --catalog` gives the same answer as JSON, for a front end. It also includes
 what the shop window needs: name, icon and description (en/pt), all read from
-the README tables, the image each unit pins and the one installed, plus the category from `homepage.group`, the web
+the README tables, the image each unit pins and the one installed, plus the category from `[store] group`, the web
 addresses, and what an install has to ask for (`manual` secrets and `[vars]`
 with their defaults). It is read-only. A front end built on it installs with
 the same `qh <app> --apply`, so there is one install path, not two. Name
@@ -164,10 +164,10 @@ rule, then whatever is installed.
 ## Access
 
 ```bash
-qh traccar --apply --access local     # no tsdproxy, dashboard link to the LAN
+qh traccar --apply --access local     # no tsdproxy; reached on the LAN only
 qh traccar --apply --access tailnet   # default
 qh traccar --apply --access both
-qh traccar --apply --href-local       # on the tailnet, dashboard link to the LAN
+qh traccar --apply --href-local       # same as --access both (kept for old habits)
 ```
 
 `--local` is shorthand for `--access local`. The `tsdproxy.*` labels are

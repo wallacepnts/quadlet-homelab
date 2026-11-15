@@ -33,15 +33,6 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=donetick
 Label=tsdproxy.port.web=443/https:2021/http
 
-Label=homepage.group=Personal
-Label=homepage.name=Donetick
-Label=homepage.icon=donetick.svg
-Label=homepage.href=https://donetick.${TAILNET}.ts.net
-Label=homepage.description="Recurring household chores, with who does them and when they are due"
-
-Label=wud.watch=true
-Label=wud.tag.include=^v[0-9]+.[0-9]+.[0-9]+$
-
 [Service]
 Restart=always
 TimeoutStartSec=60

@@ -65,12 +65,6 @@ Label=tsdproxy.enable=true
 Label=tsdproxy.name=<app>
 Label=tsdproxy.port.web=443/https:<port>/http
 
-Label=homepage.group=<group>
-Label=homepage.name=<App>
-Label=homepage.icon=<url>
-Label=homepage.href=https://<app>.${TAILNET}.ts.net
-Label=homepage.description="<one line>"
-
 [Service]
 Restart=always
 
@@ -99,11 +93,13 @@ active lines it talks about, and repeated keys keep their order. It was
 checked against what Quadlet generates for every unit: the podman arguments
 come out the same.
 
-`homepage.group` is one of AI, Automation, Downloads, Files, Home, Media,
-Monitoring, `"Network & Security"`, Personal, Productivity, Tools and
-`"Virtual Machines"` — quoted when it has a space. A value outside that set
-fails `qh --selftest`, which is what keeps the dashboard from growing a
-group of one.
+A unit carries no dashboard or update-watcher labels (`homepage.*`, `wud.*`): the store's
+catalog reads what it shows from elsewhere. The name, icon and description come from the
+README tables; the category is `[store] group` in the service's `install.ini`, one of AI,
+Automation, Downloads, Files, Home, Media, Monitoring, Network & Security, Personal,
+Productivity, Tools and Virtual Machines. A value outside that set fails `check.py`, which is
+what keeps the catalog from growing a group of one. The tailnet address is derived from
+`tsdproxy.name`.
 
 `%h` is the user's home, expanded by systemd. `${TAILNET}` comes from
 `~/.config/environment.d/tailnet.conf` and stays literal in `systemctl cat` —

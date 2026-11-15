@@ -37,14 +37,6 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=wud
 Label=tsdproxy.port.web=443/https:3000/http
 
-Label=homepage.group=Monitoring
-Label=homepage.name="What's Up Docker"
-Label=homepage.icon=https://cdn.jsdelivr.net/gh/getwud/wud@main/ui/public/img/icons/android-chrome-512x512.png
-Label=homepage.href=https://wud.${TAILNET}.ts.net
-Label=homepage.description="Image update monitor (it never applies them itself)"
-
-Label=wud.watch=true
-
 [Service]
 Restart=always
 

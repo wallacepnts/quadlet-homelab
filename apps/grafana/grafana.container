@@ -33,15 +33,6 @@ Label=tsdproxy.name=grafana
 Label=tsdproxy.port.web=443/https:3000/http
 Label=tsdproxy.dash.icon=sh/grafana
 
-Label=homepage.group=Monitoring
-Label=homepage.name=Grafana
-Label=homepage.icon=grafana.svg
-Label=homepage.href=https://grafana.${TAILNET}.ts.net
-Label=homepage.description="Dashboards over whatever you point it at"
-
-Label=wud.watch=true
-Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+$
-
 [Service]
 Restart=always
 TimeoutStartSec=90

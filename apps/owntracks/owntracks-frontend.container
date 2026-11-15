@@ -32,15 +32,6 @@ Label=tsdproxy.name=owntracks-ui
 Label=tsdproxy.port.web=443/https:80/http
 Label=tsdproxy.dash.icon=sh/owntracks
 
-Label=homepage.group=Home
-Label=homepage.name="OwnTracks UI"
-Label=homepage.icon=owntracks.svg
-Label=homepage.href=https://owntracks-ui.${TAILNET}.ts.net
-Label=homepage.description="Advanced web interface (Vue.js) for OwnTracks Recorder"
-
-Label=wud.watch=true
-Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+$
-
 [Service]
 Restart=always
 TimeoutStartSec=60

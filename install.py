@@ -59,7 +59,7 @@ de diretório.
 Sem dependências: só a stdlib.
 """
 from qhui import (translator, directives, directives_of, published_port,
-                  ref_parts, FLOATING,
+                  ref_parts, FLOATING, GRUPOS,
                   red, yellow, green, dim, bold)
 
 ROOT = Path(__file__).resolve().parent
@@ -1379,8 +1379,7 @@ def installed_access(path, source=None):
             return None
         source = hits[0]
     alvo = path.read_bytes()
-    casam = [(modo, href) for modo in ACCESS_MODES for href in (False, True)
-             if unit_bytes(source, modo, href) == alvo]
+    casam = [(modo, False) for modo in ACCESS_MODES if unit_bytes(source, modo, False) == alvo]
     if not casam:
         return None                      # edited by hand, or another version
     modos = {m for m, _ in casam}
@@ -2139,145 +2138,6 @@ def size(path):
     return r.stdout.split("\t")[0].strip() if r.returncode == 0 else "?"
 
 
-# The dashboard's one-line description, in Portuguese. It is a display string
-# like every other, so it lives with them instead of doubling a label in 69
-# units — and `unit_bytes` swaps it in as the unit is written, the same place
-# `--access local` rewrites `homepage.href`.
-DESCRICOES = {
-    "Schedule posts to Instagram and other social networks":
-        "Agenda posts no Instagram e em outras redes sociais",
-    "Pokémon storage across every game's saves, with a shared Pokédex":
-        "Armazenamento de Pokémon entre os saves de todos os jogos, com uma Pokédex única",
-    "Sync server for Anki flashcards, in place of AnkiWeb":
-        "Servidor de sincronização dos cartões do Anki, no lugar do AnkiWeb",
-    "Locate, ring and lock your Android phone, end-to-end encrypted":
-        "Localiza, toca e bloqueia seu celular Android, com criptografia ponta a ponta",
-    "A bridge between Zigbee devices and MQTT, with no proprietary hub": "Ponte entre dispositivos Zigbee e MQTT, sem hub proprietário",
-    "A home server dashboard over your Podman containers": "Um painel de servidor doméstico sobre os seus containers do Podman",
-    "Advanced web interface (Vue.js) for OwnTracks Recorder": "Interface web avançada (Vue.js) para o OwnTracks Recorder",
-    "A light, minimal CalDAV/CardDAV server": "Servidor CalDAV/CardDAV leve e mínimo",
-    "A local, browsable archive of exported WhatsApp conversations": "Acervo local e navegável de conversas exportadas do WhatsApp",
-    "A macOS VM reachable in the browser, with VNC on 5900": "VM de macOS acessível no navegador, com VNC na 5900",
-    "An ARM64 Windows VM, for an ARM host": "VM de Windows ARM64, para host ARM",
-    "Any OS in a VM, reachable in the browser": "Qualquer sistema numa VM, acessível no navegador",
-    "Audiobook and podcast server, with progress synced across devices": "Servidor de audiolivros e podcasts, com progresso sincronizado entre dispositivos",
-    "Automatic subtitles": "Legendas automáticas",
-    "A web file manager with search, previews and WebDAV": "Gerenciador de arquivos web com busca, prévias e WebDAV",
-    "A Windows VM reachable in the browser, with RDP on 3389": "VM de Windows acessível no navegador, com RDP na 3389",
-    "Backup automation (Restic)": "Automação de backup (Restic)",
-    "Bookmark manager with full-text search and automatic page archiving": "Gerenciador de favoritos com busca no texto e arquivamento automático das páginas",
-    "Catches the email your apps send, to read in the browser": "Captura o e-mail que seus apps enviam, para ler no navegador",
-    "Chat interface for local LLMs (Ollama) or over an API": "Interface de chat para LLMs locais (Ollama) ou por API",
-    "ChromeOS Flex in a VM, with GPU acceleration and a login on the viewer": "ChromeOS Flex numa VM, com aceleração de GPU e login no visualizador",
-    "Cloud file sync and sharing (SQLite evaluation)": "Sincronização e compartilhamento de arquivos na nuvem (avaliação em SQLite)",
-    "Converts PDF, Office, image and audio to Markdown, without leaving the machine": "Converte PDF, Office, imagem e áudio para Markdown, sem sair da máquina",
-    "CPU/RAM/disk/network and container monitoring for this host": "Monitoramento de CPU/RAM/disco/rede e containers deste host",
-    "Enterprise-grade monitoring of servers, networks and services, with agents, SNMP, alerts and dashboards": "Monitoramento corporativo de servidores, redes e serviços, com agentes, SNMP, alertas e painéis",
-    "Excalidraw drawings, organised and shared from one place": "Desenhos do Excalidraw, organizados e compartilhados de um lugar só",
-    "File server with uploads from the browser, the phone or WebDAV": "Servidor de arquivos com upload pelo navegador, pelo celular ou por WebDAV",
-    "Flow automation via a visual node editor": "Automação de fluxos por editor visual de nós",
-    "Dashboards over whatever you point it at": "Painéis sobre o que você apontar",
-    "Dashboards over whatever you point it at": "Painéis sobre o que você apontar",
-    "GPS tracking — live map, history, geofences and reports": "Rastreamento GPS — mapa ao vivo, histórico, cercas e relatórios",
-    "Habit tracking without goals — just the streak": "Acompanhamento de hábitos sem metas — só a sequência",
-    "Home inventory — what you own, where it is, the receipt and the warranty": "Inventário doméstico — o que você tem, onde está, a nota e a garantia",
-    "Identity server / SSO (the portal only — no forward-auth in this repository, see the README)": "Servidor de identidade / SSO (só o portal — sem forward-auth neste repositório, ver o README)",
-    "Image update monitor (it never applies them itself)": "Monitor de atualização de imagens (nunca aplica nada sozinho)",
-    "Indexer manager": "Gerenciador de indexadores",
-    "Invoicing and invoice tracking, with no external service": "Emissão e acompanhamento de faturas, sem serviço externo",
-    "IPTV manager (streams, EPG, VOD)": "Gerenciador de IPTV (streams, EPG, VOD)",
-    "Karaoke party server — phones queue songs, one screen plays": "Servidor de karaokê — os celulares enfileiram, uma tela reproduz",
-    "Local LLM server, Open WebUI's backend": "Servidor de LLM local, backend do Open WebUI",
-    "Music server with the Subsonic API, for any phone client": "Servidor de música com a API Subsonic, para qualquer cliente de celular",
-    "Game library for emulation, played in the browser or a client": "Biblioteca de jogos para emulação, jogada no navegador ou por um cliente",
-    "Movie and TV requests (integrates with Sonarr/Radarr/Jellyfin)": "Pedidos de filmes e séries (integra com Sonarr/Radarr/Jellyfin)",
-    "Movie automation": "Automação de filmes",
-    "Music automation": "Automação de músicas",
-    "A throwaway browser others can watch and share control of": "Um navegador descartável que outros podem ver e controlar junto",
-    "Network PXE boot server": "Servidor de boot PXE pela rede",
-    "Network-wide ad and tracker blocking over DNS": "Bloqueio de anúncios e rastreadores por DNS, para a rede toda",
-    "NVR with AI object detection": "NVR com detecção de objetos por IA",
-    "Offline converters, generators and calculators — everything runs in the browser": "Conversores, geradores e calculadoras offline — tudo roda no navegador",
-    "Real-time Instagram OSINT monitor with web dashboard, activity feeds and media downloads": "Monitor OSINT do Instagram em tempo real, com painel web, feed de atividades e download de mídia",
-    "Tasks with a deadline and a project behind them":
-        "Tarefas com prazo e projeto por trás",
-    "Signing documents without sending them to a company first":
-        "Assinar documentos sem mandá-los antes para uma empresa",
-    "Comics and manga, with reading progress that follows you between devices":
-        "Quadrinhos e mangá, com o progresso de leitura acompanhando entre aparelhos",
-    "Web GUI for rclone: browse, copy and sync files across the cloud accounts in its config": "Interface web do rclone: navegar, copiar e sincronizar arquivos entre as contas de nuvem da sua configuração",
-    "Wikipedia and other libraries, read with the internet off":
-        "Wikipedia e outras bibliotecas, para ler com a internet desligada",
-    "Live logs of every container, without opening a terminal":
-        "Log ao vivo de cada container, sem abrir terminal",
-    "The house's shopping list, shared by one password":
-        "A lista de compras da casa, compartilhada por uma senha só",
-    "Bookmarks with nested tags, kept on your own server":
-        "Favoritos com tags aninhadas, guardados no seu próprio servidor",
-    "Keeps the Ferdium desktop app in sync, in place of a Franz account":
-        "Mantém o Ferdium desktop sincronizado, no lugar de uma conta Franz",
-    "Watches web pages and tells you what changed, without an account anywhere":
-        "Vigia páginas e avisa o que mudou, sem conta em lugar nenhum",
-    "Editing documents inside ownCloud, with no cloud in between":
-        "Edição de documentos dentro do ownCloud, sem nuvem no meio",
-    "Metasearch that queries other engines without profiling you":
-        "Metabusca que consulta outros motores sem traçar perfil seu",
-    "P2P file sync between devices, with no central server": "Sincronização P2P de arquivos entre dispositivos, sem servidor central",
-    "PDF manipulation — merge, split, convert, OCR, sign": "Manipulação de PDF — juntar, dividir, converter, OCR, assinar",
-    "Personal AI agent with skills and memory, exposing an OpenAI-compatible API": "Agente de IA pessoal com habilidades e memória, expondo API compatível com a da OpenAI",
-    "Personal CRM — relationships, contacts, reminders": "CRM pessoal — relacionamentos, contatos, lembretes",
-    "Photo and video backup and organisation, with face recognition and smart search": "Backup e organização de fotos e vídeos, com reconhecimento facial e busca inteligente",
-    "Plain-text recipes (CookLang) — versionable in git, with no database": "Receitas em texto puro (CookLang) — versionáveis em git, sem banco de dados",
-    "Collects metrics on a schedule and keeps the history": "Coleta métricas em intervalo e guarda o histórico",
-    "Proxmox VE web interface, for trying it without dedicating a machine": "Interface web do Proxmox VE, para experimentar sem dedicar uma máquina",
-    "Publishes containers on the tailnet automatically": "Publica containers na tailnet automaticamente",
-    "Push notification server — where the uptime-kuma, wud and zerobyte alerts go": "Servidor de notificações push — para onde vão os alertas do uptime-kuma, do wud e do zerobyte",
-    "Quick notes, self-hosted and markdown-native": "Notas rápidas, self-hosted e markdown-native",
-    "Recurring household chores, with who does them and when they are due": "Tarefas recorrentes da casa, com quem faz e quando vence",
-    "Self-hosted Anytype backend": "Backend do Anytype self-hosted",
-    "Self-hosted blog/newsletter (SQLite, development mode)": "Blog/newsletter self-hosted (SQLite, modo de desenvolvimento)",
-    "Self-hosted document manager": "Gerenciador de documentos self-hosted",
-    "Self-hosted ebook library server": "Servidor de biblioteca de ebooks self-hosted",
-    "Self-hosted Git": "Git self-hosted",
-    "Self-hosted home automation": "Automação residencial self-hosted",
-    "Self-hosted location tracking": "Rastreamento de localização self-hosted",
-    "Self-hosted media server": "Servidor de mídia self-hosted",
-    "Self-hosted password vault (Bitwarden)": "Cofre de senhas self-hosted (Bitwarden)",
-    "Self-hosted personal budgeting": "Orçamento pessoal self-hosted",
-    "Self-hosted RSS/Atom feed aggregator": "Agregador de feeds RSS/Atom self-hosted",
-    "Self-hosted Spotify music downloader": "Baixador de músicas do Spotify self-hosted",
-    "Self-hosted vehicle maintenance tracking": "Controle de manutenção de veículos self-hosted",
-    "Static file server": "Servidor de arquivos estáticos",
-    "Torrent client, with the queue in the browser": "Cliente de torrent, com a fila no navegador",
-    "Torrent client, behind the VPN": "Cliente de torrent, atrás da VPN",
-    "TV series automation": "Automação de séries",
-    "Uptime monitor for the services and the tailnet": "Monitor de disponibilidade dos serviços e da tailnet",
-    "Usenet client": "Cliente de Usenet",
-    "Web interface for yt-dlp — paste the URL and the video lands on disk": "Interface web para o yt-dlp — cole a URL e o vídeo cai no disco",
-    "WhatsApp API gateway — sessions, webhooks and message sending over HTTP": "Gateway de API do WhatsApp — sessões, webhooks e envio de mensagens por HTTP",
-    "Workflow automation via a visual node editor": "Automação de fluxos de trabalho por editor visual de nós",
-    "Workout planning and tracking, with an exercise database and body measurements": "Planejamento e acompanhamento de treinos, com base de exercícios e medidas corporais",
-    "ZimaOS in a VM — the CasaOS-derived NAS interface, without the hardware": "ZimaOS numa VM — a interface de NAS derivada do CasaOS, sem o hardware",
-}
-
-# The dashboard's groups, by what the service is for — a name is only useful
-# here if it tells you where to look for something.
-GRUPOS = {
-    "AI": "IA",
-    "Automation": "Automação",
-    "Downloads": "Downloads",
-    "Files": "Arquivos",
-    "Home": "Casa",
-    "Media": "Mídia",
-    "Monitoring": "Monitoramento",
-    "Network & Security": "Rede e Segurança",
-    "Personal": "Pessoal",
-    "Productivity": "Produtividade",
-    "Tools": "Ferramentas",
-    "Virtual Machines": "Máquinas Virtuais",
-}
-
-
 _TODOS_CONFIG = None
 
 
@@ -2312,26 +2172,13 @@ def unit_bytes(source, access, href_local):
       tailnet  keeps the labels                                     (default)
       both     keeps the labels
 
-    And `homepage.href` follows what makes sense for each: in `local` only the
-    LAN address exists; in `tailnet` and `both` the link is the tailnet name,
-    which works from anywhere. Whoever prefers the short link, straight to the
-    LAN without the proxy hop, adds `--href-local`.
+    `--href-local` (the dashboard link straight to the LAN) lost its link when the
+    dashboard labels went; what it still means is the tailnet node WITH the LAN port
+    left open, which is what `both` is, so the two write the same unit.
     """
+    if href_local and access == "tailnet":
+        access = "both"          # the same unit: the node registered, the LAN port left open
     data = source.read_bytes()
-
-    # The dashboard reads these labels; swapping them here is the same place
-    # `--access local` rewrites `homepage.href`. A value with no entry keeps the
-    # English rather than failing. Quotes are re-added when the translation
-    # brings in a space the English did not have, because an unquoted value is
-    # truncated at the first one (rule 12 of the conventions).
-    if qhui.PTBR:
-        for chave, tabela in ((b"description", DESCRICOES), (b"group", GRUPOS)):
-            def troca(m, tabela=tabela):
-                bruto = m.group(2).decode()
-                novo = tabela.get(bruto.strip('"'), bruto.strip('"'))
-                aspas = bruto.startswith('"') or " " in novo
-                return m.group(1) + (f'"{novo}"' if aspas else novo).encode()
-            data = re.sub(rb'(?m)^(Label=homepage\.' + chave + rb'=)(.*)$', troca, data)
 
     # On the tailnet and nowhere else: the port tsdproxy proxies is commented
     # out, so nothing of it is open on the LAN. tsdproxy still reaches the
@@ -2339,7 +2186,7 @@ def unit_bytes(source, access, href_local):
     # IP on the internal port, which is why tsdproxy.autodetect is on the units.
     # Only that one port: a unit can also publish DNS, MQTT or a torrent port,
     # which devices reach directly and which no proxy stands in front of.
-    if access == "tailnet" and not href_local:
+    if access == "tailnet":
         text = data.decode()
         web = next((v.rpartition(":")[2].partition("/")[0]
                     for c, v in directives(text)
@@ -2352,25 +2199,8 @@ def unit_bytes(source, access, href_local):
             text = re.sub(r"(?m)^PublishPort=.*$", hide, text)
             data = text.encode()
 
-    if access == "local" or href_local:
-        text = data.decode()
-        port = {}
-        for key, value in directives(text):
-            if key == "PublishPort":
-                parts = value.partition("/")[0].split(":")
-                if len(parts) >= 2:
-                    port[parts[-1]] = parts[-2]
-        internal = next((v.partition("=")[2].rpartition(":")[2].partition("/")[0]
-                         for c, v in directives(text)
-                         if c == "Label" and v.startswith("tsdproxy.port.web")), None)
-        host = port.get(internal) or (list(port.values())[0] if len(port) == 1 else None)
-        if host:
-            text = re.sub(r"(?m)^(Label=homepage\.href=).*$",
-                          rf"\1http://{local_ip()}:{host}", text)
-        if access == "local":
-            text = re.sub(r"(?m)^(Label=tsdproxy\.)",
-                          r"# disabled by --access local: \1", text)
-        data = text.encode()
+    if access == "local":
+        data = re.sub(r"(?m)^(Label=tsdproxy\.)", r"# disabled by --access local: \1", data.decode()).encode()
     return data
 
 
@@ -2854,8 +2684,8 @@ def addresses(service, tailnet):
     Everything comes from the unit itself: `tsdproxy.port.web` says which
     INTERNAL port is the web one (a service may publish several, like traccar
     with the OsmAnd protocol port), the matching `PublishPort` gives the host
-    one, and `homepage.href` already carries the tailnet URL, with only
-    ${TAILNET} left to resolve.
+    one, and the tailnet URL is the node's name (`tsdproxy.name`) under the
+    tailnet's domain.
     """
     ip = local_ip()
     out = []
@@ -2871,17 +2701,18 @@ def addresses(service, tailnet):
             if key == "Label":
                 k, _, v = value.partition("=")
                 labels[k] = v.strip('"')
-        href = labels.get("homepage.href", "")
         internal = labels.get("tsdproxy.port.web", "").rpartition(":")[2].partition("/")[0]
-        # It has a UI if it shows up clickable on the homepage or declares the
-        # web port to tsdproxy. An MQTT broker and a sync backend publish a port
-        # without having an interface — any-sync-bundle has homepage labels but
-        # no href for exactly that reason.
-        if not href and not internal:
-            continue
-
         published = [v.partition("/")[0].split(":") for c, v in ds if c == "PublishPort"]
         published = [x for x in published if len(x) >= 2]
+        # It has a UI if it declares the web port to tsdproxy, or names a node and declares no
+        # other port: tsdproxy autodetects the one it publishes (tsdproxy's own dashboard). An
+        # MQTT broker and a sync backend publish ports without having an interface —
+        # any-sync-bundle names a node, but only for its sync and quic ports.
+        outras = any(k.startswith("tsdproxy.port.") and k != "tsdproxy.port.web" for k in labels)
+        autodetecta = "tsdproxy.name" in labels and not outras and not internal and len(published) == 1
+        if not internal and not autodetecta:
+            continue
+
         host = None
         if internal:
             host = next((x[-2] for x in published if x[-1] == internal), None)
@@ -2889,10 +2720,8 @@ def addresses(service, tailnet):
             # Without the label (tsdproxy auto-detects), a single port leaves no
             # doubt about which one is the interface.
             host = published[0][-2]
-        if tailnet:
-            href = href.replace("${TAILNET}", tailnet)
-        elif "${TAILNET}" in href:
-            href = ""
+        nome_no = labels.get("tsdproxy.name") or container_name(f)
+        href = "https://" + ".".join((nome_no, tailnet, "ts", "net")) if tailnet else ""
         out.append((f.stem,
                     f"http://{ip}:{host}" if host else None,
                     href or None))
@@ -3049,18 +2878,18 @@ def selftest():
             "[Container]\n"
             "PublishPort=8099:8082\n"
             "PublishPort=5056:5055/udp\n"
-            "Label=tsdproxy.port.web=443/https:8082/http\n"
-            "Label=homepage.href=https://x.${TAILNET}.ts.net\n")
+            "Label=tsdproxy.name=x\n"
+            "Label=tsdproxy.port.web=443/https:8082/http\n")
         # a broker with no web: must not show up
         (dd / "y.container").write_text("[Container]\nPublishPort=1884:1883\n")
-        # a backend with homepage labels but NO href: also not a UI
+        # a backend that names a node but only for its own protocol ports: not a UI
         (dd / "z.container").write_text(
-            "[Container]\nPublishPort=33010:33010\n"
-            "Label=homepage.name=Backend\n")
-        # like tsdproxy: href, no port.web, a single port
+            "[Container]\nPublishPort=33010:33010\nPublishPort=33020:33020/udp\n"
+            "Label=tsdproxy.name=backend\nLabel=tsdproxy.port.sync=33010/tcp:33010/tcp\n")
+        # like tsdproxy itself: a node name, no port labels, a single published port
         (dd / "w.container").write_text(
             "[Container]\nPublishPort=8080:8080\n"
-            "Label=homepage.href=https://dash.${TAILNET}.ts.net\n")
+            "Label=tsdproxy.name=dash\n")
         # .units, because addresses() now narrows to the picked unit like
         # every other accessor instead of re-globbing the folder.
         fake = types.SimpleNamespace(dir=dd, units=sorted(dd.glob("*.container")))
@@ -3238,13 +3067,15 @@ def selftest():
     assert run_read(["false"]) is None
     assert run_read(["comando-que-nao-existe-xyz"]) is None
 
-    # every dashboard label a unit carries has a Portuguese entry
-    for chave, tabela in (("description", DESCRICOES), ("group", GRUPOS)):
-        usadas = set()
-        for u in APPS.glob("*/*.container"):
-            usadas |= {v.strip('"') for v in re.findall(
-                r'(?m)^Label=homepage\.' + chave + r'=(.*)$', u.read_text())}
-        assert not usadas - set(tabela), (chave, sorted(usadas - set(tabela)))
+    # every app's catalog group is one we have a Portuguese name for, and no unit still carries the old labels
+    import configparser as _cp
+    for ini in APPS.glob("*/install.ini"):
+        c = _cp.ConfigParser(interpolation=None)
+        c.read(ini)
+        g = c.get("store", "group", fallback="").strip() if c.has_section("store") else ""
+        assert not g or g in GRUPOS, (ini, g)
+    for u in APPS.glob("*/*.container"):
+        assert not re.search(r"(?m)^#?\s*Label=(homepage|wud)\.", u.read_text()), u
 
     # a picked unit backs up its own data, and nothing a sibling shares
     with tempfile.TemporaryDirectory() as d:
@@ -3338,17 +3169,6 @@ def selftest():
         qhui.PTBR = antes_pt
         argparse._, argparse.ngettext = guardado
 
-    # a group whose Portuguese name has a space stays quoted, or systemd cuts it
-    grupo = APPS / "vm" / "vm-windows.container"
-    antes_pt = qhui.PTBR
-    try:
-        qhui.PTBR = True
-        assert 'Label=homepage.group="Máquinas Virtuais"'.encode() in unit_bytes(grupo, "both", False)
-        qhui.PTBR = False
-        assert b'Label=homepage.group="Virtual Machines"' in unit_bytes(grupo, "both", False)
-    finally:
-        qhui.PTBR = antes_pt
-
     # removing one unit of a folder touches only what is that unit's own
     def _um(nome):
         pasta, only = find_app(nome)
@@ -3375,16 +3195,12 @@ def selftest():
         write_unit(src, alvo, "tailnet", False)
         assert alvo.read_bytes() != src.read_bytes(), "tailnet comenta a porta"
         assert unit_bytes(src, "tailnet", False) == alvo.read_bytes()
-        # `both` changes nothing — in English. In Portuguese the dashboard
-        # description is swapped, which is a change by design.
+        # `both` changes nothing, in either language: the unit carries no display text to translate
         antes_pt = qhui.PTBR
         try:
-            qhui.PTBR = False
-            assert unit_bytes(src, "both", False) == src.read_bytes()
-            qhui.PTBR = True
-            traduzida = unit_bytes(src, "both", False)
-            assert traduzida != src.read_bytes()
-            assert b"Notas r" in traduzida, "a descrição do memos vira português"
+            for pt in (False, True):
+                qhui.PTBR = pt
+                assert unit_bytes(src, "both", False) == src.read_bytes()
         finally:
             qhui.PTBR = antes_pt
 
@@ -3536,12 +3352,12 @@ def selftest():
         for modo in ACCESS_MODES:
             write_unit(src, alvo, modo, False)
             assert installed_access(alvo, src)[0] == modo, modo
-        write_unit(src, alvo, "both", True)
-        assert installed_access(alvo, src)[1] is True, "--href-local is representable"
+        write_unit(src, alvo, "tailnet", True)
+        assert installed_access(alvo, src) == ("both", False), "--href-local is `both` now: the same bytes"
         # A unit no mode changes says so, instead of guessing "both".
         sidecar = APPS / "immich" / "immich-postgres.container"
         write_unit(sidecar, alvo, "local", False)
-        assert installed_access(alvo, sidecar) == (None, None), \
+        assert installed_access(alvo, sidecar) == (None, False), \
             "no tsdproxy label: the mode cannot be told from the bytes"
 
     # only the proxied port is hidden, and only on the tailnet: a unit that also
@@ -4424,15 +4240,9 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude, falhas=None):
             "drift": (unit_deriva(s, p) or None) if p else None,
         })
     principal = s.main_unit()
-    # The category is the dashboard group the units already carry — the main
-    # unit's when it has one, else the first that does. Infrastructure with no
-    # dashboard entry (homepage itself, postfix) has none, and says so.
-    grupos = [v.partition("=")[2].strip('"')
-              for u in ([principal] if principal else []) + s.units
-              if u.suffix == ".container"
-              for k, v in directives_of(u)
-              if k == "Label" and v.startswith("homepage.group=")]
-    grupo = grupos[0] if grupos else None
+    # The category is `[store] group` in install.ini. Infrastructure with no place in the
+    # catalog's groups (homepage itself, postfix) has none, and says so.
+    grupo = s.ini.get("store", "group", fallback="").strip() or None if s.ini.has_section("store") else None
     return {
         "id": d,
         "name": vitrine.get("name", d),

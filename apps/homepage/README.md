@@ -4,7 +4,12 @@
 
 **[🇧🇷 Leia em português](./README.pt-BR.md)**
 
-A dashboard that discovers and organises the other containers by itself through labels, with no config to edit per new service.
+A dashboard that discovers and organises containers through `homepage.*` labels.
+
+> **The units in this repository no longer carry those labels** (the store's catalog and the
+> `tsdproxy` dashboard took over their jobs), so on its own Homepage lists only what you give it:
+> the services in `config/services.yaml`, or labels you add to a unit yourself, as in the example
+> below. It stays here for people who want a hand-made dashboard.
 
 ## Install
 

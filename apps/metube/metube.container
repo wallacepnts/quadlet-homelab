@@ -29,15 +29,6 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=metube
 Label=tsdproxy.port.web=443/https:8081/http
 
-Label=homepage.group=Downloads
-Label=homepage.name=MeTube
-Label=homepage.icon=metube.svg
-Label=homepage.href=https://metube.${TAILNET}.ts.net
-Label=homepage.description="Web interface for yt-dlp — paste the URL and the video lands on disk"
-
-Label=wud.watch=true
-Label=wud.tag.include=^[0-9]{4}.[0-9]{2}.[0-9]{2}$
-
 [Service]
 Restart=always
 TimeoutStartSec=60

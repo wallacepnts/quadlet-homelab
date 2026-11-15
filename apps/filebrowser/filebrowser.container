@@ -35,15 +35,6 @@ Label=tsdproxy.name=filebrowser
 Label=tsdproxy.port.web=443/https:8080/http
 Label=tsdproxy.dash.icon=sh/filebrowser-quantum
 
-Label=homepage.group=Files
-Label=homepage.name="FileBrowser Quantum"
-Label=homepage.icon=https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/filebrowser-quantum.svg
-Label=homepage.href=https://filebrowser.${TAILNET}.ts.net
-Label=homepage.description="A web file manager with search, previews and WebDAV"
-
-Label=wud.watch=true
-Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+-stable$
-
 [Service]
 Restart=always
 TimeoutStartSec=90

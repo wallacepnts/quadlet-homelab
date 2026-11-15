@@ -4,7 +4,12 @@
 
 **[🇺🇸 Read in English](./README.md)**
 
-Dashboard que descobre e organiza os outros containers sozinho via labels, sem editar config a cada serviço novo.
+Dashboard que descobre e organiza containers por labels `homepage.*`.
+
+> **As units deste repositório não carregam mais essas labels** (o catálogo da loja e o painel do
+> `tsdproxy` assumiram o papel delas), então o Homepage sozinho lista só o que você der a ele: os
+> serviços de `config/services.yaml`, ou labels que você acrescentar a uma unit, como no exemplo
+> abaixo. Ele continua aqui para quem quer um painel feito à mão.
 
 ## Instalar
 

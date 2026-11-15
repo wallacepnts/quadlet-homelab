@@ -244,8 +244,7 @@ Without a tailnet, set the rule once and every install follows it:
 qh --set-access local
 ```
 
-It points the dashboard link at the LAN address and comments the `tsdproxy.*`
-labels out instead of deleting them. Turning it on later is an update, which
+It comments the `tsdproxy.*` labels out instead of deleting them. Turning it on later is an update, which
 keeps the data:
 
 ```bash

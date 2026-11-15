@@ -38,14 +38,6 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=karakeep
 Label=tsdproxy.port.web=443/https:3000/http
 
-Label=homepage.group=Productivity
-Label=homepage.name=Karakeep
-Label=homepage.icon=karakeep.svg
-Label=homepage.href=https://karakeep.${TAILNET}.ts.net
-Label=homepage.description="Bookmark manager with full-text search and automatic page archiving"
-
-Label=wud.watch=true
-
 [Service]
 Restart=always
 TimeoutStartSec=60

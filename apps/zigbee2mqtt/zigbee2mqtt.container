@@ -35,14 +35,6 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=zigbee2mqtt
 Label=tsdproxy.port.web=443/https:8080/http
 
-Label=homepage.group=Home
-Label=homepage.name=Zigbee2MQTT
-Label=homepage.icon=zigbee2mqtt.svg
-Label=homepage.href=https://zigbee2mqtt.${TAILNET}.ts.net
-Label=homepage.description="A bridge between Zigbee devices and MQTT, with no proprietary hub"
-
-Label=wud.watch=true
-
 [Service]
 Restart=always
 TimeoutStartSec=90

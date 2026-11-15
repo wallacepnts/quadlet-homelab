@@ -31,15 +31,6 @@ Label=tsdproxy.name=copyparty
 Label=tsdproxy.port.web=443/https:3923/http
 Label=tsdproxy.dash.icon=sh/copyparty-light
 
-Label=homepage.group=Files
-Label=homepage.name=Copyparty
-Label=homepage.icon=copyparty.svg
-Label=homepage.href=https://copyparty.${TAILNET}.ts.net
-Label=homepage.description="File server with uploads from the browser, the phone or WebDAV"
-
-Label=wud.watch=true
-Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+$
-
 [Service]
 Restart=always
 TimeoutStartSec=60

@@ -65,12 +65,6 @@ Label=tsdproxy.enable=true
 Label=tsdproxy.name=<app>
 Label=tsdproxy.port.web=443/https:<porta>/http
 
-Label=homepage.group=<group>
-Label=homepage.name=<App>
-Label=homepage.icon=<url>
-Label=homepage.href=https://<app>.${TAILNET}.ts.net
-Label=homepage.description="<uma linha>"
-
 [Service]
 Restart=always
 
@@ -99,11 +93,13 @@ branco — um comentário viaja com a linha abaixo dele, um bloco comentado (um
 ativas de que fala, e chaves repetidas mantêm a ordem. Foi conferido contra o
 que o Quadlet gera para cada unit: os argumentos do podman saem os mesmos.
 
-O `homepage.group` é um de AI, Automation, Downloads, Files, Home, Media,
-Monitoring, `"Network & Security"`, Personal, Productivity, Tools e
-`"Virtual Machines"` — entre aspas quando tem espaço. O nome é traduzido na
-instalação. Valor fora dessa lista reprova o `qh --selftest`, que é o que
-impede o dashboard de criar um grupo de um item só.
+Uma unit não leva labels de painel nem de vigia de atualização (`homepage.*`, `wud.*`): o
+catálogo da loja lê o que mostra de outro lugar. Nome, ícone e descrição vêm das tabelas dos
+README; a categoria é `[store] group` no `install.ini` do serviço, uma de AI, Automation,
+Downloads, Files, Home, Media, Monitoring, Network & Security, Personal, Productivity, Tools e
+Virtual Machines (a loja mostra o nome em português). Valor fora dessa lista reprova o
+`check.py`, que é o que impede o catálogo de criar um grupo de um item só. O endereço da
+tailnet é derivado de `tsdproxy.name`.
 
 `%h` é a home do usuário, expandida pelo systemd. O `${TAILNET}` vem do
 `~/.config/environment.d/tailnet.conf` e continua literal no `systemctl cat` —

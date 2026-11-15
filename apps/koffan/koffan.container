@@ -33,15 +33,6 @@ Label=tsdproxy.name=koffan
 Label=tsdproxy.port.web=443/https:8080/http
 Label=tsdproxy.dash.icon=mdi/cart-outline
 
-Label=homepage.group=Home
-Label=homepage.name=Koffan
-Label=homepage.icon=koffan.png
-Label=homepage.href=https://koffan.${TAILNET}.ts.net
-Label=homepage.description="The house's shopping list, shared by one password"
-
-Label=wud.watch=true
-Label=wud.tag.include=^v[0-9]+.[0-9]+.[0-9]+$
-
 [Service]
 Restart=always
 TimeoutStartSec=90

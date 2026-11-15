@@ -120,7 +120,7 @@ Sai com código diferente de zero quando há algo precisando de atenção.
 
 `qh --catalog` dá a mesma resposta em JSON, para uma interface. Ele traz também
 o que a vitrine precisa: nome, ícone e descrição (en/pt), lidos das tabelas dos
-READMEs, a imagem que cada unit fixa e a instalada, mais a categoria, que vem do `homepage.group`, os
+READMEs, a imagem que cada unit fixa e a instalada, mais a categoria, que vem do `[store] group`, os
 endereços web e o que a instalação precisa perguntar (secrets `manual` e
 `[vars]` com o padrão). Só lê. Uma interface montada em cima dele instala com o
 mesmo `qh <app> --apply`, então existe um caminho de instalação, não dois. Para
@@ -164,10 +164,10 @@ depois o que está instalado.
 ## Acesso
 
 ```bash
-qh traccar --apply --access local     # sem tsdproxy, link do dashboard pra LAN
+qh traccar --apply --access local     # sem tsdproxy; só pela LAN
 qh traccar --apply --access tailnet   # padrão
 qh traccar --apply --access both
-qh traccar --apply --href-local       # na tailnet, link do dashboard pra LAN
+qh traccar --apply --href-local       # o mesmo que --access both (mantido por hábito)
 ```
 
 O `--local` é atalho pra `--access local`. As labels `tsdproxy.*` são

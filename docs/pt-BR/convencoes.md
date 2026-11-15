@@ -98,7 +98,7 @@ próprio README, linkando o repositório e o autor originais.
 ### 12. `Label=`/valores com espaço precisam de aspas
 
 ```ini
-Label=homepage.description="Publica containers na tailnet automaticamente"
+Label=example.description="Publica containers na tailnet automaticamente"
 ```
 
 Sem aspas, o Quadlet corta o valor no primeiro espaço (vira só
@@ -276,11 +276,11 @@ na hora que o systemd de fato inicia o processo, não na hora de gerar o
 arquivo. Testar com `podman inspect <container> --format
 '{{json .Mounts}}'`, não confiar só no `systemctl cat`.
 
-**Funciona em `Label=` também, não só em `Volume=`** — todo
-`homepage.href` deste repositório usa `${TAILNET}` por isso:
+**Funciona em `Environment=` e `Label=` também, não só em `Volume=`** — uma unit que
+precisa saber o próprio endereço público usa `${TAILNET}` por isso (o postiz faz):
 
 ```ini
-Label=homepage.href=https://meu-app.${TAILNET}.ts.net
+Environment=MAIN_URL=https://postiz.${TAILNET}.ts.net
 ```
 
 ```bash
@@ -292,8 +292,7 @@ Mantém o repo publicável sem expor o nome da tailnet, e sobrevive a
 `wget` de unit atualizada — diferente de editar o valor direto no
 arquivo, que o próximo download sobrescreve. **Variável não definida
 expande pra string vazia, em silêncio** (`https://meu-app..ts.net`) —
-conferir com `podman inspect` depois de definir, ver
-homepage.
+conferir com `podman inspect` depois de definir.
 
 ### 20. Hardening (`ReadOnly`/`DropCapability`): testar o app, não o container
 

@@ -41,15 +41,6 @@ Label=tsdproxy.name=hermes
 Label=tsdproxy.port.web=443/https:9119/http
 Label=tsdproxy.dash.icon=mdi/robot
 
-Label=homepage.group=AI
-Label=homepage.name="Hermes Agent"
-Label=homepage.icon=https://cdn.jsdelivr.net/gh/NousResearch/hermes-agent@main/website/static/img/logo.png
-Label=homepage.href=https://hermes.${TAILNET}.ts.net
-Label=homepage.description="Personal AI agent with skills and memory, exposing an OpenAI-compatible API"
-
-Label=wud.watch=true
-Label=wud.tag.include=^v[0-9]+.[0-9]+.[0-9]+$
-
 [Service]
 Restart=always
 TimeoutStartSec=300

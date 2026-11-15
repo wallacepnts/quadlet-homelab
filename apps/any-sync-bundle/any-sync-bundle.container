@@ -36,14 +36,6 @@ Label=tsdproxy.port.sync=33010/tcp:33010/tcp
 Label=tsdproxy.port.quic=33020/udp:33020/udp
 Label=tsdproxy.dash.icon=si/anytype
 
-Label=homepage.group=Productivity
-Label=homepage.name=Any-Sync-Bundle
-Label=homepage.icon=anytype.svg
-Label=homepage.description="Self-hosted Anytype backend"
-
-Label=wud.watch=true
-Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+-[0-9]+-[0-9]+-[0-9]+$
-
 [Service]
 Restart=always
 TimeoutStartSec=90

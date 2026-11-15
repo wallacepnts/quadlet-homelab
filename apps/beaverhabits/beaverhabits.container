@@ -32,15 +32,6 @@ Label=tsdproxy.name=habits
 Label=tsdproxy.port.web=443/https:8080/http
 Label=tsdproxy.dash.icon=mdi/check-circle-outline
 
-Label=homepage.group=Personal
-Label=homepage.name="Beaver Habits"
-Label=homepage.icon=https://avatars.githubusercontent.com/u/6239652?s=200&v=4
-Label=homepage.href=https://habits.${TAILNET}.ts.net
-Label=homepage.description="Habit tracking without goals — just the streak"
-
-Label=wud.watch=true
-Label=wud.tag.include=^[0-9]+.[0-9]+.[0-9]+$
-
 [Service]
 Restart=always
 TimeoutStartSec=90

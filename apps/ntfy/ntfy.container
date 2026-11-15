@@ -39,15 +39,6 @@ Label=tsdproxy.autodetect=true
 Label=tsdproxy.name=ntfy
 Label=tsdproxy.port.web=443/https:2586/http
 
-Label=homepage.group=Monitoring
-Label=homepage.name=ntfy
-Label=homepage.icon=ntfy.svg
-Label=homepage.href=https://ntfy.${TAILNET}.ts.net
-Label=homepage.description="Push notification server — where the uptime-kuma, wud and zerobyte alerts go"
-
-Label=wud.watch=true
-Label=wud.tag.include=^v[0-9]+.[0-9]+.[0-9]+$
-
 [Service]
 Restart=always
 TimeoutStartSec=60
