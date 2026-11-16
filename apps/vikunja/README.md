@@ -12,38 +12,11 @@ Next to [donetick](../donetick), the split is what each is for. Donetick is for
 the chores that come back — bins on Tuesday, filter every six months. This is
 for the work that ends: a move, a renovation, a trip.
 
-## Install
-
-```bash
-qh vikunja            # shows the plan
-qh vikunja --apply
-```
+## First run
 
 Open `https://vikunja.<your-tailnet>.ts.net` and register. Then set
 `VIKUNJA_SERVICE_ENABLEREGISTRATION=false` in the `.env` and restart, or anyone
 who reaches your tailnet can create an account.
-
-<details>
-<summary><b>Manual install (advanced)</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd ~/.config/containers/env
-mkdir -p ~/.config/containers/volumes/vikunja/{db,files}
-
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/vikunja/vikunja.container
-wget -O ~/.config/containers/env/vikunja.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/vikunja/.env.example
-# edit ~/.config/containers/env/vikunja.env: VIKUNJA_SERVICE_PUBLICURL
-
-# The container runs as uid 1000, which is not yours after the mapping
-podman unshare chown -R 1000:1000 ~/.config/containers/volumes/vikunja
-
-systemctl --user daemon-reload
-systemctl --user start vikunja
-```
-
-</details>
 
 ## Files
 
@@ -79,43 +52,11 @@ of it — so `CMD-SHELL` would have no shell to run in.
 
 ## Update
 
-```bash
-qh vikunja --update --apply
-```
-
-The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh vikunja --update --latest --apply` (the store's Update button does the same). It migrates the database on start, which is why the release
-notes are worth a look before a major bump.
+It migrates the database on start, which is why the release notes are worth a look before a major bump.
 
 ## Backup
 
-```bash
-qh vikunja --backup --apply --out ~/backups
-```
-
 Stops it, packs both volumes and the `.env`, starts it again.
-
-To restore, over the current data:
-
-```bash
-qh vikunja --restore ~/backups/vikunja-20260811-1200.tar.gz --apply
-```
-
-## Remove
-
-```bash
-qh vikunja --remove --apply           # stops it, keeps the tasks
-qh vikunja --remove --purge --apply   # and deletes them
-```
-
-## Commands
-
-```bash
-systemctl --user status vikunja
-podman logs -f vikunja
-
-# a user, without the interface
-podman exec vikunja /app/vikunja/vikunja user list
-```
 
 ## Credits
 

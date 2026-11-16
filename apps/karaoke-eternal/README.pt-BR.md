@@ -8,12 +8,7 @@ Karaokê com a sua própria biblioteca. Cada um enfileira música pelo celular, 
 uma tela — TV, notebook — roda o player em tela cheia. O player é só uma página
 do mesmo app, então não precisa instalar nada.
 
-## Instalação
-
-```bash
-qh karaoke-eternal            # mostra o plano
-qh karaoke-eternal --apply
-```
+## Primeiro acesso
 
 Coloque os arquivos de karaokê em
 `~/.config/containers/volumes/karaoke-eternal/media` e abra
@@ -23,25 +18,6 @@ em Media Folders e mande varrer.
 
 Ele lê CDG+MP3 e MP4; o nome do arquivo é o que ele interpreta como artista e
 título, então `Artista - Título.mp4` é o formato a mirar.
-
-<details>
-<summary><b>Instalação manual</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd ~/.config/containers/env
-mkdir -p ~/.config/containers/volumes/karaoke-eternal/{config,media}
-podman unshare chown -R 1000:1000 ~/.config/containers/volumes/karaoke-eternal
-
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/karaoke-eternal/karaoke-eternal.container
-wget -O ~/.config/containers/env/karaoke-eternal.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/karaoke-eternal/.env.example
-
-systemctl --user daemon-reload
-systemctl --user start karaoke-eternal
-```
-
-</details>
 
 ## Arquivos
 
@@ -65,44 +41,13 @@ Uma sala é o que um player entra; a fila pertence à sala, não ao servidor. É
 assim que duas festas na mesma casa não dividem fila, e é também por isso que o
 player pergunta a sala antes de começar.
 
-## Atualizar
-
-```bash
-qh karaoke-eternal --update --apply
-```
-
-A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh karaoke-eternal --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
-
 ## Backup
-
-```bash
-qh karaoke-eternal --backup --apply --out ~/backups
-```
 
 Para o serviço, empacota o banco, a mídia e o `.env`, e religa.
 
-Para restaurar, por cima dos dados atuais:
-
-```bash
-qh karaoke-eternal --restore ~/backups/karaoke-eternal-20260810-1200.tar.gz --apply
-```
-
 ## Remover
 
-```bash
-qh karaoke-eternal --remove --apply           # para, mantém os dados
-qh karaoke-eternal --remove --purge --apply   # e apaga os volumes e o .env
-```
-
 O `--purge` apaga a mídia junto — ela fica num volume como todo o resto.
-
-## Comandos
-
-```bash
-systemctl --user status karaoke-eternal
-podman logs -f karaoke-eternal
-podman exec karaoke-eternal wget -q --spider http://127.0.0.1:8080/ && echo ok
-```
 
 ## Créditos
 

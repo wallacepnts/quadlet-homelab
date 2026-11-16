@@ -11,12 +11,7 @@ service knows how the mail leaves the house.
 Sends only. It is not an inbox, and there is no web interface — the mail goes
 in on port **1587** and out through whatever `RELAYHOST` you configure.
 
-## Install
-
-```bash
-qh postfix            # shows the plan
-qh postfix --apply
-```
+## First run
 
 Then edit `~/.config/containers/env/postfix.env`: `POSTFIX_myhostname`, and a
 `RELAYHOST` if you have one (see below). Restart with `qh postfix --update
@@ -28,24 +23,6 @@ Point an app at it — host `<host-ip>`, port **1587**, no authentication:
 SMTP_HOST=<host-ip>
 SMTP_PORT=1587
 ```
-
-<details>
-<summary><b>Manual install</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd ~/.config/containers/env
-mkdir -p ~/.config/containers/volumes/postfix/spool
-
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/postfix/postfix.container
-wget -O ~/.config/containers/env/postfix.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/postfix/.env.example
-
-systemctl --user daemon-reload
-systemctl --user start postfix
-```
-
-</details>
 
 ## Files
 
@@ -93,52 +70,13 @@ Whoever reaches port 1587 sends mail as you. Two settings decide the reach:
 The port is published on the LAN, not on the tailnet: tsdproxy proxies HTTP,
 and this speaks SMTP. On a network you do not control, narrow both.
 
-## Update
-
-```bash
-qh postfix --update --apply
-```
-
-The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh postfix --update --latest --apply` (the store's Update button does the same).
-
 ## Backup
-
-```bash
-qh postfix --backup --apply --out ~/backups
-```
 
 It stops the service, packs the queue and the `.env`, and starts it again.
 
-To restore, over the current data:
-
-```bash
-qh postfix --restore ~/backups/postfix-20260809-1200.tar.gz --apply
-```
-
 ## Remove
 
-```bash
-qh postfix --remove --apply           # stops it, keeps the queue
-qh postfix --remove --purge --apply   # and deletes the volume and the .env
-```
-
 `--purge` throws away anything still queued.
-
-## Commands
-
-```bash
-systemctl --user status postfix
-podman logs -f postfix
-podman exec postfix postqueue -p     # what is waiting, and why
-podman exec postfix postqueue -f     # try again now
-```
-
-Send a test message from the host:
-
-```bash
-python3 -c "import smtplib; smtplib.SMTP('127.0.0.1', 1587).sendmail(
-  'homelab@test.local', ['you@example.com'], 'Subject: hello\n\nit works')"
-```
 
 ## Credits
 

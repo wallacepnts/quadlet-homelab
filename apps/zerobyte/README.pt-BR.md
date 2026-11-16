@@ -6,54 +6,9 @@
 
 Automatiza backup (via Restic) dos dados de todos os outros serviços deste repositório.
 
-## Instalar
-
-```bash
-qh zerobyte            # mostra o plano
-qh zerobyte --apply
-```
+## Primeiro acesso
 
 Abrir `http://<ip-do-host>:4096` ou `https://zerobyte.<your-tailnet>.ts.net`.
-
-<details>
-<summary><b>Instalação manual</b></summary>
-
-```bash
-# 1. Baixar a unit (sem precisar clonar o repositório)
-mkdir -p ~/.config/containers/systemd
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/zerobyte/zerobyte.container
-
-# 2. Diretórios — bind mount exige que já existam antes do start
-mkdir -p ~/.config/containers/volumes/zerobyte/data
-mkdir -p ~/backups/zerobyte-local
-mkdir -p ~/.config/rclone
-
-# 3. Configurar o destino rclone — interativo, roda no HOST (não no
-#    container). Escolher o provedor (S3, Google Drive, Backblaze B2 etc.)
-#    quando o assistente perguntar.
-rclone config
-
-# 4. APP_SECRET — chave de 32+ bytes usada pelo Zerobyte pra encriptar o
-#    que ele guarda no próprio banco (não é a senha do repositório Restic
-#    — essa é definida na hora de criar cada repositório, pela interface)
-mkdir -p ~/.config/containers/secrets/zerobyte
-openssl rand -hex 32 | tr -d '\n' > ~/.config/containers/secrets/zerobyte/app-secret.txt
-chmod 600 ~/.config/containers/secrets/zerobyte/app-secret.txt
-podman secret create zerobyte-app-secret ~/.config/containers/secrets/zerobyte/app-secret.txt
-
-# 5. Env não-secreto — baixar o exemplo e editar
-mkdir -p ~/.config/containers/env
-wget -O ~/.config/containers/env/zerobyte.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/zerobyte/.env.example
-# editar ~/.config/containers/env/zerobyte.env: BASE_URL e RESTIC_HOSTNAME
-
-# 6. Subir
-systemctl --user daemon-reload
-systemctl --user start zerobyte
-```
-
-</details>
 
 ## Arquivos
 
@@ -212,49 +167,9 @@ também dispara a primeira cópia, então o repositório novo se enche na hora e
 não só na próxima execução. O `--no-mirror` tira o espelho de todos os jobs —
 pela interface isso seria um a um.
 
-## Atualizar
-
-```bash
-qh zerobyte --update --apply
-```
-
-A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh zerobyte --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
-
-## Backup
-
-```bash
-qh zerobyte --backup --apply --out ~/backups
-```
-
-Ele para o serviço, empacota os dados, o `.env` e os secrets, e sobe de novo.
-A frio de propósito: copiar banco vivo dá um arquivo que só falha na hora de
-restaurar.
-
-Pra restaurar, por cima dos dados atuais:
-
-```bash
-qh zerobyte --restore ~/backups/zerobyte-20260809-1200.tar.gz --apply
-```
-
-Ele pede que você digite `zerobyte` pra confirmar, porque os dados atuais são
-apagados antes de o arquivo ser extraído.
-
 ## Remover
 
-```bash
-qh zerobyte --remove --apply           # para e tira, mantendo os dados
-qh zerobyte --remove --purge --apply   # e apaga volumes, secrets e .env
-```
-
-O `--purge` também pede o nome digitado. O nó da tailnet não é desregistrado
-por isso — isso é no admin do Tailscale.
-
-## Comandos
-
-```bash
-systemctl --user status zerobyte
-podman logs -f zerobyte
-```
+O nó da tailnet não é desregistrado ao remover um app: isso é no admin do Tailscale.
 
 ## Créditos
 

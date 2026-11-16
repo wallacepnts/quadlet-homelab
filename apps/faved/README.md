@@ -12,35 +12,11 @@ what each one is for. Karakeep archives the page, extracts text and runs a
 model over it, and pays for that in three containers. Faved keeps the link and
 your tags, in one.
 
-## Install
-
-```bash
-qh faved            # shows the plan
-qh faved --apply
-```
+## First run
 
 Open `https://faved.<your-tailnet>.ts.net` and create the first account —
 that is also the setup step, since the SQLite database is written on
 registration.
-
-<details>
-<summary><b>Manual install (advanced)</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd
-mkdir -p ~/.config/containers/volumes/faved/storage
-
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/faved/faved.container
-
-# Apache drops to www-data (uid 33), which is not you after the mapping
-podman unshare chown -R 33:33 ~/.config/containers/volumes/faved
-
-systemctl --user daemon-reload
-systemctl --user start faved
-```
-
-</details>
 
 ## Files
 
@@ -65,42 +41,10 @@ with an empty page after silently failing to write: `touch: cannot touch
 '/var/www/html/storage/...': Permission denied`. `qh` does the `podman unshare
 chown` for you because the unit declares `User=`.
 
-## Update
-
-```bash
-qh faved --update --apply
-```
-
-The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh faved --update --latest --apply` (the store's Update button does the same).
-
 ## Backup
-
-```bash
-qh faved --backup --apply --out ~/backups
-```
 
 Stops it, packs the storage folder, starts it again. That folder is the whole
 of it — the links, the tags and the accounts.
-
-To restore, over the current data:
-
-```bash
-qh faved --restore ~/backups/faved-20260811-1200.tar.gz --apply
-```
-
-## Remove
-
-```bash
-qh faved --remove --apply           # stops it, keeps the bookmarks
-qh faved --remove --purge --apply   # and deletes the storage folder
-```
-
-## Commands
-
-```bash
-systemctl --user status faved
-podman logs -f faved
-```
 
 ## Credits
 

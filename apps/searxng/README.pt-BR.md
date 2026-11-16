@@ -11,38 +11,9 @@ são os motores — vindo do servidor, não de você.
 Ele também responde em JSON, que é o que o torna útil para o
 [Open WebUI](../openwebui) — veja [abaixo](#open-webui).
 
-## Instalação
-
-```bash
-qh searxng            # mostra o plano
-qh searxng --apply
-```
+## Primeiro acesso
 
 Abrir `https://searxng.<your-tailnet>.ts.net`.
-
-<details>
-<summary><b>Instalação manual (avançado)</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd
-mkdir -p ~/.config/containers/volumes/searxng/config
-
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/searxng/searxng.container
-wget -O ~/.config/containers/volumes/searxng/config/settings.yml \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/searxng/config/settings.yml
-
-# Assina o cookie de sessão
-openssl rand -hex 32 | tr -d '\n' | podman secret create searxng-secret -
-
-# O container roda como uid 977, que não é o seu depois do mapeamento
-podman unshare chown -R 977:977 ~/.config/containers/volumes/searxng
-
-systemctl --user daemon-reload
-systemctl --user start searxng
-```
-
-</details>
 
 ## Arquivos
 
@@ -86,46 +57,13 @@ Open WebUI volta vazia em silêncio.
 
 ## Atualizar
 
-```bash
-qh searxng --update --apply
-```
-
-Fixado em `2026.10.2-a5659a536`. O SearXNG não publica release no GitHub e
-marca por data mais commit, então o `qh-updates` compara com a lista de tags do
-registry, e não com o redirect de release de sempre.
+O SearXNG não publica release no GitHub e marca por data mais commit, então o `qh-updates` compara com a lista de tags do registry, e não com o redirect de release de sempre.
 
 ## Backup
-
-```bash
-qh searxng --backup --apply --out ~/backups
-```
 
 Há pouco a perder: o arquivo de configuração está neste repositório e o
 histórico de busca não é de ninguém, nem do servidor. O backup existe pelas
 preferências que você tenha ajustado.
-
-Pra restaurar, por cima dos dados atuais:
-
-```bash
-qh searxng --restore ~/backups/searxng-20260811-1200.tar.gz --apply
-```
-
-## Remover
-
-```bash
-qh searxng --remove --apply           # para e tira, mantendo o volume
-qh searxng --remove --purge --apply   # e apaga o volume e o secret
-```
-
-## Comandos
-
-```bash
-systemctl --user status searxng
-podman logs -f searxng
-
-# o que o Open WebUI enxerga
-podman exec searxng wget -qO- 'http://127.0.0.1:8080/search?q=podman&format=json' | head -c 200
-```
 
 ## Créditos
 

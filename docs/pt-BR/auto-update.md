@@ -42,7 +42,7 @@ fixado por digest.
 
 ```bash
 qh-updates                     # o que está atrasado, contra a página de releases de cada projeto
-qh-updates --bump --apply      # para essas: reescreve o Image= e a linha Fixado em de cada README
+qh-updates --bump --apply      # para essas: reescreve o Image=
 qh <app> --update --apply      # leva para o host
 ```
 

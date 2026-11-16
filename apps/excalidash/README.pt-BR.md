@@ -10,38 +10,10 @@ você compartilha por desenho em vez de por instância.
 Dois containers — o frontend que você abre e o backend que guarda o banco
 SQLite. O frontend requer o backend, então subir o `excalidash` sobe os dois.
 
-## Instalação
-
-```bash
-qh excalidash            # mostra o plano
-qh excalidash --apply
-```
+## Primeiro acesso
 
 Abra `http://<ip-do-host>:8016` ou `https://excalidash.<your-tailnet>.ts.net` e
 crie a conta.
-
-<details>
-<summary><b>Instalação manual</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd/excalidash ~/.config/containers/env
-mkdir -p ~/.config/containers/volumes/excalidash/data
-
-openssl rand -hex 32 | podman secret create excalidash-jwt-secret -
-openssl rand -hex 32 | podman secret create excalidash-csrf-secret -
-
-wget -P ~/.config/containers/systemd/excalidash/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/excalidash/excalidash.container \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/excalidash/excalidash-backend.container \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/excalidash/excalidash-net.network
-wget -O ~/.config/containers/env/excalidash.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/excalidash/.env.example
-
-systemctl --user daemon-reload
-systemctl --user start excalidash
-```
-
-</details>
 
 ## Arquivos
 
@@ -69,41 +41,12 @@ ou `oidc_enforced` (só o Authentik) e preencha `OIDC_ISSUER_URL`,
 
 ## Atualizar
 
-```bash
-qh excalidash --update --apply
-```
-
-A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh excalidash --update --latest --apply` (o botão Atualizar da loja faz o mesmo). As duas imagens usam a mesma tag, e sobem juntas.
+As duas imagens usam a mesma tag, e sobem juntas.
 
 ## Backup
 
-```bash
-qh excalidash --backup --apply --out ~/backups
-```
-
 Para os dois, empacota os dados, o `.env` e os segredos, e religa. Os segredos
 importam aqui: restaurar o banco sem o mesmo `JWT_SECRET` desloga todo mundo.
-
-Para restaurar, por cima dos dados atuais:
-
-```bash
-qh excalidash --restore ~/backups/excalidash-20260810-1200.tar.gz --apply
-```
-
-## Remover
-
-```bash
-qh excalidash --remove --apply           # para, mantém os dados
-qh excalidash --remove --purge --apply   # e apaga volumes, segredos e .env
-```
-
-## Comandos
-
-```bash
-systemctl --user status excalidash
-podman logs -f excalidash-backend
-podman exec excalidash-backend node -e "require('http').get('http://127.0.0.1:8000/health', r => console.log(r.statusCode))"
-```
 
 ## Créditos
 

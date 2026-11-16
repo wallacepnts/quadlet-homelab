@@ -6,40 +6,9 @@
 
 Rastreamento de GPS — mapa ao vivo, histórico, geocercas e relatórios, com app no celular.
 
-## Instalar
-
-```bash
-qh traccar            # mostra o plano
-qh traccar --apply
-```
+## Primeiro acesso
 
 Abrir `http://<ip-do-host>:5056` ou `https://traccar.<your-tailnet>.ts.net`.
-
-<details>
-<summary><b>Instalação manual</b></summary>
-
-```bash
-# 1. Baixar a unit (sem precisar clonar o repositório)
-mkdir -p ~/.config/containers/systemd
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/traccar/traccar.container
-
-# 2. Diretórios + dono correspondente ao User=1000 da unit
-mkdir -p ~/.config/containers/volumes/traccar/{data,logs,conf}
-
-# 3. Config — precisa EXISTIR antes do start (é bind mount de arquivo;
-#    se não existir, o Podman cria um diretório no lugar e o Traccar quebra)
-wget -O ~/.config/containers/volumes/traccar/conf/traccar.xml \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/traccar/traccar.xml.example
-
-podman unshare chown -R 1000:1000 ~/.config/containers/volumes/traccar
-
-# 4. Subir
-systemctl --user daemon-reload
-systemctl --user start traccar
-```
-
-</details>
 
 ## Arquivos
 
@@ -48,49 +17,9 @@ traccar.container
 traccar.xml.example
 ```
 
-## Atualizar
-
-```bash
-qh traccar --update --apply
-```
-
-A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh traccar --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
-
-## Backup
-
-```bash
-qh traccar --backup --apply --out ~/backups
-```
-
-Ele para o serviço, empacota os dados, o `.env` e os secrets, e sobe de novo.
-A frio de propósito: copiar banco vivo dá um arquivo que só falha na hora de
-restaurar.
-
-Pra restaurar, por cima dos dados atuais:
-
-```bash
-qh traccar --restore ~/backups/traccar-20260809-1200.tar.gz --apply
-```
-
-Ele pede que você digite `traccar` pra confirmar, porque os dados atuais são
-apagados antes de o arquivo ser extraído.
-
 ## Remover
 
-```bash
-qh traccar --remove --apply           # para e tira, mantendo os dados
-qh traccar --remove --purge --apply   # e apaga volumes, secrets e .env
-```
-
-O `--purge` também pede o nome digitado. O nó da tailnet não é desregistrado
-por isso — isso é no admin do Tailscale.
-
-## Comandos
-
-```bash
-systemctl --user status traccar
-podman logs -f traccar
-```
+O nó da tailnet não é desregistrado ao remover um app: isso é no admin do Tailscale.
 
 ## Créditos
 

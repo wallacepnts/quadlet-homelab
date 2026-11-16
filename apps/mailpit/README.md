@@ -8,12 +8,7 @@ An SMTP server that accepts every message and delivers none. Point an app's
 mail settings at it and read what it sent in the browser, instead of at a real
 address.
 
-## Install
-
-```bash
-qh mailpit            # shows the plan
-qh mailpit --apply
-```
+## First run
 
 The install prints the user and password at the end. Open
 `http://<host-ip>:8025` or `https://mailpit.<your-tailnet>.ts.net`.
@@ -25,31 +20,6 @@ authentication, no TLS:
 SMTP_HOST=<host-ip>
 SMTP_PORT=1025
 ```
-
-<details>
-<summary><b>Manual install</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd ~/.config/containers/env
-mkdir -p ~/.config/containers/volumes/mailpit/data
-podman unshare chown -R 1000:1000 ~/.config/containers/volumes/mailpit
-
-printf 'admin:%s' "$(openssl rand -hex 12)" \
-  | podman secret create mailpit-ui-auth -
-
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/mailpit/mailpit.container
-wget -O ~/.config/containers/env/mailpit.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/mailpit/.env.example
-
-systemctl --user daemon-reload
-systemctl --user start mailpit
-```
-
-Read the password back with `podman secret inspect mailpit-ui-auth
---showsecret --format '{{.SecretData}}'`.
-
-</details>
 
 ## Files
 
@@ -102,57 +72,9 @@ restarts the service, and leaves the stored mail alone — but it also puts
 change of yours there first. `qh mailpit` prints the
 user and password in use.
 
-## Update
-
-```bash
-qh mailpit --update --apply
-```
-
-The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh mailpit --update --latest --apply` (the store's Update button does the same).
-
-## Backup
-
-```bash
-qh mailpit --backup --apply --out ~/backups
-```
-
-It stops the service, packs the data, the `.env` and the secrets, and starts it
-again. Cold on purpose: copying a live database gives an archive that only
-fails when you restore it.
-
-To restore, over the current data:
-
-```bash
-qh mailpit --restore ~/backups/mailpit-20260809-1200.tar.gz --apply
-```
-
-It asks you to type `mailpit` to confirm, because the current data is deleted
-before the archive is unpacked.
-
 ## Remove
 
-```bash
-qh mailpit --remove --apply           # stops it, keeps the data
-qh mailpit --remove --purge --apply   # and deletes volumes, secrets and .env
-```
-
-`--purge` asks for the typed name too. The tailnet node is not deregistered by
-this — that is done in the Tailscale admin.
-
-## Commands
-
-```bash
-systemctl --user status mailpit
-podman logs -f mailpit
-podman exec mailpit /mailpit readyz
-```
-
-Send a test message from the host:
-
-```bash
-python3 -c "import smtplib; smtplib.SMTP('127.0.0.1', 1025).sendmail(
-  'a@test', ['b@test'], 'Subject: hello\n\nit works')"
-```
+The tailnet node is not deregistered when an app is removed: do that in the Tailscale admin.
 
 ## Credits
 

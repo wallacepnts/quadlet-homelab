@@ -12,37 +12,12 @@ máquinas — o trabalho que uma conta do Franz faria, no seu próprio hardware.
 O app desktop não está aqui: é um programa Electron que você instala em cada
 máquina, e é ele quem conversa com isto.
 
-## Instalação
-
-```bash
-qh ferdium-server            # mostra o plano
-qh ferdium-server --apply
-```
+## Primeiro acesso
 
 Depois, no Ferdium desktop: **Settings → Ferdium account → Use custom server**,
 apontando para `https://ferdium.<your-tailnet>.ts.net`. Crie a sua conta,
 depois ponha `IS_REGISTRATION_ENABLED=false` no `.env` e rode
 `qh ferdium-server --update --apply` para que mais ninguém crie.
-
-<details>
-<summary><b>Instalação manual (avançado)</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd ~/.config/containers/env
-mkdir -p ~/.config/containers/volumes/ferdium-server/data
-mkdir -p ~/.config/containers/volumes/ferdium-server/recipes
-
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/ferdium-server/ferdium-server.container
-wget -O ~/.config/containers/env/ferdium-server.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/ferdium-server/.env.example
-# editar ~/.config/containers/env/ferdium-server.env: APP_URL
-
-systemctl --user daemon-reload
-systemctl --user start ferdium-server
-```
-
-</details>
 
 ## Arquivos
 
@@ -77,47 +52,11 @@ uns 90 segundos com o volume vazio, e o `HealthStartPeriod=180s` cobre isso.
 - `User=1000` — ele instala o pnpm global a cada start:
   `EACCES: permission denied, mkdir '/usr/local/lib/node_modules/pnpm'`.
 
-## Atualizar
-
-```bash
-qh ferdium-server --update --apply
-```
-
-Fixado em `2.0.13`.
-
 ## Backup
-
-```bash
-qh ferdium-server --backup --apply --out ~/backups
-```
 
 Para o serviço, empacota os dois volumes e o `.env`, e sobe de novo. As
 receitas são um clone git e voltariam sozinhas, mas o banco e as chaves são a
 conta em si.
-
-Pra restaurar, por cima dos dados atuais:
-
-```bash
-qh ferdium-server --restore ~/backups/ferdium-server-20260811-1200.tar.gz --apply
-```
-
-## Remover
-
-```bash
-qh ferdium-server --remove --apply           # para e mantém as contas
-qh ferdium-server --remove --purge --apply   # e apaga os dois volumes
-```
-
-## Comandos
-
-```bash
-systemctl --user status ferdium-server
-podman logs -f ferdium-server
-
-# quantas contas existem
-podman exec ferdium-server sh -c \
-  "sqlite3 /data/ferdium.sqlite 'select count(*) from users'" 2>/dev/null
-```
 
 ## Créditos
 

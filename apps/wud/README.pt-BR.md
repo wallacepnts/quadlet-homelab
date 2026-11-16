@@ -6,51 +6,9 @@
 
 Monitora as atualizações de imagem disponíveis pros containers, sem aplicar nada sozinho — só avisa.
 
-## Instalar
-
-```bash
-qh wud            # mostra o plano
-qh wud --apply
-```
+## Primeiro acesso
 
 Abrir `http://<ip-do-host>:8085` ou `https://wud.<your-tailnet>.ts.net`.
-
-<details>
-<summary><b>Instalação manual</b></summary>
-
-```bash
-# 1. Baixar a unit (sem precisar clonar o repositório)
-mkdir -p ~/.config/containers/systemd
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/wud/wud.container
-
-# 2. Diretório de dados — bind mount exige que já exista antes do start
-mkdir -p ~/.config/containers/volumes/wud/store
-
-# 3. Env — baixar o exemplo. Schedule da checagem (cron): padrão do
-#    próprio WUD é de hora em hora; diário é suficiente pra maioria dos
-#    homelabs e gera bem menos tráfego contra os registries.
-mkdir -p ~/.config/containers/env
-wget -O ~/.config/containers/env/wud.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/wud/.env.example
-
-# 4. Senha do admin. O WUD 9 tirou o acesso anônimo e sai no start
-#    quando não existe administrador.
-openssl rand -base64 48 | tr -dc 'A-Za-z0-9' | head -c 20 \
-  | podman secret create wud-admin-password -
-
-# 5. Socket do Podman
-systemctl --user enable --now podman.socket
-
-# 6. Subir
-systemctl --user daemon-reload
-systemctl --user start wud
-```
-
-Entre como `admin`. Leia a senha de volta com `podman secret inspect
-wud-admin-password --showsecret --format '{{.SecretData}}'`.
-
-</details>
 
 ## Arquivos
 
@@ -60,49 +18,9 @@ wud.container
 install.ini
 ```
 
-## Atualizar
-
-```bash
-qh wud --update --apply
-```
-
-A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh wud --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
-
-## Backup
-
-```bash
-qh wud --backup --apply --out ~/backups
-```
-
-Ele para o serviço, empacota os dados, o `.env` e os secrets, e sobe de novo.
-A frio de propósito: copiar banco vivo dá um arquivo que só falha na hora de
-restaurar.
-
-Pra restaurar, por cima dos dados atuais:
-
-```bash
-qh wud --restore ~/backups/wud-20260809-1200.tar.gz --apply
-```
-
-Ele pede que você digite `wud` pra confirmar, porque os dados atuais são
-apagados antes de o arquivo ser extraído.
-
 ## Remover
 
-```bash
-qh wud --remove --apply           # para e tira, mantendo os dados
-qh wud --remove --purge --apply   # e apaga volumes, secrets e .env
-```
-
-O `--purge` também pede o nome digitado. O nó da tailnet não é desregistrado
-por isso — isso é no admin do Tailscale.
-
-## Comandos
-
-```bash
-systemctl --user status wud
-podman logs -f wud
-```
+O nó da tailnet não é desregistrado ao remover um app: isso é no admin do Tailscale.
 
 ## Créditos
 

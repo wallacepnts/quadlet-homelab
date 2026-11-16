@@ -13,34 +13,10 @@ favoritos, a diferença é o propósito. O karakeep arquiva a página, extrai o
 texto e passa um modelo por cima, e paga isso em três containers. O Faved
 guarda o link e as suas tags, num só.
 
-## Instalação
-
-```bash
-qh faved            # mostra o plano
-qh faved --apply
-```
+## Primeiro acesso
 
 Abrir `https://faved.<your-tailnet>.ts.net` e criar a primeira conta — que é
 também o passo de configuração, já que o banco SQLite é escrito no cadastro.
-
-<details>
-<summary><b>Instalação manual (avançado)</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd
-mkdir -p ~/.config/containers/volumes/faved/storage
-
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/faved/faved.container
-
-# O Apache desce para o www-data (uid 33), que não é você depois do mapeamento
-podman unshare chown -R 33:33 ~/.config/containers/volumes/faved
-
-systemctl --user daemon-reload
-systemctl --user start faved
-```
-
-</details>
 
 ## Arquivos
 
@@ -65,42 +41,10 @@ depois de falhar em silêncio ao gravar: `touch: cannot touch
 '/var/www/html/storage/...': Permission denied`. O `qh` faz o `podman unshare
 chown` por você porque a unit declara `User=`.
 
-## Atualizar
-
-```bash
-qh faved --update --apply
-```
-
-A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh faved --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
-
 ## Backup
-
-```bash
-qh faved --backup --apply --out ~/backups
-```
 
 Para o serviço, empacota a pasta storage e sobe de novo. Aquela pasta é tudo —
 os links, as tags e as contas.
-
-Pra restaurar, por cima dos dados atuais:
-
-```bash
-qh faved --restore ~/backups/faved-20260811-1200.tar.gz --apply
-```
-
-## Remover
-
-```bash
-qh faved --remove --apply           # para e mantém os favoritos
-qh faved --remove --purge --apply   # e apaga a pasta storage
-```
-
-## Comandos
-
-```bash
-systemctl --user status faved
-podman logs -f faved
-```
 
 ## Créditos
 

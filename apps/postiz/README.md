@@ -13,12 +13,7 @@ X, LinkedIn, Threads, TikTok, YouTube and others.
 before you set up a channel.** It decides whether posting works at all from a
 tailnet-only install.
 
-## Install
-
-```bash
-qh postiz            # shows the plan
-qh postiz --apply
-```
+## First run
 
 Then open `https://postiz.<your-tailnet>.ts.net` and create your account. The
 first sign-up works and then the page closes: `DISABLE_REGISTRATION=true` is in
@@ -29,47 +24,6 @@ later, set it to `false`, restart, create the account, and set it back.
 The address has to be the tailnet one. Postiz builds its sign-in and OAuth links
 from it, and Meta only accepts an HTTPS redirect. Installing with
 `--access local` leaves the link in the unit pointing at the tailnet anyway.
-
-<details>
-<summary><b>Manual install (advanced)</b></summary>
-
-```bash
-# 1. Download the units (no need to clone the repository)
-mkdir -p ~/.config/containers/systemd/postiz ~/.config/containers/env
-for f in postiz postiz-postgres postiz-redis postiz-temporal postiz-temporal-postgres; do
-  wget -P ~/.config/containers/systemd/postiz/ \
-    https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/postiz/$f.container
-done
-wget -P ~/.config/containers/systemd/postiz/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/postiz/postiz-net.network
-wget -O ~/.config/containers/env/postiz.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/postiz/.env.example
-chmod 600 ~/.config/containers/env/postiz.env
-
-# 2. The data directories, each owned by the user its image runs as, and the
-#    nginx.conf (see "Signing in")
-V=~/.config/containers/volumes/postiz
-mkdir -p $V/postgres $V/redis $V/temporal-postgres $V/uploads $V/config
-wget -O $V/config/nginx.conf \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/postiz/nginx.conf
-podman unshare chown -R 70:70   $V/postgres
-podman unshare chown -R 999:999 $V/redis $V/temporal-postgres
-podman unshare chown -R 33:33   $V/uploads $V/config/nginx.conf
-
-# 3. The secrets. The database URL is built from the password, so it comes second.
-mkdir -p ~/.config/containers/secrets/postiz
-openssl rand -hex 24 | tr -d '\n' | podman secret create postiz-db-password -
-openssl rand -hex 24 | tr -d '\n' | podman secret create postiz-temporal-db-password -
-printf 'postgresql://postiz-user:%s@postiz-postgres:5432/postiz' \
-  "$(podman secret inspect --showsecret --format '{{.SecretData}}' postiz-db-password)" \
-  | podman secret create postiz-database-url -
-openssl rand -hex 32 | tr -d '\n' | podman secret create postiz-jwt-secret -
-
-systemctl --user daemon-reload
-systemctl --user start postiz
-```
-
-</details>
 
 ## Files
 
@@ -223,20 +177,9 @@ the backend never opened port 3000 in 2 of 9 starts, with nothing in any log.
 
 ## Update
 
-```bash
-qh postiz --backup --apply --out ~/backups    # first: see "Starting"
-qh postiz --update --apply
-```
-
-Pinned to `1.28.1`, `16.15`, `17.11-alpine`, `9.1.1-alpine3.24`. The app's own image has no version here: `qh` pins the latest release on this host, and `qh postiz --update --latest --apply` moves it. Nothing updates
-on its own. Postgres follows the compose of the Postiz version you are going to,
-so a major jump of its image is its own migration.
+Postgres follows the compose of the Postiz version you are going to, so a major jump of its image is its own migration.
 
 ## Backup
-
-```bash
-qh postiz --backup --apply --out ~/backups
-```
 
 It stops the five units, packs the four folders and the secrets, and starts them
 again. Cold on purpose: copying a database in use gives a file that only fails at
@@ -244,27 +187,7 @@ restore. The scheduled posts live in Temporal's database, so they are in it.
 
 ## Remove
 
-```bash
-qh postiz --remove --apply           # stops it, keeps the data
-qh postiz --remove --purge --apply   # and deletes the volumes and secrets
-```
-
-The tailnet node is not deregistered by this — that is done in the Tailscale admin.
-
-## Commands
-
-```bash
-systemctl --user status postiz postiz-temporal postiz-postgres postiz-redis postiz-temporal-postgres
-podman logs -f postiz
-podman exec postiz pm2 list                     # backend, frontend, orchestrator
-podman exec postiz-temporal sh -c 'temporal workflow list --address $(hostname -i):7233'
-```
-
-If a post fails with `getaddrinfo EAI_AGAIN graph.facebook.com`, that is the DNS of
-Podman's network, not Postiz: on the machine this was tested on, the first lookup
-after some idle time timed out while the host's resolver never did (0 of 40 against
-1 in 20). Postiz reports it as *"The account is missing some permissions"*, the same
-message it shows for a real permission problem.
+The tailnet node is not deregistered when an app is removed: do that in the Tailscale admin.
 
 ## Credits
 

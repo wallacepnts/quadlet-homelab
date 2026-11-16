@@ -6,38 +6,9 @@
 
 Local PDF manipulation — merge, split, convert, OCR and sign, in place of the "online PDF" sites.
 
-## Install
-
-```bash
-qh stirling-pdf            # shows the plan
-qh stirling-pdf --apply
-```
+## First run
 
 Open `http://<host-ip>:8095` or `https://stirling-pdf.<your-tailnet>.ts.net`.
-
-<details>
-<summary><b>Manual install</b></summary>
-
-```bash
-# 1. Download the units (no need to clone the repository)
-mkdir -p ~/.config/containers/systemd
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/stirling-pdf/stirling-pdf.container
-
-# 2. Data directories — a bind mount requires them to exist before the start
-mkdir -p ~/.config/containers/volumes/stirling-pdf/{config,tessdata,logs}
-
-# 3. Environment variables
-mkdir -p ~/.config/containers/env
-wget -O ~/.config/containers/env/stirling-pdf.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/stirling-pdf/.env.example
-
-# 4. Start it
-systemctl --user daemon-reload
-systemctl --user start stirling-pdf
-```
-
-</details>
 
 ## Files
 
@@ -46,14 +17,6 @@ stirling-pdf.container
 .env.example
 install.ini
 ```
-
-## Update
-
-```bash
-qh stirling-pdf --update --apply
-```
-
-The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh stirling-pdf --update --latest --apply` (the store's Update button does the same).
 
 ## What 3.0 changed
 
@@ -67,41 +30,9 @@ by hand.
 are free up to 1,000 PDFs a month. The editor itself — opening a PDF and using
 a tool on it — stays free and unlimited, which is what this service is here for.
 
-## Backup
-
-```bash
-qh stirling-pdf --backup --apply --out ~/backups
-```
-
-It stops the service, packs the data, the `.env` and the secrets, and starts
-it again. Cold on purpose: copying a live database gives an archive that only
-fails when you restore it.
-
-To restore, over the current data:
-
-```bash
-qh stirling-pdf --restore ~/backups/stirling-pdf-20260809-1200.tar.gz --apply
-```
-
-It asks you to type `stirling-pdf` to confirm, because the current data is deleted
-before the archive is unpacked.
-
 ## Remove
 
-```bash
-qh stirling-pdf --remove --apply           # stops it, keeps the data
-qh stirling-pdf --remove --purge --apply   # and deletes volumes, secrets and .env
-```
-
-`--purge` asks for the typed name too. The tailnet node is not deregistered by
-this — that is done in the Tailscale admin.
-
-## Commands
-
-```bash
-systemctl --user status stirling-pdf
-podman logs -f stirling-pdf
-```
+The tailnet node is not deregistered when an app is removed: do that in the Tailscale admin.
 
 ## Credits
 

@@ -10,38 +10,10 @@ marcando no corredor do mercado, e os outros veem mudar.
 Não há contas: uma senha dá entrada, e quem tem edita. É esse o modelo inteiro,
 e é por isso que ele serve pra uma família e não pra uma empresa.
 
-## Instalação
-
-```bash
-qh koffan            # mostra o plano
-qh koffan --apply
-```
+## Primeiro acesso
 
 O `qh` gera a senha e mostra uma vez, no fim da instalação. Abrir
 `https://koffan.<your-tailnet>.ts.net`.
-
-<details>
-<summary><b>Instalação manual (avançado)</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd ~/.config/containers/env
-mkdir -p ~/.config/containers/volumes/koffan/data
-
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/koffan/koffan.container
-wget -O ~/.config/containers/env/koffan.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/koffan/.env.example
-
-openssl rand -base64 18 | tr -d '\n' | podman secret create koffan-password -
-
-# O container roda como uid 1000, que não é o seu depois do mapeamento
-podman unshare chown -R 1000:1000 ~/.config/containers/volumes/koffan
-
-systemctl --user daemon-reload
-systemctl --user start koffan
-```
-
-</details>
 
 ## Arquivos
 
@@ -82,41 +54,9 @@ WEBHOOK_URL=http://ntfy:2586/compras
 
 Os dois containers estão na `tsdproxy-net`, então `ntfy` resolve pelo nome.
 
-## Atualizar
-
-```bash
-qh koffan --update --apply
-```
-
-A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh koffan --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
-
 ## Backup
 
-```bash
-qh koffan --backup --apply --out ~/backups
-```
-
 Para o serviço, empacota a pasta de dados e o `.env`, e sobe de novo.
-
-Pra restaurar, por cima dos dados atuais:
-
-```bash
-qh koffan --restore ~/backups/koffan-20260811-1200.tar.gz --apply
-```
-
-## Remover
-
-```bash
-qh koffan --remove --apply           # para e mantém a lista
-qh koffan --remove --purge --apply   # e apaga o volume e o secret
-```
-
-## Comandos
-
-```bash
-systemctl --user status koffan
-podman logs -f koffan
-```
 
 ## Créditos
 

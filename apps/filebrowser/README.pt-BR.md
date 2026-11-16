@@ -7,41 +7,13 @@
 Gerenciador de arquivos web: navegar, buscar, pré-visualizar, subir, baixar,
 compartilhar por link e editar texto, sobre um diretório que você escolhe.
 
-## Instalar
-
-```bash
-qh filebrowser            # mostra o plano
-qh filebrowser --apply
-```
+## Primeiro acesso
 
 Coloque seus arquivos em `~/.config/containers/volumes/filebrowser/files/` e
 abra `https://filebrowser.<your-tailnet>.ts.net` ou `http://<ip-do-host>:8014`.
 
 O usuário é `admin`. A senha sai no fim da instalação, e de novo com
 `qh filebrowser`.
-
-<details>
-<summary><b>Instalação manual</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd ~/.config/containers/env
-mkdir -p ~/.config/containers/volumes/filebrowser/{data,files}
-
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/filebrowser/filebrowser.container
-wget -O ~/.config/containers/volumes/filebrowser/data/config.yaml \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/filebrowser/config.yaml.example
-wget -O ~/.config/containers/env/filebrowser.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/filebrowser/.env.example
-
-podman secret create filebrowser-admin-password - <<< "$(python3 -c 'import secrets,string;a=string.ascii_letters+string.digits;print("".join(secrets.choice(a) for _ in range(20)))')"
-podman secret create filebrowser-jwt-secret - <<< "$(python3 -c 'import secrets;print(secrets.token_hex(32))')"
-
-systemctl --user daemon-reload
-systemctl --user start filebrowser
-```
-
-</details>
 
 ## Arquivos
 
@@ -98,39 +70,14 @@ sem mudar a senha.
 
 ## Atualizar
 
-```bash
-qh filebrowser --update --apply
-```
-
-A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh filebrowser --update --latest --apply` (o botão Atualizar da loja faz o mesmo). O `config.yaml` é versionado aqui, então leia as
-notas da release atrás de mudança de schema antes de subir uma major.
+O `config.yaml` é versionado aqui, então leia as notas da release atrás de mudança de schema antes de subir uma major.
 
 ## Backup
-
-```bash
-systemctl --user stop filebrowser
-tar -czf filebrowser-$(date +%Y%m%d).tar.gz \
-  -C ~/.config/containers/volumes filebrowser
-systemctl --user start filebrowser
-```
 
 Parado de propósito: o `database.db` é um banco vivo, e copiar com o app
 escrevendo dá um arquivo que só falha na hora de restaurar.
 
 Só os metadados, sem os arquivos:
-
-```bash
-tar -czf filebrowser-data-$(date +%Y%m%d).tar.gz --exclude=data/cache \
-  -C ~/.config/containers/volumes/filebrowser data
-```
-
-## Comandos
-
-```bash
-systemctl --user status filebrowser
-podman logs -f filebrowser
-du -sh ~/.config/containers/volumes/filebrowser/data/cache
-```
 
 ## Créditos
 

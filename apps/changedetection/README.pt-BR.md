@@ -11,36 +11,10 @@ aviso vem como diferença, e não como "alguma coisa mexeu".
 Substitui os sites de monitoramento que pedem conta e e-mail para fazer o
 mesmo.
 
-## Instalação
-
-```bash
-qh changedetection            # mostra o plano
-qh changedetection --apply
-```
+## Primeiro acesso
 
 Abrir `https://changedetection.<your-tailnet>.ts.net`. Defina uma senha em
 **Settings → General** se mais alguém alcança a sua tailnet.
-
-<details>
-<summary><b>Instalação manual (avançado)</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd ~/.config/containers/env
-mkdir -p ~/.config/containers/volumes/changedetection/datastore
-
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/changedetection/changedetection.container
-wget -O ~/.config/containers/env/changedetection.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/changedetection/.env.example
-
-# O container roda como uid 1000, que não é o seu depois do mapeamento
-podman unshare chown -R 1000:1000 ~/.config/containers/volumes/changedetection
-
-systemctl --user daemon-reload
-systemctl --user start changedetection
-```
-
-</details>
 
 ## Arquivos
 
@@ -79,45 +53,9 @@ navegador dentro, maquinário demais para uma página que normalmente dá para
 vigiar pelo endpoint JSON dela. Procure por um antes de acrescentar meio
 gigabyte de Chrome.
 
-## Atualizar
-
-```bash
-qh changedetection --update --apply
-```
-
-A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh changedetection --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
-
 ## Backup
 
-```bash
-qh changedetection --backup --apply --out ~/backups
-```
-
 Para o serviço, empacota o datastore e o `.env`, e sobe de novo.
-
-Pra restaurar, por cima dos dados atuais:
-
-```bash
-qh changedetection --restore ~/backups/changedetection-20260811-1200.tar.gz --apply
-```
-
-## Remover
-
-```bash
-qh changedetection --remove --apply           # para e mantém as páginas
-qh changedetection --remove --purge --apply   # e apaga o datastore
-```
-
-## Comandos
-
-```bash
-systemctl --user status changedetection
-podman logs -f changedetection
-
-# quantas páginas, sem abrir a interface
-podman exec changedetection python3 -c \
-  "import json;print(len(json.load(open('/datastore/url-watches.json'))['watching']))"
-```
 
 ## Créditos
 

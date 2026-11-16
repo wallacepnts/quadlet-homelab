@@ -12,37 +12,10 @@ Ao lado do [calibre-web-automated](../calibre-web-automated/README.pt-BR.md) e
 do [audiobookshelf](../audiobookshelf/README.pt-BR.md), a divisão é por
 formato: livro lá, áudio lá, leitura página a página aqui.
 
-## Instalação
-
-```bash
-qh komga            # mostra o plano
-qh komga --apply
-```
+## Primeiro acesso
 
 Abrir `https://komga.<your-tailnet>.ts.net` e criar a primeira conta — é essa a
 configuração. Depois acrescente uma biblioteca apontando para `/books`.
-
-<details>
-<summary><b>Instalação manual (avançado)</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd ~/.config/containers/env
-mkdir -p ~/.config/containers/volumes/komga/config
-mkdir -p "$MEDIA_DATA_DIR/comics"
-
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/komga/komga.container
-wget -O ~/.config/containers/env/komga.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/komga/.env.example
-
-# O container roda como uid 1000, que não é o seu depois do mapeamento
-podman unshare chown -R 1000:1000 ~/.config/containers/volumes/komga
-
-systemctl --user daemon-reload
-systemctl --user start komga
-```
-
-</details>
 
 ## Arquivos
 
@@ -87,46 +60,14 @@ log e `/actuator/health` respondendo 200 —, não só com o container rodando.
 O `HealthStartPeriod=90s` não é folga: a JVM leva uns onze segundos para subir
 aqui antes da primeira varredura, e biblioteca fria demora mais.
 
-## Atualizar
-
-```bash
-qh komga --update --apply
-```
-
-A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh komga --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
-
 ## Backup
-
-```bash
-qh komga --backup --apply --out ~/backups
-```
 
 Empacota o `config/`: os bancos, o índice e as miniaturas. Perdê-lo perde o
 progresso de leitura e os metadados que você corrigiu, não os quadrinhos.
 
-Pra restaurar, por cima dos dados atuais:
-
-```bash
-qh komga --restore ~/backups/komga-20260811-1200.tar.gz --apply
-```
-
 ## Remover
 
-```bash
-qh komga --remove --apply           # para e mantém os dados da biblioteca
-qh komga --remove --purge --apply   # e apaga progresso e miniaturas
-```
-
 Nenhum dos dois toca nos quadrinhos: eles vivem fora do volume.
-
-## Comandos
-
-```bash
-systemctl --user status komga
-podman logs -f komga
-
-du -sh ~/.config/containers/volumes/komga/config
-```
 
 ## Créditos
 

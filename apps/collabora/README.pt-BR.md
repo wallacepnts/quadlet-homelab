@@ -11,12 +11,7 @@ lugar, e o arquivo não sai de casa.
 Sozinho ele não serve para nada: todo documento que ele abre é o ownCloud que
 entrega. Instale aquele primeiro.
 
-## Instalação
-
-```bash
-qh collabora            # mostra o plano
-qh collabora --apply
-```
+## Primeiro acesso
 
 Depois, no `~/.config/containers/env/collabora.env`, ponha o endereço do seu
 ownCloud no `aliasgroup1` e reinicie com `qh collabora --update --apply`. Do
@@ -27,24 +22,6 @@ podman exec owncloud occ app:enable richdocuments
 podman exec owncloud occ config:app:set richdocuments wopi_url \
   --value="https://collabora.<your-tailnet>.ts.net"
 ```
-
-<details>
-<summary><b>Instalação manual (avançado)</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd ~/.config/containers/env
-
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/collabora/collabora.container
-wget -O ~/.config/containers/env/collabora.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/collabora/.env.example
-# editar ~/.config/containers/env/collabora.env: aliasgroup1
-
-systemctl --user daemon-reload
-systemctl --user start collabora
-```
-
-</details>
 
 ## Arquivos
 
@@ -98,12 +75,7 @@ todo o `/usr/bin`, então não há o que rodar dentro dela.
 
 ## Atualizar
 
-```bash
-qh collabora --update --apply
-```
-
-Fixado em `26.04.4.2.1`. O Collabora não publica release no GitHub, então o
-`qh-updates` compara com a lista de tags do registry.
+O Collabora não publica release no GitHub, então o `qh-updates` compara com a lista de tags do registry.
 
 ## Backup
 
@@ -112,26 +84,11 @@ ownCloud, e o `qh owncloud --backup` cobre eles.
 
 ## Remover
 
-```bash
-qh collabora --remove --apply           # para e tira a unit
-qh collabora --remove --purge --apply   # e apaga o .env
-```
-
 Desligue também do lado do ownCloud, senão o menu de arquivo segue oferecendo
 um editor que não existe mais:
 
 ```bash
 podman exec owncloud occ app:disable richdocuments
-```
-
-## Comandos
-
-```bash
-systemctl --user status collabora
-podman logs -f collabora
-
-# o que o ownCloud pede
-podman exec owncloud curl -s http://collabora:9980/hosting/discovery | head -20
 ```
 
 ## Créditos

@@ -11,12 +11,7 @@ com sessão para acessar stories e reels.
 O dashboard web fica acessível via tsdproxy — feed de atividade ao vivo e
 controles remotos de qualquer dispositivo na tailnet.
 
-## Instalação
-
-```bash
-qh instagram-monitor            # mostra o plano
-qh instagram-monitor --apply
-```
+## Primeiro acesso
 
 Depois da instalação, rode o wizard de setup uma vez para criar o config e o
 `.env` dentro do volume de dados:
@@ -32,44 +27,6 @@ podman run -it --rm \
 O wizard pergunta os usernames alvo, configuração de notificações e
 opcionalmente uma sessão do Instagram (para stories e contas privadas). Depois
 de concluir, reinicie o serviço:
-
-```bash
-systemctl --user restart instagram-monitor
-```
-
-<details>
-<summary><b>Instalação manual (avançado)</b></summary>
-
-```bash
-# 1. Baixar a unit
-mkdir -p ~/.config/containers/systemd
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/instagram-monitor/instagram-monitor.container
-
-# 2. Diretórios de dados e sessão
-mkdir -p ~/.config/containers/volumes/instagram-monitor/{data,session}
-podman unshare chown -R 10001:10001 \
-  ~/.config/containers/volumes/instagram-monitor/data \
-  ~/.config/containers/volumes/instagram-monitor/session
-
-# 3. Config seed (libera o dashboard via tsdproxy)
-wget -O ~/.config/containers/volumes/instagram-monitor/data/instagram_monitor.conf \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/instagram-monitor/instagram_monitor.conf
-podman unshare chown 10001:10001 \
-  ~/.config/containers/volumes/instagram-monitor/data/instagram_monitor.conf
-
-# 4. Rodar o wizard de setup
-podman run -it --rm \
-  -v ~/.config/containers/volumes/instagram-monitor/data:/data:Z \
-  -v ~/.config/containers/volumes/instagram-monitor/session:/home/instagram/.config/instaloader:Z \
-  --user 10001:10001 \
-  docker.io/misiektoja/instagram-monitor:v4.0.2 --setup
-
-systemctl --user daemon-reload
-systemctl --user start instagram-monitor
-```
-
-</details>
 
 ## Arquivos
 
@@ -122,14 +79,6 @@ Sessões do Firefox podem ser importadas de dentro do container. Navegadores
 baseados em Chromium não funcionam no container — use login por senha ou
 exporte cookies manualmente.
 
-## Atualização
-
-```bash
-qh instagram-monitor --update --apply
-```
-
-A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh instagram-monitor --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
-
 ## Hardening
 
 Tudo, medido em `v4.0.2`: root read-only com `/tmp`, zero capabilities,
@@ -139,27 +88,9 @@ zumbis — o compose upstream usa `init: true`.
 
 ## Backup
 
-```bash
-qh instagram-monitor --backup --apply --out ~/backups
-```
-
 O volume de dados guarda o config, `.env` e mídia baixada. O volume de sessão
 guarda o cookie do instaloader — os dois são necessários para uma restauração
 completa.
-
-## Remover
-
-```bash
-qh instagram-monitor --remove --apply           # para, mantém os dados
-qh instagram-monitor --remove --purge --apply   # e apaga os dois volumes
-```
-
-## Comandos
-
-```bash
-systemctl --user status instagram-monitor
-podman logs -f instagram-monitor
-```
 
 ## Créditos
 

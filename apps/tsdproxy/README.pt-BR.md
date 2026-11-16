@@ -6,58 +6,9 @@
 
 Publica containers na tailnet automaticamente, só com labels — sem configurar proxy manualmente por serviço.
 
-## Instalar
-
-```bash
-qh tsdproxy            # mostra o plano
-qh tsdproxy --apply
-```
+## Primeiro acesso
 
 Abrir `http://<ip-do-host>:8080` ou `https://dash.<your-tailnet>.ts.net`.
-
-<details>
-<summary><b>Instalação manual</b></summary>
-
-```bash
-# 1. Baixar as units (sem precisar clonar o repositório). São dois arquivos
-#    Quadlet, então vão em pasta própria — e o .network não é opcional: sem
-#    ele o Quadlet não gera nada e o start responde "Unit not found" sem
-#    dizer qual arquivo ele não conseguiu converter.
-mkdir -p ~/.config/containers/systemd/tsdproxy
-wget -P ~/.config/containers/systemd/tsdproxy/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/tsdproxy/tsdproxy.container \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/tsdproxy/tsdproxy-net.network
-
-# 2. Diretórios de dados — bind mount exige que já existam antes do start.
-#    O tsdproxy não gera um config padrão sozinho, então config/tsdproxy.yaml
-#    também precisa vir de algum lugar antes do primeiro start.
-mkdir -p ~/.config/containers/volumes/tsdproxy/{data,config}
-wget -O ~/.config/containers/volumes/tsdproxy/config/tsdproxy.yaml \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/tsdproxy/config/tsdproxy.yaml
-wget -O ~/.config/containers/volumes/tsdproxy/config/lists.yaml \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/tsdproxy/config/lists.yaml
-# lists.yaml só se você usa Cockpit: descomente e troque <host-ip>
-
-# 3. Secret com a authkey do Tailscale. Ela precisa ser REUSABLE: o tsdproxy
-#    registra um nó por proxy, então chave de uso único coloca o primeiro na
-#    tailnet e mais nenhum.  O `qh tsdproxy --apply` confere a chave contra o
-#    control plane antes de guardar (o [validate] do install.ini); na mão,
-#    abaixo, nada confere — chave recusada deixa o tsdproxy saudável e sem
-#    publicar nada.
-mkdir -p ~/.config/containers/secrets/tsdproxy
-echo -n "SUA_AUTHKEY" > ~/.config/containers/secrets/tsdproxy/authkey.txt
-chmod 600 ~/.config/containers/secrets/tsdproxy/authkey.txt
-podman secret create authkey ~/.config/containers/secrets/tsdproxy/authkey.txt
-
-# 4. Socket do Podman
-systemctl --user enable --now podman.socket
-
-# 5. Subir
-systemctl --user daemon-reload
-systemctl --user start tsdproxy
-```
-
-</details>
 
 ## Arquivos
 
@@ -106,49 +57,9 @@ repositório. Ler, não escrever.
 Por isso a entrada vem comentada: apontando para porta fechada, ela publica
 um nome que responde 502 — e a maioria dos hosts não roda Cockpit.
 
-## Atualizar
-
-```bash
-qh tsdproxy --update --apply
-```
-
-A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh tsdproxy --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
-
-## Backup
-
-```bash
-qh tsdproxy --backup --apply --out ~/backups
-```
-
-Ele para o serviço, empacota os dados, o `.env` e os secrets, e sobe de novo.
-A frio de propósito: copiar banco vivo dá um arquivo que só falha na hora de
-restaurar.
-
-Pra restaurar, por cima dos dados atuais:
-
-```bash
-qh tsdproxy --restore ~/backups/tsdproxy-20260809-1200.tar.gz --apply
-```
-
-Ele pede que você digite `tsdproxy` pra confirmar, porque os dados atuais são
-apagados antes de o arquivo ser extraído.
-
 ## Remover
 
-```bash
-qh tsdproxy --remove --apply           # para e tira, mantendo os dados
-qh tsdproxy --remove --purge --apply   # e apaga volumes, secrets e .env
-```
-
-O `--purge` também pede o nome digitado. O nó da tailnet não é desregistrado
-por isso — isso é no admin do Tailscale.
-
-## Comandos
-
-```bash
-systemctl --user status tsdproxy
-podman logs -f tsdproxy
-```
+O nó da tailnet não é desregistrado ao remover um app: isso é no admin do Tailscale.
 
 ## Créditos
 

@@ -12,38 +12,11 @@ Ao lado do [donetick](../donetick/README.pt-BR.md), a divisão é o propósito. 
 donetick é para a tarefa que volta — lixo na terça, filtro a cada seis meses.
 Este é para o trabalho que acaba: uma mudança, uma reforma, uma viagem.
 
-## Instalação
-
-```bash
-qh vikunja            # mostra o plano
-qh vikunja --apply
-```
+## Primeiro acesso
 
 Abrir `https://vikunja.<your-tailnet>.ts.net` e se cadastrar. Depois ponha
 `VIKUNJA_SERVICE_ENABLEREGISTRATION=false` no `.env` e reinicie, senão quem
 alcança a sua tailnet cria conta.
-
-<details>
-<summary><b>Instalação manual (avançado)</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd ~/.config/containers/env
-mkdir -p ~/.config/containers/volumes/vikunja/{db,files}
-
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/vikunja/vikunja.container
-wget -O ~/.config/containers/env/vikunja.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/vikunja/.env.example
-# editar ~/.config/containers/env/vikunja.env: VIKUNJA_SERVICE_PUBLICURL
-
-# O container roda como uid 1000, que não é o seu depois do mapeamento
-podman unshare chown -R 1000:1000 ~/.config/containers/volumes/vikunja
-
-systemctl --user daemon-reload
-systemctl --user start vikunja
-```
-
-</details>
 
 ## Arquivos
 
@@ -79,43 +52,11 @@ tudo o que há dentro —, então o `CMD-SHELL` não teria shell onde rodar.
 
 ## Atualizar
 
-```bash
-qh vikunja --update --apply
-```
-
-A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh vikunja --update --latest --apply` (o botão Atualizar da loja faz o mesmo). Ele migra o banco no start, e é por isso que as notas da
-release valem uma lida antes de uma major.
+Ele migra o banco no start, e é por isso que as notas da release valem uma lida antes de uma major.
 
 ## Backup
 
-```bash
-qh vikunja --backup --apply --out ~/backups
-```
-
 Para o serviço, empacota os dois volumes e o `.env`, e sobe de novo.
-
-Pra restaurar, por cima dos dados atuais:
-
-```bash
-qh vikunja --restore ~/backups/vikunja-20260811-1200.tar.gz --apply
-```
-
-## Remover
-
-```bash
-qh vikunja --remove --apply           # para e mantém as tarefas
-qh vikunja --remove --purge --apply   # e apaga elas
-```
-
-## Comandos
-
-```bash
-systemctl --user status vikunja
-podman logs -f vikunja
-
-# um usuário, sem a interface
-podman exec vikunja /app/vikunja/vikunja user list
-```
 
 ## Créditos
 

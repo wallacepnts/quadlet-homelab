@@ -11,31 +11,9 @@ and no terminal.
 It stores nothing: no database, no volume, no log copy. What you see is what
 Podman is holding at that moment.
 
-## Install
-
-```bash
-qh dozzle            # shows the plan
-qh dozzle --apply
-```
+## First run
 
 Open `https://dozzle.<your-tailnet>.ts.net`.
-
-<details>
-<summary><b>Manual install (advanced)</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd ~/.config/containers/env
-
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/dozzle/dozzle.container
-wget -O ~/.config/containers/env/dozzle.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/dozzle/.env.example
-
-systemctl --user daemon-reload
-systemctl --user start dozzle
-```
-
-</details>
 
 ## Files
 
@@ -78,30 +56,9 @@ answering — not just with the container up.
 The health check is the binary's own subcommand, `/dozzle healthcheck`, in exec
 form: the image ships no shell, so `CMD-SHELL` would fail.
 
-## Update
-
-```bash
-qh dozzle --update --apply
-```
-
-The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh dozzle --update --latest --apply` (the store's Update button does the same).
-
 ## Backup
 
 Nothing to back up. Removing it loses no data — the logs belong to Podman.
-
-## Remove
-
-```bash
-qh dozzle --remove --apply
-```
-
-## Commands
-
-```bash
-systemctl --user status dozzle
-podman logs -f dozzle
-```
 
 ## Credits
 

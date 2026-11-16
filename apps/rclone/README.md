@@ -9,37 +9,10 @@ GUI on. It reads the same `~/.config/rclone/rclone.conf` as the `rclone` command
 on the host, so every cloud account already set up there shows up in the browser,
 and new ones can be added from it.
 
-## Install
-
-```bash
-qh rclone            # shows the plan
-qh rclone --apply
-```
+## First run
 
 The install ends by printing the login (`admin` and a generated password). Open
 `https://rclone.<your-tailnet>.ts.net`: the browser asks for them once.
-
-<details>
-<summary><b>Manual install (advanced)</b></summary>
-
-```bash
-# 1. Download the unit (no need to clone the repository)
-mkdir -p ~/.config/containers/systemd
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/rclone/rclone.container
-
-# 2. The config directory (shared with the host) and the GUI cache
-mkdir -p ~/.config/rclone ~/.config/containers/volumes/rclone/cache
-
-# 3. The password of the GUI and the API
-openssl rand -base64 24 | tr -d '/+=' | podman secret create rclone-password -
-podman secret inspect rclone-password --showsecret --format '{{.SecretData}}'; echo
-
-systemctl --user daemon-reload
-systemctl --user start rclone
-```
-
-</details>
 
 ## Files
 
@@ -74,12 +47,6 @@ qh rclone --reinstall --ask-secrets --apply
 
 ## Update
 
-```bash
-qh rclone --update --apply
-```
-
-The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh rclone --update --latest --apply` (the store's Update button does the same).
-
 **The web GUI is a separate project and is pinned too.** By default `rcd` asks
 GitHub for the newest GUI release at every start. `--rc-web-fetch-url` points it
 at one release (`v2.0.5`, the current one), so a start fetches that and later
@@ -99,23 +66,9 @@ GUI served from the cache after a restart, the health check, and creating a
 remote through the API, which wrote `rclone.conf` as 600 and owned by the host
 user. Not tested: a real cloud remote, or a browser session through tsdproxy.
 
-## Commands
-
-```bash
-systemctl --user status rclone
-podman logs -f rclone
-podman exec rclone rclone listremotes
-```
-
 ## Remove
 
-```bash
-qh rclone --remove --apply           # stops it, keeps the data
-qh rclone --remove --purge --apply   # and deletes the cache and the secret
-```
-
-`~/.config/rclone` is never touched by `--purge`: it is the host's own config.
-The tailnet node is not deregistered by this — that is done in the Tailscale admin.
+`~/.config/rclone` is never touched by `--purge`: it is the host's own config. The tailnet node is not deregistered when an app is removed: do that in the Tailscale admin.
 
 ## Credits
 

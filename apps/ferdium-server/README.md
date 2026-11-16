@@ -12,37 +12,12 @@ machines — the job a Franz account would do, on your own hardware.
 The desktop app itself is not here: it is an Electron program you install on
 each machine, and it is what talks to this.
 
-## Install
-
-```bash
-qh ferdium-server            # shows the plan
-qh ferdium-server --apply
-```
+## First run
 
 Then, in the Ferdium desktop app: **Settings → Ferdium account → Use custom
 server**, pointing at `https://ferdium.<your-tailnet>.ts.net`. Create your
 account, then set `IS_REGISTRATION_ENABLED=false` in the `.env` and run
 `qh ferdium-server --update --apply` so nobody else can.
-
-<details>
-<summary><b>Manual install (advanced)</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd ~/.config/containers/env
-mkdir -p ~/.config/containers/volumes/ferdium-server/data
-mkdir -p ~/.config/containers/volumes/ferdium-server/recipes
-
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/ferdium-server/ferdium-server.container
-wget -O ~/.config/containers/env/ferdium-server.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/ferdium-server/.env.example
-# edit ~/.config/containers/env/ferdium-server.env: APP_URL
-
-systemctl --user daemon-reload
-systemctl --user start ferdium-server
-```
-
-</details>
 
 ## Files
 
@@ -77,47 +52,11 @@ seconds on a cold volume, and `HealthStartPeriod=180s` covers it.
 - `User=1000` — it installs pnpm globally on every start:
   `EACCES: permission denied, mkdir '/usr/local/lib/node_modules/pnpm'`.
 
-## Update
-
-```bash
-qh ferdium-server --update --apply
-```
-
-Pinned to `2.0.13`.
-
 ## Backup
-
-```bash
-qh ferdium-server --backup --apply --out ~/backups
-```
 
 Stops it, packs both volumes and the `.env`, starts it again. The recipes are a
 git clone and would come back on their own, but the database and the keys are
 the account itself.
-
-To restore, over the current data:
-
-```bash
-qh ferdium-server --restore ~/backups/ferdium-server-20260811-1200.tar.gz --apply
-```
-
-## Remove
-
-```bash
-qh ferdium-server --remove --apply           # stops it, keeps the accounts
-qh ferdium-server --remove --purge --apply   # and deletes both volumes
-```
-
-## Commands
-
-```bash
-systemctl --user status ferdium-server
-podman logs -f ferdium-server
-
-# how many accounts exist
-podman exec ferdium-server sh -c \
-  "sqlite3 /data/ferdium.sqlite 'select count(*) from users'" 2>/dev/null
-```
 
 ## Credits
 

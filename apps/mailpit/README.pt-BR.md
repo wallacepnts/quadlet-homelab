@@ -8,12 +8,7 @@ Servidor SMTP que aceita toda mensagem e não entrega nenhuma. Aponte a
 configuração de e-mail de um app para ele e leia no navegador o que foi
 enviado, em vez de num endereço de verdade.
 
-## Instalação
-
-```bash
-qh mailpit            # mostra o plano
-qh mailpit --apply
-```
+## Primeiro acesso
 
 A instalação exibe o usuário e a senha no final. Abra
 `http://<ip-do-host>:8025` ou `https://mailpit.<your-tailnet>.ts.net`.
@@ -25,31 +20,6 @@ sem autenticação e sem TLS:
 SMTP_HOST=<ip-do-host>
 SMTP_PORT=1025
 ```
-
-<details>
-<summary><b>Instalação manual</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd ~/.config/containers/env
-mkdir -p ~/.config/containers/volumes/mailpit/data
-podman unshare chown -R 1000:1000 ~/.config/containers/volumes/mailpit
-
-printf 'admin:%s' "$(openssl rand -hex 12)" \
-  | podman secret create mailpit-ui-auth -
-
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/mailpit/mailpit.container
-wget -O ~/.config/containers/env/mailpit.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/mailpit/.env.example
-
-systemctl --user daemon-reload
-systemctl --user start mailpit
-```
-
-Para ler a senha depois: `podman secret inspect mailpit-ui-auth --showsecret
---format '{{.SecretData}}'`.
-
-</details>
 
 ## Arquivos
 
@@ -100,57 +70,18 @@ aleatória. O `--reinstall` recria o segredo e reinicia o serviço, sem tocar na
 mensagens guardadas — mas também põe o `.env.example` de volta por cima de
 `~/.config/containers/env/mailpit.env`, então guarde antes o que você mudou ali. O `qh mailpit` mostra o usuário e a senha em uso.
 
-## Atualizar
-
-```bash
-qh mailpit --update --apply
-```
-
-A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh mailpit --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
-
 ## Backup
-
-```bash
-qh mailpit --backup --apply --out ~/backups
-```
 
 Para o serviço, empacota os dados, o `.env` e os segredos, e religa. A frio de
 propósito: copiar banco em uso gera um arquivo que só falha na hora de
 restaurar.
-
-Para restaurar, por cima dos dados atuais:
-
-```bash
-qh mailpit --restore ~/backups/mailpit-20260809-1200.tar.gz --apply
-```
 
 Ele pede que você digite `mailpit` para confirmar, porque os dados atuais são
 apagados antes de o arquivo ser desempacotado.
 
 ## Remover
 
-```bash
-qh mailpit --remove --apply           # para, mantém os dados
-qh mailpit --remove --purge --apply   # e apaga volumes, segredos e .env
-```
-
-O `--purge` também pede o nome digitado. O nó da tailnet não é removido por
-aqui — isso é no admin do Tailscale.
-
-## Comandos
-
-```bash
-systemctl --user status mailpit
-podman logs -f mailpit
-podman exec mailpit /mailpit readyz
-```
-
-Enviar uma mensagem de teste a partir do host:
-
-```bash
-python3 -c "import smtplib; smtplib.SMTP('127.0.0.1', 1025).sendmail(
-  'a@test', ['b@test'], 'Subject: hello\n\nfuncionou')"
-```
+O nó da tailnet não é removido por aqui — isso é no admin do Tailscale.
 
 ## Créditos
 

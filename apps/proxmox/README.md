@@ -8,36 +8,9 @@ The Proxmox hypervisor in a container, for trying it without dedicating a machin
 
 It is the interface, not a hypervisor with KVM behind it: to actually run a guest here, see [vm](../vm).
 
-## Install
-
-```bash
-qh proxmox            # shows the plan
-qh proxmox --apply
-```
+## First run
 
 Open `http://<host-ip>:8010` or `https://proxmox.<your-tailnet>.ts.net`.
-
-<details>
-<summary><b>Manual install</b></summary>
-
-```bash
-# 1. Download the unit (no need to clone the repository)
-mkdir -p ~/.config/containers/systemd
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/proxmox/proxmox.container
-
-# 2. Directories
-mkdir -p ~/.config/containers/volumes/proxmox/{data,config}
-
-# 3. Secret — the root password for the web interface
-podman secret create proxmox-root-password - <<< "$(python3 -c 'import secrets,string;a=string.ascii_letters+string.digits;print("".join(secrets.choice(a) for _ in range(20)))')"
-
-# 4. Start it
-systemctl --user daemon-reload
-systemctl --user start proxmox
-```
-
-</details>
 
 ## Files
 
@@ -46,49 +19,9 @@ proxmox.container
 install.ini
 ```
 
-## Update
-
-```bash
-qh proxmox --update --apply
-```
-
-The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh proxmox --update --latest --apply` (the store's Update button does the same).
-
-## Backup
-
-```bash
-qh proxmox --backup --apply --out ~/backups
-```
-
-It stops the service, packs the data, the `.env` and the secrets, and starts
-it again. Cold on purpose: copying a live database gives an archive that only
-fails when you restore it.
-
-To restore, over the current data:
-
-```bash
-qh proxmox --restore ~/backups/proxmox-20260809-1200.tar.gz --apply
-```
-
-It asks you to type `proxmox` to confirm, because the current data is deleted
-before the archive is unpacked.
-
 ## Remove
 
-```bash
-qh proxmox --remove --apply           # stops it, keeps the data
-qh proxmox --remove --purge --apply   # and deletes volumes, secrets and .env
-```
-
-`--purge` asks for the typed name too. The tailnet node is not deregistered by
-this — that is done in the Tailscale admin.
-
-## Commands
-
-```bash
-systemctl --user status proxmox
-podman logs -f proxmox
-```
+The tailnet node is not deregistered when an app is removed: do that in the Tailscale admin.
 
 ## Credits
 

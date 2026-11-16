@@ -12,37 +12,11 @@ It replaces handing a contract to a company so it can be signed, which is the
 part of that transaction nobody thinks about: the document, the parties and the
 timestamps all end up in someone else's database.
 
-## Install
-
-```bash
-qh docuseal            # shows the plan
-qh docuseal --apply
-```
+## First run
 
 Open `https://docuseal.<your-tailnet>.ts.net` and create the first account —
 that is the setup. Then put your address in `HOST` in the `.env` and restart,
 or the links you send will point at the container's own hostname.
-
-<details>
-<summary><b>Manual install (advanced)</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd ~/.config/containers/env
-mkdir -p ~/.config/containers/volumes/docuseal/data
-
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/docuseal/docuseal.container
-wget -O ~/.config/containers/env/docuseal.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/docuseal/.env.example
-
-# The container runs as uid 1000, which is not yours after the mapping
-podman unshare chown -R 1000:1000 ~/.config/containers/volumes/docuseal
-
-systemctl --user daemon-reload
-systemctl --user start docuseal
-```
-
-</details>
 
 ## Files
 
@@ -90,43 +64,11 @@ The whole ladder: `ReadOnly=true`, every capability dropped, `User=1000`.
 Measured with the application serving — Puma listening and the interface
 answering — not just with the container up.
 
-## Update
-
-```bash
-qh docuseal --update --apply
-```
-
-The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh docuseal --update --latest --apply` (the store's Update button does the same).
-
 ## Backup
-
-```bash
-qh docuseal --backup --apply --out ~/backups
-```
 
 Stops it, packs the database and the documents, starts it again. A signed
 document you cannot produce later is a document you did not sign, so this one
 is worth checking after the first real use.
-
-To restore, over the current data:
-
-```bash
-qh docuseal --restore ~/backups/docuseal-20260811-1200.tar.gz --apply
-```
-
-## Remove
-
-```bash
-qh docuseal --remove --apply           # stops it, keeps the documents
-qh docuseal --remove --purge --apply   # and deletes them
-```
-
-## Commands
-
-```bash
-systemctl --user status docuseal
-podman logs -f docuseal
-```
 
 ## Credits
 

@@ -15,47 +15,9 @@ Ele funciona como painel, mas uma das duas funções dele não funcionou nos tes
 - **O que ele cria não é deste repositório.** Mesmo onde uma instalação funcione, os containers saem dos compose da loja: sem Quadlet, sem tag fixada (o Excalidraw da loja é `:latest`), sem hardening, sem `qh`. Para instalar apps, use o `qh` ou a loja (`qh-store`).
 - **Ele muda o seu Podman no primeiro start:** cria a rede `casa-net` (`10.22.0.0/16`, ajustável com `SUBNET` no `.env`) e se conecta a ela.
 
-## Instalação
-
-```bash
-qh casa            # mostra o plano
-qh casa --apply
-```
+## Primeiro acesso
 
 Abra `https://casa.<your-tailnet>.ts.net`, ou `http://<ip-do-host>:8129` com `--access local` ou `both`. O `qh` imprime o login (`admin` e a senha gerada) no fim da instalação.
-
-<details>
-<summary><b>Instalação manual</b></summary>
-
-```bash
-# 1. Baixar a unit (não precisa clonar o repositório)
-mkdir -p ~/.config/containers/systemd
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/casa/casa.container
-
-# 2. Pasta de dados — o bind mount exige que ela exista antes do start
-mkdir -p ~/.config/containers/volumes/casa/data
-
-# 3. Env — baixar o exemplo. A única opção é a sub-rede da casa-net
-mkdir -p ~/.config/containers/env
-wget -O ~/.config/containers/env/casa.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/casa/.env.example
-
-# 4. A primeira conta. O CasaOS lê USER=<nome>:<senha> no primeiro start;
-#    sem isso o primeiro visitante da porta se registra como administrador
-printf 'admin:%s' "$(openssl rand -hex 16)" | podman secret create casa-user -
-
-# 5. O socket do Podman
-systemctl --user enable --now podman.socket
-
-# 6. Subir
-systemctl --user daemon-reload
-systemctl --user start casa
-```
-
-Leia o login de volta com `podman secret inspect casa-user --showsecret --format '{{.SecretData}}'` (a forma é `admin:<senha>`).
-
-</details>
 
 ## Por que a unit é assim
 
@@ -76,55 +38,18 @@ casa.container
 install.ini
 ```
 
-## Atualizar
-
-```bash
-qh casa --update --apply
-```
-
-A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh casa --update --latest --apply` (o botão Atualizar da loja faz o mesmo). Nada atualiza sozinho — uma versão nova é aplicada
-quando você roda o comando acima.
-
 ## Backup
 
-```bash
-qh casa --backup --apply --out ~/backups
-```
-
-Ele para o serviço, empacota os dados, o `.env` e os secrets, e sobe de
-novo. A frio de propósito: copiar um banco em uso dá um arquivo que só falha
-na hora de restaurar. Tudo o que o CasaOS guarda — contas, bancos, dados dos apps dele — está em `/DATA`, que é o único volume.
-
-Para restaurar, por cima dos dados atuais:
-
-```bash
-qh casa --restore ~/backups/casa-20260809-1200.tar.gz --apply
-```
-
-Ele pede que você digite `casa` para confirmar, porque os dados atuais são
-apagados antes de o arquivo ser extraído.
+Tudo o que o CasaOS guarda — contas, bancos, dados dos apps dele — está em `/DATA`, que é o único volume.
 
 ## Remover
 
-```bash
-qh casa --remove --apply           # para, mantém os dados
-qh casa --remove --purge --apply   # e apaga volumes, secrets e .env
-```
-
-O `--purge` também pede o nome digitado. O nó da tailnet não é desregistrado
-por isso — isso se faz no admin do Tailscale.
+O nó da tailnet não é desregistrado ao remover um app: isso é no admin do Tailscale.
 
 O que o CasaOS criou no seu Podman também não é removido — a rede `casa-net` e qualquer container instalado por ele:
 
 ```bash
 podman network rm casa-net
-```
-
-## Comandos
-
-```bash
-systemctl --user status casa
-podman logs -f casa
 ```
 
 ## Créditos

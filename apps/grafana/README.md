@@ -8,36 +8,10 @@ Dashboards over data that lives somewhere else. Grafana stores no metrics of
 its own — it queries a data source and draws the result, so it is only as
 useful as what you point it at.
 
-## Install
-
-```bash
-qh grafana            # shows the plan
-qh grafana --apply
-```
+## First run
 
 The install prints the user and password at the end. Open
 `http://<host-ip>:3004` or `https://grafana.<your-tailnet>.ts.net`.
-
-<details>
-<summary><b>Manual install</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd ~/.config/containers/env
-mkdir -p ~/.config/containers/volumes/grafana/data
-podman unshare chown -R 472:472 ~/.config/containers/volumes/grafana
-
-openssl rand -hex 10 | podman secret create grafana-admin-password -
-
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/grafana/grafana.container
-wget -O ~/.config/containers/env/grafana.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/grafana/.env.example
-
-systemctl --user daemon-reload
-systemctl --user start grafana
-```
-
-</details>
 
 ## Files
 
@@ -81,46 +55,15 @@ Other sources that make sense here:
 
 ## Update
 
-```bash
-qh grafana --update --apply
-```
-
-The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh grafana --update --latest --apply` (the store's Update button does the same).
-
 Note the image: `grafana/grafana` is the OSS build and the one that tracks the
 releases. `grafana/grafana-oss` is a mirror that lags behind it, and
 `grafana-enterprise` is a different product.
 
 ## Backup
 
-```bash
-qh grafana --backup --apply --out ~/backups
-```
-
 It stops the service, packs the data, the `.env` and the secret, and starts it
 again. The database holds the dashboards you built, which is the part that
 would take real time to recreate.
-
-To restore, over the current data:
-
-```bash
-qh grafana --restore ~/backups/grafana-20260810-1200.tar.gz --apply
-```
-
-## Remove
-
-```bash
-qh grafana --remove --apply           # stops it, keeps the data
-qh grafana --remove --purge --apply   # and deletes the volume, secret and .env
-```
-
-## Commands
-
-```bash
-systemctl --user status grafana
-podman logs -f grafana
-podman exec grafana wget -qO- http://127.0.0.1:3000/api/health
-```
 
 ## Credits
 

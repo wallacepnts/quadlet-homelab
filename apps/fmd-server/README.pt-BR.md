@@ -12,45 +12,10 @@ Localizações e fotos são **criptografadas no celular** antes de sair: o servi
 guarda texto cifrado e não consegue lê-lo. O outro lado disso é que esquecer a
 senha da conta perde os dados — não há nada aqui com que recuperá-los.
 
-## Instalação
-
-```bash
-qh fmd-server            # mostra o plano
-qh fmd-server --apply
-```
+## Primeiro acesso
 
 A instalação termina imprimindo o **token de registro**. Digite-o no app FMD
 quando apontá-lo para `https://fmd.<your-tailnet>.ts.net`.
-
-<details>
-<summary><b>Instalação manual (avançado)</b></summary>
-
-```bash
-# 1. Baixe a unit (sem precisar clonar o repositório)
-mkdir -p ~/.config/containers/systemd
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/fmd-server/fmd-server.container
-
-# 2. A pasta do banco. A imagem roda como uid 1000, e o container não pode mais
-#    fazer chown sozinho.
-mkdir -p ~/.config/containers/volumes/fmd-server/db
-podman unshare chown -R 1000:1000 ~/.config/containers/volumes/fmd-server/db
-
-# 3. O token de registro — sem ele, qualquer um que alcance o servidor abre
-#    conta nele
-mkdir -p ~/.config/containers/secrets/fmd-server
-python3 -c 'import secrets; print(secrets.token_urlsafe(32), end="")' \
-  > ~/.config/containers/secrets/fmd-server/registration-token.txt
-chmod 600 ~/.config/containers/secrets/fmd-server/registration-token.txt
-podman secret create fmd-server-registration-token \
-  ~/.config/containers/secrets/fmd-server/registration-token.txt
-cat ~/.config/containers/secrets/fmd-server/registration-token.txt; echo   # para o app
-
-systemctl --user daemon-reload
-systemctl --user start fmd-server
-```
-
-</details>
 
 ## Arquivos
 
@@ -82,12 +47,6 @@ uma conta existente entra com a própria senha.
 
 ## Atualizar
 
-```bash
-qh fmd-server --update --apply
-```
-
-Fixado em `0.17.1-alpine`. Nada atualiza sozinho.
-
 O projeto é **pré-1.0, e avisa que versões minor podem quebrar** — leia as notas
 da release antes de ir da 0.17 para a 0.18, e faça backup antes. Ele vive no
 GitLab, então o `install.ini` compara com o registry de lá em vez de uma
@@ -99,34 +58,12 @@ do `HealthCmd` (regra 14 das convenções).
 
 ## Backup
 
-```bash
-qh fmd-server --backup --apply --out ~/backups
-```
-
 O volume guarda um banco SQLite. É texto cifrado, então o backup só serve junto
 com as senhas das contas.
 
 ## Remover
 
-```bash
-qh fmd-server --remove --apply           # para, mantém os dados
-qh fmd-server --remove --purge --apply   # e apaga o volume e o secret
-```
-
-O nó da tailnet não é desregistrado por isso — isso se faz no admin do Tailscale.
-
-## Comandos
-
-```bash
-systemctl --user status fmd-server
-podman logs -f fmd-server
-podman exec fmd-server /opt/fmd-server-ctl listusers   # contas neste servidor
-```
-
-A CLI de administração acha o banco pelo `FMD_DATABASEDIR`, que a unit define. O
-flag `--db-dir` dela aparece na ajuda geral mas não é aceito pelos
-subcomandos, e sem a variável ela procura em `./db/` e tenta criar um banco
-vazio ali — é a raiz somente-leitura que impede.
+O nó da tailnet não é desregistrado ao remover um app: isso é no admin do Tailscale.
 
 ## Créditos
 

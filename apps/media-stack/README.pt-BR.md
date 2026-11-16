@@ -8,86 +8,10 @@ Jellyfin mais a cadeia *arr e os downloaders — uma pasta, doze units, cada
 uma na sua porta. O Gluetun está ali para quem quiser o Deluge atrás de uma
 VPN; nada depende dele.
 
-## Instalar
-```bash
-qh media-stack            # mostra o plano
-qh media-stack --apply
-```
+## Primeiro acesso
 
 Cada unit publica a própria porta e o próprio nome na tailnet; os endereços
 saem no fim da instalação.
-
-<details>
-<summary><b>Instalação manual</b></summary>
-
-```bash
-# 1. Baixar as units (sem precisar clonar o repositório; inclui
-#    media-stack-gluetun.container — só importa se for usar a seção de VPN abaixo,
-#    sem ativar fica parado sem nenhum custo)
-mkdir -p ~/.config/containers/systemd/media-stack
-for f in jellyfin dispatcharr downtify navidrome prowlarr sonarr radarr lidarr \
-         bazarr seerr deluge sabnzbd gluetun; do
-  wget -P ~/.config/containers/systemd/media-stack/ \
-    "https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/media-stack/media-stack-$f.container"
-done
-
-# 2. Raiz de mídia — a ÚNICA decisão de path desta stack inteira, via uma
-#    variável de ambiente do systemd (não um EnvironmentFile= comum —
-#    essa precisa existir no ambiente do *manager* pra ser expandida
-#    dentro de Volume=; ver detalhes na regra correspondente do README
-#    raiz).
-mkdir -p ~/.config/environment.d
-cat > ~/.config/environment.d/media-stack.conf <<EOF
-MEDIA_DATA_DIR=$HOME/data
-EOF
-mkdir -p "$HOME/data"
-# Se a mídia já mora em outro disco/mount, usar o path real ali em cima
-# em vez de $HOME/data — nada de symlink, a variável já resolve isso.
-
-# 3. Diretórios de config — bind mount exige que já existam antes do start
-mkdir -p ~/.config/containers/volumes/media-stack/jellyfin/{config,cache}
-mkdir -p ~/.config/containers/volumes/media-stack/{prowlarr,sonarr,radarr,lidarr,bazarr,seerr,deluge,sabnzbd}/config
-mkdir -p ~/.config/containers/volumes/media-stack/dispatcharr/data
-mkdir -p ~/.config/containers/volumes/media-stack/downtify/data
-mkdir -p ~/.config/containers/volumes/media-stack/navidrome/data
-# O Navidrome é o único aqui que roda como User=1000, então a pasta de dados
-# dele precisa pertencer a esse uid antes do start — o container não pode
-# mais fazer chown sozinho. A música em si é montada só-leitura e não é tocada.
-podman unshare chown -R 1000:1000 ~/.config/containers/volumes/media-stack/navidrome/data
-# Downtify baixa em downloads/ (dentro da raiz de mídia), a mesma pasta
-# onde o Deluge salva os torrents completos — diferente do resto (passo
-# 2 acima já cria a raiz, mas não downloads/, criado pelo Deluge só
-# depois do primeiro uso; Downtify bind-monta esse subdiretório direto,
-# então precisa existir ANTES do start, não pode esperar).
-mkdir -p "$HOME/data/downloads"
-
-# 4. Env compartilhado (LinuxServer.io) — baixar o exemplo e ajustar
-#    PUID/PGID pro usuário que roda o Podman (mesmo dono de
-#    MEDIA_DATA_DIR, senão os apps não conseguem escrever nela)
-mkdir -p ~/.config/containers/env
-wget -O ~/.config/containers/env/media-stack.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/media-stack/.env.example
-sed -i "s/^PUID=.*/PUID=$(id -u)/;s/^PGID=.*/PGID=$(id -g)/" \
-  ~/.config/containers/env/media-stack.env
-# O Gluetun tem env próprio, ocioso até você preencher um provedor. Baixe
-# mesmo sem usar a VPN: o EnvironmentFile= dele não leva `-` na frente, então
-# o systemd trata o arquivo ausente como erro fatal no dia em que você usar.
-wget -O ~/.config/containers/env/media-stack-gluetun.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/media-stack/media-stack-gluetun.env.example
-
-# 5. Aplicar a env.d nova (precisa de daemon-reload, não só reiniciar
-#    o serviço — é o systemd --user que precisa reler o ambiente)
-systemctl --user daemon-reload
-
-# 6. Subir. O Gluetun fica de fora: não faz nada até você configurar um
-#    provedor. Sem
-#    Requires= entre serviços aqui — Dispatcharr é um container só,
-#    Postgres/Redis sobem dentro dele mesmo.
-systemctl --user start media-stack-jellyfin media-stack-dispatcharr media-stack-downtify media-stack-navidrome media-stack-prowlarr media-stack-sonarr media-stack-radarr media-stack-lidarr media-stack-bazarr media-stack-seerr media-stack-deluge media-stack-sabnzbd
-
-```
-
-</details>
 
 ## Arquivos
 
@@ -129,54 +53,12 @@ funciona sem ele.
 
 ## Atualizar
 
-```bash
-qh media-stack --update --apply
-```
-
 Cada unit tem a própria tag — a tabela acima lista todas. Nada atualiza
 sozinho; o comando acima aplica o que o repositório pinou.
 
-## Backup
-
-```bash
-qh media-stack --backup --apply --out ~/backups
-```
-
-Ele para o serviço, empacota os dados, o `.env` e os secrets, e sobe de novo.
-A frio de propósito: copiar banco vivo dá um arquivo que só falha na hora de
-restaurar.
-
-Pra restaurar, por cima dos dados atuais:
-
-```bash
-qh media-stack --restore ~/backups/media-stack-20260809-1200.tar.gz --apply
-```
-
-Ele pede que você digite `media-stack` pra confirmar, porque os dados atuais são
-apagados antes de o arquivo ser extraído.
-
 ## Remover
 
-```bash
-qh media-stack --remove --apply           # para e tira, mantendo os dados
-qh media-stack --remove --purge --apply   # e apaga volumes, secrets e .env
-```
-
-O `--purge` também pede o nome digitado. O nó da tailnet não é desregistrado
-por isso — isso é no admin do Tailscale.
-
-## Comandos
-
-Não existe unit `media-stack` — aja sobre a peça que você quer:
-
-```bash
-systemctl --user status media-stack-jellyfin
-podman logs -f jellyfin
-qh media-stack-sonarr --update --apply   # uma unit da pasta
-```
-
-Com o Deluge atrás da VPN, a interface responde na porta do Gluetun e o log do
-túnel é o `podman logs -f gluetun`.
+O nó da tailnet não é desregistrado ao remover um app: isso é no admin do Tailscale.
 
 ## Créditos
 

@@ -15,47 +15,9 @@ It works as a dashboard, but one of its two jobs did not work in testing, and th
 - **What it creates is not this repository's.** Even where an install works, the containers come out of the store's compose files: no Quadlet, no pinned tag (the store's Excalidraw is `:latest`), no hardening, no `qh`. For installing apps, use `qh` or the store (`qh-store`).
 - **It changes your Podman at the first start:** it creates the `casa-net` network (`10.22.0.0/16`, set with `SUBNET` in the `.env`) and joins itself to it.
 
-## Install
-
-```bash
-qh casa            # shows the plan
-qh casa --apply
-```
+## First run
 
 Open `https://casa.<your-tailnet>.ts.net`, or `http://<host-ip>:8129` with `--access local` or `both`. `qh` prints the login (`admin` and the generated password) at the end of the install.
-
-<details>
-<summary><b>Manual install</b></summary>
-
-```bash
-# 1. Download the unit (no need to clone the repository)
-mkdir -p ~/.config/containers/systemd
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/casa/casa.container
-
-# 2. Data directory — a bind mount requires it to exist before the start
-mkdir -p ~/.config/containers/volumes/casa/data
-
-# 3. Env — download the example. The only setting is the subnet of casa-net
-mkdir -p ~/.config/containers/env
-wget -O ~/.config/containers/env/casa.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/casa/.env.example
-
-# 4. The first account. CasaOS reads USER=<name>:<password> at the first start;
-#    without it the first visitor to the port registers as the administrator
-printf 'admin:%s' "$(openssl rand -hex 16)" | podman secret create casa-user -
-
-# 5. The Podman socket
-systemctl --user enable --now podman.socket
-
-# 6. Start it
-systemctl --user daemon-reload
-systemctl --user start casa
-```
-
-Read the login back with `podman secret inspect casa-user --showsecret --format '{{.SecretData}}'` (the form is `admin:<password>`).
-
-</details>
 
 ## Why the unit looks like this
 
@@ -76,54 +38,18 @@ casa.container
 install.ini
 ```
 
-## Update
-
-```bash
-qh casa --update --apply
-```
-
-The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh casa --update --latest --apply` (the store's Update button does the same).
-
 ## Backup
 
-```bash
-qh casa --backup --apply --out ~/backups
-```
-
-It stops the service, packs the data, the `.env` and the secrets, and starts
-it again. Cold on purpose: copying a live database gives an archive that only
-fails when you restore it. Everything CasaOS keeps — accounts, databases, its apps' data — is under `/DATA`, which is the one volume.
-
-To restore, over the current data:
-
-```bash
-qh casa --restore ~/backups/casa-20260809-1200.tar.gz --apply
-```
-
-It asks you to type `casa` to confirm, because the current data is deleted
-before the archive is unpacked.
+Everything CasaOS keeps — accounts, databases, its apps' data — is under `/DATA`, which is the one volume.
 
 ## Remove
 
-```bash
-qh casa --remove --apply           # stops it, keeps the data
-qh casa --remove --purge --apply   # and deletes volumes, secrets and .env
-```
-
-`--purge` asks for the typed name too. The tailnet node is not deregistered by
-this — that is done in the Tailscale admin.
+The tailnet node is not deregistered when an app is removed: do that in the Tailscale admin.
 
 What CasaOS created in your Podman is not removed either — the `casa-net` network and any container installed from it:
 
 ```bash
 podman network rm casa-net
-```
-
-## Commands
-
-```bash
-systemctl --user status casa
-podman logs -f casa
 ```
 
 ## Credits

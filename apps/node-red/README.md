@@ -6,38 +6,9 @@
 
 Flow automation through a visual node editor.
 
-## Install
-
-```bash
-qh node-red            # shows the plan
-qh node-red --apply
-```
+## First run
 
 Open `http://<host-ip>:1880` or `https://node-red.<your-tailnet>.ts.net`.
-
-<details>
-<summary><b>Manual install</b></summary>
-
-```bash
-# 1. Download the units (no need to clone the repository)
-mkdir -p ~/.config/containers/systemd
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/node-red/node-red.container
-
-# 2. Data directory — a bind mount requires it to exist before the start
-mkdir -p ~/.config/containers/volumes/node-red/data
-
-# 3. Non-secret env
-mkdir -p ~/.config/containers/env
-wget -O ~/.config/containers/env/node-red.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/node-red/.env.example
-
-# 4. Start it
-systemctl --user daemon-reload
-systemctl --user start node-red
-```
-
-</details>
 
 ## Files
 
@@ -47,49 +18,9 @@ node-red.container
 install.ini
 ```
 
-## Update
-
-```bash
-qh node-red --update --apply
-```
-
-The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh node-red --update --latest --apply` (the store's Update button does the same).
-
-## Backup
-
-```bash
-qh node-red --backup --apply --out ~/backups
-```
-
-It stops the service, packs the data, the `.env` and the secrets, and starts
-it again. Cold on purpose: copying a live database gives an archive that only
-fails when you restore it.
-
-To restore, over the current data:
-
-```bash
-qh node-red --restore ~/backups/node-red-20260809-1200.tar.gz --apply
-```
-
-It asks you to type `node-red` to confirm, because the current data is deleted
-before the archive is unpacked.
-
 ## Remove
 
-```bash
-qh node-red --remove --apply           # stops it, keeps the data
-qh node-red --remove --purge --apply   # and deletes volumes, secrets and .env
-```
-
-`--purge` asks for the typed name too. The tailnet node is not deregistered by
-this — that is done in the Tailscale admin.
-
-## Commands
-
-```bash
-systemctl --user status node-red
-podman logs -f node-red
-```
+The tailnet node is not deregistered when an app is removed: do that in the Tailscale admin.
 
 ## Credits
 

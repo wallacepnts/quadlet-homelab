@@ -10,31 +10,9 @@ você rodaria por SSH, com busca, vários containers lado a lado e sem terminal.
 Ele não guarda nada: sem banco, sem volume, sem cópia de log. O que você vê é o
 que o Podman tem naquele momento.
 
-## Instalação
-
-```bash
-qh dozzle            # mostra o plano
-qh dozzle --apply
-```
+## Primeiro acesso
 
 Abrir `https://dozzle.<your-tailnet>.ts.net`.
-
-<details>
-<summary><b>Instalação manual (avançado)</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd ~/.config/containers/env
-
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/dozzle/dozzle.container
-wget -O ~/.config/containers/env/dozzle.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/dozzle/.env.example
-
-systemctl --user daemon-reload
-systemctl --user start dozzle
-```
-
-</details>
 
 ## Arquivos
 
@@ -77,30 +55,9 @@ interface respondendo —, não só com o container de pé.
 O healthcheck é o subcomando do próprio binário, `/dozzle healthcheck`, em
 forma exec: a imagem não traz shell, então o `CMD-SHELL` falharia.
 
-## Atualizar
-
-```bash
-qh dozzle --update --apply
-```
-
-A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh dozzle --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
-
 ## Backup
 
 Não há o que copiar. Removê-lo não perde dado nenhum — os logs são do Podman.
-
-## Remover
-
-```bash
-qh dozzle --remove --apply
-```
-
-## Comandos
-
-```bash
-systemctl --user status dozzle
-podman logs -f dozzle
-```
 
 ## Créditos
 

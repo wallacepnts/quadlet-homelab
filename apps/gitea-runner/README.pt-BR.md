@@ -15,12 +15,7 @@ este repositório recebe do GitHub, numa máquina sua.
 O Actions vem ligado por padrão no Gitea desde a 1.21, então não há nada a
 habilitar antes — este repositório fixa a 1.27.3.
 
-## Instalar
-
-```bash
-qh gitea-runner            # mostra o plano
-qh gitea-runner --apply
-```
+## Primeiro acesso
 
 Ele pede o token de registro. Pegue no Gitea, em **Administração do site →
 Actions → Runners → Criar novo Runner**, ou pela linha de comando:
@@ -31,42 +26,6 @@ podman exec -u git gitea gitea actions generate-runner-token
 
 O token se gasta no primeiro registro. Depois disso o runner usa o arquivo
 `.runner` do volume e nunca mais o lê.
-
-<details>
-<summary><b>Instalação manual (avançado)</b></summary>
-
-```bash
-# 1. Baixe a unit (sem precisar clonar o repositório)
-mkdir -p ~/.config/containers/systemd
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/gitea-runner/gitea-runner.container
-
-# 2. O volume guarda três coisas: a config, o arquivo de registro .runner e o
-#    cache do Actions
-mkdir -p ~/.config/containers/volumes/gitea-runner/data
-wget -O ~/.config/containers/volumes/gitea-runner/data/config.yaml \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/gitea-runner/config.yaml
-
-# 3. Qual Gitea, qual nome, e que imagens os labels significam
-mkdir -p ~/.config/containers/env
-wget -O ~/.config/containers/env/gitea-runner.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/gitea-runner/gitea-runner.env.example
-
-# 4. O token de registro, vindo do Gitea
-mkdir -p ~/.config/containers/secrets/gitea-runner
-podman exec -u git gitea gitea actions generate-runner-token \
-  > ~/.config/containers/secrets/gitea-runner/token.txt
-chmod 600 ~/.config/containers/secrets/gitea-runner/token.txt
-podman secret create gitea-runner-token ~/.config/containers/secrets/gitea-runner/token.txt
-
-# 5. O socket que ele dirige, que o podman só serve com isto ligado
-systemctl --user enable --now podman.socket
-
-systemctl --user daemon-reload
-systemctl --user start gitea-runner
-```
-
-</details>
 
 ## Arquivos
 
@@ -110,13 +69,6 @@ medidos e não adivinhados:
 
 ## Atualizar
 
-```bash
-qh gitea-runner --update --apply
-```
-
-Fixado em `4.1.0`. Nada atualiza sozinho — uma versão nova é aplicada quando
-você roda o comando acima.
-
 O projeto mudou de nome: era publicado como `gitea/act_runner`, que parou na
 `0.6.1`, e hoje é `gitea/runner` com versionamento próprio. Ele também vive no
 `gitea.com` e não no GitHub, então o `install.ini` compara com o registry em
@@ -124,31 +76,14 @@ vez de uma página de releases que não existe.
 
 ## Backup
 
-```bash
-qh gitea-runner --backup --apply --out ~/backups
-```
-
 Vale pouco: o volume guarda um registro que se refaz em um minuto e um cache
 que existe para ser descartado. Restaurar o `.runner` noutra máquina dá dois
 runners reivindicando um registro só.
 
 ## Remover
 
-```bash
-qh gitea-runner --remove --apply           # para, mantém os dados
-qh gitea-runner --remove --purge --apply   # e apaga o volume e o secret
-```
-
 O Gitea mantém o runner na lista dele de qualquer jeito — apague lá também, em
 Administração do site → Actions → Runners.
-
-## Comandos
-
-```bash
-systemctl --user status gitea-runner
-podman logs -f gitea-runner
-podman exec gitea-runner wget -qO- http://127.0.0.1:9101/readyz   # está consultando o Gitea?
-```
 
 ## Créditos
 

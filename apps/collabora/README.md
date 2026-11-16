@@ -11,12 +11,7 @@ the file never leaves the house.
 It is useless on its own: every document it opens is handed to it by ownCloud.
 Install that one first.
 
-## Install
-
-```bash
-qh collabora            # shows the plan
-qh collabora --apply
-```
+## First run
 
 Then, in `~/.config/containers/env/collabora.env`, put your ownCloud address in
 `aliasgroup1` and restart with `qh collabora --update --apply`. On the ownCloud
@@ -27,24 +22,6 @@ podman exec owncloud occ app:enable richdocuments
 podman exec owncloud occ config:app:set richdocuments wopi_url \
   --value="https://collabora.<your-tailnet>.ts.net"
 ```
-
-<details>
-<summary><b>Manual install (advanced)</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd ~/.config/containers/env
-
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/collabora/collabora.container
-wget -O ~/.config/containers/env/collabora.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/collabora/.env.example
-# edit ~/.config/containers/env/collabora.env: aliasgroup1
-
-systemctl --user daemon-reload
-systemctl --user start collabora
-```
-
-</details>
 
 ## Files
 
@@ -97,12 +74,7 @@ no shell and no `curl` or `wget` — `coolwsd`, `coolmount`, `coolforkit` and
 
 ## Update
 
-```bash
-qh collabora --update --apply
-```
-
-Pinned to `26.04.4.2.1`. Collabora publishes no GitHub releases, so
-`qh-updates` compares against the registry's tag list.
+Collabora publishes no GitHub releases, so `qh-updates` compares against the registry's tag list.
 
 ## Backup
 
@@ -111,26 +83,11 @@ Nothing to back up — see [Files](#files). The documents are ownCloud's, and
 
 ## Remove
 
-```bash
-qh collabora --remove --apply           # stops it and removes the unit
-qh collabora --remove --purge --apply   # and deletes the .env
-```
-
 Turn the ownCloud side off too, or its file menu keeps offering an editor that
 is no longer there:
 
 ```bash
 podman exec owncloud occ app:disable richdocuments
-```
-
-## Commands
-
-```bash
-systemctl --user status collabora
-podman logs -f collabora
-
-# what ownCloud asks for
-podman exec owncloud curl -s http://collabora:9980/hosting/discovery | head -20
 ```
 
 ## Credits

@@ -6,30 +6,9 @@
 
 Converters, generators and calculators that run in the browser — nothing is sent to the server.
 
-## Install
-
-```bash
-qh omni-tools            # shows the plan
-qh omni-tools --apply
-```
+## First run
 
 Open `http://<host-ip>:8101` or `https://omni-tools.<your-tailnet>.ts.net`.
-
-<details>
-<summary><b>Manual install</b></summary>
-
-```bash
-# 1. Download the unit (no need to clone the repository)
-mkdir -p ~/.config/containers/systemd
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/omni-tools/omni-tools.container
-
-# 2. Start it — sem mkdir, sem secret, sem env
-systemctl --user daemon-reload
-systemctl --user start omni-tools
-```
-
-</details>
 
 ## Files
 
@@ -37,49 +16,9 @@ systemctl --user start omni-tools
 omni-tools.container
 ```
 
-## Update
-
-```bash
-qh omni-tools --update --apply
-```
-
-The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh omni-tools --update --latest --apply` (the store's Update button does the same).
-
-## Backup
-
-```bash
-qh omni-tools --backup --apply --out ~/backups
-```
-
-It stops the service, packs the data, the `.env` and the secrets, and starts
-it again. Cold on purpose: copying a live database gives an archive that only
-fails when you restore it.
-
-To restore, over the current data:
-
-```bash
-qh omni-tools --restore ~/backups/omni-tools-20260809-1200.tar.gz --apply
-```
-
-It asks you to type `omni-tools` to confirm, because the current data is deleted
-before the archive is unpacked.
-
 ## Remove
 
-```bash
-qh omni-tools --remove --apply           # stops it, keeps the data
-qh omni-tools --remove --purge --apply   # and deletes volumes, secrets and .env
-```
-
-`--purge` asks for the typed name too. The tailnet node is not deregistered by
-this — that is done in the Tailscale admin.
-
-## Commands
-
-```bash
-systemctl --user status omni-tools
-podman logs -f omni-tools
-```
+The tailnet node is not deregistered when an app is removed: do that in the Tailscale admin.
 
 ## Credits
 

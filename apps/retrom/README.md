@@ -7,12 +7,7 @@
 A game library for emulation: one collection on the server, played in the
 browser or through Retrom's desktop client.
 
-## Install
-
-```bash
-qh retrom            # shows the plan
-qh retrom --apply
-```
+## First run
 
 Put the games under `~/.config/containers/volumes/retrom/library`, in the
 [folder structure Retrom
@@ -22,24 +17,6 @@ open `http://<host-ip>:5101` or `https://retrom.<your-tailnet>.ts.net`.
 **The first start takes about 90 seconds** — it downloads EmulatorJS and runs
 the database migrations. `TimeoutStartSec=300` and a 180 second health start
 period are there for that; a restart afterwards is quick.
-
-<details>
-<summary><b>Manual install</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd ~/.config/containers/env
-mkdir -p ~/.config/containers/volumes/retrom/{config,data,library}
-
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/retrom/retrom.container
-wget -O ~/.config/containers/env/retrom.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/retrom/.env.example
-
-systemctl --user daemon-reload
-systemctl --user start retrom
-```
-
-</details>
 
 ## Files
 
@@ -62,19 +39,7 @@ key. Without one the library still works, listed by filename. The keys are set
 from the client, not here — see [Metadata
 Providers](https://github.com/JMBeresford/retrom/wiki/Metadata-Providers).
 
-## Update
-
-```bash
-qh retrom --update --apply
-```
-
-The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh retrom --update --latest --apply` (the store's Update button does the same).
-
 ## Backup
-
-```bash
-qh retrom --backup --apply --out ~/backups
-```
 
 It stops the service, packs the three volumes and the `.env`, and starts it
 again. Cold on purpose: Retrom carries an embedded PostgreSQL, and copying it
@@ -82,29 +47,10 @@ live gives an archive that only fails when you restore it. That is also why
 `stop` is the mode to use if you add it to
 [Zerobyte's backup hook](../zerobyte).
 
-To restore, over the current data:
-
-```bash
-qh retrom --restore ~/backups/retrom-20260810-1200.tar.gz --apply
-```
-
 ## Remove
-
-```bash
-qh retrom --remove --apply           # stops it, keeps the data
-qh retrom --remove --purge --apply   # and deletes the volumes and the .env
-```
 
 `--purge` deletes the library too — the games are in a volume like everything
 else.
-
-## Commands
-
-```bash
-systemctl --user status retrom
-podman logs -f retrom
-podman exec retrom curl -fsS -o /dev/null http://127.0.0.1:5101/
-```
 
 ## Credits
 

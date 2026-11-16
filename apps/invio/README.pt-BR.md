@@ -6,54 +6,9 @@
 
 Emissão e controle de faturas self-hosted, com SQLite e sem depender de serviço externo.
 
-## Instalar
-
-```bash
-qh invio            # mostra o plano
-qh invio --apply
-```
+## Primeiro acesso
 
 Abrir `http://<ip-do-host>:8106` ou `https://invio.<your-tailnet>.ts.net`.
-
-<details>
-<summary><b>Instalação manual</b></summary>
-
-```bash
-# 1. Baixar a unit (sem precisar clonar o repositório)
-mkdir -p ~/.config/containers/systemd
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/invio/invio.container
-
-# 2. Diretório de dados
-mkdir -p ~/.config/containers/volumes/invio/data
-
-# 3. Variáveis — trocar <your-tailnet> no ORIGIN
-mkdir -p ~/.config/containers/env
-wget -O ~/.config/containers/env/invio.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/invio/.env.example
-${EDITOR:-vi} ~/.config/containers/env/invio.env
-
-# 4. Secrets — a senha do admin e a chave que assina a sessão. Não vão no
-#    .env de propósito.
-mkdir -p ~/.config/containers/secrets/invio
-python3 -c "import secrets;print(secrets.token_urlsafe(18),end='')" \
-  > ~/.config/containers/secrets/invio/admin-pass.txt
-python3 -c "import secrets;print(secrets.token_hex(32),end='')" \
-  > ~/.config/containers/secrets/invio/jwt-secret.txt
-chmod 600 ~/.config/containers/secrets/invio/*.txt
-podman secret create invio-admin-pass ~/.config/containers/secrets/invio/admin-pass.txt
-podman secret create invio-jwt-secret ~/.config/containers/secrets/invio/jwt-secret.txt
-
-# 5. Subir
-systemctl --user daemon-reload
-systemctl --user start invio
-```
-
-```bash
-qh invio --apply
-```
-
-</details>
 
 ## Arquivos
 
@@ -63,49 +18,9 @@ invio.container
 install.ini
 ```
 
-## Atualizar
-
-```bash
-qh invio --update --apply
-```
-
-A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh invio --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
-
-## Backup
-
-```bash
-qh invio --backup --apply --out ~/backups
-```
-
-Ele para o serviço, empacota os dados, o `.env` e os secrets, e sobe de novo.
-A frio de propósito: copiar banco vivo dá um arquivo que só falha na hora de
-restaurar.
-
-Pra restaurar, por cima dos dados atuais:
-
-```bash
-qh invio --restore ~/backups/invio-20260809-1200.tar.gz --apply
-```
-
-Ele pede que você digite `invio` pra confirmar, porque os dados atuais são
-apagados antes de o arquivo ser extraído.
-
 ## Remover
 
-```bash
-qh invio --remove --apply           # para e tira, mantendo os dados
-qh invio --remove --purge --apply   # e apaga volumes, secrets e .env
-```
-
-O `--purge` também pede o nome digitado. O nó da tailnet não é desregistrado
-por isso — isso é no admin do Tailscale.
-
-## Comandos
-
-```bash
-systemctl --user status invio
-podman logs -f invio
-```
+O nó da tailnet não é desregistrado ao remover um app: isso é no admin do Tailscale.
 
 ## Créditos
 

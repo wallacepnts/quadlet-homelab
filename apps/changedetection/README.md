@@ -11,36 +11,10 @@ notification is a diff and not just "something moved".
 It replaces the tracking sites that want an account and an e-mail address to do
 the same thing.
 
-## Install
-
-```bash
-qh changedetection            # shows the plan
-qh changedetection --apply
-```
+## First run
 
 Open `https://changedetection.<your-tailnet>.ts.net`. Set a password under
 **Settings → General** if anyone else reaches your tailnet.
-
-<details>
-<summary><b>Manual install (advanced)</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd ~/.config/containers/env
-mkdir -p ~/.config/containers/volumes/changedetection/datastore
-
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/changedetection/changedetection.container
-wget -O ~/.config/containers/env/changedetection.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/changedetection/.env.example
-
-# The container runs as uid 1000, which is not yours after the mapping
-podman unshare chown -R 1000:1000 ~/.config/containers/volumes/changedetection
-
-systemctl --user daemon-reload
-systemctl --user start changedetection
-```
-
-</details>
 
 ## Files
 
@@ -79,45 +53,9 @@ browser inside, which is a lot of machinery for a page you can usually watch
 through its JSON endpoint instead. Look for one before adding half a gigabyte
 of Chrome.
 
-## Update
-
-```bash
-qh changedetection --update --apply
-```
-
-The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh changedetection --update --latest --apply` (the store's Update button does the same).
-
 ## Backup
 
-```bash
-qh changedetection --backup --apply --out ~/backups
-```
-
 Stops it, packs the datastore and the `.env`, starts it again.
-
-To restore, over the current data:
-
-```bash
-qh changedetection --restore ~/backups/changedetection-20260811-1200.tar.gz --apply
-```
-
-## Remove
-
-```bash
-qh changedetection --remove --apply           # stops it, keeps the watches
-qh changedetection --remove --purge --apply   # and deletes the datastore
-```
-
-## Commands
-
-```bash
-systemctl --user status changedetection
-podman logs -f changedetection
-
-# how many watches, without opening the interface
-podman exec changedetection python3 -c \
-  "import json;print(len(json.load(open('/datastore/url-watches.json'))['watching']))"
-```
 
 ## Credits
 

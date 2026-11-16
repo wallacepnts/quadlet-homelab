@@ -8,34 +8,10 @@ Pergunta as métricas de cada alvo em intervalo e guarda o histórico. É a font
 de dados que o [Grafana](../grafana/README.pt-BR.md) desenha — o Grafana não
 guarda nada, este guarda tudo.
 
-## Instalação
-
-```bash
-qh prometheus            # mostra o plano
-qh prometheus --apply
-```
+## Primeiro acesso
 
 Abra `http://<ip-do-host>:9090` ou `https://prometheus.<your-tailnet>.ts.net`.
 Em Status → Targets você vê o que ele coleta e se cada um respondeu.
-
-<details>
-<summary><b>Instalação manual</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd
-mkdir -p ~/.config/containers/volumes/prometheus/{config,data}
-
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/prometheus/prometheus.container
-wget -O ~/.config/containers/volumes/prometheus/config/prometheus.yml \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/prometheus/config/prometheus.yml
-podman unshare chown -R 65534:65534 ~/.config/containers/volumes/prometheus
-
-systemctl --user daemon-reload
-systemctl --user start prometheus
-```
-
-</details>
 
 ## Arquivos
 
@@ -77,45 +53,11 @@ Depois de editar:
 qh prometheus --update --apply
 ```
 
-## Atualizar
-
-```bash
-qh prometheus --update --apply
-```
-
-A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh prometheus --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
-
 ## Backup
-
-```bash
-qh prometheus --backup --apply --out ~/backups
-```
 
 Para o serviço, empacota a config e o histórico, e religa. A frio de propósito:
 o TSDB é um banco como outro qualquer, e copiá-lo em uso dá um arquivo que só
 falha na hora de restaurar.
-
-Para restaurar, por cima dos dados atuais:
-
-```bash
-qh prometheus --restore ~/backups/prometheus-20260810-1200.tar.gz --apply
-```
-
-## Remover
-
-```bash
-qh prometheus --remove --apply           # para, mantém o histórico
-qh prometheus --remove --purge --apply   # e apaga o volume
-```
-
-## Comandos
-
-```bash
-systemctl --user status prometheus
-podman logs -f prometheus
-podman exec prometheus wget -qO- http://127.0.0.1:9090/-/healthy
-podman exec prometheus wget -qO- 'http://127.0.0.1:9090/api/v1/query?query=up'
-```
 
 ## Créditos
 

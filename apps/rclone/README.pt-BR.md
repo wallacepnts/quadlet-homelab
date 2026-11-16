@@ -7,37 +7,10 @@ interface web ligada. Ele lê o mesmo `~/.config/rclone/rclone.conf` do comando
 `rclone` do host: toda conta de nuvem já configurada lá aparece no navegador, e
 dá para adicionar outras por ele.
 
-## Instalação
-
-```bash
-qh rclone            # mostra o plano
-qh rclone --apply
-```
+## Primeiro acesso
 
 A instalação termina imprimindo o login (`admin` e uma senha gerada). Abra
 `https://rclone.<your-tailnet>.ts.net`: o navegador pede os dois uma vez.
-
-<details>
-<summary><b>Instalação manual (avançado)</b></summary>
-
-```bash
-# 1. Baixar a unit (sem clonar o repositório)
-mkdir -p ~/.config/containers/systemd
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/rclone/rclone.container
-
-# 2. A pasta de config (compartilhada com o host) e o cache da interface
-mkdir -p ~/.config/rclone ~/.config/containers/volumes/rclone/cache
-
-# 3. A senha da interface e da API
-openssl rand -base64 24 | tr -d '/+=' | podman secret create rclone-password -
-podman secret inspect rclone-password --showsecret --format '{{.SecretData}}'; echo
-
-systemctl --user daemon-reload
-systemctl --user start rclone
-```
-
-</details>
 
 ## Arquivos
 
@@ -72,12 +45,6 @@ qh rclone --reinstall --ask-secrets --apply
 
 ## Atualização
 
-```bash
-qh rclone --update --apply
-```
-
-A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh rclone --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
-
 **A interface web é outro projeto e também está fixada.** Por padrão o `rcd`
 pergunta ao GitHub pela release mais nova da interface a cada start.
 `--rc-web-fetch-url` o aponta para uma release só (`v2.0.5`, a atual): o primeiro
@@ -99,20 +66,7 @@ um remote pela API, que gravou o `rclone.conf` com 600 e dono o usuário do host
 Não testado: um remote de nuvem de verdade, nem uma sessão no navegador pelo
 tsdproxy.
 
-## Comandos
-
-```bash
-systemctl --user status rclone
-podman logs -f rclone
-podman exec rclone rclone listremotes
-```
-
 ## Remover
-
-```bash
-qh rclone --remove --apply           # para, mantém os dados
-qh rclone --remove --purge --apply   # e apaga o cache e o segredo
-```
 
 O `--purge` nunca toca em `~/.config/rclone`: é o config do próprio host. O nó
 da tailnet não é desregistrado por isso — é feito no admin do Tailscale.

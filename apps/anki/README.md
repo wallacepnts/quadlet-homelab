@@ -8,12 +8,7 @@ The sync server that ships with [Anki](https://apps.ankiweb.net) itself, run
 here instead of AnkiWeb. Decks, review history and media sync between Anki on
 the desktop, AnkiDroid and AnkiMobile through your own machine.
 
-## Install
-
-```bash
-qh anki            # shows the plan
-qh anki --apply
-```
+## First run
 
 The install ends by printing the user and password. Then, in each client, point
 sync at `https://anki.<your-tailnet>.ts.net/` and log in with them:
@@ -24,29 +19,6 @@ sync at `https://anki.<your-tailnet>.ts.net/` and log in with them:
 
 The first sync after switching servers is a full one: upload from the device
 that has the collection you want to keep, download on the others.
-
-<details>
-<summary><b>Manual install (advanced)</b></summary>
-
-```bash
-# 1. Download the unit (no need to clone the repository)
-mkdir -p ~/.config/containers/systemd
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/anki/anki.container
-
-# 2. The data directory. The unit runs as uid 65532, distroless's nonroot user.
-mkdir -p ~/.config/containers/volumes/anki/data
-podman unshare chown -R 65532:65532 ~/.config/containers/volumes/anki/data
-
-# 3. The account, as `user:password`, the form the server reads
-printf 'anki:%s' "$(openssl rand -hex 16)" | podman secret create anki-user -
-podman secret inspect anki-user --showsecret --format '{{.SecretData}}'; echo
-
-systemctl --user daemon-reload
-systemctl --user start anki
-```
-
-</details>
 
 ## Files
 
@@ -119,12 +91,6 @@ edits to the unit are shown by `qh anki --update` before they are overwritten.
 
 ## Update
 
-```bash
-qh anki --update --apply
-```
-
-Pinned to `26.08-distroless`. Nothing updates on its own.
-
 **There is no official image.** Anki's repository carries the Dockerfile but
 publishes no image; this one is built from that Dockerfile by its author, on
 his own schedule — 25.07 to 26.05 took ten months, and the image lags Anki's
@@ -150,30 +116,13 @@ exits cleanly, with code 0.
 
 ## Backup
 
-```bash
-qh anki --backup --apply --out ~/backups
-```
-
 The volume holds each user's collection and media as SQLite files and a
 folder. The clients keep their own copy too, so a lost server is recovered by
 a full upload from any of them.
 
 ## Remove
 
-```bash
-qh anki --remove --apply           # stops it, keeps the data
-qh anki --remove --purge --apply   # and deletes the volume and secret
-```
-
-The tailnet node is not deregistered by this — that is done in the Tailscale admin.
-
-## Commands
-
-```bash
-systemctl --user status anki
-podman logs -f anki
-podman exec anki anki-sync-server --healthcheck; echo $?
-```
+The tailnet node is not deregistered when an app is removed: do that in the Tailscale admin.
 
 ## Credits
 

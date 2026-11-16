@@ -11,38 +11,10 @@ Two containers — the frontend you open and the backend that holds the SQLite
 database. The frontend requires the backend, so starting `excalidash` brings
 both up.
 
-## Install
-
-```bash
-qh excalidash            # shows the plan
-qh excalidash --apply
-```
+## First run
 
 Open `http://<host-ip>:8016` or `https://excalidash.<your-tailnet>.ts.net` and
 create the account.
-
-<details>
-<summary><b>Manual install</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd/excalidash ~/.config/containers/env
-mkdir -p ~/.config/containers/volumes/excalidash/data
-
-openssl rand -hex 32 | podman secret create excalidash-jwt-secret -
-openssl rand -hex 32 | podman secret create excalidash-csrf-secret -
-
-wget -P ~/.config/containers/systemd/excalidash/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/excalidash/excalidash.container \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/excalidash/excalidash-backend.container \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/excalidash/excalidash-net.network
-wget -O ~/.config/containers/env/excalidash.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/excalidash/.env.example
-
-systemctl --user daemon-reload
-systemctl --user start excalidash
-```
-
-</details>
 
 ## Files
 
@@ -71,43 +43,13 @@ that.
 
 ## Update
 
-```bash
-qh excalidash --update --apply
-```
-
-The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh excalidash --update --latest --apply` (the store's Update button does the same). Both images carry the same tag, and they are bumped
-together.
+Both images carry the same tag, and they are bumped together.
 
 ## Backup
-
-```bash
-qh excalidash --backup --apply --out ~/backups
-```
 
 It stops both, packs the data, the `.env` and the secrets, and starts them
 again. The secrets matter here: restoring the database without the same
 `JWT_SECRET` logs everyone out.
-
-To restore, over the current data:
-
-```bash
-qh excalidash --restore ~/backups/excalidash-20260810-1200.tar.gz --apply
-```
-
-## Remove
-
-```bash
-qh excalidash --remove --apply           # stops it, keeps the data
-qh excalidash --remove --purge --apply   # and deletes volumes, secrets and .env
-```
-
-## Commands
-
-```bash
-systemctl --user status excalidash
-podman logs -f excalidash-backend
-podman exec excalidash-backend node -e "require('http').get('http://127.0.0.1:8000/health', r => console.log(r.statusCode))"
-```
 
 ## Credits
 

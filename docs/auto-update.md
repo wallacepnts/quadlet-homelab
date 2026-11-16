@@ -42,7 +42,7 @@ by digest.
 
 ```bash
 qh-updates                     # what is behind, against each project's own release page
-qh-updates --bump --apply      # for those: rewrites Image= and each service README's Pinned line
+qh-updates --bump --apply      # for those: rewrites Image=
 qh <app> --update --apply      # puts it on the host
 ```
 

@@ -12,12 +12,7 @@ Cada biblioteca é um arquivo `.zim` — um instantâneo comprimido e indexado.
 Você escolhe quais manter, e elas custam o que custam: a Wikipedia em português
 sem imagens fica em torno de 5 GB, com imagens perto de 40 GB.
 
-## Instalação
-
-```bash
-qh kiwix            # mostra o plano
-qh kiwix --apply
-```
+## Primeiro acesso
 
 **Ele não sobe vazio.** Sem nenhum `.zim` no volume, o `kiwix-serve` responde
 `Unable to add the ZIM file '*.zim' to the internal library` e sai — então a
@@ -32,27 +27,6 @@ systemctl --user start kiwix
 ```
 
 O catálogo está em [library.kiwix.org](https://library.kiwix.org).
-
-<details>
-<summary><b>Instalação manual (avançado)</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd ~/.config/containers/env
-mkdir -p ~/.config/containers/volumes/kiwix/data
-
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/kiwix/kiwix.container
-wget -O ~/.config/containers/env/kiwix.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/kiwix/.env.example
-
-# O container roda como uid 1001, que não é o seu depois do mapeamento
-podman unshare chown -R 1001:1001 ~/.config/containers/volumes/kiwix
-
-systemctl --user daemon-reload
-systemctl --user start kiwix
-```
-
-</details>
 
 ## Arquivos
 
@@ -93,34 +67,13 @@ somente-leitura vale para o sistema de arquivos do container.
 
 ## Atualizar
 
-```bash
-qh kiwix --update --apply
-```
-
-A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh kiwix --update --latest --apply` (o botão Atualizar da loja faz o mesmo). As bibliotecas têm calendário próprio, que é o seu: baixe o
-`.zim` novo, apague o velho, reinicie.
+As bibliotecas têm calendário próprio, que é o seu: baixe o `.zim` novo, apague o velho, reinicie.
 
 ## Backup
 
 De propósito fora dos jobs de backup: um `.zim` é arquivo público que você
 baixa de novo, e copiar dezenas de gigabytes de Wikipedia para um repositório
 Restic custaria muito mais que buscar outra vez.
-
-## Remover
-
-```bash
-qh kiwix --remove --apply           # para e mantém as bibliotecas
-qh kiwix --remove --purge --apply   # e apaga todos os .zim
-```
-
-## Comandos
-
-```bash
-systemctl --user status kiwix
-podman logs -f kiwix
-
-du -sh ~/.config/containers/volumes/kiwix/data
-```
 
 ## Créditos
 

@@ -10,12 +10,7 @@ próprios arquivos de save. Mova Pokémon entre saves, guarde-os em bancos e cai
 fora de qualquer save, converta-os entre gerações e veja uma Pokédex única montada
 a partir de todos os seus saves, da primeira geração ao Legends: Z-A.
 
-## Instalação
-
-```bash
-qh pkvault            # mostra o plano
-qh pkvault --apply
-```
+## Primeiro acesso
 
 Depois abra `https://pkvault.<your-tailnet>.ts.net`.
 
@@ -23,24 +18,6 @@ Depois abra `https://pkvault.<your-tailnet>.ts.net`.
 tailnet, esse alguém é você. Com `--access tailnet`, o padrão, a porta da LAN
 nem é publicada; com `local` ou `both`, a porta `8126` fica aberta a todo mundo
 da sua rede — escolha esses só numa LAN que seja só sua.
-
-<details>
-<summary><b>Instalação manual (avançado)</b></summary>
-
-```bash
-# 1. Baixar a unit (não precisa clonar o repositório)
-mkdir -p ~/.config/containers/systemd
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/pkvault/pkvault.container
-
-# 2. A pasta de dados: banco, armazenamento, backups, logs e saves enviados
-mkdir -p ~/.config/containers/volumes/pkvault/data
-
-systemctl --user daemon-reload
-systemctl --user start pkvault
-```
-
-</details>
 
 ## Arquivos
 
@@ -99,39 +76,15 @@ Duas coisas na unit vêm daí:
 
 ## Atualizar
 
-```bash
-qh pkvault --update --apply
-```
-
-A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh pkvault --update --latest --apply` (o botão Atualizar da loja faz o mesmo). A imagem é marcada sem o `v` que a
-release tem. O PKVault traz o próprio PKHeX (26.8.26 na 2.3.3), então o suporte a
-um jogo novo chega com uma release do PKVault. A página consulta o GitHub em busca
-de release nova a partir do seu navegador; é a única chamada para fora.
+A imagem é marcada sem o `v` que a release tem. O PKVault traz o próprio PKHeX (26.8.26 na 2.3.3), então o suporte a um jogo novo chega com uma release do PKVault. A página consulta o GitHub em busca de release nova a partir do seu navegador; é a única chamada para fora.
 
 ## Backup
-
-```bash
-qh pkvault --backup --apply --out ~/backups
-```
 
 Os backups do próprio app ficam no mesmo volume, então este copia eles também.
 
 ## Remover
 
-```bash
-qh pkvault --remove --apply           # para, mantém os dados
-qh pkvault --remove --purge --apply   # e apaga o volume
-```
-
 O nó da tailnet não é removido por aqui — isso é no admin do Tailscale.
-
-## Comandos
-
-```bash
-systemctl --user status pkvault
-podman logs -f pkvault
-curl -s http://127.0.0.1:8126/api/settings   # versão, caminhos, PKHeX incluído
-```
 
 ## Créditos
 

@@ -8,37 +8,7 @@ Disposable Arch, Fedora, RHEL and Ubuntu shells, on the official Toolbx images �
 
 These are containers, not VMs: they share the host's kernel, which is why they start instantly. When you need a real one, see [vm](../vm).
 
-## Install
-
-```bash
-qh toolbx            # shows the plan
-qh toolbx --apply
-```
-
-<details>
-<summary><b>Manual install (advanced)</b></summary>
-
-```bash
-# 1. Download the units (no need to clone the repository). Four Quadlet files,
-#    so they go in a folder of their own.
-mkdir -p ~/.config/containers/systemd/toolbx
-for f in arch fedora rhel ubuntu; do
-  wget -P ~/.config/containers/systemd/toolbx/ \
-    "https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/toolbx/toolbx-$f.container"
-done
-
-# 2. One work directory per shell — a bind mount fails if it does not exist.
-#    Do NOT chown them: they are yours, and the units' keep-id is precisely
-#    what makes the container accept that.
-mkdir -p ~/.config/containers/volumes/toolbx/{arch,fedora,rhel,ubuntu}
-
-# 3. There is no main unit here, so nothing starts on its own. Start the shell
-#    you want; the image is pulled on that first start.
-systemctl --user daemon-reload
-systemctl --user start toolbx-fedora
-```
-
-</details>
+## First run
 
 ## Files
 
@@ -63,54 +33,20 @@ one you need. Nothing is lost by leaving the others stopped.
 
 ## Update
 
-```bash
-qh toolbx --update --apply
-```
-
 Each shell carries its own tag — the table above lists them. Arch is the
 exception, pinned by digest because its only tag is `latest`.
 
 ## Backup
-
-```bash
-qh toolbx --backup --apply --out ~/backups
-```
 
 It stops the four, packs the four `/work` directories and starts them again.
 There is no `.env` and no secret here to pack. A single shell can be backed up
 on its own — `qh toolbx-fedora --backup --apply` — because none of them shares
 a directory with the others.
 
-To restore, over the current data:
-
-```bash
-qh toolbx --restore ~/backups/toolbx-20260809-1200.tar.gz --apply
-```
-
-It asks you to type `toolbx` to confirm, because the current data is deleted
-before the archive is unpacked.
-
 ## Remove
-
-```bash
-qh toolbx --remove --apply           # stops it, keeps the data
-qh toolbx --remove --purge --apply   # and deletes volumes, secrets and .env
-```
 
 `--purge` asks for the typed name too, and deletes the `/work` of all four.
 There is no tailnet node to deregister: none of these is published.
-
-## Commands
-
-There is no `toolbx` unit — name the shell you mean:
-
-```bash
-systemctl --user status toolbx-fedora
-podman exec -it toolbx-fedora bash
-```
-
-The log is not where the interesting part is: these run `sleep infinity`, so
-`podman logs` stays empty by design.
 
 ## Credits
 

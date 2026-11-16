@@ -8,34 +8,10 @@ Asks each target for its metrics on a schedule and keeps the history. It is
 the data source [Grafana](../grafana) draws from — Grafana stores nothing, this
 one stores everything.
 
-## Install
-
-```bash
-qh prometheus            # shows the plan
-qh prometheus --apply
-```
+## First run
 
 Open `http://<host-ip>:9090` or `https://prometheus.<your-tailnet>.ts.net`.
 Status → Targets shows what it is scraping and whether each one answered.
-
-<details>
-<summary><b>Manual install</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd
-mkdir -p ~/.config/containers/volumes/prometheus/{config,data}
-
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/prometheus/prometheus.container
-wget -O ~/.config/containers/volumes/prometheus/config/prometheus.yml \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/prometheus/config/prometheus.yml
-podman unshare chown -R 65534:65534 ~/.config/containers/volumes/prometheus
-
-systemctl --user daemon-reload
-systemctl --user start prometheus
-```
-
-</details>
 
 ## Files
 
@@ -77,45 +53,11 @@ After editing:
 qh prometheus --update --apply
 ```
 
-## Update
-
-```bash
-qh prometheus --update --apply
-```
-
-The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh prometheus --update --latest --apply` (the store's Update button does the same).
-
 ## Backup
-
-```bash
-qh prometheus --backup --apply --out ~/backups
-```
 
 It stops the service, packs the config and the history, and starts it again.
 Cold on purpose: the TSDB is a database like any other, and copying it live
 gives an archive that only fails when you restore it.
-
-To restore, over the current data:
-
-```bash
-qh prometheus --restore ~/backups/prometheus-20260810-1200.tar.gz --apply
-```
-
-## Remove
-
-```bash
-qh prometheus --remove --apply           # stops it, keeps the history
-qh prometheus --remove --purge --apply   # and deletes the volume
-```
-
-## Commands
-
-```bash
-systemctl --user status prometheus
-podman logs -f prometheus
-podman exec prometheus wget -qO- http://127.0.0.1:9090/-/healthy
-podman exec prometheus wget -qO- 'http://127.0.0.1:9090/api/v1/query?query=up'
-```
 
 ## Credits
 

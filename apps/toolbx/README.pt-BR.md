@@ -8,38 +8,6 @@ Shells descartáveis de Arch, Fedora, RHEL e Ubuntu, nas imagens oficiais do Too
 
 São containers, não VMs: compartilham o kernel do host, e é por isso que sobem na hora. Quando precisar de uma de verdade, veja o [vm](../vm/README.pt-BR.md).
 
-## Instalar
-
-```bash
-qh toolbx            # mostra o plano
-qh toolbx --apply
-```
-
-<details>
-<summary><b>Instalação manual (avançado)</b></summary>
-
-```bash
-# 1. Baixe as units (sem precisar clonar o repositório). São quatro arquivos
-#    Quadlet, então vão em pasta própria.
-mkdir -p ~/.config/containers/systemd/toolbx
-for f in arch fedora rhel ubuntu; do
-  wget -P ~/.config/containers/systemd/toolbx/ \
-    "https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/toolbx/toolbx-$f.container"
-done
-
-# 2. Uma pasta de trabalho por shell — bind mount de diretório inexistente
-#    falha. NÃO faça chown nelas: elas são suas, e o keep-id das units é
-#    justamente o que faz o container aceitar isso.
-mkdir -p ~/.config/containers/volumes/toolbx/{arch,fedora,rhel,ubuntu}
-
-# 3. Aqui não há unit principal, então nada sobe sozinho. Suba o shell que você
-#    quer; a imagem é baixada nesse primeiro start.
-systemctl --user daemon-reload
-systemctl --user start toolbx-fedora
-```
-
-</details>
-
 ## Arquivos
 
 ```
@@ -63,18 +31,10 @@ Nada se perde deixando as outras paradas.
 
 ## Atualizar
 
-```bash
-qh toolbx --update --apply
-```
-
 Cada shell tem a própria tag — a tabela acima lista todas. O Arch é a exceção,
 pinado por digest porque a única tag dele é `latest`.
 
 ## Backup
-
-```bash
-qh toolbx --backup --apply --out ~/backups
-```
 
 Ele para as quatro, empacota os quatro `/work` e religa. Não há `.env` nem
 segredo aqui para empacotar. Dá para fazer backup de um shell só — `qh
@@ -83,36 +43,10 @@ outros.
 A frio de propósito: copiar banco vivo dá um arquivo que só falha na hora de
 restaurar.
 
-Pra restaurar, por cima dos dados atuais:
-
-```bash
-qh toolbx --restore ~/backups/toolbx-20260809-1200.tar.gz --apply
-```
-
-Ele pede que você digite `toolbx` pra confirmar, porque os dados atuais são
-apagados antes de o arquivo ser extraído.
-
 ## Remover
-
-```bash
-qh toolbx --remove --apply           # para e tira, mantendo os dados
-qh toolbx --remove --purge --apply   # e apaga volumes, secrets e .env
-```
 
 O `--purge` também pede o nome digitado, e apaga o `/work` das quatro. Não há
 nó de tailnet a desregistrar: nenhuma delas é publicada.
-
-## Comandos
-
-Não existe unit `toolbx` — nomeie o shell que você quer:
-
-```bash
-systemctl --user status toolbx-fedora
-podman exec -it toolbx-fedora bash
-```
-
-O log não é onde está o interessante: eles rodam `sleep infinity`, então o
-`podman logs` fica vazio de propósito.
 
 ## Créditos
 

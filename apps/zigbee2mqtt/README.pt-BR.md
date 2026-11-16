@@ -6,43 +6,9 @@
 
 Ponte entre dispositivos Zigbee e MQTT, sem hub proprietário — sem coordenador ligado ainda.
 
-## Instalar
-
-```bash
-qh zigbee2mqtt            # mostra o plano
-qh zigbee2mqtt --apply
-```
+## Primeiro acesso
 
 Abrir `http://<ip-do-host>:1884` ou `https://zigbee2mqtt.<your-tailnet>.ts.net`.
-
-<details>
-<summary><b>Instalação manual</b></summary>
-
-```bash
-# 1. Baixar as units (sem precisar clonar o repositório)
-mkdir -p ~/.config/containers/systemd/zigbee2mqtt
-wget -P ~/.config/containers/systemd/zigbee2mqtt/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/zigbee2mqtt/zigbee2mqtt.container \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/zigbee2mqtt/zigbee2mqtt-mosquitto.container \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/zigbee2mqtt/zigbee2mqtt-net.network
-
-# 2. Diretórios de dados — bind mount exige que já existam antes do start
-mkdir -p ~/.config/containers/volumes/zigbee2mqtt/{data,mosquitto/config,mosquitto/data}
-podman unshare chown -R 1883:1883 ~/.config/containers/volumes/zigbee2mqtt/mosquitto   # o broker roda com User=1883
-
-# 3. Configs iniciais
-wget -O ~/.config/containers/volumes/zigbee2mqtt/data/configuration.yaml \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/zigbee2mqtt/configuration.yaml
-wget -O ~/.config/containers/volumes/zigbee2mqtt/mosquitto/config/mosquitto.conf \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/zigbee2mqtt/mosquitto.conf
-
-# 4. Ligar o coordenador (ver seção abaixo) e subir — só o principal,
-#    Requires= puxa o broker
-systemctl --user daemon-reload
-systemctl --user start zigbee2mqtt
-```
-
-</details>
 
 ## Arquivos
 
@@ -59,49 +25,9 @@ Units da stack:
 - `zigbee2mqtt`
 - `zigbee2mqtt-n`
 
-## Atualizar
-
-```bash
-qh zigbee2mqtt --update --apply
-```
-
-Fixado em `2.1.2-alpine`. A imagem do próprio app não tem versão aqui: o `qh` fixa a última release neste host, e `qh zigbee2mqtt --update --latest --apply` a muda.
-
-## Backup
-
-```bash
-qh zigbee2mqtt --backup --apply --out ~/backups
-```
-
-Ele para o serviço, empacota os dados, o `.env` e os secrets, e sobe de novo.
-A frio de propósito: copiar banco vivo dá um arquivo que só falha na hora de
-restaurar.
-
-Pra restaurar, por cima dos dados atuais:
-
-```bash
-qh zigbee2mqtt --restore ~/backups/zigbee2mqtt-20260809-1200.tar.gz --apply
-```
-
-Ele pede que você digite `zigbee2mqtt` pra confirmar, porque os dados atuais são
-apagados antes de o arquivo ser extraído.
-
 ## Remover
 
-```bash
-qh zigbee2mqtt --remove --apply           # para e tira, mantendo os dados
-qh zigbee2mqtt --remove --purge --apply   # e apaga volumes, secrets e .env
-```
-
-O `--purge` também pede o nome digitado. O nó da tailnet não é desregistrado
-por isso — isso é no admin do Tailscale.
-
-## Comandos
-
-```bash
-systemctl --user status zigbee2mqtt
-podman logs -f zigbee2mqtt
-```
+O nó da tailnet não é desregistrado ao remover um app: isso é no admin do Tailscale.
 
 ## Créditos
 

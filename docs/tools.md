@@ -59,8 +59,7 @@ The GitHub repository is derived from the image name where that works, and
 often not named like the repository (`dockurr/windows` against `dockur/windows`).
 
 `--bump` takes what it found: it rewrites `Image=` and every place that mirrors
-it — the `Pinned to` line of each service README in both languages, and the
-per-unit page and Version column of a folder that documents its units apart.
+it — the per-unit page and Version column of a folder that documents its units apart.
 The root README's services table carries no version. Without `--apply` it only
 shows the plan.
 
@@ -186,7 +185,7 @@ you can see what is behind without this repository having to be bumped first.
 repository (see [auto-update](./auto-update.md)) that is `qh <app> --update --latest
 --apply`: the new tag is pinned in the host's drop-in and nothing is left to commit. For an
 image that still has its tag in the unit (a sidecar, a digest) it is `qh-updates <app>
---bump --apply` for that one service (its `Image=` and Pinned lines, in the clone the store
+--bump --apply` for that one service (its `Image=`, in the clone the store
 runs from), then `qh <app> --update --apply`, and the change stays in git for you to review
 and commit. A major is held back both ways.
 There is one update button, and it shows up only when there is something to

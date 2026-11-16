@@ -6,42 +6,9 @@
 
 Sincronização de arquivos P2P entre dispositivos, sem servidor central.
 
-## Instalar
-
-```bash
-qh syncthing            # mostra o plano
-qh syncthing --apply
-```
+## Primeiro acesso
 
 Abrir `http://<ip-do-host>:8384` ou `https://syncthing.<your-tailnet>.ts.net`.
-
-<details>
-<summary><b>Instalação manual</b></summary>
-
-```bash
-# 1. Baixar a unit (sem precisar clonar o repositório)
-mkdir -p ~/.config/containers/systemd
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/syncthing/syncthing.container
-
-# 2. Diretório de dados — bind mount exige que já exista antes do start
-mkdir -p ~/.config/containers/volumes/syncthing/data
-podman unshare chown -R 1000:1000 ~/.config/containers/volumes/syncthing   # a unit usa User=1000
-
-# 3. Env não-secreto — baixar o exemplo, ajustar PUID/PGID pro usuário
-#    que roda o Podman (mesmo dono do volume acima)
-mkdir -p ~/.config/containers/env
-wget -O ~/.config/containers/env/syncthing.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/syncthing/.env.example
-sed -i "s/^PUID=.*/PUID=$(id -u)/;s/^PGID=.*/PGID=$(id -g)/" \
-  ~/.config/containers/env/syncthing.env
-
-# 4. Subir
-systemctl --user daemon-reload
-systemctl --user start syncthing
-```
-
-</details>
 
 ## Arquivos
 
@@ -50,49 +17,9 @@ syncthing.container
 .env.example
 ```
 
-## Atualizar
-
-```bash
-qh syncthing --update --apply
-```
-
-A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh syncthing --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
-
-## Backup
-
-```bash
-qh syncthing --backup --apply --out ~/backups
-```
-
-Ele para o serviço, empacota os dados, o `.env` e os secrets, e sobe de novo.
-A frio de propósito: copiar banco vivo dá um arquivo que só falha na hora de
-restaurar.
-
-Pra restaurar, por cima dos dados atuais:
-
-```bash
-qh syncthing --restore ~/backups/syncthing-20260809-1200.tar.gz --apply
-```
-
-Ele pede que você digite `syncthing` pra confirmar, porque os dados atuais são
-apagados antes de o arquivo ser extraído.
-
 ## Remover
 
-```bash
-qh syncthing --remove --apply           # para e tira, mantendo os dados
-qh syncthing --remove --purge --apply   # e apaga volumes, secrets e .env
-```
-
-O `--purge` também pede o nome digitado. O nó da tailnet não é desregistrado
-por isso — isso é no admin do Tailscale.
-
-## Comandos
-
-```bash
-systemctl --user status syncthing
-podman logs -f syncthing
-```
+O nó da tailnet não é desregistrado ao remover um app: isso é no admin do Tailscale.
 
 ## Créditos
 

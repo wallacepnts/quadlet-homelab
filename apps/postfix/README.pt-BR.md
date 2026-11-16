@@ -11,12 +11,7 @@ serviço sabe como o e-mail sai de casa.
 Só envia. Não é caixa de entrada e não tem interface web — o e-mail entra na
 porta **1587** e sai pelo `RELAYHOST` que você configurar.
 
-## Instalação
-
-```bash
-qh postfix            # mostra o plano
-qh postfix --apply
-```
+## Primeiro acesso
 
 Depois edite o `~/.config/containers/env/postfix.env`: o `POSTFIX_myhostname`
 e um `RELAYHOST`, se você tiver (veja abaixo). Reinicie com `qh postfix
@@ -28,24 +23,6 @@ Aponte um app para ele — host `<ip-do-host>`, porta **1587**, sem autenticaç�
 SMTP_HOST=<ip-do-host>
 SMTP_PORT=1587
 ```
-
-<details>
-<summary><b>Instalação manual</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd ~/.config/containers/env
-mkdir -p ~/.config/containers/volumes/postfix/spool
-
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/postfix/postfix.container
-wget -O ~/.config/containers/env/postfix.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/postfix/.env.example
-
-systemctl --user daemon-reload
-systemctl --user start postfix
-```
-
-</details>
 
 ## Arquivos
 
@@ -94,52 +71,13 @@ alcance:
 A porta é publicada na LAN, não na tailnet: o tsdproxy faz proxy de HTTP, e
 isto fala SMTP. Em rede que você não controla, restrinja as duas.
 
-## Atualizar
-
-```bash
-qh postfix --update --apply
-```
-
-A versão não fica neste repositório: o `qh` fixa a última release neste host quando instala, e a muda com `qh postfix --update --latest --apply` (o botão Atualizar da loja faz o mesmo).
-
 ## Backup
-
-```bash
-qh postfix --backup --apply --out ~/backups
-```
 
 Para o serviço, empacota a fila e o `.env`, e religa.
 
-Para restaurar, por cima dos dados atuais:
-
-```bash
-qh postfix --restore ~/backups/postfix-20260809-1200.tar.gz --apply
-```
-
 ## Remover
 
-```bash
-qh postfix --remove --apply           # para, mantém a fila
-qh postfix --remove --purge --apply   # e apaga o volume e o .env
-```
-
 O `--purge` joga fora o que ainda estiver na fila.
-
-## Comandos
-
-```bash
-systemctl --user status postfix
-podman logs -f postfix
-podman exec postfix postqueue -p     # o que está esperando, e por quê
-podman exec postfix postqueue -f     # tenta de novo agora
-```
-
-Enviar uma mensagem de teste a partir do host:
-
-```bash
-python3 -c "import smtplib; smtplib.SMTP('127.0.0.1', 1587).sendmail(
-  'homelab@test.local', ['voce@example.com'], 'Subject: hello\n\nfuncionou')"
-```
 
 ## Créditos
 

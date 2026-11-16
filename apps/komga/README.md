@@ -12,37 +12,10 @@ Next to [calibre-web-automated](../calibre-web-automated) and
 [audiobookshelf](../audiobookshelf), the split is by format: books there,
 audio there, page-by-page reading here.
 
-## Install
-
-```bash
-qh komga            # shows the plan
-qh komga --apply
-```
+## First run
 
 Open `https://komga.<your-tailnet>.ts.net` and create the first account — that
 is the setup. Then add a library pointing at `/books`.
-
-<details>
-<summary><b>Manual install (advanced)</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd ~/.config/containers/env
-mkdir -p ~/.config/containers/volumes/komga/config
-mkdir -p "$MEDIA_DATA_DIR/comics"
-
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/komga/komga.container
-wget -O ~/.config/containers/env/komga.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/komga/.env.example
-
-# The container runs as uid 1000, which is not yours after the mapping
-podman unshare chown -R 1000:1000 ~/.config/containers/volumes/komga
-
-systemctl --user daemon-reload
-systemctl --user start komga
-```
-
-</details>
 
 ## Files
 
@@ -86,46 +59,14 @@ and `/actuator/health` answering 200 — not just with the container running.
 `HealthStartPeriod=90s` is not padding: a JVM takes about eleven seconds to
 boot here before the first scan, and a cold library takes longer.
 
-## Update
-
-```bash
-qh komga --update --apply
-```
-
-The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh komga --update --latest --apply` (the store's Update button does the same).
-
 ## Backup
-
-```bash
-qh komga --backup --apply --out ~/backups
-```
 
 Packs `config/`: the databases, the index and the thumbnails. Losing it loses
 the reading progress and the metadata you corrected, not the comics.
 
-To restore, over the current data:
-
-```bash
-qh komga --restore ~/backups/komga-20260811-1200.tar.gz --apply
-```
-
 ## Remove
 
-```bash
-qh komga --remove --apply           # stops it, keeps the library data
-qh komga --remove --purge --apply   # and deletes progress and thumbnails
-```
-
 Neither touches the comics: they live outside the volume.
-
-## Commands
-
-```bash
-systemctl --user status komga
-podman logs -f komga
-
-du -sh ~/.config/containers/volumes/komga/config
-```
 
 ## Credits
 

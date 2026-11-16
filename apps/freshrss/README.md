@@ -6,38 +6,9 @@
 
 A self-hosted RSS/Atom feed aggregator, with a compatible API for mobile apps.
 
-## Install
-
-```bash
-qh freshrss            # shows the plan
-qh freshrss --apply
-```
+## First run
 
 Open `http://<host-ip>:8104` or `https://freshrss.<your-tailnet>.ts.net`.
-
-<details>
-<summary><b>Manual install</b></summary>
-
-```bash
-# 1. Download the units (no need to clone the repository)
-mkdir -p ~/.config/containers/systemd
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/freshrss/freshrss.container
-
-# 2. Data directory — a bind mount requires it to exist before the start
-mkdir -p ~/.config/containers/volumes/freshrss/data
-
-# 3. Non-secret env — download the example, adjust TZ if needed
-mkdir -p ~/.config/containers/env
-wget -O ~/.config/containers/env/freshrss.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/freshrss/.env.example
-
-# 4. Start it
-systemctl --user daemon-reload
-systemctl --user start freshrss
-```
-
-</details>
 
 ## Files
 
@@ -46,49 +17,9 @@ freshrss.container
 .env.example
 ```
 
-## Update
-
-```bash
-qh freshrss --update --apply
-```
-
-The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh freshrss --update --latest --apply` (the store's Update button does the same).
-
-## Backup
-
-```bash
-qh freshrss --backup --apply --out ~/backups
-```
-
-It stops the service, packs the data, the `.env` and the secrets, and starts
-it again. Cold on purpose: copying a live database gives an archive that only
-fails when you restore it.
-
-To restore, over the current data:
-
-```bash
-qh freshrss --restore ~/backups/freshrss-20260809-1200.tar.gz --apply
-```
-
-It asks you to type `freshrss` to confirm, because the current data is deleted
-before the archive is unpacked.
-
 ## Remove
 
-```bash
-qh freshrss --remove --apply           # stops it, keeps the data
-qh freshrss --remove --purge --apply   # and deletes volumes, secrets and .env
-```
-
-`--purge` asks for the typed name too. The tailnet node is not deregistered by
-this — that is done in the Tailscale admin.
-
-## Commands
-
-```bash
-systemctl --user status freshrss
-podman logs -f freshrss
-```
+The tailnet node is not deregistered when an app is removed: do that in the Tailscale admin.
 
 ## Credits
 

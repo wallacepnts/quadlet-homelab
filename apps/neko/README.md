@@ -9,12 +9,7 @@ people can watch the same session and pass control around, and nothing it
 opens ever touches your own machine — which is the point, whether you are
 watching something together or opening a link you do not trust.
 
-## Install
-
-```bash
-qh neko            # shows the plan
-qh neko --apply
-```
+## First run
 
 The install prints the user and password at the end; the admin password is a
 second secret. Open `http://<host-ip>:8018` or
@@ -25,26 +20,6 @@ address clients reach the host at — its tailnet IP, or the LAN one. Without it
 the page loads and the screen stays black: neko advertises the container's own
 IP for the media stream, and nothing outside can route to it. Restart with `qh
 neko --update --apply`.
-
-<details>
-<summary><b>Manual install</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd ~/.config/containers/env
-
-openssl rand -hex 10 | podman secret create neko-user-password -
-openssl rand -hex 10 | podman secret create neko-admin-password -
-
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/neko/neko.container
-wget -O ~/.config/containers/env/neko.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/neko/.env.example
-
-systemctl --user daemon-reload
-systemctl --user start neko
-```
-
-</details>
 
 ## Files
 
@@ -69,33 +44,10 @@ desktop. Change `Image=` in the unit and `qh neko --update --apply`. Chromium
 derivatives need more shared memory than Firefox — `ShmSize=2g` is already
 generous, but that is the knob if a tab dies.
 
-## Update
-
-```bash
-qh neko --update --apply
-```
-
-The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh neko --update --latest --apply` (the store's Update button does the same).
-
 ## Backup
 
 There is nothing to back up: no volume, no state. Removing and reinstalling
 gives you the same thing.
-
-## Remove
-
-```bash
-qh neko --remove --apply
-qh neko --remove --purge --apply   # also removes the secrets and the .env
-```
-
-## Commands
-
-```bash
-systemctl --user status neko
-podman logs -f neko
-podman exec neko wget -q --spider http://127.0.0.1:8080/health && echo ok
-```
 
 ## Credits
 

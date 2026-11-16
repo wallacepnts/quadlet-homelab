@@ -9,12 +9,7 @@ agents on the machines, SNMP, HTTP checks, triggers that turn numbers into
 problems, and alerts. Three containers: the **server** that collects and
 evaluates, the **web interface**, and **PostgreSQL**.
 
-## Install
-
-```bash
-qh zabbix            # shows the plan
-qh zabbix --apply
-```
+## First run
 
 The first start takes a minute or two: the server creates the database schema
 (about 30 s measured), and only then does the web interface come up. Then open
@@ -23,33 +18,6 @@ The first start takes a minute or two: the server creates the database schema
 **The first login is Zabbix's own default, `Admin` / `zabbix`.** The image has
 no setting for it, so the install cannot generate one. Change it at once:
 *Users → Users → Admin → Change password*.
-
-<details>
-<summary><b>Manual install (advanced)</b></summary>
-
-```bash
-# 1. Download the units (no need to clone the repository)
-mkdir -p ~/.config/containers/systemd/zabbix
-wget -P ~/.config/containers/systemd/zabbix/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/zabbix/zabbix-net.network \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/zabbix/zabbix-postgres.container \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/zabbix/zabbix-server.container \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/zabbix/zabbix.container
-
-# 2. The database directory (the unit runs as uid 70, postgres's own)
-mkdir -p ~/.config/containers/volumes/zabbix/postgres
-podman unshare chown -R 70:70 ~/.config/containers/volumes/zabbix/postgres
-
-# 3. The database password, shared by the three units
-openssl rand -hex 24 | podman secret create zabbix-postgres-password -
-
-systemctl --user daemon-reload
-systemctl --user start zabbix
-```
-
-`start zabbix` brings the server and Postgres up through `Requires=`.
-
-</details>
 
 ## Files
 
@@ -84,13 +52,7 @@ host on port **10051** (active checks) or let the server reach the agent on
 
 ## Update
 
-```bash
-qh zabbix --update --apply
-```
-
-Pinned to `17.11-alpine`. The app's own image has no version here: `qh` pins the latest release on this host, and `qh zabbix --update --latest --apply` moves it. The server and the web
-interface share one tag and must move together. The server upgrades its own schema on start,
-so take a backup before a minor jump. Postgres stays on 17.
+The server and the web interface share one tag and must move together. The server upgrades its own schema on start, so take a backup before a minor jump. Postgres stays on 17.
 
 ## Hardening
 
@@ -109,28 +71,12 @@ open. Not tested: a real agent, or the browser through tsdproxy.
 
 ## Backup
 
-```bash
-qh zabbix --backup --apply --out ~/backups
-```
-
 Cold, like the other stacks with a database: it stops the three units, packs the
 volume and the secret, and starts them again.
 
 ## Remove
 
-```bash
-qh zabbix --remove --apply           # stops it, keeps the data
-qh zabbix --remove --purge --apply   # and deletes the volume and the secret
-```
-
-The tailnet node is not deregistered by this — that is done in the Tailscale admin.
-
-## Commands
-
-```bash
-systemctl --user status zabbix zabbix-server zabbix-postgres
-podman logs -f zabbix-server
-```
+The tailnet node is not deregistered when an app is removed: do that in the Tailscale admin.
 
 ## Credits
 

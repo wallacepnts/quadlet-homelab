@@ -12,12 +12,7 @@ Each library is one `.zim` file — a compressed, indexed snapshot. You choose
 which ones to keep, and they cost what they cost: Portuguese Wikipedia without
 images is around 5 GB, with images closer to 40 GB.
 
-## Install
-
-```bash
-qh kiwix            # shows the plan
-qh kiwix --apply
-```
+## First run
 
 **It does not start empty.** With no `.zim` in the volume, `kiwix-serve` says
 `Unable to add the ZIM file '*.zim' to the internal library` and exits — so the
@@ -32,27 +27,6 @@ systemctl --user start kiwix
 ```
 
 The catalogue is at [library.kiwix.org](https://library.kiwix.org).
-
-<details>
-<summary><b>Manual install (advanced)</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd ~/.config/containers/env
-mkdir -p ~/.config/containers/volumes/kiwix/data
-
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/kiwix/kiwix.container
-wget -O ~/.config/containers/env/kiwix.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/kiwix/.env.example
-
-# The container runs as uid 1001, which is not yours after the mapping
-podman unshare chown -R 1001:1001 ~/.config/containers/volumes/kiwix
-
-systemctl --user daemon-reload
-systemctl --user start kiwix
-```
-
-</details>
 
 ## Files
 
@@ -94,34 +68,13 @@ read-only applies to the container's own filesystem.
 
 ## Update
 
-```bash
-qh kiwix --update --apply
-```
-
-The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh kiwix --update --latest --apply` (the store's Update button does the same). The libraries update on their own schedule, which is yours:
-download the newer `.zim`, delete the old one, restart.
+The libraries update on their own schedule, which is yours: download the newer `.zim`, delete the old one, restart.
 
 ## Backup
 
 Deliberately not covered by the backup jobs: a `.zim` is a public file you can
 download again, and copying tens of gigabytes of Wikipedia into a Restic
 repository would cost far more than fetching it a second time.
-
-## Remove
-
-```bash
-qh kiwix --remove --apply           # stops it, keeps the libraries
-qh kiwix --remove --purge --apply   # and deletes every .zim
-```
-
-## Commands
-
-```bash
-systemctl --user status kiwix
-podman logs -f kiwix
-
-du -sh ~/.config/containers/volumes/kiwix/data
-```
 
 ## Credits
 

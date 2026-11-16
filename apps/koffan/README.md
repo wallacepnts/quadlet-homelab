@@ -10,38 +10,10 @@ things off in the aisle, and the others see it change.
 There are no accounts: one password lets you in, and whoever has it edits. That
 is the whole model, and it is why this fits a family and not a company.
 
-## Install
-
-```bash
-qh koffan            # shows the plan
-qh koffan --apply
-```
+## First run
 
 `qh` generates the password and prints it once, at the end of the install.
 Open `https://koffan.<your-tailnet>.ts.net`.
-
-<details>
-<summary><b>Manual install (advanced)</b></summary>
-
-```bash
-mkdir -p ~/.config/containers/systemd ~/.config/containers/env
-mkdir -p ~/.config/containers/volumes/koffan/data
-
-wget -P ~/.config/containers/systemd/ \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/koffan/koffan.container
-wget -O ~/.config/containers/env/koffan.env \
-  https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/apps/koffan/.env.example
-
-openssl rand -base64 18 | tr -d '\n' | podman secret create koffan-password -
-
-# The container runs as uid 1000, which is not yours after the mapping
-podman unshare chown -R 1000:1000 ~/.config/containers/volumes/koffan
-
-systemctl --user daemon-reload
-systemctl --user start koffan
-```
-
-</details>
 
 ## Files
 
@@ -81,41 +53,9 @@ WEBHOOK_URL=http://ntfy:2586/groceries
 
 Both containers are on `tsdproxy-net`, so `ntfy` resolves by name.
 
-## Update
-
-```bash
-qh koffan --update --apply
-```
-
-The version is not kept in this repository: `qh` pins the latest release on this host when it installs, and moves it with `qh koffan --update --latest --apply` (the store's Update button does the same).
-
 ## Backup
 
-```bash
-qh koffan --backup --apply --out ~/backups
-```
-
 Stops it, packs the data folder and the `.env`, starts it again.
-
-To restore, over the current data:
-
-```bash
-qh koffan --restore ~/backups/koffan-20260811-1200.tar.gz --apply
-```
-
-## Remove
-
-```bash
-qh koffan --remove --apply           # stops it, keeps the list
-qh koffan --remove --purge --apply   # and deletes the volume and the secret
-```
-
-## Commands
-
-```bash
-systemctl --user status koffan
-podman logs -f koffan
-```
 
 ## Credits
 

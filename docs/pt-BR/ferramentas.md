@@ -58,8 +58,7 @@ O repositório no GitHub é derivado do nome da imagem quando dá, e o
 nunca tem o nome do repositório (`dockurr/windows` contra `dockur/windows`).
 
 O `--bump` pega o que ele encontrou: reescreve o `Image=` e todo lugar que o
-espelha — a linha `Fixado em` do README de cada serviço nos dois idiomas, e a
-página por unit e a coluna Versão de uma pasta que documenta suas units em
+espelha — a página por unit e a coluna Versão de uma pasta que documenta suas units em
 separado. A tabela de serviços do README raiz não tem versão. Sem `--apply`, só
 mostra o plano.
 
@@ -185,7 +184,7 @@ O **Atualizar para X** leva a release nova. Num app cuja versão não está no r
 [auto-update](./auto-update.md)) isso é `qh <app> --update --latest --apply`: a tag nova é
 fixada no drop-in do host e não sobra nada para commitar. Numa imagem que ainda tem a tag na
 unit (um apoio, um digest) é `qh-updates <app> --bump --apply` só daquele serviço (o
-`Image=` e as linhas Fixado em, no clone de onde a loja roda) e então `qh <app> --update
+`Image=`, no clone de onde a loja roda) e então `qh <app> --update
 --apply`, e a mudança fica no git para você revisar e commitar. Uma major fica retida nos
 dois caminhos.
 Existe um botão de atualizar só, e ele só aparece quando há algo para
