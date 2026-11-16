@@ -4,8 +4,6 @@
 
 **[🇧🇷 Leia em português](./pt-BR/dispatcharr.md)**
 
-[< Media Stack](../README.md)
-
 IPTV: organises channel lists, the guide and video on demand.
 
 Port **9191**, unit `media-stack-dispatcharr`.

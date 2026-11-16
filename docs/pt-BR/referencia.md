@@ -25,9 +25,12 @@ apps/<app>/
 ├── <app>-net.network       # só pra stack que conversa entre si
 ├── .env.example
 ├── install.ini             # receitas de secret, validação, login, nome no upstream, capturas da loja
-├── README.md
-└── README.pt-BR.md
+├── notes.md                # opcional: primeiro acesso e o que o app tem de estranho (inglês)
+└── notes.pt-BR.md          # o mesmo, em português
 ```
+
+Não há README por app: o painel mostra o `notes.md` e a licença, e a linha da tabela de serviços
+do README raiz é a vitrine.
 
 Na raiz, o `qhui.py` guarda a detecção de idioma e a coloração que as três
 ferramentas compartilham.

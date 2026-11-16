@@ -4,8 +4,6 @@
 
 **[🇧🇷 Leia em português](./pt-BR/seerr.md)**
 
-[< Media Stack](../README.md)
-
 Where a title is asked for. It hands the request to Sonarr or Radarr and reports back when it lands.
 
 Port **5055**, unit `media-stack-seerr`.

@@ -4,8 +4,6 @@
 
 **[🇺🇸 Read in English](../radarr.md)**
 
-[< Media Stack](../../README.pt-BR.md)
-
 O mesmo do Sonarr, para filmes.
 
 Porta **7878**, unit `media-stack-radarr`.

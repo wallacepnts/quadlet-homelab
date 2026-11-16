@@ -4,8 +4,6 @@
 
 **[🇺🇸 Read in English](../deluge.md)**
 
-[< Media Stack](../../README.pt-BR.md)
-
 Baixa torrents. Roda sozinho; a VPN é uma escolha à parte.
 
 Porta **8112**, unit `media-stack-deluge`.

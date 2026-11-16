@@ -216,3 +216,198 @@ mensagem prova por que ele não vai além.
 | `casa` | `DropCapability=ALL` sozinho | sai com 10 em `groupadd: failure while writing changes to /etc/gshadow`. As seis são necessárias, cada uma com seu erro: `chown` (`groupadd`), `dac_override` e `fowner` (`install -d -o` em `/DATA/AppData`, saída 1), `setuid` e `setgid` (`gosu`: `failed switching to "1000:1000"`) e `kill` — sem ela a parada leva 11 s e termina em `SIGKILL` (saída 137), porque o shutdown do entrypoint dá `pkill` nos processos do uid 1000 |
 | `casa` | sem `--cgroupns=host` | `Failed to identify the current container!` — o entrypoint procura o próprio id em `/proc/self/cgroup`, e um cgroup namespace privado não mostra nenhum. O plano B dele, um `sed` sobre o `mountinfo`, devolve `storage` (de `.../containers/storage/...`) no lugar do id e nunca chega à busca por hostname |
 | `casa` | `SAMBA=N` | nenhum efeito medido: com as seis capabilities o `smbd` não fica de pé de qualquer jeito, e as portas dele não são publicadas |
+
+## Notas por app
+
+A prosa que ficava no README de cada app: o que uma imagem recusou, com o erro.
+
+### anki
+
+Tudo, medido na `26.08-distroless`: raiz somente leitura sem `/tmp` (um arquivo
+de mídia de 3 MB sincronizou sem ele), nenhuma capability, `User=65532`. Testado
+com um cliente de verdade — login, senha errada recusada, uma nota e um arquivo
+de mídia enviados de uma coleção e baixados em outra.
+
+`StopSignal=SIGINT` porque o servidor não trata SIGTERM, o sinal padrão do
+podman: todo stop e restart esperava os 10 segundos até o SIGKILL. Com SIGINT ele
+sai limpo, com código 0.
+
+### collabora
+
+Uma capacidade, a `SYS_CHROOT`. O Collabora roda cada documento numa jaula
+chroot própria, e com tudo descartado o processo morre no start:
+
+```
+FTL  chroot("/opt/cool/child-roots/...") failed (EPERM: Operation not permitted)
+```
+
+O `ReadOnly=true` foi tentado e recusado — `Access to file denied:
+/opt/cool/child-roots/...`, porque um tmpfs naquele caminho nasce do root
+enquanto o coolwsd roda como uid 1001, que a própria imagem já define.
+
+Não há `HealthCmd`, e por isso não há `Notify=healthy`: a imagem não tem shell
+nem `curl` ou `wget` — `coolwsd`, `coolmount`, `coolforkit` e `openssl` são
+todo o `/usr/bin`, então não há o que rodar dentro dela.
+
+### docuseal
+
+O ladder inteiro: `ReadOnly=true`, todas as capacidades descartadas,
+`User=1000`. Medido com a aplicação servindo — Puma escutando e a interface
+respondendo —, não só com o container de pé.
+
+### dozzle
+
+O ladder inteiro: `ReadOnly=true`, todas as capacidades descartadas,
+`User=1000`. Medido com ele conectado — `Connected to Docker` no log e a
+interface respondendo —, não só com o container de pé.
+
+O healthcheck é o subcomando do próprio binário, `/dozzle healthcheck`, em
+forma exec: a imagem não traz shell, então o `CMD-SHELL` falharia.
+
+### faved
+
+O ladder inteiro, medido: `ReadOnly=true` com tmpfs em `/tmp`, `/var/run` e
+`/var/log/apache2`, todas as capacidades descartadas menos a
+`NET_BIND_SERVICE`, e `User=33`.
+
+A capacidade existe porque o Apache escuta na porta 80 **dentro** do container,
+que é privilegiada. O `User=33` é o www-data, o usuário para o qual a própria
+imagem desce — sem ele o volume pertence ao root e o app devolve página vazia
+depois de falhar em silêncio ao gravar: `touch: cannot touch
+'/var/www/html/storage/...': Permission denied`. O `qh` faz o `podman unshare
+chown` por você porque a unit declara `User=`.
+
+### ferdium-server
+
+`DropCapability=ALL` como root. Dois degraus acima foram tentados e recusados:
+
+- `ReadOnly=true` — o entrypoint clona as receitas com git e escreve o
+  `/home/node/.gitconfig`: `could not create work tree dir 'recipes':
+  Read-only file system`.
+- `User=1000` — ele instala o pnpm global a cada start:
+  `EACCES: permission denied, mkdir '/usr/local/lib/node_modules/pnpm'`.
+
+### instagram-monitor
+
+Tudo, medido em `v4.0.2`: root read-only com `/tmp`, zero capabilities,
+`User=10001` (o usuário `instagram` da imagem). `PodmanArgs=--init` porque o
+processo Python cria filhos (sessões do instaloader) que precisam de reaping de
+zumbis — o compose upstream usa `init: true`.
+
+### kiwix
+
+O ladder inteiro: `ReadOnly=true`, todas as capacidades descartadas,
+`User=1001` — o usuário `user` com que a própria imagem roda. Medido com uma
+biblioteca de verdade baixada e servida, não só com o container de pé.
+
+O `ReadOnly=true` não impede o download: o volume é bind mount, e o
+somente-leitura vale para o sistema de arquivos do container.
+
+### komga
+
+O ladder inteiro: `ReadOnly=true`, todas as capacidades descartadas,
+`User=1000`. Medido com a aplicação de fato no ar — `Started ApplicationKt` no
+log e `/actuator/health` respondendo 200 —, não só com o container rodando.
+
+O `HealthStartPeriod=90s` não é folga: a JVM leva uns onze segundos para subir
+aqui antes da primeira varredura, e biblioteca fria demora mais.
+
+### pkvault
+
+Raiz somente leitura, quatro capabilities (`chown`, `dac_override`, `setgid`,
+`setuid`), sem `User=`. Testado exercitando o app — um save enviado, um backup
+feito, um Pokémon movido de um save para o armazenamento e o save gravado de
+volta.
+
+A imagem roda o supervisord como root, com o nginx na 3000 na frente do backend
+.NET na 5000. É isso que limita: o nginx, como root, escreve numa pasta do
+usuário `nginx`, o que exige essas quatro capabilities, e o `supervisord.conf`
+declara `user=root`, o que recusa qualquer outro usuário. Os detalhes estão
+[nas recusas](./endurecimento.md#recusas-registradas).
+
+Duas coisas na unit vêm daí:
+
+- `Tmpfs=/var/lib/nginx/tmp` leva `mode=1777`: o nginx guarda ali todo envio
+  acima de 16 KB, e sem isso enviar um save respondia 500.
+- O `HealthCmd` pergunta à API, não só à página: com o nginx morto, o
+  supervisord manteve o container `Up`, e `/api/settings` só responde quando o
+  nginx e o backend respondem.
+
+### postiz
+
+Tudo menos o container do Temporal é somente leitura, sem capabilities, e todos
+rodam com usuário que não é root. Testado exercitando o app: cadastro, login, o
+envio de uma imagem de 9 MB pelo buffer do nginx, um post agendado num canal e
+executado pelo worker do Temporal, num banco novo e num já em uso.
+
+- **O Postiz roda como `www-data` (`User=33`)**, que não precisa de capability
+  nenhuma. Como root precisa de quatro (`CHOWN`, `DAC_OVERRIDE`, `SETGID`,
+  `SETUID`) só para o nginx subir.
+- **O `HOME` aponta para um tmpfs**, `/home/postiz`, que guarda os arquivos do pm2
+  e o cache do pnpm. O `/root` da própria imagem é `0700`.
+- **`PidsLimit=512`.** 197 em repouso, pico de 202: os 256 do repositório são
+  apertados demais para este.
+- **O Temporal não é somente leitura.** Ele renderiza a configuração em
+  `/etc/temporal/config` a cada partida.
+
+**Às vezes a página não carrega depois de uma partida.** O backend pode subir sem nunca
+abrir a porta 3000, sem nada em log nenhum: o nginx responde `502`, o container fica
+`starting` e o `pm2 list` mostra `backend online`. Medido na unit instalada: 1 partida em
+4 (e 2 em 9 no laboratório com o cache em volume). Sem ajuda, o systemd desiste em
+`TimeoutStartSec` (7 minutos) e parte de novo; para não esperar:
+
+```bash
+podman exec postiz pm2 restart backend      # abre a :3000 em uns 13 segundos
+```
+
+A causa não foi encontrada: o processo fica ocioso, com as conexões ao Redis e ao Temporal abertas.
+
+Toda recusa, com o erro, está em
+[as recusas](./endurecimento.md#recusas-registradas). Uma delas é fácil
+de desfazer sem querer: o cache do pnpm tem que continuar em tmpfs. Medido com ele
+em volume, o backend nunca abriu a porta 3000 em 2 de 9 partidas, sem nada em log
+nenhum.
+
+### rclone
+
+Medido em `1.75.2`: root somente leitura com `/tmp` de 64 MB, zero
+capabilities, sem privilégios extras. O processo roda com o seu próprio uid por
+`UserNS=keep-id`, que não é hardening — é o que o deixa ler e reescrever um
+`rclone.conf` com modo 600 que é seu. Sem isso o arquivo pertenceria ao root do
+container e um processo comum não o leria.
+
+Testado em laboratório com as mesmas flags: login (401 sem ele, 200 com), a
+interface servida do cache depois de um restart, o health check e a criação de
+um remote pela API, que gravou o `rclone.conf` com 600 e dono o usuário do host.
+Não testado: um remote de nuvem de verdade, nem uma sessão no navegador pelo
+tsdproxy.
+
+### vikunja
+
+O ladder inteiro: `ReadOnly=true`, todas as capacidades descartadas,
+`User=1000` — o uid que a própria imagem declara. Medido com as migrações
+rodadas e a API respondendo, não só com o container de pé.
+
+O healthcheck é o subcomando do próprio binário, em forma exec:
+
+```ini
+HealthCmd=["CMD", "/app/vikunja/vikunja", "healthcheck"]
+```
+
+A imagem é distroless — `/app/vikunja/vikunja` e um pacote de certificados são
+tudo o que há dentro —, então o `CMD-SHELL` não teria shell onde rodar.
+
+### zabbix
+
+Medido em `alpine-7.4.16` com as mesmas flags das units: zero capabilities em
+todos, `NoNewPrivileges`, e o server e o Postgres somente leitura (o server
+precisa só de um `/tmp` de 64 MB). A interface web **não** é somente leitura: o
+entrypoint grava a configuração do nginx em `/etc/nginx` a cada start. As duas
+imagens do Zabbix já rodam como uid 1997.
+
+O `RunInit=true` no server é obrigatório, não estético: sem ele o stop espera os
+10 s e termina em SIGKILL. Com ele, 1–2 s.
+
+Testado em laboratório: schema criado pelo server, Postgres alcançável dos dois,
+login web (a conta padrão redireciona), dashboard servido e a porta 10051 aberta.
+Não testado: um agente de verdade, nem o navegador pelo tsdproxy.

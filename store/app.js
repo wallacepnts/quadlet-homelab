@@ -10,6 +10,7 @@ const T = {
     noInstall: "Não dá para instalar este app daqui.",
     worksWith: "Funciona com",
     play: "Iniciar / retomar", pause: "Pausar", stopApp: "Parar", pausedBadge: "pausado",
+    notes: "Notas", license: "licença",
     settings: "Configurações", accessRule: "Como os apps são acessados", saveRule: "Salvar regra", applyRule: "Aplicar aos instalados",
     accessDesc: { local: "Só pela rede local (sem tsdproxy)", tailnet: "Só pela tailnet (fecha a porta da LAN)", both: "Rede local e tailnet" },
     ruleDefault: "Ainda não escolhida: vale tailnet.", ruleSaved: "Regra salva.",
@@ -78,7 +79,7 @@ const T = {
     repo: "Repo", start: "Iniciar", stop: "Parar", restart: "Reiniciar",
     secretHint: "Vazio = pular e criar depois à mão (ver o README).",
     exists: "já existe — vazio mantém o atual",
-    removeNote: "Remove as units e para o serviço. Volumes, secrets e .env ficam.",
+    removeNote: "Remove as units e para o serviço. Volumes, secrets e .env ficam. O nó da tailnet não é desregistrado: isso é no admin do Tailscale.",
     busy: "Outra tarefa está rodando. Espere ela terminar.",
     synced: "em dia", duplicated: "duplicada",
     installedTag: "Instalada", upstream: "Upstream", newVersion: "nova versão",
@@ -121,6 +122,7 @@ const T = {
     noInstall: "It cannot be installed from here.",
     worksWith: "Works with",
     play: "Start / resume", pause: "Pause", stopApp: "Stop", pausedBadge: "paused",
+    notes: "Notes", license: "license",
     settings: "Settings", accessRule: "How apps are reached", saveRule: "Save rule", applyRule: "Apply to the installed",
     accessDesc: { local: "Local network only (no tsdproxy)", tailnet: "Tailnet only (closes the LAN port)", both: "Local network and tailnet" },
     ruleDefault: "Not chosen yet: tailnet applies.", ruleSaved: "Rule saved.",
@@ -189,7 +191,7 @@ const T = {
     repo: "Repo", start: "Start", stop: "Stop", restart: "Restart",
     secretHint: "Empty = skip and create it by hand later (see the README).",
     exists: "already exists — empty keeps it",
-    removeNote: "Removes the units and stops the service. Volumes, secrets and .env stay.",
+    removeNote: "Removes the units and stops the service. Volumes, secrets and .env stay. The tailnet node is not deregistered: do that in the Tailscale admin.",
     busy: "Another job is running. Wait for it to finish.",
     synced: "in sync", duplicated: "duplicated",
     installedTag: "Installed", upstream: "Upstream", newVersion: "new version",
@@ -750,6 +752,11 @@ function renderPanel() {
   $("p-fail").hidden = !caidas.length;
   fill($("p-fail"), ...caidas.map((u) => h("p", {}, failText(u))));
   const velho = a.podman_too_old ? t("podmanOld")(a.min_podman, S.podman) : null;
+  // What to do at the first run and what is odd about the app: the notes that live beside its unit (no README per app).
+  const notas = a.notes && (a.notes[S.lang] || a.notes.en);
+  $("p-notes").hidden = !notas && !a.license;
+  $("p-notes-title").textContent = [notas ? t("notes") : null, a.license ? `${t("license")}: ${a.license}` : null].filter(Boolean).join(" · ");
+  fill($("p-notes-body"), ...(notas ? md(notas) : []));
   $("p-notice").hidden = !motivo && !trial && !velho;
   if (motivo) $("p-notice").textContent = `${t("deprecatedNote")} ${motivo}${a.installed ? "" : ` ${t("noInstall")}`}`;
   else if (velho) $("p-notice").textContent = velho;

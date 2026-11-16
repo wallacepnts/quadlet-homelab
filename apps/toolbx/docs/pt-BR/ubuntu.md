@@ -4,8 +4,6 @@
 
 **[🇺🇸 Read in English](../ubuntu.md)**
 
-[< Toolbx](../../README.pt-BR.md)
-
 Um shell Ubuntu com `apt`, na imagem oficial do Toolbx.
 
 Unit `toolbx-ubuntu`, image `quay.io/toolbx/ubuntu-toolbox:26.04`.

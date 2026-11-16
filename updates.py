@@ -931,25 +931,9 @@ def selftest():
             vistos.add(status)
     assert len(vistos) >= 10, f"only {len(vistos)} statuses found — did check() move?"
 
-    # _sincronizar_por_unit writes a Version cell that is still a row: the new
-    # tag, closed. It once wrote the old version where the closing tick goes.
-    import tempfile
-    with tempfile.TemporaryDirectory(dir=RAIZ) as d:
-        pasta = Path(d) / "stack"
-        (pasta / "docs").mkdir(parents=True)
-        (pasta / "stack-app.container").write_text("[Container]\nImage=r/app:2.1\n")
-        linha = '| <img src="x.svg" alt=""> | [App](./docs/app.md) | Does it | `2.0` |\n'
-        (pasta / "README.md").write_text(linha)
-        _sincronizar_por_unit(pasta)
-        nova = (pasta / "README.md").read_text()
-        assert nova == linha.replace("`2.0` |", "`2.1` |"), nova
-        assert LINHA_UNIT.match(nova.rstrip("\n")).group(3) == "2.1"
-
     print("selftest: ok")
 
 
-FIXADO = re.compile(r"^(?:Pinned to|Fixado em|Pinado em) ((?:`[^`]+`(?:, )?)+)")
-LINHA_UNIT = re.compile(r"^(\| <img.*\]\(\./docs/(?:pt-BR/)?([a-z0-9._-]+)\.md\).*\| `)([^`]+)(` \|)$")
 
 
 def major(aqui, la):
@@ -993,99 +977,6 @@ def escrever_imagem(unit, atual, alvo):
         return None
     unit.write_text(novo)
     return nova
-
-
-def tags_de(pasta):
-    """Every tag the folder's units pin, sorted and deduplicated.
-
-    An image pinned by digest has no tag and the docs quote the bare hex, which
-    is what immich's database and mdrop carry.
-    """
-    out = []
-    for unit in sorted(pasta.glob("*.container")):
-        for chave, valor in directives_of(unit):
-            if chave == "Image":
-                x = valor.partition("@sha256:")[2] or (valor.rpartition(":")[2] if ":" in valor.rpartition("/")[2] else "")
-                if x:                    # a bare image has no version in the repository
-                    out.append(x)
-    return sorted(set(out))
-
-
-def sincronizar_docs():
-    """Rewrites every place that mirrors a tag, from the units themselves.
-
-    The version lives in `Image=`, the `Pinned to` line of each service README
-    in both languages, and — for a folder that documents each unit apart — that
-    unit's page and the Version column that links to it. `check.py` fails on
-    each of them, so this is what keeps a bump from having to be typed in every
-    place and remembered in every place. The root READMEs' services table
-    carries no version.
-
-    Regenerated, not patched: it is derived data, and rebuilding it also
-    settles whatever drifted before.
-    """
-    mudados = []
-    for pasta in sorted(p for p in APPS.iterdir() if p.is_dir()):
-        esperado = ", ".join(f"`{x}`" for x in tags_de(pasta))
-        if not esperado:
-            continue
-        for doc in sorted(pasta.glob("README*.md")):
-            linhas = doc.read_text().splitlines(keepends=True)
-            for i, linha in enumerate(linhas):
-                m = FIXADO.match(linha)
-                if m and m.group(1) != esperado:
-                    linhas[i] = linha[:m.start(1)] + esperado + linha[m.end(1):]
-                    mudados.append(f"{doc.relative_to(RAIZ)}:{i + 1}")
-            doc.write_text("".join(linhas))
-        mudados += _sincronizar_por_unit(pasta)
-    return mudados
-
-
-def _sincronizar_por_unit(pasta):
-    """The per-unit pages and Version column of a folder that has them.
-
-    media-stack and vm document each unit on its own page; toolbx lists them in
-    a table. Those are a seventh and eighth place, and the sweep that found
-    them found 36 lines already stale.
-    """
-    mudados = []
-    tags = {}
-    for unit in sorted(pasta.glob("*.container")):
-        for chave, valor in directives_of(unit):
-            if chave == "Image":
-                tags[unit.stem.replace(f"{pasta.name}-", "")] = (
-                    valor.partition("@sha256:")[2] or valor.rpartition(":")[2])
-    for doc in sorted(pasta.glob("docs/*.md")) + sorted(pasta.glob("docs/*/*.md")):
-        alvo = tags.get(doc.stem)
-        if not alvo:
-            continue
-        linhas = doc.read_text().splitlines(keepends=True)
-        for i, linha in enumerate(linhas):
-            m = FIXADO.match(linha)
-            if m and m.group(1) != f"`{alvo}`":
-                linhas[i] = linha[:m.start(1)] + f"`{alvo}`" + linha[m.end(1):]
-                mudados.append(f"{doc.relative_to(RAIZ)}:{i + 1}")
-        doc.write_text("".join(linhas))
-    for doc in sorted(pasta.glob("README*.md")):
-        linhas = doc.read_text().splitlines(keepends=True)
-        for i, linha in enumerate(linhas):
-            m = LINHA_UNIT.match(linha.rstrip("\n"))
-            if not m:
-                continue
-            alvo = tags.get(m.group(2))
-            # `digest` is deliberate where the image is pinned by one: sixty-four
-            # hex characters in a table cell say less than the word.
-            if not alvo or alvo == m.group(3) or (
-                    m.group(3) == "digest" and re.fullmatch(r"[0-9a-f]{64}", alvo)):
-                continue
-            # group(4) is the closing "` |". Writing group(3) there — the OLD
-            # version — produced `12.112.0` with no closing tick: new and old
-            # glued together, and a row the regex no longer matched, so neither
-            # check.py nor the next bump ever looked at it again.
-            linhas[i] = m.group(1) + alvo + m.group(4) + "\n"
-            mudados.append(f"{doc.relative_to(RAIZ)}:{i + 1}")
-        doc.write_text("".join(linhas))
-    return mudados
 
 
 def bump(behind, items, apply, com_major):
@@ -1134,7 +1025,6 @@ def bump(behind, items, apply, com_major):
     if not apply:
         print("\n" + loc("nothing was done. repeat with --apply"))
         return 0
-    tocados += sincronizar_docs()
     print("\n" + green(loc("done:")) + f" {len(tocados)} " + loc("file(s) rewritten"))
     print(dim(loc("  check it with:  python3 check.py")))
     return 0

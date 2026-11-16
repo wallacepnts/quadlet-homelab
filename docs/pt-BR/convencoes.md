@@ -100,8 +100,10 @@ separado.
 
 ### 11. Créditos ao projeto original
 
-Toda pasta de serviço baseado em outro projeto tem uma seção "Créditos" no
-próprio README, linkando o repositório e o autor originais.
+Toda pasta de serviço baseado em outro projeto o credita no `install.ini`:
+`[store] license` diz a licença, `[store] docs` a documentação do projeto, e o repositório vem da
+imagem (ou de `[store] repo`). O painel os mostra, com a licença ao lado das notas. Um fork diz
+isso no `notes.md`.
 
 ### 12. `Label=`/valores com espaço precisam de aspas
 
@@ -151,7 +153,7 @@ Todo volume deste repositório usa `:Z` (rótulo SELinux **privado**,
 exclusivo do container dono). Um container terceiro tentando ler esses
 caminhos — mesmo só com `:ro` — toma `Permission denied`, porque `:Z` é
 exclusivo por design. Ferramentas que precisam enxergar dados de vários
-containers ao mesmo tempo (ex.: backup, ver [zerobyte](../../apps/zerobyte/README.pt-BR.md))
+containers ao mesmo tempo (ex.: backup, ver [zerobyte](../../apps/zerobyte))
 precisam desligar a confinação SELinux pra esse container específico.
 Trade-off consciente, não usar por padrão.
 
@@ -253,7 +255,7 @@ continua vendo `%23`.
 
 Quando vários `.container` diferentes precisam apontar pro **mesmo**
 path variável (ex.: uma raiz de mídia compartilhada entre vários
-serviços — ver [media-stack](../../apps/media-stack/README.pt-BR.md)), dá pra evitar editar
+serviços — ver [media-stack](../../apps/media-stack)), dá pra evitar editar
 cada arquivo com o path hardcoded usando uma variável de ambiente do
 systemd, não um `EnvironmentFile=` comum: `EnvironmentFile=` só injeta
 env var *dentro do container*, tarde demais pra afetar como o Quadlet
@@ -388,17 +390,17 @@ serviço no ar. E some a pior manutenção recorrente do repo — **major de
 banco não é bump de tag**: subir Postgres 15→16 exige `pg_dump`/restore,
 enquanto o arquivo SQLite acompanha o app.
 
-Serviços aqui que já seguem isso: [Ghost](../../apps/ghost/README.pt-BR.md), [wger](../../apps/wger/README.pt-BR.md),
-[Vaultwarden](../../apps/vaultwarden/README.pt-BR.md),
-[Uptime Kuma](../../apps/uptime-kuma/README.pt-BR.md) e o [Paperless-ngx](../../apps/paperless-ngx/README.pt-BR.md) —
+Serviços aqui que já seguem isso: [Ghost](../../apps/ghost), [wger](../../apps/wger),
+[Vaultwarden](../../apps/vaultwarden),
+[Uptime Kuma](../../apps/uptime-kuma) e o [Paperless-ngx](../../apps/paperless-ngx) —
 esse último pela **variante** do compose (`sqlite-tika.yml`, não
 `postgres-tika.yml`), que é onde a escolha aparece quando o projeto
 publica mais de um arquivo.
 
-O contraexemplo é o [Immich](../../apps/immich/README.pt-BR.md), que só fala Postgres — e com
+O contraexemplo é o [Immich](../../apps/immich), que só fala Postgres — e com
 uma extensão de vetor que amarra a versão do banco à do app. Nem todo
 projeto deixa escolher: o sinal costuma estar no schema ou na doc de
 instalação (um `provider = "postgresql"` fixo no Prisma, por exemplo).
-**Checar antes de assumir**, e registrar o porquê no README do serviço,
+**Checar antes de assumir**, e registrar o porquê no `notes.md` do serviço,
 pra ninguém reabrir a discussão depois.
 

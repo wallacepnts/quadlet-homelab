@@ -4,8 +4,6 @@
 
 **[🇧🇷 Leia em português](./pt-BR/sabnzbd.md)**
 
-[< Media Stack](../README.md)
-
 Downloads from Usenet. Needs a paid provider — Usenet is not free.
 
 Port **8081**, unit `media-stack-sabnzbd`.

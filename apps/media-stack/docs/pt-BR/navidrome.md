@@ -4,8 +4,6 @@
 
 **[🇺🇸 Read in English](../navidrome.md)**
 
-[< Media Stack](../../README.pt-BR.md)
-
 Toca a música que o Lidarr e o Downtify colocam na raiz de mídia. Fala a API
 Subsonic, então qualquer cliente dela funciona no celular, inclusive com
 sincronização offline — que é justamente o que o Jellyfin não faz bem.

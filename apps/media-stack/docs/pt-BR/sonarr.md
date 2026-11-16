@@ -4,8 +4,6 @@
 
 **[🇺🇸 Read in English](../sonarr.md)**
 
-[< Media Stack](../../README.pt-BR.md)
-
 Séries: acompanha o que você adiciona, baixa episódios novos e arquiva na biblioteca.
 
 Porta **8989**, unit `media-stack-sonarr`.

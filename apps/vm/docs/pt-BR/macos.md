@@ -4,8 +4,6 @@
 
 **[🇺🇸 Read in English](../macos.md)**
 
-[< VMs](../../README.pt-BR.md)
-
 Uma VM de macOS no navegador, do Big Sur ao Sequoia.
 
 Visualizador web na **8008**, VNC na **5900**. Unit `vm-macos`.

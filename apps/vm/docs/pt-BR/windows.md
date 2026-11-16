@@ -4,8 +4,6 @@
 
 **[🇺🇸 Read in English](../windows.md)**
 
-[< VMs](../../README.pt-BR.md)
-
 Uma VM de Windows que você abre no navegador. Nada é instalado no host.
 
 Visualizador web na **8006**, RDP na **3389**. Unit `vm-windows`.

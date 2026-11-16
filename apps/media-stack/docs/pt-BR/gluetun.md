@@ -4,8 +4,6 @@
 
 **[🇺🇸 Read in English](../gluetun.md)**
 
-[< Media Stack](../../README.pt-BR.md)
-
 **Opcional.** Túnel VPN para colocar o Deluge dentro. Nada no stack depende dele.
 
 Unit `media-stack-gluetun`.

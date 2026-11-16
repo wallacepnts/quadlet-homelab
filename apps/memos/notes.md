@@ -1,0 +1,4 @@
+Open `http://<host-ip>:5230` or `https://memos.<your-tailnet>.ts.net` and
+create the account. **The first user to sign up becomes admin**, with no email
+confirmation. Right after that, turn signup off in Settings → "Allow user
+signup", or anyone who reaches the URL can create an account.

@@ -4,8 +4,6 @@
 
 **[🇺🇸 Read in English](../bazarr.md)**
 
-[< Media Stack](../../README.pt-BR.md)
-
 Busca legendas para o que o Sonarr e o Radarr trouxeram.
 
 Porta **6767**, unit `media-stack-bazarr`.

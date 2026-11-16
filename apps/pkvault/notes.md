@@ -1,0 +1,37 @@
+Then open `https://pkvault.<your-tailnet>.ts.net`.
+
+**There is no login.** Whoever reaches the page can edit and delete your saves.
+On the tailnet that is you. With `--access tailnet`, the default, the LAN port
+is not even published; with `local` or `both`, port `8126` is open to everyone
+on your network — choose those only on a LAN that is yours alone.
+
+### Getting your saves in and out
+
+The first start creates a sample Emerald save, so the app has something to show.
+Remove it in the settings when yours are in.
+
+- **Upload in the browser** — the simplest way: up to 5 files, 60 MB in total,
+  stored in `saves-uploads/`. Each save has a download button to take the
+  edited file back to the game or emulator.
+- **A folder on the host** — for saves that live on this machine. Put them
+  under the volume, for example in `data/saves/`, and add `/pkvault/saves/` to
+  the save locations in the settings. **Copy them in with `cp`, not `mv`**:
+  measured, a file moved from another folder keeps its old SELinux label and the
+  container cannot read it, while a copy takes the folder's label.
+
+To keep saves in step with other devices, the project recommends Syncthing
+(which this repository also has). A folder mounted by two units uses `:z`, not
+`:Z` — rule 16 of the conventions.
+
+Every change is written to a save only when you press save in the app, and a
+backup of all saves and storage is taken before each write. `BACKUP_FILE_COUNT_LIMIT=30`
+keeps the latest 30 — without it the folder only grows. Measured: with the
+limit at 2, four backups leave two on disk.
+
+### Update
+
+The image is tagged without the `v` the release carries. PKVault bundles its own PKHeX (26.8.26 in 2.3.3), so support for a new game arrives with a PKVault release. The page checks GitHub for a newer release from your browser; that is the only outside call.
+
+### Backup
+
+The app's own backups are in the same volume, so this copies them too.

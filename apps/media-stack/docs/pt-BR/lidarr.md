@@ -4,8 +4,6 @@
 
 **[🇺🇸 Read in English](../lidarr.md)**
 
-[< Media Stack](../../README.pt-BR.md)
-
 O mesmo do Sonarr, para músicas: acompanha artistas e busca o que sai.
 
 Porta **8686**, unit `media-stack-lidarr`.

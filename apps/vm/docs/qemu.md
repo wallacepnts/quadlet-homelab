@@ -4,8 +4,6 @@
 
 **[🇧🇷 Leia em português](./pt-BR/qemu.md)**
 
-[< VMs](../README.md)
-
 Any operating system in a VM, chosen at install time.
 
 Web viewer on **8007**. Unit `vm-qemu`.

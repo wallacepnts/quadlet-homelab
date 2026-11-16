@@ -4,8 +4,6 @@
 
 **[🇺🇸 Read in English](../sabnzbd.md)**
 
-[< Media Stack](../../README.pt-BR.md)
-
 Baixa da Usenet. Precisa de um provedor pago — Usenet não é de graça.
 
 Porta **8081**, unit `media-stack-sabnzbd`.

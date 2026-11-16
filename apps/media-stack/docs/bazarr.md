@@ -4,8 +4,6 @@
 
 **[🇧🇷 Leia em português](./pt-BR/bazarr.md)**
 
-[< Media Stack](../README.md)
-
 Fetches subtitles for what Sonarr and Radarr brought in.
 
 Port **6767**, unit `media-stack-bazarr`.

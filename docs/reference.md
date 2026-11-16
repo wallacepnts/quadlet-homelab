@@ -24,10 +24,13 @@ apps/<app>/
 ├── <app>.container
 ├── <app>-net.network       # only for a stack that talks to itself
 ├── .env.example
-├── install.ini             # secret recipes, validation, login, upstream name, store screenshots
-├── README.md
-└── README.pt-BR.md
+├── install.ini             # secret recipes, validation, login, upstream, image template, store fields
+├── notes.md                # optional: first run and what is odd about the app (English)
+└── notes.pt-BR.md          # the same, in Portuguese
 ```
+
+There is no README per app: the panel shows `notes.md` and the licence, and the row in the root
+README's services table is the shop window.
 
 At the root, `qhui.py` holds the language detection and the colouring the
 three tools share.

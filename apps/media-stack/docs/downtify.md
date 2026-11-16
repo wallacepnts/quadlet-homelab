@@ -4,8 +4,6 @@
 
 **[🇧🇷 Leia em português](./pt-BR/downtify.md)**
 
-[< Media Stack](../README.md)
-
 Paste a Spotify link and the music lands on disk.
 
 Port **8000**, unit `media-stack-downtify`.

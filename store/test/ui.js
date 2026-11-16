@@ -479,6 +479,17 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   confere(apagou && apagou.corpo.action === "remove" && apagou.corpo.purge === true && apagou.corpo.confirm === "homebox", `o remove leva purge e o nome digitado (${JSON.stringify(apagou && apagou.corpo)})`);
   $("panel").open = false;
 
+  // notes and licence: what used to be an app's README
+  const hn = api.S.apps.find((x) => x.id === "homebox");
+  hn.notes = { en: "Open the page.\n\n### Password\n\nIt is generated.", pt: "Abra a página.\n\n### Senha\n\nÉ gerada." }; hn.license = "MIT";
+  api.openPanel("homebox"); await esperar(30);
+  confere($("p-notes").hidden === false && /Notas · licença: MIT/.test($("p-notes-title").textContent), `painel: notas e licença (${$("p-notes-title").textContent})`);
+  confere(/Abra a página/.test($("p-notes-body").textContent) && /Senha/.test($("p-notes-body").textContent), `as notas aparecem em português, renderizadas (${JSON.stringify($("p-notes-body").textContent)})`);
+  hn.notes = null; hn.license = null;
+  api.openPanel("homebox"); await esperar(30);
+  confere($("p-notes").hidden === true, "sem notas nem licença: nada");
+  $("panel").open = false;
+
   // minimum Podman: the panel says when the host is older than the app needs
   api.S.podman = "4.9.0";
   Object.assign(api.S.apps.find((x) => x.id === "homebox"), { podman_too_old: true, min_podman: "5.0" });

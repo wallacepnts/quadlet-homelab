@@ -4,8 +4,6 @@
 
 **[🇺🇸 Read in English](../downtify.md)**
 
-[< Media Stack](../../README.pt-BR.md)
-
 Cole um link do Spotify e a música cai no disco.
 
 Porta **8000**, unit `media-stack-downtify`.

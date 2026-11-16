@@ -4,8 +4,6 @@
 
 **[🇧🇷 Leia em português](./pt-BR/deluge.md)**
 
-[< Media Stack](../README.md)
-
 Downloads torrents. Runs on its own; the VPN is a separate choice.
 
 Port **8112**, unit `media-stack-deluge`.

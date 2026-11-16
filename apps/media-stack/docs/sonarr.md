@@ -4,8 +4,6 @@
 
 **[🇧🇷 Leia em português](./pt-BR/sonarr.md)**
 
-[< Media Stack](../README.md)
-
 Series: follows what you add, downloads new episodes and files them under the library.
 
 Port **8989**, unit `media-stack-sonarr`.

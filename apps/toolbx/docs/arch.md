@@ -4,8 +4,6 @@
 
 **[🇧🇷 Leia em português](./pt-BR/arch.md)**
 
-[< Toolbx](../README.md)
-
 An Arch shell with `pacman` and access to the AUR.
 
 Unit `toolbx-arch`, image `quay.io/toolbx/arch-toolbox@sha256:04fc92…`.

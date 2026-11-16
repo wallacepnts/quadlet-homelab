@@ -99,8 +99,10 @@ separate step.
 
 ### 11. Credit the original project
 
-Every service folder based on another project has a "Credits" section in its
-own README, linking the original repository and author.
+Every service folder based on another project credits it in `install.ini`: `[store] license`
+names the licence, `[store] docs` the project's documentation, and the repository comes from the
+image (or `[store] repo`). The panel shows them, with the licence beside the notes. A fork says
+so in `notes.md`.
 
 ### 12. `Label=` values with a space need quotes
 
@@ -396,5 +398,5 @@ The counterexample is [Immich](../apps/immich/), which only speaks Postgres —
 and with a vector extension that ties the database's version to the app's. Not
 every project lets you choose: the signal is usually in the schema or in the
 installation docs (a hardcoded `provider = "postgresql"` in Prisma, for
-example). **Check before assuming**, and record why in the service's README,
+example). **Check before assuming**, and record why in the service's `notes.md`,
 so nobody reopens the discussion later.

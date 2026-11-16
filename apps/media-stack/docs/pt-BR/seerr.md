@@ -4,8 +4,6 @@
 
 **[🇺🇸 Read in English](../seerr.md)**
 
-[< Media Stack](../../README.pt-BR.md)
-
 Onde um título é pedido. Ele repassa o pedido ao Sonarr ou ao Radarr e avisa quando chega.
 
 Porta **5055**, unit `media-stack-seerr`.

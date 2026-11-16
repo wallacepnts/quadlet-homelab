@@ -4,8 +4,6 @@
 
 **[🇺🇸 Read in English](../chromeos.md)**
 
-[< VMs](../../README.pt-BR.md)
-
 ChromeOS Flex numa VM, com a GPU do host.
 
 Visualizador web na **8013**, VNC na **5901**. Unit `vm-chromeos`.

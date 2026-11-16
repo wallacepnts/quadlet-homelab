@@ -4,8 +4,6 @@
 
 **[🇧🇷 Leia em português](./pt-BR/navidrome.md)**
 
-[< Media Stack](../README.md)
-
 Plays the music Lidarr and Downtify put in the media root. It speaks the
 Subsonic API, so any of its clients works on a phone, including offline sync —
 which is the part Jellyfin does not do well.

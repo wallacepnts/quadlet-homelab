@@ -4,8 +4,6 @@
 
 **[🇺🇸 Read in English](../jellyfin.md)**
 
-[< Media Stack](../../README.pt-BR.md)
-
 Reproduz o que o stack juntou — filmes, séries e música — no navegador, na TV ou no celular.
 
 Porta **8096**, unit `media-stack-jellyfin`.

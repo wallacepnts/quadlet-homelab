@@ -270,6 +270,7 @@ PT = {
     'could not find the version to pin: ': 'não achei a versão para fixar: ',
     'with --update: also move each image to its latest release (a major jump needs --major)': 'com --update: leva também cada imagem à última release (um salto de major exige --major)',
     'with --update --latest: allow the jump to a new major version': 'com --update --latest: permite o salto para uma versão major nova',
+    "the app's notes in the panel": 'as notas do app no painel',
     'this service needs Podman': 'este serviço precisa do Podman',
     'the host has': 'o host tem',
     'this service is marked deprecated:': 'este serviço está marcado como descontinuado:',
@@ -4314,6 +4315,15 @@ def parse_failures(texto):
     return saida
 
 
+def notes_of(pasta, nome):
+    """The app's notes (markdown, what to do at the first run and what is odd about it), or None.
+
+    The panel shows them; there is no README per app any more. `notes.md` is English and
+    `notes.pt-BR.md` Portuguese, either may be missing."""
+    f = Path(pasta) / nome
+    return f.read_text().strip() or None if f.is_file() else None
+
+
 def catalog_entry(d, home, tailnet, en, pt, ativos, saude, falhas=None):
     """One service as the store sees it: the window, what the install asks, the host."""
     s = Service(d, home)
@@ -4373,6 +4383,8 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude, falhas=None):
         "has_login": s.login() is not None,
         # Marked in install.ini [store]: the store shows the reason and offers no install.
         "deprecated": deprecation(s.ini),
+        "license": (s.ini.get("store", "license", fallback="").strip() or None) if s.ini.has_section("store") else None,
+        "notes": {"en": notes_of(s.dir, "notes.md"), "pt": notes_of(s.dir, "notes.pt-BR.md") or notes_of(s.dir, "notes.md")},
         "works_with": works_with(s.ini, s.name),
         "min_podman": min_podman(s),
         "podman_too_old": bool(podman_too_old(s)),
@@ -4770,7 +4782,7 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
         if not a.update:
             show_secrets(s)
     if warnings and not (a.remove or a.backup or a.restore):
-        say("The items marked (!) above were not done — see apps/%s/README.md" % s.name)
+        say("The items marked (!) above were not done — see the app's notes in the panel (apps/%s/notes.md)" % s.name)
     # The plan reaching its last step is not the same as the service working.
     # Nothing to verify after a backup (the data did not change) or a remove
     # (the service is meant to be gone), and --prefix is a sandbox with no

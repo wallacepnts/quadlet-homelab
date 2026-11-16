@@ -25,6 +25,7 @@ No dependencies: stdlib only.
 """
 
 import argparse
+import configparser
 import contextlib
 import hashlib
 import hmac
@@ -554,16 +555,14 @@ def issues_url(repo):
 
 
 def docs_url(app):
-    """The documentation link the service README already names in its Credits, or None.
-
-    A person chose it there (82 of the 83 READMEs have one), so it is read from that
-    file instead of being written down a second time in install.ini."""
-    readme = I.APPS / app / "README.md"
-    if not readme.is_file():
+    """The documentation link the service's `install.ini` names (`[store] docs`), or None."""
+    ini = I.APPS / app / "install.ini"
+    if not ini.is_file():
         return None
-    secao = re.search(r"^## Credits\s*\n(.*?)(?=^## |\Z)", readme.read_text(), re.S | re.M)
-    m = re.search(r"\[Official documentation\]\((https?://[^)\s]+)\)", secao.group(1)) if secao else None
-    return m.group(1) if m else None
+    cp = configparser.ConfigParser(interpolation=None)
+    cp.read(ini)
+    v = cp.get("store", "docs", fallback="").strip() if cp.has_section("store") else ""
+    return v if v.startswith("https://") else None
 
 
 def same_page(a, b):
@@ -2862,10 +2861,9 @@ esac
         antes, I.APPS = I.APPS, Path(dd)
         try:
             (I.APPS / "demo").mkdir()
-            (I.APPS / "demo" / "README.md").write_text("# Demo\n\n## Credits\n\n[o/r](https://github.com/o/r) — MIT\n\n"
-                "[Official documentation](https://docs.example.org/demo)\n\n## Other\n\n[Official documentation](https://wrong.example)\n")
-            assert docs_url("demo") == "https://docs.example.org/demo", "read from the Credits section only"
-            (I.APPS / "demo" / "README.md").write_text("# Demo\n\nno credits here\n")
+            (I.APPS / "demo" / "install.ini").write_text("[store]\ngroup = Tools\ndocs = https://docs.example.org/demo\n")
+            assert docs_url("demo") == "https://docs.example.org/demo", "read from [store] docs"
+            (I.APPS / "demo" / "install.ini").write_text("[store]\ngroup = Tools\n")
             assert docs_url("demo") is None and docs_url("nao-existe") is None
         finally:
             I.APPS = antes

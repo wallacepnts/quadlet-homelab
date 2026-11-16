@@ -4,8 +4,6 @@
 
 **[🇺🇸 Read in English](../prowlarr.md)**
 
-[< Media Stack](../../README.pt-BR.md)
-
 Guarda a lista de indexadores num lugar só e envia para o Sonarr, o Radarr e o Lidarr.
 
 Porta **9696**, unit `media-stack-prowlarr`.

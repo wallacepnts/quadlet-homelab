@@ -4,8 +4,6 @@
 
 **[🇺🇸 Read in English](../dispatcharr.md)**
 
-[< Media Stack](../../README.pt-BR.md)
-
 IPTV: organiza listas de canais, o guia e vídeo sob demanda.
 
 Porta **9191**, unit `media-stack-dispatcharr`.

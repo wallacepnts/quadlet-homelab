@@ -4,8 +4,6 @@
 
 **[🇧🇷 Leia em português](./pt-BR/rhel.md)**
 
-[< Toolbx](../README.md)
-
 A Red Hat Enterprise Linux shell, on the UBI image.
 
 Unit `toolbx-rhel`, image `registry.access.redhat.com/ubi10/toolbox:10.2`.

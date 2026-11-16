@@ -430,6 +430,14 @@ def env_type_problemas(texto):
     return saida
 
 
+def license_docs_problemas(chave, valor):
+    """What is wrong with `[store] license` (a short line) or `[store] docs` (an https URL), as a list."""
+    v = valor.strip()
+    if chave == "docs":
+        return [] if re.fullmatch(r"https://[A-Za-z0-9.-]+(/\S*)?", v) else ["is not a plain https:// URL"]
+    return [] if v and "\n" not in v and len(v) <= 80 and "<" not in v else ["must be one short line (a licence name, up to 80 characters)"]
+
+
 def backup_problemas(ini):
     """What is wrong with an install.ini [backup] section, as a list."""
     saida = []
@@ -521,36 +529,6 @@ def upstream_problema(valor):
     if valor.count("/") != 1 or not all(valor.split("/")) or " " in valor:
         return "expected `<owner>/<repo>`, `registry`, `compose:...` or `-`"
     return None
-
-
-def check_readme_units(folders):
-    """Every unit a folder ships is named in its README, in both languages.
-
-    The manual install is a list of `wget`s, and for a stack it is a shell loop
-    over the component names. media-stack grew a thirteenth unit and the loop
-    went on listing twelve: whoever followed the README got the stack without
-    navidrome, and nothing failed — the service simply was not there. The unit
-    table further down the same file did list it, which is how it went unseen.
-    """
-    for folder in folders:
-        unidades = sorted(folder.glob("*.container")) + sorted(folder.glob("*.network"))
-        for nome in ("README.md", "README.pt-BR.md"):
-            rd = folder / nome
-            if not rd.exists():
-                continue
-            texto = rd.read_text()
-            for c in unidades:
-                # A loop names the component, not the file: `for f in jellyfin
-                # navidrome ...` builds `media-stack-$f.container`, so the
-                # suffix counts as naming it.
-                sufixo = (c.stem[len(folder.name) + 1:]
-                          if c.stem.startswith(folder.name + "-") else None)
-                if c.stem in texto:
-                    continue
-                if sufixo and re.search(rf"\b{re.escape(sufixo)}\b", texto):
-                    continue
-                error("readme", f"apps/{folder.name}: {c.name} is named nowhere in "
-                                f"{nome} — the manual install cannot reach it")
 
 
 def layout_targets(folders):
@@ -675,12 +653,13 @@ def check_manifest(folders):
         # `screenshots` exists; any other key is a typo that would be ignored.
         if ini.has_section("store"):
             for key, valor in ini.items("store"):
-                if key not in ("screenshots", "deprecated", "deprecated_pt", "repo", "works_with", "min_podman", "group"):
+                if key not in ("screenshots", "deprecated", "deprecated_pt", "repo", "works_with", "min_podman", "group", "license", "docs"):
                     error("manifest", f"apps/{folder.name}: install.ini [store] has no key {key!r} "
-                                      f"(only `screenshots`, `deprecated`, `deprecated_pt`, `repo`, `works_with`, `min_podman` and `group`)")
+                                      f"(only `screenshots`, `deprecated`, `deprecated_pt`, `repo`, `works_with`, `min_podman`, `group`, `license` and `docs`)")
                     continue
                 for problema in (screenshots_problemas(valor) if key == "screenshots"
                                  else repo_problemas(valor) if key == "repo"
+                                 else license_docs_problemas(key, valor) if key in ("license", "docs")
                                  else [] if key == "group" and valor.strip() in GRUPOS
                                  else [f"is not one of: {', '.join(GRUPOS)}"] if key == "group"
                                  else [] if key == "min_podman" and re.fullmatch(r"\d+\.\d+(\.\d+)?", valor.strip())
@@ -885,30 +864,6 @@ def check_table(folders):
         error("table", f"the README table mentions apps/{extra}, which does not exist")
 
 
-# The "Pinned to `a`, `b`" line each service README opens its Update section
-# with. Both languages carry it. Portuguese settled on "Fixado em", and
-# "Pinado em" stays accepted so a line written the old way is still checked
-# rather than silently skipped.
-FIXADO = re.compile(r"^(?:Pinned to|Fixado em|Pinado em) ((?:`[^`]+`(?:, )?)+)")
-
-
-def pinned_tags(folder):
-    """Every tag the folder's units pin, sorted and deduplicated.
-
-    An image pinned by digest has no tag, and the READMEs quote the bare hex —
-    that is what the line has to match for immich's database and mdrop.
-    """
-    out = []
-    for unit in sorted(folder.glob("*.container")):
-        for key, value in directives_of(unit):
-            if key == "Image":
-                # A bare image (no tag, no digest) carries no version here: `qh` pins it on the host.
-                x = value.partition("@sha256:")[2] or (value.rpartition(":")[2] if ":" in value.rpartition("/")[2] else "")
-                if x:
-                    out.append(x)
-    return sorted(set(out))
-
-
 HARDENING = ROOT / "docs" / "hardening.md"
 LINHA_HARD = re.compile(r"^\| `([a-z0-9.-]+)` \| (yes|no) \| (.+?) \|$")
 
@@ -961,81 +916,6 @@ def check_hardening(folders):
         if (ro, caps) != (real_ro, real_caps):
             error("hardening", f"docs/hardening.md:{n}: {nome} reads `{ro} | {caps}`, "
                                f"the unit says `{real_ro} | {real_caps}`")
-
-
-def check_pinned(folders):
-    """The service README's own version line, against the units beside it.
-
-    The version lives in three places: `Image=` and this line in each README.
-    This line had no check at all once, so 80 of them drifted across 40
-    services while CI stayed green — nobody reads the other file top to bottom.
-
-    A service may legitimately carry no such line (actual-budget follows a
-    floating tag), so only a line that exists is checked.
-    """
-    for folder in folders:
-        esperado = ", ".join(f"`{t}`" for t in pinned_tags(folder))
-        if not esperado:
-            continue
-        for readme in sorted(folder.glob("README*.md")):
-            for n, line in enumerate(readme.read_text().splitlines(), 1):
-                m = FIXADO.match(line)
-                if m and m.group(1) != esperado:
-                    error("pinned", f"apps/{folder.name}/{readme.name}:{n}: "
-                                    f"the README says {m.group(1)}, "
-                                    f"the unit says {esperado}")
-        check_per_unit(folder)
-
-
-# A stack big enough to document each unit apart says the version twice more:
-# once in `docs/<unit>.md` and once in the Version column that links to it.
-# media-stack is the only one today, and it drifted in both at once.
-# Any row that links to a unit page, well formed or not.
-RE_LINHA_DE_UNIT = re.compile(r"^\| <img.*\]\(\./docs/(?:pt-BR/)?[a-z0-9._-]+\.md\)")
-LINHA_UNIT = re.compile(r"^\| <img.*\]\(\./docs/(?:pt-BR/)?([a-z0-9._-]+)\.md\)"
-                        r".*\| `([^`]+)` \|$")
-
-
-def check_per_unit(folder):
-    """The per-unit page and Version column of a stack, against each unit."""
-    tags = {}
-    for unit in sorted(folder.glob("*.container")):
-        for key, value in directives_of(unit):
-            if key == "Image":
-                tags[unit.stem.replace(f"{folder.name}-", "")] = (
-                    value.partition("@sha256:")[2] or value.rpartition(":")[2])
-    docs = sorted(folder.glob("docs/*.md")) + sorted(folder.glob("docs/*/*.md"))
-    for doc in docs:
-        esperado = tags.get(doc.stem)
-        if not esperado:
-            continue  # a page that is not named after a unit documents something else
-        for n, line in enumerate(doc.read_text().splitlines(), 1):
-            m = FIXADO.match(line)
-            if m and m.group(1) != f"`{esperado}`":
-                error("pinned", f"{doc.relative_to(ROOT)}:{n}: the README says "
-                                f"{m.group(1)}, the unit says `{esperado}`")
-    for readme in sorted(folder.glob("README*.md")):
-        for n, line in enumerate(readme.read_text().splitlines(), 1):
-            m = LINHA_UNIT.match(line)
-            if not m:
-                # A row of the unit table that the pattern does not match is not
-                # "something else": it is a row nobody checks. The bump once wrote
-                # `12.112.0` with no closing tick into seven of them, and this
-                # skipped all seven while the table read wrong for two releases.
-                if RE_LINHA_DE_UNIT.match(line):
-                    error("pinned", f"apps/{folder.name}/{readme.name}:{n}: a row of the "
-                                    f"unit table is malformed — the Version cell must "
-                                    f"read `<tag>` |")
-                continue
-            esperado = tags.get(m.group(1))
-            if esperado is None or esperado == m.group(2):
-                continue
-            if m.group(2) == "digest" and re.fullmatch(r"[0-9a-f]{64}", esperado):
-                # toolbx's Arch row: the image is pinned by digest, and sixty-four
-                # hex characters in a table cell say less than the word does.
-                continue
-            error("pinned", f"apps/{folder.name}/{readme.name}:{n}: the README "
-                            f"says `{m.group(2)}`, the unit says `{esperado}`")
 
 
 # --------------------------------------------------------------------------
@@ -1168,21 +1048,6 @@ def selftest():
     assert "DropCapability" in pa("--cap-drop=NET_RAW")[0]
     assert pa("--device-cgroup-rule=c 226:* rwm"), "the defect vm-chromeos shipped with"
 
-    # the pinned-version line, in every wording the check has to recognise
-    assert FIXADO.match("Pinned to `v1.2.3`. Nothing updates on its own").group(1) == "`v1.2.3`"
-    assert FIXADO.match("Fixado em `16-alpine`, `2026.5.6`. Nada").group(1) == "`16-alpine`, `2026.5.6`"
-    assert FIXADO.match("Pinado em `0.6.0`. As duas imagens").group(1) == "`0.6.0`", \
-        "the wording the repository moved away from is still checked"
-    assert FIXADO.match("Pinned to the tag above") is None, "a sentence with no tag is not the line"
-    assert FIXADO.match("> Pinned to `v1`") is None, "the line is never quoted or indented"
-
-    # the Version column of a stack's per-unit table
-    linha = ('| <img src="https://x/jellyfin.svg" width="28" height="28" alt=""> | '
-             '[Jellyfin](./docs/jellyfin.md) | Plays the library | `12.0` |')
-    assert LINHA_UNIT.match(linha).groups() == ("jellyfin", "12.0")
-    assert LINHA_UNIT.match(linha.replace("./docs/", "./docs/pt-BR/")).group(1) == "jellyfin"
-    assert LINHA_UNIT.match(linha.replace(" | `12.0` |", " |")) is None, "no version, nothing to check"
-
     # o guarda de tailnet: pega nome real, aceita os placeholders
     lab = TAILNET_NAME.findall
     assert lab("https://traccar.some-real-name.ts.net") == ["some-real-name"]  # check: ignore tailnet
@@ -1312,12 +1177,10 @@ def main():
     uses = check_ports(folders)
     check_manifest(folders)
     check_shared_labels(folders)
-    check_readme_units(folders)
     check_socket_label()
     check_config_sources()
     check_counts(folders)
     check_table(folders)
-    check_pinned(folders)
     check_hardening(folders)
     check_tailnet()
 

@@ -4,8 +4,6 @@
 
 **[🇧🇷 Leia em português](./pt-BR/fedora.md)**
 
-[< Toolbx](../README.md)
-
 A Fedora shell with `dnf`, on the image Fedora publishes for exactly this.
 
 Unit `toolbx-fedora`, image `registry.fedoraproject.org/fedora-toolbox:44`.

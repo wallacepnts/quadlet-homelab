@@ -4,8 +4,6 @@
 
 **[🇧🇷 Leia em português](./pt-BR/zima.md)**
 
-[< VMs](../README.md)
-
 ZimaOS — the CasaOS-derived NAS interface — without buying the hardware.
 
 ZimaOS itself on **8011**, the VM's viewer on **8012**. Unit `vm-zima`.

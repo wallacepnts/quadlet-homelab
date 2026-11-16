@@ -4,8 +4,6 @@
 
 **[🇺🇸 Read in English](../windows-arm.md)**
 
-[< VMs](../../README.pt-BR.md)
-
 O mesmo do `vm-windows`, para um host ARM64.
 
 Visualizador web na **8006**, RDP na **3389**. Unit `vm-windows-arm`.

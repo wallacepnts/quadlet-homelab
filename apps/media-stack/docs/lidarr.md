@@ -4,8 +4,6 @@
 
 **[🇧🇷 Leia em português](./pt-BR/lidarr.md)**
 
-[< Media Stack](../README.md)
-
 The same as Sonarr, for music: follows artists and fetches what comes out.
 
 Port **8686**, unit `media-stack-lidarr`.
