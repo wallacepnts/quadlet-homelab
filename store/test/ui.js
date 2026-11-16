@@ -101,7 +101,7 @@ global.fetch = async (url, opts = {}) => {
 };
 
 const codigo = fs.readFileSync(path.join(__dirname, "..", "app.js"), "utf8");
-const api = new Function(codigo + "; return { S, openPanel, showEnv, current, renderGrid, pollStats, pollHost, showLogs, showConsole, termNew, termFeed, termKey, openResources, hintClean, openHistory, setView };")();
+const api = new Function(codigo + "; return { S, openPanel, showEnv, current, renderGrid, pollStats, pollHost, openSettings, showLogs, showConsole, termNew, termFeed, termKey, openResources, hintClean, openHistory, setView };")();
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 let falhas = 0;
 const confere = (cond, msg) => { if (!cond) { falhas++; console.log("FALHOU:", msg); } else console.log("ok   ", msg); };
@@ -431,6 +431,52 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   const instalou = posts.slice(antesRun).find((x) => x.rota === "/api/run");
   confere(instalou && instalou.corpo.action === "install" && instalou.corpo.custom && instalou.corpo.custom.gitea, `a instalação leva a personalização (${JSON.stringify(instalou && Object.keys(instalou.corpo))})`);
   confere(!api.S.preCustom.gitea, "depois de instalar, o que estava guardado é descartado");
+  $("panel").open = false;
+
+  // the panel on its own: settings, update everything, delete the data
+  rotas["/api/settings"] = { access: "tailnet", default: true, drift: ["memos", "gitea"], tailnet: false, modes: ["local", "tailnet", "both"] };
+  rotas["/api/job/js"] = { output: "rule saved\n", next: 1, rc: 0 };
+  await api.openSettings(); await esperar(50);
+  const textoCfg = $("s-body").textContent;
+  confere(/Como os apps são acessados/.test(textoCfg) && /Ainda não escolhida/.test(textoCfg) && /2 serviço\(s\) instalado\(s\) não seguem/.test(textoCfg) && /Tailnet não configurada/.test(textoCfg),
+    `Configurações: a regra, quem não a segue e a tailnet (${textoCfg.slice(0, 60)})`);
+  const rBoth = [...$("s-body").walk()].find((e) => e.tag === "input" && e.attrs.value === "both");
+  rBoth.listeners.change();
+  rotas["/api/settings"] = { ...rotas["/api/settings"], access: "both", default: false, drift: [] };
+  const antesCfg = posts.length;
+  porTexto($("s-body"), "Aplicar aos instalados")[0].listeners.click(); await esperar(1000);
+  confere(posts.slice(antesCfg).some((x) => x.rota === "/api/settings" && x.corpo.access === "both" && x.corpo.apply === true), "Aplicar aos instalados envia a regra com apply");
+  $("settings").open = false;
+
+  // update everything: two clicks, then a window with the job
+  const ua = api.S.apps.find((x) => x.id === "homebox");
+  ua.units = [unidade("homebox", { drift: "changed" })];
+  api.setView("apps");
+  const botaoTodos = [...$("summary").walk()].find((e) => e.tag === "button" && e.attrs.id === "update-all");
+  confere(!!botaoTodos && /Atualizar todos \(1\)/.test(botaoTodos.textContent), `Meus apps: botão Atualizar todos com a contagem (${botaoTodos && botaoTodos.textContent})`);
+  rotas["/api/update-all"] = { job: "ju", apps: ["homebox"] }; rotas["/api/job/ju"] = { output: "homebox ok\n", next: 1, rc: 0 };
+  const antesTodos = posts.length;
+  botaoTodos.listeners.click({ target: botaoTodos });
+  confere(posts.length === antesTodos && /Confirmar/.test(botaoTodos.textContent), "o primeiro clique só pede confirmação");
+  botaoTodos.listeners.click({ target: botaoTodos }); await esperar(1200);
+  confere(posts.slice(antesTodos).some((x) => x.rota === "/api/update-all") && /homebox ok/.test($("b-out").textContent), "o segundo clique atualiza, e a janela mostra a saída");
+  ua.units = [unidade("homebox")];
+  api.renderGrid(); $("bulk").open = false;
+
+  // delete the data: a tick, a typed name, and the purge rides on the remove
+  api.openPanel("homebox"); await esperar(30);
+  porTexto($("p-actions"), "Remover")[0].listeners.click(); await esperar(100);
+  const tick = [...$("p-form").walk()].find((e) => e.tag === "input" && e.attrs.id === "purge");
+  const blocoPurge = [...$("p-form").walk()].find((e) => e.attrs && e.attrs.class === "purge");
+  confere(!!tick && blocoPurge.hidden === true, "remover: a opção de apagar dados começa desligada");
+  tick.checked = true; tick.listeners.change({ target: tick });
+  confere(blocoPurge.hidden === false && /não tem volta/.test(blocoPurge.textContent), "marcar mostra o aviso e pede o nome");
+  [...$("p-form").walk()].find((e) => e.attrs && e.attrs.id === "purge-confirm").value = "homebox";
+  rotas["/api/run"] = { job: "jp" }; rotas["/api/job/jp"] = { output: "removed\n", next: 1, rc: 0 };
+  const antesPurge = posts.length;
+  await $("p-form").onsubmit({ preventDefault() {} }); await esperar(1000);
+  const apagou = posts.slice(antesPurge).find((x) => x.rota === "/api/run");
+  confere(apagou && apagou.corpo.action === "remove" && apagou.corpo.purge === true && apagou.corpo.confirm === "homebox", `o remove leva purge e o nome digitado (${JSON.stringify(apagou && apagou.corpo)})`);
   $("panel").open = false;
 
   // minimum Podman: the panel says when the host is older than the app needs

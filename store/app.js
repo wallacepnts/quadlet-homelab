@@ -10,6 +10,13 @@ const T = {
     noInstall: "Não dá para instalar este app daqui.",
     worksWith: "Funciona com",
     play: "Iniciar / retomar", pause: "Pausar", stopApp: "Parar", pausedBadge: "pausado",
+    settings: "Configurações", accessRule: "Como os apps são acessados", saveRule: "Salvar regra", applyRule: "Aplicar aos instalados",
+    accessDesc: { local: "Só pela rede local (sem tsdproxy)", tailnet: "Só pela tailnet (fecha a porta da LAN)", both: "Rede local e tailnet" },
+    ruleDefault: "Ainda não escolhida: vale tailnet.", ruleSaved: "Regra salva.",
+    ruleDrift: (n, nomes) => `${n} serviço(s) instalado(s) não seguem esta regra: ${nomes}. Aplicar atualiza e reinicia cada um.`,
+    tailnetOn: "Tailnet configurada: os endereços .ts.net aparecem nos apps.", tailnetOff: "Tailnet não configurada: os apps só abrem pelo endereço da rede local.",
+    updateAll: (n) => `Atualizar todos (${n})`, updateAllSure: "Confirmar: reinicia cada um", updatingAll: "Atualizando…",
+    purgeData: "Apagar também os dados, os secrets e o .env", purgeWarn: "Isto apaga os volumes do serviço, e não tem volta. Faça um backup antes se os dados importam.",
     pickFolder: "Escolher pasta", newFolder: "nova subpasta (opcional)", useFolder: "Usar esta pasta", up: "Subir",
     roots: "pastas permitidas", noSubfolders: "Sem subpastas aqui.", noRoots: "Nenhuma das pastas permitidas existe ainda: digite o caminho.",
     preIntro: "Antes de instalar: o que você escolher aqui é conferido agora e aplicado logo depois da instalação.",
@@ -114,6 +121,13 @@ const T = {
     noInstall: "It cannot be installed from here.",
     worksWith: "Works with",
     play: "Start / resume", pause: "Pause", stopApp: "Stop", pausedBadge: "paused",
+    settings: "Settings", accessRule: "How apps are reached", saveRule: "Save rule", applyRule: "Apply to the installed",
+    accessDesc: { local: "Local network only (no tsdproxy)", tailnet: "Tailnet only (closes the LAN port)", both: "Local network and tailnet" },
+    ruleDefault: "Not chosen yet: tailnet applies.", ruleSaved: "Rule saved.",
+    ruleDrift: (n, nomes) => `${n} installed service(s) do not follow this rule: ${nomes}. Applying updates and restarts each one.`,
+    tailnetOn: "Tailnet set: the .ts.net addresses show up on the apps.", tailnetOff: "Tailnet not set: apps open only at their local-network address.",
+    updateAll: (n) => `Update all (${n})`, updateAllSure: "Confirm: restarts each one", updatingAll: "Updating…",
+    purgeData: "Also delete the data, the secrets and the .env", purgeWarn: "This deletes the service's volumes, with no way back. Take a backup first if the data matters.",
     pickFolder: "Choose folder", newFolder: "new sub-folder (optional)", useFolder: "Use this folder", up: "Up",
     roots: "permitted folders", noSubfolders: "No sub-folders here.", noRoots: "None of the permitted folders exists yet: type the path.",
     preIntro: "Before installing: what you choose here is checked now and applied right after the install.",
@@ -416,6 +430,7 @@ function renderChrome() {
   $("recheck").textContent = t("recheck");
   $("history-btn").textContent = t("history");
   $("resources-btn").textContent = t("resources");
+  $("settings-btn").textContent = t("settings");
   renderTabs();
 }
 
@@ -464,7 +479,15 @@ function renderFilters() {
   fill($("groups"), chip(null, t("all"), mine.length),
     chip("updates", t("filterUpdates"), contar(hasUpdate)), chip("problems", t("filterProblems"), contar(hasProblem)));
   $("summary").hidden = !mine.length;
-  $("summary").textContent = t("summaryLine")(rodando, parados, pausados);
+  const comAtualizacao = contar(hasUpdate);
+  fill($("summary"), t("summaryLine")(rodando, parados, pausados),
+    comAtualizacao ? " " : null,
+    comAtualizacao ? h("button", { type: "button", id: "update-all", class: "ghost",
+      onclick: (ev) => {
+        const b = ev.target;
+        if (!b.dataset.sure) { b.dataset.sure = "1"; b.textContent = t("updateAllSure"); return; }
+        jobWindow(t("updatingAll"), () => api("/api/update-all", {}));
+      } }, t("updateAll")(comAtualizacao)) : null);
 }
 
 function renderGroups() {
@@ -1266,7 +1289,16 @@ function buildForm(a, action, file = "") {
   }
   if (action === "install" && S.preCustom[a.id])
     campos.push(h("p", { class: "note" }, t("preRides")(Object.keys(S.preCustom[a.id]).join(", "))));
-  if (action === "remove") campos.push(h("p", { class: "note" }, t("removeNote")));
+  if (action === "remove") {
+    campos.push(h("p", { class: "note" }, t("removeNote")));
+    // Deleting the data is its own, typed, step — the same guard a restore has.
+    const confirma = h("input", { id: "purge-confirm", type: "text", "data-confirm": "1", autocomplete: "off" });
+    const bloco = h("div", { class: "purge" }, h("p", { class: "note bad" }, t("purgeWarn")),
+      h("label", { for: "purge-confirm" }, `${t("typeToConfirm")} ${a.id}`), confirma);
+    bloco.hidden = true;
+    const caixa = h("input", { id: "purge", "data-purge": "1", type: "checkbox", onchange: (ev) => { bloco.hidden = !ev.target.checked; } });
+    campos.push(h("label", { class: "check" }, caixa, ` ${t("purgeData")}`), bloco);
+  }
   campos.push(h("div", {},
     h("button", { type: "submit", class: ["remove", "restore"].includes(action) ? "danger" : null },
       t("confirm")), " ",
@@ -1291,8 +1323,10 @@ async function run(action, file = "") {
   const trial_purge = !!trial && !!($("trial-purge") || {}).checked;
   $("p-form").hidden = true;
   const custom = action === "install" && S.preCustom[a.id] ? S.preCustom[a.id] : null;
+  const purge = action === "remove" && !!($("p-form").querySelector("[data-purge]") || {}).checked;
   await follow(() => api("/api/run", { app: a.id, action, secrets, vars, file, confirm,
-                                       ...(trial ? { trial, trial_purge } : {}), ...(custom ? { custom } : {}) }));
+                                       ...(trial ? { trial, trial_purge } : {}), ...(custom ? { custom } : {}),
+                                       ...(purge ? { purge: true } : {}) }));
   if (custom) delete S.preCustom[a.id];
   if (action === "backup" || action === "restore") showBackups(a);
 }
@@ -1363,6 +1397,71 @@ async function hintClean() {
 }
 
 const sizeOf = (b) => b >= 2 ** 30 ? `${(b / 2 ** 30).toFixed(1)} GB` : `${Math.max(1, Math.round(b / 2 ** 20))} MB`;
+
+// A job shown in its own window: what an update of everything, or a rule applied to all, prints.
+async function jobWindow(titulo, start) {
+  $("b-title").textContent = titulo;
+  $("b-out").textContent = `${t("working")}\n`;
+  $("bulk").showModal();
+  try {
+    const { job } = await start();
+    let next = 0, st;
+    do {
+      await new Promise((r) => setTimeout(r, 900));
+      st = await api(`/api/job/${job}?from=${next}`);
+      next = st.next;
+      if (st.output) $("b-out").textContent += st.output;
+    } while (st.rc === null);
+    $("b-out").textContent += `\n${st.rc === 0 ? t("done") : `${t("failed")} (${st.rc}).`}\n`;
+  } catch (e) { $("b-out").textContent += e.status === 409 ? t("busy") : String(e.message); }
+  await load();
+}
+
+async function openSettings() {
+  $("settings").showModal();
+  await renderSettings();
+}
+
+async function renderSettings() {
+  $("s-title").textContent = t("settings");
+  $("s-out").hidden = true;
+  let c;
+  try { c = await api("/api/settings"); }
+  catch (e) { return fill($("s-body"), h("p", { class: "bad" }, String(e.message))); }
+  let escolhido = c.access;
+  const radios = c.modes.map((m) => h("label", { class: "check" },
+    h("input", { type: "radio", name: "access", value: m, checked: m === c.access, onchange: () => { escolhido = m; } }),
+    ` ${t("modes")[m] || m} — ${t("accessDesc")[m]}`));
+  const rodar = async (aplicar) => {
+    const pre = $("s-out");
+    pre.hidden = false;
+    pre.textContent = `${t("working")}\n`;
+    try {
+      const { job } = await api("/api/settings", { access: escolhido, ...(aplicar ? { apply: true } : {}) });
+      let next = 0, st;
+      do {
+        await new Promise((r) => setTimeout(r, 700));
+        st = await api(`/api/job/${job}?from=${next}`);
+        next = st.next;
+        if (st.output) pre.textContent += st.output;
+      } while (st.rc === null);
+      pre.textContent += `\n${st.rc === 0 ? t("ruleSaved") : `${t("failed")} (${st.rc}).`}\n`;
+    } catch (e) { pre.textContent += e.status === 409 ? t("busy") : String(e.message); }
+    const texto = pre.textContent;
+    await renderSettings();
+    $("s-out").hidden = false;
+    $("s-out").textContent = texto;
+    await load();
+  };
+  fill($("s-body"),
+    h("section", {}, h("h3", {}, t("accessRule")),
+      ...radios, c.default ? h("p", { class: "muted" }, t("ruleDefault")) : null,
+      c.drift.length ? h("p", { class: "note" }, t("ruleDrift")(c.drift.length, c.drift.slice(0, 6).join(", "))) : null,
+      h("div", { class: "row" },
+        h("button", { type: "button", onclick: () => rodar(false) }, t("saveRule")),
+        h("button", { type: "button", class: "ghost", onclick: () => rodar(true) }, t("applyRule")))),
+    h("section", {}, h("p", { class: "muted" }, c.tailnet ? t("tailnetOn") : t("tailnetOff"))));
+}
 
 async function openResources() {
   $("resources").showModal();
@@ -1610,6 +1709,9 @@ $("panel").addEventListener("close", closeLogs);
 $("history-btn").addEventListener("click", () => openHistory(null));
 $("h-close").addEventListener("click", () => $("history").close());
 $("resources-btn").addEventListener("click", openResources);
+$("settings-btn").addEventListener("click", openSettings);
+$("s-close").addEventListener("click", () => $("settings").close());
+$("b-close").addEventListener("click", () => $("bulk").close());
 $("r-close").addEventListener("click", () => $("resources").close());
 $("recheck").addEventListener("click", () => loadUpdates(true));
 renderChrome();

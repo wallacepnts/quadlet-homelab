@@ -162,11 +162,21 @@ deste host, ele diz. Isso exige podman e a imagem já baixada.
 
 ## `qh-store`
 
-Uma loja de apps web sobre o `qh`. Ela mostra o catálogo (`qh --catalog`), e
+O painel web, e a forma como este repositório deve ser usado: o `bootstrap.sh` o sobe, e
+instalar, atualizar, fazer backup, restaurar, personalizar e remover acontece nele. É uma camada
+sobre o `qh`: mostra o catálogo (`qh --catalog`), e
 cada ação roda um comando do `qh`: primeiro o plano em simulação, depois
 `qh <app> --apply` (e também `--update` e `--remove`), além de
-iniciar/parar/reiniciar e logs de cada unit. Ela nunca roda `--purge`: dados
-continuam sendo apagados só no terminal. Cada unit instalada mostra a tag dela
+iniciar/parar/reiniciar e logs de cada unit. Nada nela é uma segunda implementação, então o que o
+terminal faz e o que o painel faz não podem divergir.
+
+Apagar dados também é no painel, com a mesma trava de uma restauração: o formulário **Remover**
+tem "Apagar também os dados, os secrets e o .env", que pede o nome do serviço digitado, e o `qh`
+o pede de novo por conta própria. **Configurações** (no cabeçalho) guarda a regra de acesso (rede
+local, tailnet ou ambas, `qh --set-access`) e mostra quais serviços instalados não a seguem, com
+um botão que a aplica a eles (uma atualização cada). **Atualizar todos**, em Meus apps, pega todo
+serviço que tem algo a pegar, um depois do outro: uma falha não interrompe os demais, e o job diz
+no fim que uma falhou. Cada unit instalada mostra a tag dela
 ao lado da última release do projeto (`qh-updates --host`, guardado em disco
 por um dia e consultado de novo só para o serviço que uma instalação,
 atualização ou remoção acabou de mexer; o **Verificar agora** força), então dá pra ver o que está atrás sem
@@ -244,8 +254,11 @@ do seu home, do socket do podman e do barramento do systemd. É o mesmo acesso,
 só que menos visível. Pelo mesmo motivo a unit não tem `NoNewPrivileges=`: o
 podman rootless precisa do `newuidmap` com setuid.
 
-A unit chama `~/.local/bin/qh-store`, o link que o `bootstrap.sh` cria; um clone de
-antes da loja precisa rodar o `bootstrap.sh` de novo, ou o `ln -s` na mão.
+O `bootstrap.sh` a instala e a sobe: copia a unit para `~/.config/systemd/user/`, pergunta uma
+vez de onde o painel será aberto (gravando `QH_STORE_LISTEN` num drop-in para a rede local ou a
+tailnet), a inicia, e mostra o endereço e o token de login. Rodar de novo mantém a resposta,
+reinicia o painel com o código novo e os mostra outra vez. `NO_PANEL=1` pula tudo isso. A unit
+chama `~/.local/bin/qh-store`, o link que o `bootstrap.sh` cria. Na mão:
 
 ```bash
 systemctl --user enable --now ~/quadlet-homelab/store/qh-store.service

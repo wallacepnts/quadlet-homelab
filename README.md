@@ -21,11 +21,29 @@ bash quadlet-homelab/bootstrap.sh
 ```
 
 It checks git/python3/podman and `systemd --user`, creates Podman's folders,
-clones the repository into `~/quadlet-homelab` and links `qh`, `qh-check` and
-`qh-updates` into `~/.local/bin`. No `sudo`, no packages installed, no service
-started.
+clones the repository into `~/quadlet-homelab`, links the tools into `~/.local/bin`, and
+**starts the web panel** as a `systemd --user` service of yours. No `sudo`, no packages
+installed. It asks once where you will open the panel from (this machine only, the local
+network, or the tailnet) and ends by printing the address and the login token:
 
-Then:
+```
+  panel is up: http://127.0.0.1:8484
+  login (the token): …
+```
+
+**Open that address in a browser: that is how you use this.** The panel has a Store (all
+83 services, by category, with screenshots) and My apps (what is installed, as a launcher).
+From it you install an app (it asks only what that app needs, and lets you customize ports,
+volumes and variables first, or try it for a few hours), update it with one button, back it up,
+restore it, change its settings, read its logs live, open a console in its container, pause,
+stop or remove it, and see the host's load, memory and temperature. Every button runs the same
+`qh` engine a terminal would; nothing in the panel is a second implementation.
+
+Every service is reachable at `http://<host-ip>:<port>` with nothing else set
+up — no domain, no certificate, no router change.
+
+<details>
+<summary>The terminal, if you prefer it (advanced)</summary>
 
 ```bash
 qh                   # the services
@@ -33,8 +51,8 @@ qh memos             # the plan for one, without installing
 qh memos --apply     # do it
 ```
 
-Every service is reachable at `http://<host-ip>:<port>` with nothing else set
-up — no domain, no certificate, no router change.
+[Installing and operating](./docs/installing.md) lists every mode.
+</details>
 
 ## Updating
 
@@ -51,8 +69,10 @@ It fast-forwards the clone and creates the links that are missing — one alread
 pointing at another clone is named, not moved. A clone that has diverged is left
 alone and told about, so local edits are never dropped.
 
-**The services on the host** — nothing moves until you say so. A newer unit in
-the repository does not change the file already installed:
+**The services on the host** — nothing moves until you say so. In the panel, an app with a
+newer release shows an **Update to X** button, and My apps has **Update all** for the ones that
+have something to take (each restarts; a failure does not stop the rest). A newer unit in the
+repository does not change the file already installed. The same from a terminal:
 
 ```bash
 qh-updates                     # which images are behind their upstream release

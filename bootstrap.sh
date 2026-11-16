@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Gets this repository onto a fresh host and hands you install.py.
+# Gets this repository onto a fresh host and starts its web panel, which is how you use it:
+# install, update, back up, customize and remove services from a browser.
 #
 #   curl -fsSL https://raw.githubusercontent.com/wallacepnts/quadlet-homelab/main/bootstrap.sh | bash
 #   curl -fsSL .../bootstrap.sh | bash -s -- memos     # and show the plan for one service
@@ -12,8 +13,10 @@
 #   - install packages. Which command that is depends on your distribution, and
 #     on an immutable one it also needs a reboot — not a thing to trigger from
 #     a pipe.
-#   - install a service. `install.py` is dry-run by default on purpose: you read
-#     the plan, then you run it with --apply. Piping to bash does not change that.
+#   - install a service. The panel (or `qh`, which is its engine, dry-run by default)
+#     shows what an install would do before it does it; nothing is installed from here.
+#
+# What it does start: the panel, as a `systemd --user` service of yours (NO_PANEL=1 skips it).
 set -euo pipefail
 
 REPO=${REPO:-https://github.com/wallacepnts/quadlet-homelab}
@@ -55,6 +58,17 @@ pt*)
     M_A3="  3) ambos             na tailnet e na LAN"
     M_CHOICE="1, 2 ou 3 (Enter para o padrão):"
     M_SAVED="regra salva:"
+    M_PASK="De onde você vai abrir o painel?"
+    M_P1="  1) só desta máquina     (127.0.0.1; de outro computador, por ssh -L)  [padrão]"
+    M_P2="  2) da rede local        (qualquer aparelho da LAN, com o token)"
+    M_P3="  3) da tailnet           (precisa do Tailscale neste host)"
+    M_PNOTS="o Tailscale não respondeu: o painel fica só nesta máquina."
+    M_PUP="painel no ar:"
+    M_PDOWN="o painel não subiu em 15 s — veja: journalctl --user -u qh-store -n 30"
+    M_PTOKEN="login (o token):"
+    M_PFW="se o firewall estiver ativo, libere a porta 8484 (ex.: sudo firewall-cmd --add-port=8484/tcp --permanent)"
+    M_PLINGER="para o painel subir sozinho no boot: loginctl enable-linger $USER"
+    M_POPEN="abra o painel no navegador e instale os apps por ele."
     ;;
 *)
     M_ROOT="do not run this as root — see the header of this script."
@@ -85,6 +99,17 @@ pt*)
     M_A3="  3) both              on the tailnet and on the LAN"
     M_CHOICE="1, 2 or 3 (Enter for the default):"
     M_SAVED="rule saved:"
+    M_PASK="Where will you open the panel from?"
+    M_P1="  1) this machine only    (127.0.0.1; from another computer, over ssh -L)  [default]"
+    M_P2="  2) the local network    (any device on the LAN, with the token)"
+    M_P3="  3) the tailnet          (needs Tailscale on this host)"
+    M_PNOTS="Tailscale did not answer: the panel stays on this machine only."
+    M_PUP="panel is up:"
+    M_PDOWN="the panel did not come up in 15 s — see: journalctl --user -u qh-store -n 30"
+    M_PTOKEN="login (the token):"
+    M_PFW="if a firewall is active, open port 8484 (e.g. sudo firewall-cmd --add-port=8484/tcp --permanent)"
+    M_PLINGER="so the panel starts at boot on its own: loginctl enable-linger $USER"
+    M_POPEN="open the panel in a browser and install apps from there."
     ;;
 esac
 
@@ -199,9 +224,64 @@ if [ ! -f "$ACCESS_FILE" ] && [ -r /dev/tty ]; then
     say "$M_SAVED $modo"
 fi
 
-# 6. Hand over. With an argument, show that service's plan — still a dry-run.
+# 6. The panel: a `systemd --user` service (not a Quadlet: it drives systemd and podman as you), started
+#    now. Where it listens is asked once, when its unit does not exist yet; a re-run keeps the answer.
+#    PANEL_DRY=1 only says what it would do (the tests use it).
+PANEL_URL=""
+setup_panel() {
+    [ "${NO_PANEL:-}" = 1 ] || [ "${NO_LINKS:-}" = 1 ] && return 0
+    local unit_dir="$HOME/.config/systemd/user" listen="" escolha="" ip=""
+    if [ ! -f "$unit_dir/qh-store.service" ] && [ -r /dev/tty ]; then
+        printf '\n'
+        say "$M_PASK"; say "$M_P1"; say "$M_P2"; say "$M_P3"
+        printf '  %s ' "$M_CHOICE"
+        { read -r escolha < /dev/tty; } 2>/dev/null || escolha=""
+    fi
+    case "$escolha" in
+        2) listen="0.0.0.0:8484" ;;
+        3) ip=$(tailscale ip -4 2>/dev/null | head -1 || true)
+           if [ -n "$ip" ]; then listen="127.0.0.1:8484,$ip:8484"; else say "$M_PNOTS"; fi ;;
+    esac
+    if [ "${PANEL_DRY:-}" = 1 ]; then
+        say "panel: unit -> $unit_dir/qh-store.service  listen=${listen:-default}"
+        return 0
+    fi
+    mkdir -p "$unit_dir"
+    install -m 644 "$DEST/store/qh-store.service" "$unit_dir/qh-store.service"
+    if [ -n "$listen" ]; then
+        mkdir -p "$unit_dir/qh-store.service.d"
+        printf '[Service]\nEnvironment=QH_STORE_LISTEN=%s\n' "$listen" > "$unit_dir/qh-store.service.d/listen.conf"
+    fi
+    systemctl --user daemon-reload
+    systemctl --user enable qh-store.service >/dev/null 2>&1 || true
+    systemctl --user restart qh-store.service
+    local token="$HOME/.config/quadlet-homelab/store-token" i
+    for i in $(seq 1 30); do
+        [ -s "$token" ] && systemctl --user is-active --quiet qh-store.service && break
+        sleep 0.5
+    done
+    if [ ! -s "$token" ] || ! systemctl --user is-active --quiet qh-store.service; then
+        say "$M_PDOWN"; return 0
+    fi
+    # Where it answers, from what it was given (a re-run reads the drop-in back).
+    [ -z "$listen" ] && listen=$(sed -n 's/^Environment=QH_STORE_LISTEN=//p' "$unit_dir/qh-store.service.d/listen.conf" 2>/dev/null | head -1)
+    case "${listen:-127.0.0.1:8484}" in
+        0.0.0.0:*) PANEL_URL="http://$(hostname -I 2>/dev/null | awk '{print $1}'):8484"; say "$M_PFW" ;;
+        *,*) PANEL_URL="http://${listen##*,}" ;;
+        *) PANEL_URL="http://${listen:-127.0.0.1:8484}" ;;
+    esac
+    printf '\n'
+    say "$M_PUP $PANEL_URL"
+    say "$M_PTOKEN $(cat "$token")"
+    loginctl enable-linger "$USER" >/dev/null 2>&1 || say "$M_PLINGER"
+}
+setup_panel
+
+# 7. Hand over. With the panel up, that is where to go; with an argument, a service's plan (a dry-run).
 printf '\n'
-if [ $# -gt 0 ]; then
+if [ -n "$PANEL_URL" ] && [ $# -eq 0 ]; then
+    say "$M_POPEN"
+elif [ $# -gt 0 ]; then
     say "$M_PLAN $1 $M_PLAN2"
     printf '\n'
     python3 install.py "$@"

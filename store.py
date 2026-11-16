@@ -92,6 +92,9 @@ PT = {
     "not a setting of this file, or not a single line":
         "não é uma opção deste arquivo, ou não é uma linha só",
     "set": "definido", "turned off": "desligado",
+    "nothing to update": "nada para atualizar",
+    "this deletes the data, secrets and .env: type the service name to confirm":
+        "isto apaga os dados, os secrets e o .env: digite o nome do serviço para confirmar",
     "not a folder this form may use": "não é uma pasta que este formulário possa usar",
     "applying the customization of": "aplicando a personalização de",
     "this address takes a WebSocket": "este endereço espera um WebSocket",
@@ -324,6 +327,43 @@ def pinning(app):
     tpls = imagepin.templates(s.ini)
     com = [x for x in stems if x in tpls]
     return bool(com), bool(stems) and len(com) == len(stems)
+
+
+def upgrade_cmds(app, aplicar=True):
+    """The commands of "Update to X" for one service: a bump in the repository for what keeps its tag
+    there, and `--update --latest` for what leaves its version to the host."""
+    algum, todos = pinning(app)
+    return ([] if todos else [bump_cmd(app, aplicar)]) + [
+        qh(app, "--update", *(["--latest"] if algum else []), *(["--apply"] if aplicar else []))]
+
+
+def apps_with_update(lang="en"):
+    """[(app, "upgrade"|"update")] for the installed services that have something to take: a newer
+    release than what runs, or a repository that changed since the install."""
+    cat = catalog(lang)
+    linhas = {r["unit"]: r for r in updates()["rows"]}
+    saida = []
+    for a in cat["apps"]:
+        us = [u for u in a["units"] if u["installed"]]
+        if not us or any(u.get("stopped") for u in us) and all(u.get("stopped") for u in us):
+            continue                    # nothing installed, or stopped on purpose: left as it is
+        if any(linhas.get(u["unit"], {}).get("bucket") == "BEHIND" for u in us):
+            algum, todos = pinning(a["id"])
+            if PREFIX and not todos:
+                continue                # a bump edits the repository, which a sandbox does not have
+            saida.append((a["id"], "upgrade"))
+        elif any(u.get("drift") for u in us):
+            saida.append((a["id"], "update"))
+    return saida
+
+
+def settings():
+    """What the Settings screen shows: the access rule, who does not follow it, the tailnet."""
+    home = Path(PREFIX) if PREFIX else None
+    regra = I.saved_access(home)
+    return {"access": regra or "tailnet", "default": regra is None,
+            "drift": I.access_drift(regra or "tailnet", PREFIX), "tailnet": bool(I.find_tailnet()),
+            "modes": list(I.ACCESS_MODES)}
 
 
 def bump_vazio(saida):
@@ -1363,7 +1403,7 @@ class Job:
 
 
 def start_job(app, action, cmd, lang, prepare=None, entrada=None, refrescar=None, origem="",
-              unit="", depois=None):
+              unit="", depois=None, continuar=False):
     """The job, running in the background — or None when another one still is.
 
     One at a time: two `qh --apply` racing each other over the same
@@ -1386,7 +1426,7 @@ def start_job(app, action, cmd, lang, prepare=None, entrada=None, refrescar=None
                 if seguir is False:
                     job.rc = 1
                     return
-            rc = 0
+            rc, falhou = 0, 0
             # One command, or several in order (an upgrade is a bump, then an
             # update): each runs only if the one before it succeeded.
             for i, uno in enumerate(cmd if cmd and isinstance(cmd[0], list) else [cmd] if cmd else []):
@@ -1411,7 +1451,11 @@ def start_job(app, action, cmd, lang, prepare=None, entrada=None, refrescar=None
                     job.write(linha)
                 rc = p.wait()
                 if rc:
-                    break
+                    falhou = rc
+                    if not continuar:
+                        break
+            if continuar and falhou:
+                rc = falhou          # `continuar`: every command ran; the job still says one of them failed
             # What has to follow a successful run: the customization chosen before an install, which is
             # written into the unit's drop-in only once the unit exists.
             if rc == 0 and depois:
@@ -1684,7 +1728,7 @@ class Handler(BaseHTTPRequestHandler):
                 # What leaves its version to the host is moved there; the rest is a bump in the repository.
                 cmds = ([] if todos else [bump_cmd(app, False)]) + ([qh(app, "--update", "--latest")] if algum else [])
             else:
-                cmds = [qh(app, *extra)]
+                cmds = [qh(app, *extra, *(["--purge"] if action == "remove" and q.get("purge") == "1" else []))]
             if action == "install":
                 # The dry-run of each service the install takes along, in order.
                 cmds = [qh(x) for x in chain(app)]
@@ -1721,6 +1765,8 @@ class Handler(BaseHTTPRequestHandler):
             if not service_dir(app):
                 return self._json(400, {"error": loc("unknown service")})
             return self._json(200, {"links": links(app)})
+        if url.path == "/api/settings":
+            return self._json(200, settings())
         if url.path == "/api/dirs":
             try:
                 return self._json(200, list_dirs(q.get("path", "")))
@@ -1870,6 +1916,34 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(409, {"error": loc("another job is running")})
             return self._json(202, {"job": job.id})
 
+        if url.path == "/api/settings":
+            modo = d.get("access", "")
+            if modo not in I.ACCESS_MODES:
+                return self._json(400, {"error": loc("unknown action")})
+            cmds = [qh("--set-access", modo)]
+            if d.get("apply"):
+                # Bring the services that do not follow the new rule in line: an update each, which restarts it.
+                cmds += [qh(x, "--update", "--apply") for x in I.access_drift(modo, PREFIX)]
+            job = start_job("_host", "settings", cmds, lang, origem=self.client_address[0], continuar=True)
+            if job is None:
+                return self._json(409, {"error": loc("another job is running")})
+            return self._json(202, {"job": job.id})
+
+        if url.path == "/api/update-all":
+            # Every installed service with something to take, one after the other: a failure does not stop
+            # the rest, and the job says at the end that one did. Backups are not taken here; the box next
+            # to a single Update does that, and an update of everything is the sum of those.
+            quais = apps_with_update(lang)
+            if not quais:
+                return self._json(400, {"error": loc("nothing to update")})
+            cmds = [c for app, tipo in quais for c in
+                    (upgrade_cmds(app) if tipo == "upgrade" else [qh(app, "--update", "--apply")])]
+            job = start_job("_host", "update-all", cmds, lang, refrescar=[a for a, _ in quais],
+                            origem=self.client_address[0], continuar=True)
+            if job is None:
+                return self._json(409, {"error": loc("another job is running")})
+            return self._json(202, {"job": job.id, "apps": [a for a, _ in quais]})
+
         if url.path == "/api/run":
             app, action = d.get("app", ""), d.get("action", "")
             if not service_dir(app):
@@ -1909,6 +1983,14 @@ class Handler(BaseHTTPRequestHandler):
             if action != "install" or not (segredos or variaveis):
                 prepare = None
             entrada = None
+            if action == "remove" and d.get("purge"):
+                # Deleting the data: the service's name typed, the way a restore asks for it, and qh asks it
+                # again on its own stdin. Nothing but a typed name reaches `--purge`.
+                entrada = d.get("confirm", "")
+                if not isinstance(entrada, str) or entrada.strip() != app:
+                    return self._json(400, {"error": loc("this deletes the data, secrets and .env: "
+                                                         "type the service name to confirm")})
+                extra = [*extra, "--purge"]
             if action == "restore":
                 # The same guard the terminal has: the name, typed by the person.
                 entrada = d.get("confirm", "")
@@ -1961,8 +2043,7 @@ class Handler(BaseHTTPRequestHandler):
                 if PREFIX and not todos:
                     return self._json(400, {"error": loc("an upgrade edits the repository, "
                                                          "which a sandbox does not have")})
-                cmd = ([] if todos else [bump_cmd(app, True)]) + [
-                    qh(app, "--update", *(["--latest"] if algum else []), "--apply")]
+                cmd = upgrade_cmds(app)
             if d.get("backup_first"):
                 # Opt-in safety net: the same cold backup the Backups screen makes, then the update.
                 # Chained, so a backup that fails stops the update before it touches anything.
@@ -2513,6 +2594,53 @@ def selftest():
             assert estado["rc"] == 0 and "mailpit" in estado["output"], estado["output"][-400:]
             gravado = O.read_override(installed_unit("mailpit"))
             assert gravado and "PRE_NOVA=antes" in gravado and "Restart=on-failure" in gravado, gravado
+
+            # the panel on its own: settings (the access rule), update everything, delete the data with a typed name
+            def espera_job(corpo_json):
+                job = json.loads(corpo_json)["job"]
+                for _ in range(600):
+                    est = json.loads(pedir(f"/api/job/{job}", headers=ok)[2])
+                    if est["rc"] is not None:
+                        return est
+                    time.sleep(0.5)
+            cfg0 = json.loads(pedir("/api/settings", headers=ok)[2])
+            assert cfg0["access"] == "tailnet" and cfg0["modes"] == ["local", "tailnet", "both"] and cfg0["tailnet"] is False, cfg0
+            assert pedir("/api/settings", json.dumps({"access": "lan"}).encode(), api)[0] == 400
+            st, _, corpo = pedir("/api/settings", json.dumps({"access": "both"}).encode(), api)
+            assert st == 202 and espera_job(corpo)["rc"] == 0
+            cfg1 = json.loads(pedir("/api/settings", headers=ok)[2])
+            assert cfg1["access"] == "both" and cfg1["default"] is False, cfg1
+            st, _, corpo = pedir("/api/settings", json.dumps({"access": "tailnet"}).encode(), api)
+            assert espera_job(corpo)["rc"] == 0
+            assert pedir("/api/update-all", b"{}", api)[0] == 400, "nothing to update in the sandbox"
+            antes_apps, apps_with_update_orig = None, apps_with_update
+            try:
+                globals()["apps_with_update"] = lambda lang="en": [("homebox", "update")]
+                st, _, corpo = pedir("/api/update-all", b"{}", api)
+                assert st == 202 and json.loads(corpo)["apps"] == ["homebox"], corpo
+                est = espera_job(corpo)
+                assert est["rc"] == 0 and "homebox" in est["output"], est["output"][-300:]
+            finally:
+                globals()["apps_with_update"] = apps_with_update_orig
+            # a failing command does not stop the ones after it, and the job still ends as failed
+            j = start_job("_host", "update-all", [["sh", "-c", "echo first; exit 3"], ["echo", "second"]], "en", continuar=True)
+            for _ in range(100):
+                if j.rc is not None:
+                    break
+                time.sleep(0.1)
+            assert j.rc == 3 and "first" in "".join(j.out) and "second" in "".join(j.out), (j.rc, j.out)
+            # delete the data: the name typed, twice (here and in qh), and only for an installed service
+            assert installed_unit("mailpit") is not None
+            for confirma in (None, "outro", ""):
+                corpo_p = {"app": "mailpit", "action": "remove", "purge": True, **({"confirm": confirma} if confirma is not None else {})}
+                assert pedir("/api/run", json.dumps(corpo_p).encode(), api)[0] == 400, confirma
+            assert installed_unit("mailpit") is not None, "a refused purge touches nothing"
+            plano_p = json.loads(pedir("/api/plan?app=mailpit&action=remove&purge=1", headers=ok)[2])
+            assert "DELETE DATA" in plano_p["output"] or "APAGA" in plano_p["output"].upper(), plano_p["output"][:200]
+            st, _, corpo = pedir("/api/run", json.dumps({"app": "mailpit", "action": "remove", "purge": True, "confirm": "mailpit"}).encode(), api)
+            assert st == 202, (st, corpo)
+            assert espera_job(corpo)["rc"] == 0 and installed_unit("mailpit") is None, "the typed name deletes it"
+            assert not Path(tmp, ".config/containers/volumes/mailpit").exists(), "and its data"
 
             # deprecated: a service marked in install.ini is not offered for install, but stays manageable
             with tempfile.TemporaryDirectory() as dep:

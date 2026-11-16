@@ -1,7 +1,9 @@
 # Installing and operating
 
-Everything through `qh`. Every mode is **dry-run by default**; `--apply`
-executes.
+This is the terminal: `qh`, the engine the web panel runs underneath. Day to day you use the
+[panel](./tools.md#qh-store) (`bootstrap.sh` starts it), which does all of this with buttons; read
+on for what each mode does, for scripting, or for when you prefer a shell. Every mode is
+**dry-run by default**; `--apply` executes.
 
 ```bash
 qh                                    # the services

@@ -21,11 +21,29 @@ bash quadlet-homelab/bootstrap.sh
 ```
 
 Ele confere git/python3/podman e o `systemd --user`, cria as pastas do Podman,
-clona o repositório em `~/quadlet-homelab` e liga `qh`, `qh-check` e
-`qh-updates` em `~/.local/bin`. Sem `sudo`, sem instalar pacote, sem subir
-serviço.
+clona o repositório em `~/quadlet-homelab`, liga as ferramentas em `~/.local/bin` e
+**sobe o painel web** como um serviço `systemd --user` seu. Sem `sudo`, sem instalar
+pacote. Pergunta uma vez de onde você vai abrir o painel (só desta máquina, da rede local
+ou da tailnet) e termina mostrando o endereço e o token de login:
 
-Depois:
+```
+  painel no ar: http://127.0.0.1:8484
+  login (o token): …
+```
+
+**Abra esse endereço num navegador: é assim que se usa isto.** O painel tem a Loja (os 83
+serviços, por categoria, com capturas de tela) e Meus apps (o que está instalado, como um
+lançador). Por ele você instala um app (só pergunta o que aquele app precisa, e deixa
+personalizar portas, volumes e variáveis antes, ou experimentar por algumas horas), atualiza com
+um botão, faz backup, restaura, muda as configurações, lê os logs ao vivo, abre um console no
+container, pausa, para ou remove, e vê a carga, a memória e a temperatura do host. Cada botão
+roda o mesmo motor `qh` que um terminal rodaria; nada no painel é uma segunda implementação.
+
+Todo serviço fica acessível em `http://<ip-do-host>:<porta>` sem mais nada
+configurado — sem domínio, sem certificado, sem mexer no roteador.
+
+<details>
+<summary>O terminal, se você preferir (avançado)</summary>
 
 ```bash
 qh                   # os serviços
@@ -33,8 +51,8 @@ qh memos             # o plano de um, sem instalar
 qh memos --apply     # fazer
 ```
 
-Todo serviço fica acessível em `http://<ip-do-host>:<porta>` sem mais nada
-configurado — sem domínio, sem certificado, sem mexer no roteador.
+[Instalar e operar](./instalacao.md) lista todos os modos.
+</details>
 
 ## Atualizando
 
@@ -51,8 +69,10 @@ Ele avança o clone e cria os links que faltam — link que já aponta pra outro
 clone ele nomeia, não move. Clone que divergiu é deixado em paz e avisado,
 então edição local sua nunca é descartada.
 
-**Os serviços no host** — nada se move até você mandar. Unit mais nova no
-repositório não muda o arquivo já instalado:
+**Os serviços no host** — nada se move até você mandar. No painel, um app com release
+nova mostra o botão **Atualizar para X**, e Meus apps tem **Atualizar todos** para os que
+têm algo a pegar (cada um reinicia; uma falha não interrompe os outros). Unit mais nova no
+repositório não muda o arquivo já instalado. O mesmo, num terminal:
 
 ```bash
 qh-updates                     # quais imagens estão atrás da release do upstream

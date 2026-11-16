@@ -164,10 +164,20 @@ on this host, it says so. That needs podman and the image already pulled.
 
 ## `qh-store`
 
-A web app store over `qh`. It shows the catalog (`qh --catalog`), and every
-action runs a `qh` command: the dry-run plan first, then `qh <app> --apply`
-(also `--update` and `--remove`), plus start/stop/restart and logs for each
-unit. It never runs `--purge`: data is still deleted only in the terminal.
+The web panel, and the way this repository is meant to be used: `bootstrap.sh` starts it,
+and install, update, back up, restore, customize and remove all happen in it. It is a layer
+over `qh`: it shows the catalog (`qh --catalog`), and every action runs a `qh` command (the
+dry-run plan first, then `qh <app> --apply`, also `--update` and `--remove`), plus
+start/stop/restart and logs for each unit. Nothing in it is a second implementation, so what
+the terminal does and what the panel does cannot disagree.
+
+Deleting data is in the panel too, behind the same guard as a restore: the **Remove** form has
+"Also delete the data, the secrets and the .env", which asks for the service's name typed, and
+`qh` asks it again on its own. **Settings** (the header) holds the access rule (local network,
+tailnet or both, `qh --set-access`) and shows which installed services do not follow it, with a
+button that applies it to them (an update each). **Update all**, in My apps, takes every service
+that has something to take, one after the other: a failure does not stop the rest, and the job
+says at the end that one failed.
 Each installed unit shows its tag next to the project's latest release
 (`qh-updates --host`, cached on disk for a day, and re-asked only for the
 service an install, update or remove just touched; **Check now** forces it), so
@@ -243,8 +253,11 @@ podman socket and your systemd bus. That is the same access, just less obvious.
 For the same reason the unit has no `NoNewPrivileges=`: rootless podman needs
 the setuid `newuidmap`.
 
-The unit starts `~/.local/bin/qh-store`, the link `bootstrap.sh` creates; a clone from
-before the store needs `bootstrap.sh` again, or the `ln -s` by hand.
+`bootstrap.sh` installs and starts it: it copies the unit to `~/.config/systemd/user/`, asks once
+where the panel will be opened from (writing `QH_STORE_LISTEN` into a drop-in for the local
+network or the tailnet), starts it, and prints the address and the login token. A re-run keeps
+the answer, restarts the panel on the new code, and prints them again. `NO_PANEL=1` skips all of
+it. The unit starts `~/.local/bin/qh-store`, the link `bootstrap.sh` creates. By hand:
 
 ```bash
 systemctl --user enable --now ~/quadlet-homelab/store/qh-store.service

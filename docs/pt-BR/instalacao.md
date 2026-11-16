@@ -1,6 +1,9 @@
 # Instalando e operando
 
-Tudo pelo `qh`. Todo modo é **dry-run por padrão**; `--apply` executa.
+Isto é o terminal: o `qh`, o motor que o painel web roda por baixo. No dia a dia você usa o
+[painel](./ferramentas.md#qh-store) (o `bootstrap.sh` o sobe), que faz tudo isto com botões; leia
+para saber o que cada modo faz, para automatizar, ou para quando preferir um shell. Todo modo é
+**dry-run por padrão**; `--apply` executa.
 
 ```bash
 qh                                    # os serviços

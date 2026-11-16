@@ -19,6 +19,7 @@
   <span id="checked" class="muted"></span>
   <button id="history-btn" type="button" class="ghost"></button>
   <button id="resources-btn" type="button" class="ghost"></button>
+  <button id="settings-btn" type="button" class="ghost"></button>
   <button id="recheck" type="button" class="ghost"></button>
   <button id="lang" type="button" class="ghost"></button>
 </header>
@@ -58,6 +59,21 @@
   </div>
   <div id="r-body"></div>
   <pre id="r-out" hidden></pre>
+</dialog>
+<dialog id="settings">
+  <div class="panel-head">
+    <h2 id="s-title"></h2>
+    <button id="s-close" type="button" class="ghost">✕</button>
+  </div>
+  <div id="s-body"></div>
+  <pre id="s-out" hidden></pre>
+</dialog>
+<dialog id="bulk">
+  <div class="panel-head">
+    <h2 id="b-title"></h2>
+    <button id="b-close" type="button" class="ghost">✕</button>
+  </div>
+  <pre id="b-out"></pre>
 </dialog>
 <dialog id="history">
   <div class="panel-head">
