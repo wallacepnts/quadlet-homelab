@@ -1,0 +1,36 @@
+{
+  "spec": 2,
+  "id": "authentik",
+  "title": "Authentik",
+  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/authentik.svg",
+  "tagline": {
+    "en": "An identity server (SSO, MFA, OIDC/SAML) — only the core is deployed, no forward-auth via tsdproxy yet (see its notes in the panel)",
+    "pt": "Servidor de identidade (SSO, MFA, OIDC/SAML) — só o core implantado, sem forward-auth via tsdproxy ainda (veja as notas dele no painel)"
+  },
+  "category": "Network & Security",
+  "license": "MIT",
+  "links": {
+    "docs": "https://goauthentik.io"
+  },
+  "notes": {
+    "en": "Open `http://<host-ip>:9000` or `https://authentik.<your-tailnet>.ts.net`.",
+    "pt": "Abrir `http://<ip-do-host>:9000` ou `https://authentik.<your-tailnet>.ts.net`."
+  },
+  "secrets": {
+    "authentik-postgres-password": "rand-urlsafe 32",
+    "authentik-secret-key": "rand-urlsafe 48"
+  },
+  "units": {
+    "authentik": {
+      "upstream": "goauthentik/authentik",
+      "image": "{version}"
+    },
+    "authentik-worker": {
+      "upstream": "goauthentik/authentik",
+      "image": "{version}"
+    },
+    "authentik-postgres": {
+      "upstream": "compose:https://goauthentik.io/docker-compose.yml"
+    }
+  }
+}

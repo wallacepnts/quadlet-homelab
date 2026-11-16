@@ -1,0 +1,38 @@
+{
+  "spec": 2,
+  "id": "proxmox",
+  "title": "Proxmox VE",
+  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/proxmox.svg",
+  "tagline": {
+    "en": "The Proxmox hypervisor in a container, for trying it without dedicating a machine — runs privileged",
+    "pt": "O hypervisor Proxmox num container, pra experimentar sem dedicar uma máquina — roda privileged"
+  },
+  "category": "Virtual Machines",
+  "license": "MIT",
+  "links": {
+    "docs": "https://pve.proxmox.com/pve-docs/"
+  },
+  "notes": {
+    "en": "Open `http://<host-ip>:8010` or `https://proxmox.<your-tailnet>.ts.net`.",
+    "pt": "Abrir `http://<ip-do-host>:8010` ou `https://proxmox.<your-tailnet>.ts.net`."
+  },
+  "secrets": {
+    "proxmox-root-password": {
+      "value": "rand-alnum 20",
+      "note": "The `root` password for the Proxmox web interface. Upstream's default is the literal string `root`; this replaces it."
+    }
+  },
+  "login": {
+    "user": "root",
+    "password": "proxmox-root-password"
+  },
+  "units": {
+    "proxmox": {
+      "upstream": {
+        "value": "dockur/proxmox",
+        "note": "The image is `dockurr/proxmox` (two r's), the repository is `dockur/proxmox`. Without this line `updates.py` guesses the image name and finds nothing."
+      },
+      "image": "{version}"
+    }
+  }
+}

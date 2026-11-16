@@ -1,0 +1,82 @@
+{
+  "spec": 2,
+  "id": "media-stack",
+  "title": "Media Stack",
+  "icon": "https://api.iconify.design/mdi/multimedia.svg?color=%23888888",
+  "tagline": {
+    "en": "Jellyfin, Navidrome, Seerr, Prowlarr, Sonarr, Radarr, Lidarr, Bazarr, SABnzbd, Deluge, Dispatcharr, Downtify and an optional Gluetun — a media server plus automation, a shared data root, each app on its own version",
+    "pt": "Jellyfin, Navidrome, Seerr, Prowlarr, Sonarr, Radarr, Lidarr, Bazarr, SABnzbd, Deluge, Dispatcharr, Downtify e um Gluetun opcional — servidor de mídia + automação, raiz de dados compartilhada, cada app com sua própria versão"
+  },
+  "category": "Downloads",
+  "license": "GPL-2.0 ·",
+  "links": {
+    "docs": "https://jellyfin.org"
+  },
+  "notes": {
+    "en": "Each unit publishes its own port and its own tailnet name; the addresses are\nprinted at the end of the install.\n\n### Update\n\nEach unit carries its own tag — the table above lists them. Nothing updates\non its own; the command above applies whatever the repository pins.",
+    "pt": "Cada unit publica a própria porta e o próprio nome na tailnet; os endereços\nsaem no fim da instalação.\n\n### Atualizar\n\nCada unit tem a própria tag — a tabela acima lista todas. Nada atualiza\nsozinho; o comando acima aplica o que o repositório pinou."
+  },
+  "config": {
+    ".env.example": {
+      "value": "%h/.config/containers/env/media-stack.env",
+      "note": "The stack has two EnvironmentFile= entries, so the generic `.env.example` has to say which of the two it is. media-stack-gluetun.env.example matches on its own, because its name already lines up with the destination."
+    }
+  },
+  "vars": {
+    "MEDIA_DATA_DIR": {
+      "value": "~/data",
+      "note": "The one path decision in this stack: the root the media lives under, read by every unit through Volume=${MEDIA_DATA_DIR}. It is a variable of the systemd --user manager, not of an .env, because Quadlet expands Volume= there (rule 19). The install asks for it when it is unset, with this one Enter away."
+    }
+  },
+  "backup": {
+    "exclude": [
+      "jellyfin/cache"
+    ],
+    "note": "Jellyfin rebuilds its cache (images, transcodes) on its own."
+  },
+  "units": {
+    "media-stack-gluetun": {
+      "upstream": {
+        "value": "passteque/gluetun",
+        "note": "The image is still published as qmcgaw/gluetun; the repository moved from qdm12/gluetun to passteque/gluetun, and the old name only redirects."
+      },
+      "image": "v{version}"
+    },
+    "media-stack-bazarr": {
+      "image": "{version}"
+    },
+    "media-stack-deluge": {
+      "image": "{version}"
+    },
+    "media-stack-dispatcharr": {
+      "image": "{version}"
+    },
+    "media-stack-downtify": {
+      "image": "{version}"
+    },
+    "media-stack-jellyfin": {
+      "image": "{version:2}"
+    },
+    "media-stack-lidarr": {
+      "image": "{version}"
+    },
+    "media-stack-navidrome": {
+      "image": "{version}"
+    },
+    "media-stack-prowlarr": {
+      "image": "{version}"
+    },
+    "media-stack-radarr": {
+      "image": "{version}"
+    },
+    "media-stack-sabnzbd": {
+      "image": "version-{version}"
+    },
+    "media-stack-seerr": {
+      "image": "v{version}"
+    },
+    "media-stack-sonarr": {
+      "image": "{version}"
+    }
+  }
+}

@@ -41,7 +41,7 @@ arquivo já instalado no host, e é isso que ele resolve. Não toca em volume,
 `.env` nem secret. Tag móvel (`latest`) é sempre puxada; tag fixa só quando o
 host não a tem.
 
-Uma coisa ele acrescenta: um arquivo de `[config]` que a unit nova monta e que o
+Uma coisa ele acrescenta: um arquivo de `config` que a unit nova monta e que o
 host nunca teve é criado, com o dono do `User=` da unit. Um que já existe nunca é
 reescrito — depois da primeira instalação ele é seu.
 
@@ -75,7 +75,7 @@ secrets no lugar e mantém, com aviso. O `--reinstall` sobrescreve.
 leva os volumes, os secrets e o `.env` — os dois últimos são minúsculos e são o
 que torna o backup restaurável.
 
-**`[backup] exclude`** no `install.ini` de um serviço lista pastas que se refazem
+**`backup.exclude`** no `app.json` de um serviço lista pastas que se refazem
 sozinhas (miniaturas do Immich, cache do Jellyfin), um padrão por linha, casado em
 qualquer profundidade; dê caminho suficiente (`upload/thumbs`). O `--backup` as
 deixa de fora e diz quanto pula; pasta que este usuário não consegue ler conta como
@@ -123,9 +123,9 @@ Sai com código diferente de zero quando há algo precisando de atenção.
 
 `qh --catalog` dá a mesma resposta em JSON, para uma interface. Ele traz também
 o que a vitrine precisa: nome, ícone e descrição (en/pt), lidos das tabelas dos
-READMEs, a imagem que cada unit fixa e a instalada, mais a categoria, que vem do `[store] group`, os
+READMEs, a imagem que cada unit fixa e a instalada, mais a categoria, que vem do `category`, os
 endereços web e o que a instalação precisa perguntar (secrets `manual` e
-`[vars]` com o padrão). Só lê. Uma interface montada em cima dele instala com o
+`vars` com o padrão). Só lê. Uma interface montada em cima dele instala com o
 mesmo `qh <app> --apply`, então existe um caminho de instalação, não dois. Para
 restringir, nomeie serviços: `qh --catalog vaultwarden`.
 
@@ -206,11 +206,11 @@ despejaria todas as senhas no terminal de uma vez. A instalação e o
 `--reinstall` imprimem, e o `qh <app>` simples num serviço já instalado também
 — que é a forma deliberada de consultar. Isso fica no seu scrollback.
 
-Qual secret é esse vem do `install.ini`. Só o que é senha digitada é impresso —
+Qual secret é esse vem do `app.json`. Só o que é senha digitada é impresso —
 chave de JWT e token de API ao lado também são secrets:
 
 ```ini
-[login]
+`login`
 user = admin
 password = filebrowser-admin-password
 ```
@@ -231,7 +231,7 @@ Quando um secret guarda os dois lados, na forma `usuario:senha` que o app lê,
 basta nomear uma vez e a instalação divide no primeiro `:`:
 
 ```ini
-[login]
+`login`
 credentials = vaultzap-basic-auth
 ```
 
@@ -239,7 +239,7 @@ Quando o app não tem usuário nenhum, deixe o `user` de fora e só a senha é
 impressa — a do koffan, e o token de registro do fmd-server:
 
 ```ini
-[login]
+`login`
 password = koffan-password
 ```
 
@@ -260,10 +260,10 @@ pra entrar e deixar o resto aleatório. Exige terminal e `--apply`.
 Uma authkey que o outro lado recusa é o pior tipo de valor errado: a instalação
 guarda, o container sobe saudável, e nada funciona — o caso do tsdproxy, onde
 uma chave recusada o deixa sem publicar nó nenhum enquanto o healthcheck dele
-segue verde. Uma entrada `[validate]` confere o valor antes de guardar:
+segue verde. Uma entrada `validate` confere o valor antes de guardar:
 
 ```ini
-[validate]
+`validate`
 authkey = shell podman run --rm -i ... tailscale up --authkey="$(cat)" ...
 ```
 
@@ -284,7 +284,7 @@ a separação sai de graça do que as ferramentas já fazem.
 
 Só secret `manual` é validado — um gerado não tem o que conferir — e o
 `--prefix` pula tudo, porque ensaiar uma instalação não é hora de acessar a
-rede. O `check.py` reprova o build se a chave do `[validate]` não for um
+rede. O `check.py` reprova o build se a chave do `validate` não for um
 `Secret=` declarado, não começar com `shell `, ou não tiver receita `manual`
 ao lado.
 
@@ -297,13 +297,13 @@ por texto vazio: `${MEDIA_DATA_DIR}/downloads` vira `/downloads` e o container
 não sobe.
 
 Então a instalação confere antes. Com `--apply` num terminal ela pergunta,
-oferecendo o padrão do `[vars]` no `install.ini` da pasta, e grava a resposta
+oferecendo o padrão do `vars` no `app.json` da pasta, e grava a resposta
 em `~/.config/environment.d/<app>.conf`; depois cria as pastas debaixo dela.
 Sem terminal, ela para antes de escrever qualquer coisa e mostra a linha a
 acrescentar.
 
 ```ini
-[vars]
+`vars`
 MEDIA_DATA_DIR = ~/data
 ```
 

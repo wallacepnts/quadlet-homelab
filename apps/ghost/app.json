@@ -1,0 +1,25 @@
+{
+  "spec": 2,
+  "id": "ghost",
+  "title": "Ghost",
+  "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/webp/ghost.webp",
+  "tagline": {
+    "en": "A self-hosted blog/newsletter (SQLite, development mode — see its notes in the panel)",
+    "pt": "Blog/newsletter self-hosted (SQLite, modo development — ver README)"
+  },
+  "category": "Productivity",
+  "license": "MIT",
+  "links": {
+    "docs": "https://ghost.org"
+  },
+  "notes": {
+    "en": "Open `http://<host-ip>:2368` or `https://ghost.<your-tailnet>.ts.net`.",
+    "pt": "Abrir `http://<ip-do-host>:2368` ou `https://ghost.<your-tailnet>.ts.net`."
+  },
+  "units": {
+    "ghost": {
+      "upstream": "TryGhost/Ghost",
+      "image": "{version}-alpine"
+    }
+  }
+}

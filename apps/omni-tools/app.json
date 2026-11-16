@@ -1,0 +1,24 @@
+{
+  "spec": 2,
+  "id": "omni-tools",
+  "title": "Omni Tools",
+  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/omni-tools.png",
+  "tagline": {
+    "en": "Converters, generators and calculators that run in the browser — nothing is sent to the server",
+    "pt": "Conversores, geradores e calculadoras que rodam no navegador — nada é enviado ao servidor"
+  },
+  "category": "Tools",
+  "license": "MIT",
+  "links": {
+    "docs": "https://omnitools.app"
+  },
+  "notes": {
+    "en": "Open `http://<host-ip>:8101` or `https://omni-tools.<your-tailnet>.ts.net`.",
+    "pt": "Abrir `http://<ip-do-host>:8101` ou `https://omni-tools.<your-tailnet>.ts.net`."
+  },
+  "units": {
+    "omni-tools": {
+      "image": "{version}"
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "spec": 2,
+  "id": "audiobookshelf",
+  "title": "Audiobookshelf",
+  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/audiobookshelf.svg",
+  "tagline": {
+    "en": "An audiobook and podcast server, with progress synced across devices",
+    "pt": "Servidor de audiolivros e podcasts, com progresso sincronizado entre dispositivos"
+  },
+  "category": "Media",
+  "license": "GPL-3.0",
+  "links": {
+    "docs": "https://audiobookshelf.org"
+  },
+  "notes": {
+    "en": "Open `http://<host-ip>:13378` or `https://audiobookshelf.<your-tailnet>.ts.net`.",
+    "pt": "Abrir `http://<ip-do-host>:13378` ou `https://audiobookshelf.<your-tailnet>.ts.net`."
+  },
+  "units": {
+    "audiobookshelf": {
+      "image": "{version}"
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "spec": 2,
+  "id": "homepage",
+  "title": "homepage",
+  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/homepage.png",
+  "tagline": {
+    "en": "A dashboard that discovers and organises the other containers by itself through labels, with no config to edit per new service",
+    "pt": "Dashboard que descobre e organiza os outros containers sozinho via labels, sem editar config a cada serviço novo"
+  },
+  "license": "GPL-3.0.",
+  "links": {
+    "docs": "https://gethomepage.dev"
+  },
+  "notes": {
+    "en": "Open `http://<host-ip>:3000` or `https://homepage.<your-tailnet>.ts.net`.\n\n### Widgets\n\nNone ship configured. To turn a card into a live reading — the queue, the free\nspace — add the labels to the service's own unit:\n\n```ini\nLabel=homepage.widget.type=sonarr\nLabel=homepage.widget.url=http://sonarr:8989\nLabel=homepage.widget.key={{HOMEPAGE_VAR_SONARR_KEY}}\n```\n\nThe URL is the container name: every service joins `tsdproxy-net`, so Homepage\nreaches it without going out to the LAN.\n\n`{{HOMEPAGE_VAR_X}}` is replaced by the environment variable of that name, read\nfrom **this** service's `.env`. Use it for every key: it keeps the secret out\nof a unit file, which in a public repository is the difference between a\npassword and a published password.\n\nThe [list of widgets](https://gethomepage.dev/widgets/) says what each type\nneeds. Most want an API key the app only issues after its first run.\n\n### Update\n\n`AutoUpdate=registry` is on: the image updates on its own.",
+    "pt": "Abrir `http://<ip-do-host>:3000` ou `https://homepage.<your-tailnet>.ts.net`.\n\n### Widgets\n\nNenhum vem configurado. Para transformar o card numa leitura ao vivo — a fila,\no espaço livre — acrescente as labels na unit do próprio serviço:\n\n```ini\nLabel=homepage.widget.type=sonarr\nLabel=homepage.widget.url=http://sonarr:8989\nLabel=homepage.widget.key={{HOMEPAGE_VAR_SONARR_KEY}}\n```\n\nA URL é o nome do container: todo serviço entra na `tsdproxy-net`, então a\nHomepage chega nele sem sair para a LAN.\n\nO `{{HOMEPAGE_VAR_X}}` é trocado pela variável de ambiente de mesmo nome, lida\ndo `.env` **deste** serviço. Use para toda chave: mantém o segredo fora do\narquivo de unit, o que num repositório público é a diferença entre uma senha e\numa senha publicada.\n\nA [lista de widgets](https://gethomepage.dev/widgets/) diz o que cada tipo\nprecisa. A maioria pede chave de API que o app só emite depois do primeiro uso.\n\n### Atualizar\n\n`AutoUpdate=registry` ligado: a imagem é atualizada sozinha."
+  },
+  "config": {
+    "config/docker.yaml": {
+      "value": "%h/.config/containers/volumes/homepage/config/docker.yaml",
+      "note": "Read, never written: homepage mounts /app/config read-only."
+    },
+    "config/settings.yaml": "%h/.config/containers/volumes/homepage/config/settings.yaml",
+    "config/services.yaml": "%h/.config/containers/volumes/homepage/config/services.yaml",
+    "config/bookmarks.yaml": "%h/.config/containers/volumes/homepage/config/bookmarks.yaml"
+  },
+  "units": {
+    "homepage": {
+      "image": "v{version}"
+    }
+  }
+}

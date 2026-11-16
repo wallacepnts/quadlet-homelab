@@ -410,7 +410,7 @@ function upstreamCell(u) {
   return ["", r.status];
 }
 
-// Marked in install.ini [store]: why a service is discontinued, in the page's language.
+// Marked in app.json (deprecated): why a service is discontinued, in the page's language.
 // "ends in 5 h 20 min" / "ends at the next reboot", from the record the catalog carries.
 function trialWhen(tr) {
   if (tr.expires === null || tr.expires === undefined) return t("trialAtReboot");
@@ -706,7 +706,7 @@ function renderPanel() {
   $("p-meta").textContent = (a.group && a.group[S.lang]) || "";
   $("p-desc").textContent = plain(a.description[S.lang] || a.description.en);
 
-  // Images the project hosts (install.ini [store]); each opens full size in a new tab.
+  // Images the project hosts (app.json, screenshots); each opens full size in a new tab.
   fill($("p-shots"), ...(a.screenshots || []).map((u) =>
     h("a", { href: u, target: "_blank", rel: "noopener noreferrer", "aria-label": t("shots") },
       h("img", { src: u, alt: "", loading: "lazy", referrerpolicy: "no-referrer" }))));

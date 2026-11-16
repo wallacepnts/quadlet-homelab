@@ -146,6 +146,8 @@ aqui.
 
 ## Serviços
 
+<!-- services:begin (generated from apps/*/app.json: python3 check.py --readme) -->
+
 | Logo | Aplicativo | Descrição |
 | --- | --- | --- |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/actual-budget.svg" width="48" height="48" alt=""> | [Actual Budget](../../apps/actual-budget) | Rápido e focado em privacidade pra gerenciar finanças pessoais, usando a metodologia de Orçamento de Envelope |
@@ -166,27 +168,27 @@ aqui.
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/donetick.svg" width="48" height="48" alt=""> | [Donetick](../../apps/donetick) | Tarefas domésticas recorrentes — quem faz, com que frequência e quando vence |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/dozzle.svg" width="48" height="48" alt=""> | [Dozzle](../../apps/dozzle) | Log ao vivo de cada container no navegador, sem abrir terminal |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/excalidraw.svg" width="48" height="48" alt=""> | [ExcaliDash](../../apps/excalidash) | Painel para desenhos do Excalidraw — pastas, compartilhamento e multiusuário, no seu armazenamento |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/filebrowser-quantum.svg" width="48" height="48" alt=""> | [FileBrowser Quantum](../../apps/filebrowser) | Gerenciador de arquivos web — busca, miniaturas, WebDAV e um shell sobre um diretório que você escolhe |
 | <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/faved.svg" width="48" height="48" alt=""> | [Faved](../../apps/faved) | Favoritos com tags aninhadas — prateleira mais leve que um arquivador, no seu servidor |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/ferdium.svg" width="48" height="48" alt=""> | [Ferdium Server](../../apps/ferdium-server) | Sincronização do Ferdium desktop — sua lista de serviços no seu servidor, não no do Franz |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/filebrowser-quantum.svg" width="48" height="48" alt=""> | [FileBrowser Quantum](../../apps/filebrowser) | Gerenciador de arquivos web — busca, miniaturas, WebDAV e um shell sobre um diretório que você escolhe |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/fmd.svg" width="48" height="48" alt=""> | [FMD Server](../../apps/fmd-server) | Localizar, tocar e bloquear seu celular Android pelo navegador, com criptografia ponta a ponta, sem o Google |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/freshrss.svg" width="48" height="48" alt=""> | [FreshRSS](../../apps/freshrss) | Agregador de feeds RSS/Atom self-hosted, com API compatível pra apps móveis |
 | <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/frigate.svg" width="48" height="48" alt=""> | [Frigate](../../apps/frigate) | NVR com detecção de objetos por IA — CPU-only por padrão, sem câmera configurada ainda (veja as notas dele no painel) |
 | <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/ghost.webp" width="48" height="48" alt=""> | [Ghost](../../apps/ghost) | Blog/newsletter self-hosted (SQLite, modo development — ver README) |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/gitea.svg" width="48" height="48" alt=""> | [Gitea](../../apps/gitea) | Servidor Git leve e completo — repositórios, issues, pull requests e CI numa interface só |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/gitea.svg" width="48" height="48" alt=""> | [Gitea Runner](../../apps/gitea-runner) | Executa os workflows do Actions do Gitea ao lado — CI que não sai da máquina |
-| <img src="https://cdn.jsdelivr.net/gh/NousResearch/hermes-agent@main/website/static/img/logo.png" width="48" height="48" alt=""> | [Hermes Agent](../../apps/hermes-agent) | Agente de IA pessoal com habilidades e memória, expondo uma API compatível com a da OpenAI pros outros serviços chamarem |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/homebox.svg" width="48" height="48" alt=""> | [HomeBox](../../apps/homebox) | Inventário doméstico — o que você tem, onde está, nota fiscal, manual e garantia, com busca e etiquetas |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/grafana.svg" width="48" height="48" alt=""> | [Grafana](../../apps/grafana) | Painéis sobre o que você apontar — ele não traz dado nenhum próprio |
+| <img src="https://cdn.jsdelivr.net/gh/NousResearch/hermes-agent@main/website/static/img/logo.png" width="48" height="48" alt=""> | [Hermes Agent](../../apps/hermes-agent) | Agente de IA pessoal com habilidades e memória, expondo uma API compatível com a da OpenAI pros outros serviços chamarem |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/home-assistant.svg" width="48" height="48" alt=""> | [Home Assistant](../../apps/home-assistant) | Hub central de automação residencial, integra dispositivos de qualquer fabricante num painel só |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/homebox.svg" width="48" height="48" alt=""> | [HomeBox](../../apps/homebox) | Inventário doméstico — o que você tem, onde está, nota fiscal, manual e garantia, com busca e etiquetas |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/homepage.png" width="48" height="48" alt=""> | [homepage](../../apps/homepage) | Dashboard que descobre e organiza os outros containers sozinho via labels, sem editar config a cada serviço novo |
-| <img src="https://api.iconify.design/mdi/instagram.svg?color=%23E1306C" width="48" height="48" alt=""> | [Instagram Monitor](../../apps/instagram-monitor) | Monitor OSINT de Instagram em tempo real com dashboard web, feed de atividade e download de mídia |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/immich.svg" width="48" height="48" alt=""> | [Immich](../../apps/immich) | Backup e organização de fotos/vídeos, com reconhecimento facial e busca smart |
+| <img src="https://api.iconify.design/mdi/instagram.svg?color=%23E1306C" width="48" height="48" alt=""> | [Instagram Monitor](../../apps/instagram-monitor) | Monitor OSINT de Instagram em tempo real com dashboard web, feed de atividade e download de mídia |
 | <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/invio.svg" width="48" height="48" alt=""> | [Invio](../../apps/invio) | Emissão e controle de faturas self-hosted, com SQLite e sem depender de serviço externo |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/karakeep.svg" width="48" height="48" alt=""> | [Karakeep](../../apps/karakeep) | Gerenciador de bookmarks com busca full-text e arquivamento automático do conteúdo de cada página salva |
 | <img src="https://api.iconify.design/mdi/microphone-variant.svg?color=%23888888" width="48" height="48" alt=""> | [Karaoke Eternal](../../apps/karaoke-eternal) | Karaokê com a sua própria biblioteca — cada um enfileira do celular, uma tela reproduz |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/kiwix.svg" width="48" height="48" alt=""> | [Kiwix](../../apps/kiwix) | Wikipedia e outras bibliotecas servidas do disco, para ler com a internet desligada |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/koffan.png" width="48" height="48" alt=""> | [Koffan](../../apps/koffan) | A lista de compras da casa — uma senha, sem contas, todo mundo edita a mesma lista |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/karakeep.svg" width="48" height="48" alt=""> | [Karakeep](../../apps/karakeep) | Gerenciador de bookmarks com busca full-text e arquivamento automático do conteúdo de cada página salva |
 | <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/komga.svg" width="48" height="48" alt=""> | [Komga](../../apps/komga) | Quadrinhos e mangá, com o progresso de leitura acompanhando você entre aparelhos |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/lubelogger.png" width="48" height="48" alt=""> | [LubeLogger](../../apps/lubelogger) | Registro de manutenção veicular — trocas de óleo, revisões, gastos e lembretes, por veículo |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/mailpit.svg" width="48" height="48" alt=""> | [Mailpit](../../apps/mailpit) | Servidor SMTP que captura tudo que seus apps enviam, para ler no navegador em vez de numa caixa de entrada de verdade |
@@ -201,8 +203,8 @@ aqui.
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/nginx.svg" width="48" height="48" alt=""> | [nginx](../../apps/nginx) | Servidor de arquivos estáticos |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/node-red.svg" width="48" height="48" alt=""> | [Node-RED](../../apps/node-red) | Automação de fluxos via editor visual de nós |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/ntfy.svg" width="48" height="48" alt=""> | [ntfy](../../apps/ntfy) | Servidor de notificações push — destino dos alertas do uptime-kuma, wud e zerobyte, com app no celular |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/open-webui.svg" width="48" height="48" alt=""> | [Open WebUI](../../apps/openwebui) | Interface de chat web + servidor de LLMs locais, CPU-only por padrão (opções de GPU NVIDIA/AMD documentadas) |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/omni-tools.png" width="48" height="48" alt=""> | [Omni Tools](../../apps/omni-tools) | Conversores, geradores e calculadoras que rodam no navegador — nada é enviado ao servidor |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/open-webui.svg" width="48" height="48" alt=""> | [Open WebUI](../../apps/openwebui) | Interface de chat web + servidor de LLMs locais, CPU-only por padrão (opções de GPU NVIDIA/AMD documentadas) |
 | <img src="https://cdn.jsdelivr.net/gh/rmyndharis/OpenWA@main/docs/logo/openwa.svg" width="48" height="48" alt=""> | [OpenWA](../../apps/openwa) | Gateway de API do WhatsApp — transforma a conta em REST + webhooks, pro n8n e o Home Assistant usarem |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/owncloud.svg" width="48" height="48" alt=""> | [ownCloud](../../apps/owncloud) | Sincronização e compartilhamento de arquivos em nuvem própria |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/owntracks.svg" width="48" height="48" alt=""> | [OwnTracks](../../apps/owntracks) | Rastreamento de localização pessoal via app de celular, com broker MQTT próprio e histórico de posições |
@@ -212,25 +214,27 @@ aqui.
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/postiz.svg" width="48" height="48" alt=""> | [Postiz](../../apps/postiz) | Agenda posts no Instagram e em outras redes sociais, com calendário e um só lugar para todos os canais |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/prometheus.svg" width="48" height="48" alt=""> | [Prometheus](../../apps/prometheus) | Coleta métricas em intervalo e guarda o histórico — a fonte de dados que o Grafana desenha |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/proxmox.svg" width="48" height="48" alt=""> | [Proxmox VE](../../apps/proxmox) | O hypervisor Proxmox num container, pra experimentar sem dedicar uma máquina — roda privileged |
-| <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/retrom.webp" width="48" height="48" alt=""> | [Retrom](../../apps/retrom) | Biblioteca de jogos para emulação — uma coleção só, jogada no navegador ou pelo cliente de desktop |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/radicale.svg" width="48" height="48" alt=""> | [Radicale](../../apps/radicale) | Servidor CalDAV/CardDAV leve e minimalista, no rebuild que traz o script do calendário de aniversários (Radicale 3.7.6.0 dentro) |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/rclone.svg" width="48" height="48" alt=""> | [rclone](../../apps/rclone) | Interface web para as contas de nuvem do seu config do rclone: navegar, copiar e sincronizar arquivos entre elas |
+| <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/retrom.webp" width="48" height="48" alt=""> | [Retrom](../../apps/retrom) | Biblioteca de jogos para emulação — uma coleção só, jogada no navegador ou pelo cliente de desktop |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/searxng.png" width="48" height="48" alt=""> | [SearXNG](../../apps/searxng) | Metabusca que consulta dezenas de motores de uma vez, sem guardar perfil seu |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/stirling-pdf.svg" width="48" height="48" alt=""> | [Stirling-PDF](../../apps/stirling-pdf) | Manipulação de PDF local — juntar, dividir, converter, OCR e assinar, no lugar dos sites de "PDF online" |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/syncthing.svg" width="48" height="48" alt=""> | [Syncthing](../../apps/syncthing) | Sincronização de arquivos P2P entre dispositivos, sem servidor central |
-| <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/tsdproxy.svg" width="48" height="48" alt=""> | [tsdproxy](../../apps/tsdproxy) | Publica containers na tailnet automaticamente, só com labels — sem configurar proxy manualmente por serviço |
 | <img src="https://cdn.jsdelivr.net/gh/containers/containertoolbx.org@main/apple-touch-icon.png" width="48" height="48" alt=""> | [Toolbx](../../apps/toolbx) | Shells descartáveis de Arch, Fedora, RHEL e Ubuntu, nas imagens oficiais do Toolbx — um lugar pra instalar ferramenta avulsa que não é o host |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/traccar.svg" width="48" height="48" alt=""> | [Traccar](../../apps/traccar) | Rastreamento de GPS — mapa ao vivo, histórico, geocercas e relatórios, com app no celular |
-| <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/vikunja.svg" width="48" height="48" alt=""> | [Vikunja](../../apps/vikunja) | Tarefas com prazo e projeto por trás, em lista, kanban ou gantt |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/qemu.svg" width="48" height="48" alt=""> | [VM](../../apps/vm) | Windows, macOS, ChromeOS Flex, ZimaOS e 23 distros Linux como VMs em containers, vistas pelo navegador — exige KVM no host |
+| <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/tsdproxy.svg" width="48" height="48" alt=""> | [tsdproxy](../../apps/tsdproxy) | Publica containers na tailnet automaticamente, só com labels — sem configurar proxy manualmente por serviço |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/uptime-kuma.svg" width="48" height="48" alt=""> | [Uptime Kuma](../../apps/uptime-kuma) | Monitor de disponibilidade dos outros serviços e da tailnet, com histórico e notificação |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/vaultwarden.png" width="48" height="48" alt=""> | [Vaultwarden](../../apps/vaultwarden) | Cofre de senhas compatível com o protocolo do Bitwarden, leve o bastante pra rodar em qualquer lugar |
 | <img src="https://raw.githubusercontent.com/wallacepnts/vaultzap/main/internal/web/static/img/favicon.svg" width="48" height="48" alt=""> | [VaultZap](../../apps/vaultzap) | Arquivo local e navegável de conversas exportadas do WhatsApp — busca, galeria e calendário, 100% offline |
+| <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/svg/vikunja.svg" width="48" height="48" alt=""> | [Vikunja](../../apps/vikunja) | Tarefas com prazo e projeto por trás, em lista, kanban ou gantt |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/qemu.svg" width="48" height="48" alt=""> | [VM](../../apps/vm) | Windows, macOS, ChromeOS Flex, ZimaOS e 23 distros Linux como VMs em containers, vistas pelo navegador — exige KVM no host |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/wger.svg" width="48" height="48" alt=""> | [wger](../../apps/wger) | Planejamento e acompanhamento de treinos, com banco de exercícios e medidas corporais |
-| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/zigbee2mqtt.svg" width="48" height="48" alt=""> | [Zigbee2MQTT](../../apps/zigbee2mqtt) | Ponte entre dispositivos Zigbee e MQTT, sem hub proprietário — sem coordenador ligado ainda (veja as notas dele no painel) |
 | <img src="https://cdn.jsdelivr.net/gh/getwud/wud@main/ui/public/img/icons/android-chrome-512x512.png" width="48" height="48" alt=""> | [WUD (What's Up Docker)](../../apps/wud) | Monitora as atualizações de imagem disponíveis pros containers, sem aplicar nada sozinho — só avisa |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/zabbix.svg" width="48" height="48" alt=""> | [Zabbix](../../apps/zabbix) | Monitoramento de servidores, redes e serviços com agentes, SNMP, triggers e alertas — server, interface web e PostgreSQL |
 | <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/zerobyte.png" width="48" height="48" alt=""> | [Zerobyte](../../apps/zerobyte) | Automatiza backup (via Restic) dos dados de todos os outros serviços deste repositório |
+| <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/zigbee2mqtt.svg" width="48" height="48" alt=""> | [Zigbee2MQTT](../../apps/zigbee2mqtt) | Ponte entre dispositivos Zigbee e MQTT, sem hub proprietário — sem coordenador ligado ainda (veja as notas dele no painel) |
+
+<!-- services:end -->
 
 **Nada atualiza sozinho.** Toda imagem é fixada — numa versão, ou num digest
 onde o projeto não publica versão — e atualizada na mão; ver
@@ -294,6 +298,7 @@ convidado da mesma arquitetura. O `apps/vm` traz `vm-windows` pra x86_64 e
 | [Instalando e operando](./instalacao.md) | instalar, atualizar, backup, restaurar, remover |
 | [Recuperação e migração](./recuperacao.md) | a máquina morreu, ou você está mudando de host |
 | [Referência](./referencia.md) | onde cada arquivo mora, e um `.container` anotado |
+| [O manifesto do app](./manifesto.md) | `apps/<app>/app.json`: tudo o que um app diz de si mesmo |
 | [Auto-update](./auto-update.md) | por que nada atualiza sozinho |
 | [Endurecimento, o que foi medido](./endurecimento.md) | o que cada imagem aceitou, e os erros do que ela recusou |
 | [Ferramentas](./ferramentas.md) | `qh-check` e `qh-updates` |

@@ -10,12 +10,11 @@ como `16` ou `17-alpine`). Regra 9 das [convenções](./convencoes.md).
 
 A imagem do próprio app que acompanha uma release do GitHub **não tem tag no repositório**:
 
-```ini
+```
 # apps/memos/memos.container
 Image=docker.io/neosmemo/memos
-# apps/memos/install.ini
-[image]
-memos = {version}              # ou v{version}, {version}-alpine, {version:2} ...
+# apps/memos/app.json, under "units"
+"memos": { "image": "{version}" }              # ou v{version}, {version}-alpine, {version:2} ...
 ```
 
 O `qh` preenche o formato com a última release quando instala, e grava o resultado onde só
@@ -36,7 +35,7 @@ rodava: o primeiro `--update` grava no drop-in a tag que acha na unit instalada.
 ponha a tag que quer no `Image=` do drop-in e reinicie.
 
 O que mantém a tag na unit — e se muda por um commit — é a imagem que NÃO é a release do
-próprio app: banco ou cache fixado no que o compose do app valida (`[upstream]` com
+próprio app: banco ou cache fixado no que o compose do app valida (`upstream` com
 `compose:` ou `-`), imagem de distro acompanhada pelo registry (`registry:`) e tudo o que é
 fixado por digest.
 

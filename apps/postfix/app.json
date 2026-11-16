@@ -1,0 +1,24 @@
+{
+  "spec": 2,
+  "id": "postfix",
+  "title": "Postfix",
+  "icon": "https://api.iconify.design/mdi/email-fast.svg?color=%23888888",
+  "tagline": {
+    "en": "An SMTP relay for the other containers — they hand mail to one place, and the credentials of the provider live here only",
+    "pt": "Relay SMTP para os outros containers — eles entregam num lugar só, e a credencial do provedor fica só aqui"
+  },
+  "license": "MIT",
+  "links": {
+    "docs": "https://github.com/bokysan/docker-postfix#readme"
+  },
+  "notes": {
+    "en": "Then edit `~/.config/containers/env/postfix.env`: `POSTFIX_myhostname`, and a\n`RELAYHOST` if you have one (see below). Restart with `qh postfix --update\n--apply`.\n\nPoint an app at it — host `<host-ip>`, port **1587**, no authentication:\n\n```\nSMTP_HOST=<host-ip>\nSMTP_PORT=1587\n```\n\n### Delivering the mail\n\nWithout a `RELAYHOST`, Postfix delivers by itself. That needs outbound port 25\nopen — most home connections have it blocked — and a domain whose SPF, DKIM and\nreverse DNS agree, or the message is filed as spam. A relay is the practical\npath:\n\n```ini\nRELAYHOST=[smtp.gmail.com]:587\nRELAYHOST_USERNAME=you@gmail.com\nPOSTFIX_smtp_tls_security_level=encrypt\n```\n\nThe password goes in a secret, not in the `.env`:\n\n```bash\npodman secret create postfix-relayhost-password -\n# paste the password, then Ctrl-D\n```\n\nThen uncomment the `Secret=` line in the unit and run `qh postfix --update\n--apply`. It is `type=env` and not a mounted file, because a mounted secret\nneeds a mount point the image does not have.\n\n### Who may send\n\nWhoever reaches port 1587 sends mail as you. Two settings decide the reach:\n\n- `ALLOWED_SENDER_DOMAINS` names the domains accepted as the sender.\n  `ALLOW_EMPTY_SENDER_DOMAINS=true`, the shipped default, accepts any of them.\n- `POSTFIX_mynetworks` names the networks allowed to hand mail in.\n\nThe port is published on the LAN, not on the tailnet: tsdproxy proxies HTTP,\nand this speaks SMTP. On a network you do not control, narrow both.\n\n### Backup\n\nIt stops the service, packs the queue and the `.env`, and starts it again.\n\n### Remove\n\n`--purge` throws away anything still queued.",
+    "pt": "Depois edite o `~/.config/containers/env/postfix.env`: o `POSTFIX_myhostname`\ne um `RELAYHOST`, se você tiver (veja abaixo). Reinicie com `qh postfix\n--update --apply`.\n\nAponte um app para ele — host `<ip-do-host>`, porta **1587**, sem autenticação:\n\n```\nSMTP_HOST=<ip-do-host>\nSMTP_PORT=1587\n```\n\n### Entregando o e-mail\n\nSem `RELAYHOST`, o Postfix entrega sozinho. Isso exige a porta 25 de saída\naberta — a maioria das conexões domésticas bloqueia — e um domínio cujo SPF,\nDKIM e DNS reverso concordem, ou a mensagem cai no spam. O caminho prático é um\nrelay:\n\n```ini\nRELAYHOST=[smtp.gmail.com]:587\nRELAYHOST_USERNAME=voce@gmail.com\nPOSTFIX_smtp_tls_security_level=encrypt\n```\n\nA senha vai num secret, não no `.env`:\n\n```bash\npodman secret create postfix-relayhost-password -\n# cole a senha e dê Ctrl-D\n```\n\nDepois descomente a linha `Secret=` na unit e rode `qh postfix --update\n--apply`. É `type=env` e não arquivo montado, porque secret montado precisa de\num ponto de montagem que a imagem não tem.\n\n### Quem pode enviar\n\nQuem alcança a porta 1587 manda e-mail como você. Duas configurações definem o\nalcance:\n\n- `ALLOWED_SENDER_DOMAINS` lista os domínios aceitos como remetente. O\n  `ALLOW_EMPTY_SENDER_DOMAINS=true`, que vem ligado, aceita qualquer um.\n- `POSTFIX_mynetworks` lista as redes que podem entregar.\n\nA porta é publicada na LAN, não na tailnet: o tsdproxy faz proxy de HTTP, e\nisto fala SMTP. Em rede que você não controla, restrinja as duas.\n\n### Backup\n\nPara o serviço, empacota a fila e o `.env`, e religa.\n\n### Remover\n\nO `--purge` joga fora o que ainda estiver na fila."
+  },
+  "units": {
+    "postfix": {
+      "upstream": "bokysan/docker-postfix",
+      "image": "v{version}"
+    }
+  }
+}

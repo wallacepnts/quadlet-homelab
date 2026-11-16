@@ -1,0 +1,54 @@
+{
+  "spec": 2,
+  "id": "owntracks",
+  "title": "OwnTracks",
+  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/owntracks.svg",
+  "tagline": {
+    "en": "Personal location tracking through a phone app, with its own MQTT broker and a position history",
+    "pt": "Rastreamento de localização pessoal via app de celular, com broker MQTT próprio e histórico de posições"
+  },
+  "category": "Home",
+  "license": "GPL-2.0",
+  "links": {
+    "docs": "https://owntracks.org/booklet/"
+  },
+  "works_with": [
+    "home-assistant"
+  ],
+  "notes": {
+    "en": "Open `http://<host-ip>:1883` or `https://owntracks-ui.<your-tailnet>.ts.net`.",
+    "pt": "Abrir `http://<ip-do-host>:1883` ou `https://owntracks-ui.<your-tailnet>.ts.net`."
+  },
+  "secrets": {
+    "owntracks-mqtt-password": "rand-base64 24",
+    "owntracks-mosquitto-passwd": {
+      "value": "manual generate it with `mosquitto_passwd -c -b <file> owntracks <the-same-password>` (see the README)",
+      "note": "A Mosquitto password file, not a loose value: it has to be produced by mosquitto_passwd with the SAME password as owntracks-mqtt-password."
+    }
+  },
+  "config": {
+    "mosquitto.conf": {
+      "value": "%h/.config/containers/volumes/owntracks/mosquitto/config/mosquitto.conf",
+      "note": "Read by the app, never written by it: the destination is inside a volume, so it cannot be derived from the unit the way an .env can. Same as above: without it the broker accepts no connection from the other containers."
+    },
+    "frontend-config.js": {
+      "value": "%h/.config/containers/volumes/owntracks/frontend-config.js",
+      "note": "Where the frontend looks for the recorder's API."
+    }
+  },
+  "login": {
+    "user": "owntracks",
+    "password": "owntracks-mqtt-password"
+  },
+  "units": {
+    "owntracks-mosquitto": {
+      "upstream": "registry"
+    },
+    "owntracks-frontend": {
+      "image": "{version}"
+    },
+    "owntracks-recorder": {
+      "image": "{version}"
+    }
+  }
+}

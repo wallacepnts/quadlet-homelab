@@ -1,0 +1,37 @@
+{
+  "spec": 2,
+  "id": "cookcli",
+  "title": "CookCLI",
+  "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/svg/cookcli.svg",
+  "tagline": {
+    "en": "Plain-text recipes in the CookLang format — versionable in git, with no database and no forms",
+    "pt": "Receitas em texto puro no formato CookLang — versionáveis em git, sem banco e sem formulário"
+  },
+  "category": "Productivity",
+  "license": "MIT",
+  "links": {
+    "docs": "https://demo.cooklang.org"
+  },
+  "notes": {
+    "en": "Open `http://<host-ip>:9080` or `https://cookcli.<your-tailnet>.ts.net`.",
+    "pt": "Abrir `http://<ip-do-host>:9080` ou `https://cookcli.<your-tailnet>.ts.net`."
+  },
+  "config": {
+    "aisle.conf.example": {
+      "value": "%h/.config/containers/volumes/cookcli/recipes/config/aisle.conf",
+      "note": "Both live in config/ INSIDE the recipes folder — cookcli looks there first and then in ~/.config/cook/. Since the volume is the /recipes directory, the destination cannot be derived from the unit."
+    },
+    "pantry.conf.example": "%h/.config/containers/volumes/cookcli/recipes/config/pantry.conf",
+    "bolo-de-cenoura.cook.example": {
+      "value": "%h/.config/containers/volumes/cookcli/recipes/bolo-de-cenoura.cook",
+      "note": "Reference recipes: installing gives you something to copy as a model, and the one in molhos/ exists to demonstrate references between recipes."
+    },
+    "calda-de-chocolate.cook.example": "%h/.config/containers/volumes/cookcli/recipes/molhos/calda-de-chocolate.cook",
+    "semana.menu.example": "%h/.config/containers/volumes/cookcli/recipes/semana.menu"
+  },
+  "units": {
+    "cookcli": {
+      "image": "{version}"
+    }
+  }
+}

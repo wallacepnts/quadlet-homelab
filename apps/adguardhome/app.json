@@ -1,0 +1,25 @@
+{
+  "spec": 2,
+  "id": "adguardhome",
+  "title": "AdGuard Home",
+  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/adguard-home.svg",
+  "tagline": {
+    "en": "A recursive DNS server that blocks ads and trackers for the whole network",
+    "pt": "Servidor DNS recursivo com bloqueio de anúncios e rastreadores pra toda a rede"
+  },
+  "category": "Network & Security",
+  "license": "GPL-3.0",
+  "links": {
+    "docs": "https://adguard.com/adguard-home/overview.html"
+  },
+  "notes": {
+    "en": "Open `http://<host-ip>:3006` or `https://adguardhome.<your-tailnet>.ts.net`.",
+    "pt": "Abrir `http://<ip-do-host>:3006` ou `https://adguardhome.<your-tailnet>.ts.net`."
+  },
+  "units": {
+    "adguardhome": {
+      "upstream": "AdguardTeam/AdGuardHome",
+      "image": "v{version}"
+    }
+  }
+}

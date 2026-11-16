@@ -1,0 +1,27 @@
+{
+  "spec": 2,
+  "id": "uptime-kuma",
+  "title": "Uptime Kuma",
+  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/uptime-kuma.svg",
+  "tagline": {
+    "en": "An uptime monitor for the other services and the tailnet, with history and notifications",
+    "pt": "Monitor de disponibilidade dos outros serviços e da tailnet, com histórico e notificação"
+  },
+  "category": "Monitoring",
+  "license": "MIT",
+  "links": {
+    "docs": "https://uptime.kuma.pet"
+  },
+  "works_with": [
+    "ntfy"
+  ],
+  "notes": {
+    "en": "Open `http://<host-ip>:3001` or `https://uptime-kuma.<your-tailnet>.ts.net`.",
+    "pt": "Abrir `http://<ip-do-host>:3001` ou `https://uptime-kuma.<your-tailnet>.ts.net`."
+  },
+  "units": {
+    "uptime-kuma": {
+      "image": "{version}"
+    }
+  }
+}

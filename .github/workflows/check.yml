@@ -31,6 +31,7 @@ jobs:
           python3 resources.py --selftest
           python3 wsterm.py --selftest
           python3 imagepin.py --selftest
+          python3 manifest.py --selftest
 
       # Exits != 0 on an error; a warning does not fail it (it is a convention,
       # not an invariant).
@@ -58,7 +59,7 @@ jobs:
               failed=1
             fi
             case "$out" in
-              *"has no obvious destination"*|*"has no recipe in install.ini"*)
+              *"has no obvious destination"*|*"has no recipe in app.json"*)
                 echo "::error file=apps/$app::manifest is incomplete"
                 echo "$out" | grep '^  !'
                 failed=1

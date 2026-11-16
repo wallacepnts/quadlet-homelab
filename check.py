@@ -13,7 +13,6 @@ Exits 1 if there is any error, 0 if there are only warnings.
 No dependencies: stdlib only, so it runs on the immutable host as-is.
 """
 
-import configparser
 import os
 import re
 import shlex
@@ -21,6 +20,7 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
+import manifest
 from qhui import (translator, directives, directives_of, published_port, format_unit,
                   red, yellow, green, dim, GRUPOS, valid_template, ENV_TYPES, ENV_TYPE_LINE, env_value_problem)
 
@@ -52,9 +52,10 @@ PT = {
         "fixe uma versão, ou um digest onde o projeto não publica versão",
     "nothing will report a new version": "nada vai reportar versão nova",
     "published by": "publicada por",
-    "has no recipe in install.ini [secrets] — install.py cannot generate it":
-        "não tem receita em install.ini [secrets] — o install.py não consegue gerá-lo",
-    "install.ini has a recipe for": "install.ini tem receita para",
+    "has no recipe in app.json [secrets] — install.py cannot generate it":
+        "não tem receita em app.json [secrets] — o install.py não consegue gerá-lo",
+    "app.json has a recipe for": "app.json tem receita para",
+    "README table(s) regenerated": "tabela(s) de README regerada(s)",
     "is not a Secret= any unit declares": "não é um Secret= que alguma unit declare",
     "must start with `shell ` — install.py runs nothing else":
         "tem que começar com `shell ` — o install.py não roda outra coisa",
@@ -248,17 +249,15 @@ def bare_image(value):
 
 
 def image_templates(folder):
-    """{unit: template} from `[image]` in the folder's install.ini."""
-    ini = configparser.ConfigParser(interpolation=None)
-    ini.read(folder / "install.ini")
+    """{unit: template} from `[image]` in the folder's app.json."""
+    ini = manifest.view(folder)
     return dict(ini.items("image")) if ini.has_section("image") else {}
 
 
 def image_template_problemas(folder):
     """What is wrong with a folder's `[image]` section, as [(unit, message)]."""
     saida = []
-    ini = configparser.ConfigParser(interpolation=None)
-    ini.read(folder / "install.ini")
+    ini = manifest.view(folder)
     fontes = dict(ini.items("upstream")) if ini.has_section("upstream") else {}
     for unit, tpl in image_templates(folder).items():
         caminho = folder / f"{unit}.container"
@@ -285,7 +284,7 @@ def check_container(path, folder):
     check_podman_args(text, ref)
 
     # Rule 9. Nothing in this repository updates on its own: AutoUpdate= is refused, and an image is
-    # either pinned here (a tag or a digest) or has NO tag and a `[image]` template in install.ini —
+    # either pinned here (a tag or a digest) or has NO tag and a `[image]` template in app.json —
     # `qh` then pins the latest release on the host, in a drop-in, and a person moves it.
     if "AutoUpdate" in keys:
         error("rule 9", f"{ref} has AutoUpdate= — nothing in this repository updates on "
@@ -297,7 +296,7 @@ def check_container(path, folder):
             if bare_image(value):
                 if path.stem not in image_templates(folder):
                     error("rule 9", f"{ref} has an image with no tag and no `[image]` template for "
-                                    f"{path.stem} in install.ini — `qh` would pull `latest`")
+                                    f"{path.stem} in app.json — `qh` would pull `latest`")
             elif tag := floating_tag(value):
                 error("rule 9", f"{ref} is on a floating tag (`{tag}`) — pin a version, "
                                 f"or a digest where upstream publishes none")
@@ -439,7 +438,7 @@ def license_docs_problemas(chave, valor):
 
 
 def backup_problemas(ini):
-    """What is wrong with an install.ini [backup] section, as a list."""
+    """What is wrong with an app.json [backup] section, as a list."""
     saida = []
     for key, valor in ini.items("backup"):
         if key not in ("mode", "exclude"):
@@ -596,10 +595,10 @@ def check_manifest(folders):
 
     This is what keeps install.py from stopping halfway through a service.
     """
-    import configparser
     for folder in folders:
-        ini = configparser.ConfigParser(interpolation=None)
-        ini.read(folder / "install.ini")
+        ini = manifest.view(folder)
+        for problema in manifest.problems(manifest.load(folder), folder.name, tuple(GRUPOS)):
+            error("manifest", f"apps/{folder.name}/app.json: {problema}")
         recipes = set(ini["secrets"]) if ini.has_section("secrets") else set()
         declared = set()
         for f in sorted(folder.glob("*.container")):
@@ -607,15 +606,15 @@ def check_manifest(folders):
                 if key == "Secret":
                     declared.add(value.split(",")[0])
         for unit, msg in image_template_problemas(folder):
-            error("manifest", f"apps/{folder.name}: install.ini [image] {unit} {msg}")
+            error("manifest", f"apps/{folder.name}: app.json [image] {unit} {msg}")
         for exemplo in sorted(folder.glob("*.env.example")):
             for n, msg in env_type_problemas(exemplo.read_text()):
                 error("manifest", f"apps/{folder.name}/{exemplo.name}:{n}: {msg}")
         for missing in sorted(declared - recipes):
             error("manifest", f"apps/{folder.name}: Secret={missing} has no recipe in "
-                              f"install.ini [secrets] — install.py cannot generate it")
+                              f"app.json [secrets] — install.py cannot generate it")
         for extra in sorted(recipes - declared):
-            warn("manifest", f"apps/{folder.name}: install.ini has a recipe for {extra}, "
+            warn("manifest", f"apps/{folder.name}: app.json has a recipe for {extra}, "
                              f"which no unit uses")
         # `[choices.<unit>]` and `[login.<unit>]` target one unit of a folder.
         # The suffix was validated by nobody: renaming [choices.vm-windows] to
@@ -631,7 +630,7 @@ def check_manifest(folders):
             if not sufixo or prefixo not in ("choices", "login"):
                 continue
             if sufixo not in unidades:
-                error("manifest", f"apps/{folder.name}: install.ini [{secao}] names "
+                error("manifest", f"apps/{folder.name}: app.json [{secao}] names "
                                   f"{sufixo}, which is not a unit of this folder")
         # [upstream] keys are unit names too, and its values have a grammar
         # (see upstream_problema). Neither was validated. A key naming no unit
@@ -640,21 +639,21 @@ def check_manifest(folders):
         # the override exists to replace.
         for key, valor in (ini.items("upstream") if ini.has_section("upstream") else []):
             if key not in unidades:
-                error("manifest", f"apps/{folder.name}: install.ini [upstream] {key} "
+                error("manifest", f"apps/{folder.name}: app.json [upstream] {key} "
                                   f"is not a unit of this folder")
             problema = upstream_problema(valor)
             if problema:
-                error("manifest", f"apps/{folder.name}: install.ini [upstream] {key} = "
+                error("manifest", f"apps/{folder.name}: app.json [upstream] {key} = "
                                   f"{valor} — {problema}")
         if ini.has_section("backup"):
             for problema in backup_problemas(ini):
-                error("manifest", f"apps/{folder.name}: install.ini [backup] {problema}")
+                error("manifest", f"apps/{folder.name}: app.json [backup] {problema}")
         # [store] is what the app store shows about the service. Only
         # `screenshots` exists; any other key is a typo that would be ignored.
         if ini.has_section("store"):
             for key, valor in ini.items("store"):
                 if key not in ("screenshots", "deprecated", "deprecated_pt", "repo", "works_with", "min_podman", "group", "license", "docs"):
-                    error("manifest", f"apps/{folder.name}: install.ini [store] has no key {key!r} "
+                    error("manifest", f"apps/{folder.name}: app.json [store] has no key {key!r} "
                                       f"(only `screenshots`, `deprecated`, `deprecated_pt`, `repo`, `works_with`, `min_podman`, `group`, `license` and `docs`)")
                     continue
                 for problema in (screenshots_problemas(valor) if key == "screenshots"
@@ -666,9 +665,9 @@ def check_manifest(folders):
                                  else ["is not a version like 5.4"] if key == "min_podman"
                                  else works_with_problemas(valor, folder.name, {p.name for p in APPS.iterdir()}) if key == "works_with"
                                  else deprecated_problemas(valor)):
-                    error("manifest", f"apps/{folder.name}: install.ini [store] {key} {problema}")
+                    error("manifest", f"apps/{folder.name}: app.json [store] {key} {problema}")
             if ini.has_option("store", "deprecated_pt") and not ini.get("store", "deprecated", fallback="").strip():
-                error("manifest", f"apps/{folder.name}: install.ini [store] deprecated_pt without `deprecated`: "
+                error("manifest", f"apps/{folder.name}: app.json [store] deprecated_pt without `deprecated`: "
                                   f"the English reason is the one that counts")
         # [vars]: every ${VAR} a Volume= of this folder names needs a default
         # here, because it is what the install offers when it asks — and a
@@ -682,9 +681,9 @@ def check_manifest(folders):
         declaradas = set(ini["vars"]) if ini.has_section("vars") else set()
         for nome in sorted(usadas - {d.upper() for d in declaradas} - declaradas):
             error("manifest", f"apps/{folder.name}: Volume= uses ${{{nome}}} with no default "
-                              f"in install.ini [vars] — the install has nothing to offer")
+                              f"in app.json [vars] — the install has nothing to offer")
         for nome in sorted(declaradas - usadas - {u.lower() for u in usadas}):
-            warn("manifest", f"apps/{folder.name}: install.ini [vars] {nome} is used by no Volume=")
+            warn("manifest", f"apps/{folder.name}: app.json [vars] {nome} is used by no Volume=")
         # [login] names the secret the install prints as the credentials, in
         # either shape (`password` next to a literal user, or `credentials`
         # holding `user:password`). A typo here is silent — the footer would
@@ -695,31 +694,31 @@ def check_manifest(folders):
             # that went unseen: koffan's password-only form was once in this
             # state, and the install showed no password at all.
             if not (ini.has_option(secao, "password") or ini.has_option(secao, "credentials")):
-                error("manifest", f"apps/{folder.name}: install.ini [{secao}] has neither "
+                error("manifest", f"apps/{folder.name}: app.json [{secao}] has neither "
                                   f"`password` nor `credentials` — install.py prints nothing")
             for key in ("password", "credentials"):
                 name = ini.get(secao, key, fallback=None)
                 if name and name not in declared:
-                    error("manifest", f"apps/{folder.name}: install.ini [{secao}] {key} = "
+                    error("manifest", f"apps/{folder.name}: app.json [{secao}] {key} = "
                                       f"{name}, which no unit declares as a Secret=")
         # [validate] keys are secret names too. A typo there is worse than no
         # check at all: the install prints nothing, and you believe the value
         # was verified when it was never looked at.
         for key in (ini["validate"] if ini.has_section("validate") else ()):
             if key not in declared:
-                error("manifest", f"apps/{folder.name}: install.ini [validate] {key} "
+                error("manifest", f"apps/{folder.name}: app.json [validate] {key} "
                                   f"is not a Secret= any unit declares")
             # `shell` is the only form install.py runs. Any other word makes the
             # check silently do nothing, which is worse than having none: the
             # install prints no warning and you believe the value was verified.
             elif not ini.get("validate", key, fallback="").startswith("shell "):
-                error("manifest", f"apps/{folder.name}: install.ini [validate] {key} "
+                error("manifest", f"apps/{folder.name}: app.json [validate] {key} "
                                   f"must start with `shell ` — install.py runs nothing else")
             # Only a `manual` secret is ever typed, and typing is the only moment
             # there is a value to check. A recipe that generates its own has
             # nothing to validate, so the entry would never fire.
             elif not ini.get("secrets", key, fallback="").startswith("manual"):
-                error("manifest", f"apps/{folder.name}: install.ini [validate] {key} "
+                error("manifest", f"apps/{folder.name}: app.json [validate] {key} "
                                   f"needs a `manual` recipe in [secrets] — a generated "
                                   f"secret is never checked")
 
@@ -788,15 +787,13 @@ def check_config_sources():
     install.py skips it without a word, and the service starts with no
     configuration — caddy did, and only the container's own error said so.
     """
-    for ini in sorted(APPS.glob("*/install.ini")):
-        cp = configparser.ConfigParser(interpolation=None)
-        cp.optionxform = str
-        cp.read(ini)
+    for pasta in sorted(p for p in APPS.iterdir() if p.is_dir()):
+        cp = manifest.view(pasta)
         if not cp.has_section("config"):
             continue
         for origem, _ in cp.items("config"):
-            if not (ini.parent / origem).exists():
-                error("config", f"{ini.relative_to(ROOT)}: [config] names "
+            if not (pasta / origem).exists():
+                error("config", f"apps/{pasta.name}/app.json: \"config\" names "
                                 f"`{origem}`, which does not exist")
 
 
@@ -833,35 +830,34 @@ def check_counts(folders):
                                 f"\u201c{frase}\u201d")
 
 
+README_TABLES = (("en", ROOT / "README.md"), ("pt", ROOT / "docs" / "pt-BR" / "README.md"))
+
+
+def regenerated_readmes(folders):
+    """{path: new text} of the READMEs whose services table differs from what app.json says.
+
+    The table is the shop window — a logo, a name, one line, in both languages — and it is generated
+    from `apps/*/app.json`, between two markers, so it cannot list an app twice or forget one."""
+    apps = []
+    for pasta in folders:
+        m = manifest.load(pasta)
+        if m.get("title") and m.get("icon") and isinstance(m.get("tagline"), dict):
+            apps.append(m)
+    saida = {}
+    for lang, path in README_TABLES:
+        atual = path.read_text()
+        novo = manifest.splice(atual, manifest.services_table(apps, lang))
+        if novo is None:
+            error("table", f"{path.relative_to(ROOT)} has no `{manifest.TABLE_BEGIN[:20]}…` markers around the services table")
+        elif novo != atual:
+            saida[path] = novo
+    return saida
+
+
 def check_table(folders):
-    readme = (ROOT / "README.md").read_text()
-    # The services table is the catalog's shop window (logo, name, description;
-    # `qh --catalog` reads it). It carries no version: the tag lives in Image=
-    # alone, and what is installed against what upstream released is asked
-    # live, by `qh-updates --host` and the store.
-    rows = set()
-    for line in readme.splitlines():
-        m = re.match(r"^\|.*?\|\s*\[[^\]]+\]\(\./apps/([a-z0-9._-]+)\)", line)
-        if m:
-            rows.add(m.group(1))
-
-    # A repeated row is invisible to the checks below — the dict keeps the last
-    # one and everything agrees. It only shows up as the same app listed twice
-    # in a 64-row table, which nobody reads top to bottom.
-    vistos = {}
-    for line in readme.splitlines():
-        m = re.match(r"^\|.*?\|\s*\[[^\]]+\]\(\./apps/([a-z0-9._-]+)\)", line)
-        if m:
-            vistos[m.group(1)] = vistos.get(m.group(1), 0) + 1
-    for nome, n in sorted(vistos.items()):
-        if n > 1:
-            error("table", f"apps/{nome} appears {n} times in the README table")
-
-    names = {p.name for p in folders}
-    for missing in sorted(names - rows):
-        error("table", f"apps/{missing} has no row in the README services table")
-    for extra in sorted(rows - names):
-        error("table", f"the README table mentions apps/{extra}, which does not exist")
+    for path in regenerated_readmes(folders):
+        error("table", f"{path.relative_to(ROOT)}: the services table is out of date — "
+                       f"regenerate it with `python3 check.py --readme`")
 
 
 HARDENING = ROOT / "docs" / "hardening.md"
@@ -1160,6 +1156,13 @@ def main():
         return 2
 
     folders = sorted(p for p in APPS.iterdir() if p.is_dir())
+    if "--readme" in sys.argv:
+        feitos = regenerated_readmes(folders)
+        for path, texto in feitos.items():
+            path.write_text(texto)
+            print(f"  {path.relative_to(ROOT)}")
+        print(loc(f"{len(feitos)} README table(s) regenerated"))
+        return 0
     if "--format" in sys.argv:
         feitos = 0
         for c in layout_targets(folders):

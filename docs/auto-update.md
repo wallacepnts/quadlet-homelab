@@ -10,12 +10,11 @@ a unit with `AutoUpdate=` or a floating tag (`latest`, `main`, a bare major like
 
 An app's own image that follows a GitHub release has **no tag in the repository**:
 
-```ini
+```
 # apps/memos/memos.container
 Image=docker.io/neosmemo/memos
-# apps/memos/install.ini
-[image]
-memos = {version}              # or v{version}, {version}-alpine, {version:2} ...
+# apps/memos/app.json, under "units"
+"memos": { "image": "{version}" }              # or v{version}, {version}-alpine, {version:2} ...
 ```
 
 `qh` fills the template with the latest release when it installs, and writes the result where
@@ -36,7 +35,7 @@ host installed before versions left the repository keeps running what it ran: th
 the tag you want in `Image=` of the drop-in and restart.
 
 What keeps its tag in the unit — and is moved by a commit — is an image that is NOT the app's
-own release: a database or cache pinned to what the app's compose validates (`[upstream]`
+own release: a database or cache pinned to what the app's compose validates (`upstream`
 `compose:` or `-`), a distro image tracked on the registry (`registry:`), and anything pinned
 by digest.
 

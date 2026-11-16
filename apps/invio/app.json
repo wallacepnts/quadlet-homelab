@@ -1,0 +1,34 @@
+{
+  "spec": 2,
+  "id": "invio",
+  "title": "Invio",
+  "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/svg/invio.svg",
+  "tagline": {
+    "en": "Self-hosted invoicing and invoice tracking, on SQLite and with no external service",
+    "pt": "Emissão e controle de faturas self-hosted, com SQLite e sem depender de serviço externo"
+  },
+  "category": "Personal",
+  "links": {
+    "docs": "https://github.com/kittendevv/Invio#readme"
+  },
+  "notes": {
+    "en": "Open `http://<host-ip>:8106` or `https://invio.<your-tailnet>.ts.net`.",
+    "pt": "Abrir `http://<ip-do-host>:8106` ou `https://invio.<your-tailnet>.ts.net`."
+  },
+  "secrets": {
+    "invio-admin-pass": "rand-base64 18",
+    "invio-jwt-secret": {
+      "value": "rand-hex 32",
+      "note": "It signs the session — changing it logs everyone out."
+    }
+  },
+  "login": {
+    "user": "admin",
+    "password": "invio-admin-pass"
+  },
+  "units": {
+    "invio": {
+      "image": "v{version}"
+    }
+  }
+}

@@ -41,7 +41,7 @@ not change the file already on the host, and this is what fixes it. It touches
 no volume, no `.env` and no secret. A moving tag (`latest`) is always pulled; a
 pinned one only when the host does not have it.
 
-One thing it does add: a `[config]` file the new unit mounts and the host has never
+One thing it does add: a `config` file the new unit mounts and the host has never
 had is created, owned by the unit's `User=`. One that is already there is never
 rewritten — it is yours after the first install.
 
@@ -75,7 +75,7 @@ still in place and keeps them, with a warning. `--reinstall` overwrites them.
 `.tar.gz` carries the volumes, the secrets and the `.env` — the last two are
 tiny and are what makes it restorable.
 
-**`[backup] exclude`** in a service's `install.ini` lists folders that rebuild
+**`backup.exclude`** in a service's `app.json` lists folders that rebuild
 themselves (Immich's thumbnails, Jellyfin's cache), one pattern per line, matched
 at any depth, so give enough of the path (`upload/thumbs`). `--backup` leaves them
 out and says how much it skips; a folder this user cannot read counts as unknown
@@ -122,8 +122,8 @@ Customize screen, see [tools](./tools.md)); `--update` keeps it and says so.
 
 `qh --catalog` gives the same answer as JSON, for a front end. It also includes
 what the shop window needs: name, icon and description (en/pt), all read from
-the README tables, the image each unit pins and the one installed, plus the category from `[store] group`, the web
-addresses, and what an install has to ask for (`manual` secrets and `[vars]`
+the README tables, the image each unit pins and the one installed, plus the category from `category`, the web
+addresses, and what an install has to ask for (`manual` secrets and `vars`
 with their defaults). It is read-only. A front end built on it installs with
 the same `qh <app> --apply`, so there is one install path, not two. Name
 services to narrow it: `qh --catalog vaultwarden`.
@@ -205,11 +205,11 @@ spill every password into the terminal at once. Install and `--reinstall` do
 print it, and so does a plain `qh <app>` on something already installed — which
 is the deliberate way to look one up. It lands in your scrollback.
 
-Which secret that is comes from `install.ini`. Only the one that is a typed
+Which secret that is comes from `app.json`. Only the one that is a typed
 password is printed — the JWT keys and API tokens next to it are secrets too:
 
 ```ini
-[login]
+`login`
 user = admin
 password = filebrowser-admin-password
 ```
@@ -230,7 +230,7 @@ When one secret holds both halves, in the `user:password` form the app reads,
 name it once and the install splits it at the first `:`:
 
 ```ini
-[login]
+`login`
 credentials = vaultzap-basic-auth
 ```
 
@@ -238,7 +238,7 @@ When the app has no username at all, leave `user` out and only the password is
 printed — koffan's, and fmd-server's registration token:
 
 ```ini
-[login]
+`login`
 password = koffan-password
 ```
 
@@ -259,11 +259,11 @@ with and leave the rest random. Needs a terminal and `--apply`.
 An auth key the other side refuses is the worst kind of wrong value: the
 install stores it, the container comes up healthy, and nothing works — the
 tsdproxy case, where a refused key leaves it publishing no node at all while
-its own healthcheck stays green. A `[validate]` entry checks the value before
+its own healthcheck stays green. A `validate` entry checks the value before
 storing it:
 
 ```ini
-[validate]
+`validate`
 authkey = shell podman run --rm -i ... tailscale up --authkey="$(cat)" ...
 ```
 
@@ -284,7 +284,7 @@ the split falls out of what the tools do anyway.
 
 Only a `manual` secret is validated — a generated one has nothing to check —
 and `--prefix` skips the whole thing, because rehearsing an install is not the
-moment to reach the network. `check.py` fails the build if a `[validate]` key
+moment to reach the network. `check.py` fails the build if a `validate` key
 is not a declared `Secret=`, does not start with `shell `, or has no `manual`
 recipe next to it.
 
@@ -297,12 +297,12 @@ substitutes an empty string: `${MEDIA_DATA_DIR}/downloads` becomes `/downloads`
 and the container does not start.
 
 So the install checks first. With `--apply` in a terminal it asks, offering the
-default from `[vars]` in the folder's `install.ini`, and writes the answer to
+default from `vars` in the folder's `app.json`, and writes the answer to
 `~/.config/environment.d/<app>.conf`; then it creates the folders under it.
 Without a terminal it stops before writing anything and prints the line to add.
 
 ```ini
-[vars]
+`vars`
 MEDIA_DATA_DIR = ~/data
 ```
 

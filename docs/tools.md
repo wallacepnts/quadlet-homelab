@@ -14,7 +14,7 @@ qh-check
 ```
 
 What it catches: a unit whose basename does not match the app, two services
-publishing the same host port, a `Secret=` with no recipe in `install.ini`, a
+publishing the same host port, a `Secret=` with no recipe in `app.json`, a
 service missing from the README's services table, a service README whose
 pinned-version line no longer matches its units, a `PodmanArgs=` carrying what
 Quadlet has a key for or a space it will not survive, a row in
@@ -55,7 +55,7 @@ qh-updates
 ```
 
 The GitHub repository is derived from the image name where that works, and
-`install.ini` carries an `[upstream]` override where it does not — the image is
+`app.json` carries an `upstream` override where it does not — the image is
 often not named like the repository (`dockurr/windows` against `dockur/windows`).
 
 `--bump` takes what it found: it rewrites `Image=` and every place that mirrors
@@ -106,7 +106,7 @@ A sidecar follows the version the app's own compose validates, not its own
 upstream — the Postgres in immich's compose moves when immich moves it:
 
 ```ini
-[upstream]
+`upstream`
 immich-postgres = compose:immich-app/immich:docker/docker-compose.yml
 authentik-postgres = compose:https://goauthentik.io/docker-compose.yml
 ```
@@ -126,7 +126,7 @@ that only publishes git tags, an image versioned apart from its repository —
 compares against the registry instead:
 
 ```ini
-[upstream]
+`upstream`
 netbootxyz = registry
 ```
 
@@ -139,7 +139,7 @@ nginx keeps stable on even minors and mainline on odd, and publishes `-alpine`
 for both:
 
 ```ini
-[upstream]
+`upstream`
 nginx = registry:^1\.\d*[02468]\.\d+-alpine$
 ```
 
@@ -150,7 +150,7 @@ one and rawhide side by side, all numbered, so the highest number is always the
 wrong answer — `46` is byte-identical to `rawhide`, while `latest` is `44`.
 
 ```ini
-[upstream]
+`upstream`
 toolbx-fedora = registry:latest
 ```
 
@@ -192,7 +192,7 @@ There is one update button, and it shows up only when there is something to
 update, and clicking it runs the update right away, with no plan and no
 confirmation. While it runs, the panel shows every GitHub release between the
 installed tag and upstream's (prereleases left out). Remove and restore still
-show a plan and ask first, because they touch data. **Login** shows the credential named in `[login]` of `install.ini`, the
+show a plan and ask first, because they touch data. **Login** shows the credential named in `login` of `app.json`, the
 same one `qh` prints after an install. **Backups** runs `qh --backup` into
 `~/.local/share/quadlet-homelab/backups`, lists the archives, and lets you
 download them or upload one back. A restore runs `qh --restore`, and you have to
@@ -202,8 +202,8 @@ in the browser, off by default): the update then runs after a `qh --backup`, cha
 backup that fails stops the update before it changes anything. The backup is the cold one
 (it stops the service for a moment), so it costs a short outage.
 What the terminal would ask during an install, the form asks first: `manual`
-secrets and unset `[vars]`. They are stored with the same functions and the
-same `[validate]` check that `qh` uses.
+secrets and unset `vars`. They are stored with the same functions and the
+same `validate` check that `qh` uses.
 
 **Configure** edits the service's `.env`, the file `qh` installed from
 `.env.example`. An optional setting ships commented out: ticking it turns it on,
@@ -301,23 +301,20 @@ proxy's, since there is one token and so one user.
 Each panel also links to the project, its documentation and issues, its
 releases, the image's page on its registry, and this repository's recipe. The
 project's repository is shown only where something says which it is —
-`install.ini [upstream]`, or an image on `ghcr.io`/`lscr.io` — and never guessed
+`app.json `upstream``, or an image on `ghcr.io`/`lscr.io` — and never guessed
 from a Docker Hub name, which would give a link to a 404. Where the image's path
 is not the repository's (netbootxyz's image is built from another repository),
-`[store] repo = owner/repo` (or a full https URL) says which it is; **Issues** and
+``links.repo` = owner/repo` (or a full https URL) says which it is; **Issues** and
 **Releases** follow from it, for GitHub, GitLab and Codeberg. **Documentation** is
 read from the `[Official documentation](...)` link in each service README's
 Credits, so it is written down once, by a person, and a link that only points back
 to the repository is left out. Every one of these was checked to answer when it was
 added; `check.py` does not fetch them, so a link can still go stale.
 
-Screenshots come from `install.ini`, as images the project itself hosts:
+Screenshots come from `app.json`, as images the project itself hosts:
 
-```ini
-[store]
-screenshots =
-    https://example.org/shot-1.png
-    https://example.org/shot-2.png
+```json
+"screenshots": ["https://example.org/shot-1.png", "https://example.org/shot-2.png"]
 ```
 
 `check.py` holds the list to https URLs, at most six, with no repeats. The
@@ -326,12 +323,11 @@ already does for the icons. A few services carry them as examples; the rest
 have none until someone adds an image worth showing.
 
 A service that is discontinued — archived upstream, or with its pinned image gone
-from the registry — is marked in the same section:
+from the registry — is marked in the same file:
 
-```ini
-[store]
-deprecated = Archived upstream on 2026-03-01; no release since 1.4.2.
-deprecated_pt = Arquivado no upstream em 01/03/2026; sem release desde a 1.4.2.
+```json
+"deprecated": {"en": "Archived upstream on 2026-03-01; no release since 1.4.2.",
+               "pt": "Arquivado no upstream em 01/03/2026; sem release desde a 1.4.2."}
 ```
 
 The store shows a "discontinued" badge with the reason and offers no install
@@ -398,13 +394,13 @@ again at its next start. A network is kept if it is the default, used, or declar
 declares it. Deleting asks twice, and volumes (data) want the word typed. The same from
 a terminal: `python3 resources.py` to see, `prune images|networks|volumes --apply` to do.
 
-**Works with** is a suggestion in the panel: `works_with = grafana, ntfy` under
-`[store]` lists other service folders worth running beside this one, each a link
+**Works with** is a suggestion in the panel: `"works_with": ["grafana", "ntfy"]`
+lists other service folders worth running beside this one, each a link
 to its panel, ticked when installed. It is never a requirement (that is a network's
 owner, which `qh` already enforces); `check.py` fails a name that is not a folder.
 
-**Minimum Podman**: a unit with `Notify=healthy` needs Podman 5.0, and `[store]
-min_podman = 5.4` raises that floor for a service that uses a newer Quadlet key.
+**Minimum Podman**: a unit with `Notify=healthy` needs Podman 5.0, and `"min_podman": "5.4"`
+raises that floor for a service that uses a newer Quadlet key.
 `qh` warns before installing on an older host and the store shows it in the panel;
 it does not refuse. `QH_PODMAN_VERSION` overrides what the host reports.
 

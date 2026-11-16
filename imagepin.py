@@ -5,7 +5,7 @@ A unit in this repository says which image it wants and nothing about the versio
 
     Image=docker.io/neosmemo/memos
 
-`install.ini` says what a tag of that image looks like, once:
+`app.json` says what a tag of that image looks like, once:
 
     [image]
     memos = {version}            # 0.31.0   (`v{version}`, `{version}-alpine`, `{version:2}`...)
@@ -76,7 +76,7 @@ def synthetic(template):
 
 
 def templates(ini):
-    """{unit: template} from `[image]` in an install.ini (a parsed ConfigParser)."""
+    """{unit: template} from `[image]` in an app.json (a parsed ConfigParser)."""
     return dict(ini.items("image")) if ini.has_section("image") else {}
 
 

@@ -7,7 +7,7 @@ to create, `EnvironmentFile=` says where the `.env` goes, `Secret=` says which
 secrets exist, `User=` says the volume needs a `podman unshare chown`. This
 script reads that and runs it.
 
-What can NOT be derived lives in `apps/<app>/install.ini` — today only each
+What can NOT be derived lives in `apps/<app>/app.json` — today only each
 secret's recipe and the destination of a config file that lands inside a
 directory volume.
 
@@ -35,6 +35,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import imagepin
+import manifest
 import overrides
 import qhui
 import trials
@@ -49,7 +50,7 @@ criar, o `EnvironmentFile=` diz onde vai o `.env`, o `Secret=` diz quais
 segredos existem, o `User=` diz que o volume precisa de `podman unshare chown`.
 Este script lê isso e executa.
 
-O que NÃO dá pra derivar fica em `apps/<app>/install.ini` — hoje só a receita
+O que NÃO dá pra derivar fica em `apps/<app>/app.json` — hoje só a receita
 de cada segredo e o destino de um arquivo de config que cai dentro de um volume
 de diretório.
 
@@ -81,7 +82,7 @@ def make_secret(recipe):
         return None, rest
     if kind == "shell":
         # Not under --prefix. `secret_ok` already guards the identical mechanism
-        # 1600 lines down; this one did not, and apps/tsdproxy/install.ini shows
+        # 1600 lines down; this one did not, and apps/tsdproxy/app.json shows
         # what a recipe can hold — `podman run ... tailscale up --authkey=...`.
         # One line moved from [validate] to [secrets] and a rehearsal would pull
         # an image and register a tailnet node on the real host.
@@ -145,9 +146,9 @@ PT = {
         "já existe — mantido (use --reinstall para sobrescrever)",
     "already exists — kept (recreating changes the value and invalidates sessions/keys)":
         "já existe — mantido (recriar muda o valor e invalida sessões/chaves)",
-    "has no obvious destination — declare it in install.ini [config]":
-        "não tem destino óbvio — declare em install.ini [config]",
-    "has no recipe in install.ini [secrets]": "não tem receita em install.ini [secrets]",
+    "has no obvious destination — declare it in app.json (config)":
+        "não tem destino óbvio — declare em app.json (config)",
+    "has no recipe in app.json (secrets)": "não tem receita em app.json (secrets)",
     "(putting back what the failure stopped)": "(subindo de volta o que a falha parou)",
     "this one failed too:": "este também falhou:",
     "did not finish — what ran before the failure:":
@@ -602,14 +603,10 @@ class Service:
         if not self.dir.is_dir():
             raise SystemExit(f"apps/{name} does not exist")
         self.home = Path(prefix) if prefix else Path.home()
-        # interpolation=None: the values use %h (a systemd specifier) and %s
-        # (printf), which configparser's interpolator would try to expand.
-        self.ini = configparser.ConfigParser(interpolation=None)
-        # Keys keep their case: configparser lower-cases them by default, and a
-        # [config] source with a capital in it then points at a file that does
-        # not exist — the step is dropped without a word.
-        self.ini.optionxform = str
-        self.ini.read(self.dir / "install.ini")
+        # What the app says about itself: apps/<app>/app.json (manifest.py). `ini` is the view of it that
+        # answers the questions app.json used to (sections, items, get), so the readers did not change.
+        self.manifest = manifest.load(self.dir)
+        self.ini = manifest.View(self.manifest)
 
         self.units = sorted(self.dir.glob("*.container")) + sorted(self.dir.glob("*.network"))
         # What the folder holds, before any filtering: `unit_dest` reads this,
@@ -674,7 +671,7 @@ class Service:
                        or path in self.config_dests()
                        # Already a file on disk, or declared as one by whichever
                        # app owns it: a unit may mount a file out of another
-                       # service's volume, and that service's install.ini is the
+                       # service's volume, and that service's app.json is the
                        # only place saying so.
                        or Path(path).is_file()
                        or path in config_dests_de_todos())
@@ -682,7 +679,7 @@ class Service:
         return out
 
     def config_dests(self):
-        """Expanded destinations declared in install.ini's [config]."""
+        """Expanded destinations declared in app.json's "config"."""
         if not self.ini.has_section("config"):
             return set()
         return {self._expand(v) for _, v in self.ini.items("config")}
@@ -708,7 +705,7 @@ class Service:
 
         Only the service knows which of its secrets is the login password and
         what the username next to it is — a JWT key and an API token are also
-        secrets, and neither is something you type into a form. `install.ini`
+        secrets, and neither is something you type into a form. `app.json`
         says so explicitly rather than the script guessing.
 
         Two shapes, because services store it two ways. Either the username is
@@ -954,7 +951,7 @@ class Service:
         return None
 
     def choices(self):
-        """[(unit, KEY, question, [(value, label)])] from install.ini.
+        """[(unit, KEY, question, [(value, label)])] from app.json.
 
         For `.env` values that are a pick from a fixed list and that only
         matter on the FIRST install — the Windows edition is downloaded once
@@ -1116,7 +1113,7 @@ def works_with(ini, name=""):
 
 
 def deprecation(ini):
-    """{en, pt} from `[store] deprecated` (and `deprecated_pt`) in an install.ini, or None.
+    """{en, pt} from `[store] deprecated` (and `deprecated_pt`) in an app.json, or None.
 
     A service the project no longer maintains, or whose image can no longer be
     pulled, is marked there with the reason. The store then offers no install and
@@ -1177,7 +1174,7 @@ def plan_install(s, tailnet, force=False, interactive=False, access="tailnet",
     for ex, target in s.examples():
         if target is None:
             warnings.append(f"{ex.name} has no obvious destination — declare it in "
-                            f"install.ini [config]")
+                            f"app.json (config)")
             continue
         if Path(target).exists() and not force:
             # These files become the user's after the first install: they hold
@@ -1212,7 +1209,7 @@ def plan_install(s, tailnet, force=False, interactive=False, access="tailnet",
     for name in s.secrets():
         r = recipes.get(name)
         if not r:
-            warnings.append(f"secret {name} has no recipe in install.ini [secrets]")
+            warnings.append(f"secret {name} has no recipe in app.json (secrets)")
             continue
         if r.startswith("manual"):
             instruction = r.partition(" ")[2]
@@ -2165,7 +2162,7 @@ def config_dests_de_todos():
     """Every [config] destination declared by every app, read once.
 
     A unit can mount a file that belongs to another service, and only that
-    service's install.ini knows it is a file. Without this, the path is
+    service's app.json knows it is a file. Without this, the path is
     `mkdir -p`'d into a directory with the file's name, and the container then
     mounts that directory over the file the other app wanted to read.
     """
@@ -2364,12 +2361,12 @@ def ask_choices(path, choices):
 
 
 def secret_ok(s, name, value):
-    """(ok, note) for this secret's `[validate]` check in install.ini.
+    """(ok, note) for this secret's `[validate]` check in app.json.
 
     Some credentials are only wrong at the far end. A Tailscale auth key the
     control plane refuses leaves tsdproxy healthy and publishing nothing, which
     reads as success everywhere except the tailnet — it cost a whole afternoon
-    once. The check is a command in `install.ini`, because only the service
+    once. The check is a command in `app.json`, because only the service
     knows what "valid" means for its own credential.
 
     The value goes in on STDIN, never on argv: /proc shows a command line to
@@ -2389,7 +2386,7 @@ def secret_ok(s, name, value):
         return True, ""
     if not receita.startswith("shell "):
         # An unknown form is a check nobody runs. check.py refuses it at build
-        # time; saying so here too covers an install.ini edited by hand, which
+        # time; saying so here too covers an app.json edited by hand, which
         # is the case where silence would be believed.
         return True, loc("not checked: unknown [validate] form") + f" {receita.split()[0]!r}"
     if SANDBOX:
@@ -2892,7 +2889,7 @@ def missing_vars(s):
 
 
 def var_default(s, nome):
-    """The default `[vars]` in install.ini gives for a variable, `~` expanded, or ""."""
+    """The default `[vars]` in app.json gives for a variable, `~` expanded, or ""."""
     if not s.ini.has_section("vars"):
         return ""
     bruto = s.ini.get("vars", nome, fallback="").strip()
@@ -3120,8 +3117,7 @@ def selftest():
     # commented-out Basic Auth path in its unit is one uncomment from needing
     # it again.
     combined = Service("vaultzap")
-    combined.ini = configparser.ConfigParser(interpolation=None)
-    combined.ini.read_string("[login]\ncredentials = x-basic-auth\n")
+    combined.ini = manifest.View({"login": {"credentials": "x-basic-auth"}})
     assert combined.login() == (None, "x-basic-auth")
 
     # --ask-secrets swaps the generate step for a prompt, and only with a
@@ -3181,12 +3177,10 @@ def selftest():
     assert run_read(["comando-que-nao-existe-xyz"]) is None
 
     # every app's catalog group is one we have a Portuguese name for, and no unit still carries the old labels
-    import configparser as _cp
-    for ini in APPS.glob("*/install.ini"):
-        c = _cp.ConfigParser(interpolation=None)
-        c.read(ini)
-        g = c.get("store", "group", fallback="").strip() if c.has_section("store") else ""
-        assert not g or g in GRUPOS, (ini, g)
+    for pasta in APPS.iterdir():
+        if pasta.is_dir():
+            g = (manifest.load(pasta).get("category") or "").strip()
+            assert not g or g in GRUPOS, (pasta, g)
     for u in APPS.glob("*/*.container"):
         assert not re.search(r"(?m)^#?\s*Label=(homepage|wud)\.", u.read_text()), u
 
@@ -4257,27 +4251,19 @@ def show_status(apps=None, home=None):
     return 1 if problemas else 0
 
 
-def readme_rows(readme, link):
-    """{app: {icon, name, description}} from a README's services table.
+def app_cards(pastas):
+    """({app: {icon, name, description}}, {app: {description}}) for the catalog, from each app.json.
 
-    The table is the catalog's shop window, already kept honest by check.py
-    (one row per app). Reading it here instead of copying the same three
-    fields into install.ini keeps one place to edit. It carries no version:
-    the tag is Image=, and how it compares upstream is `qh-updates --host`.
-    `link` is the regex for what precedes the folder name in the row's link —
-    `./apps/` in the root README, `../../apps/` in the pt-BR one.
-    """
-    rows = {}
-    if not readme.exists():
-        return rows
-    linha = re.compile(r'^\|\s*<img src="([^"]*)"[^|]*\|\s*\[([^\]]+)\]\('
-                       + link + r'([a-z0-9._-]+)[^)]*\)\s*\|(.*)\|\s*$')
-    for texto in readme.read_text().splitlines():
-        m = linha.match(texto)
-        if m:
-            rows[m.group(3)] = {"icon": m.group(1), "name": m.group(2),
-                                "description": m.group(4).strip()}
-    return rows
+    The title, the logo and the one-line description in both languages are what the services table in
+    the READMEs shows too; that table is generated from the same files (`check.py --readme`)."""
+    en, pt = {}, {}
+    for d in pastas:
+        m = manifest.load(APPS / d)
+        if not m:
+            continue
+        en[d] = {"icon": m.get("icon"), "name": m.get("title", d), "description": (m.get("tagline") or {}).get("en", "")}
+        pt[d] = {"description": (m.get("tagline") or {}).get("pt", "")}
+    return en, pt
 
 
 def unit_failures(units):
@@ -4315,13 +4301,12 @@ def parse_failures(texto):
     return saida
 
 
-def notes_of(pasta, nome):
-    """The app's notes (markdown, what to do at the first run and what is odd about it), or None.
+def notes_of(m, lang):
+    """The app's notes (markdown: what to do at the first run, what is odd about it) in `lang`, or None.
 
-    The panel shows them; there is no README per app any more. `notes.md` is English and
-    `notes.pt-BR.md` Portuguese, either may be missing."""
-    f = Path(pasta) / nome
-    return f.read_text().strip() or None if f.is_file() else None
+    They live in `app.json` under "notes", per language; Portuguese falls back to English."""
+    n = (m or {}).get("notes") or {}
+    return (n.get(lang) or n.get("en") or "").strip() or None
 
 
 def catalog_entry(d, home, tailnet, en, pt, ativos, saude, falhas=None):
@@ -4362,7 +4347,7 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude, falhas=None):
             "drift": (unit_deriva(s, p) or None) if p else None,
         })
     principal = s.main_unit()
-    # The category is `[store] group` in install.ini. Infrastructure with no place in the
+    # The category is `[store] group` in app.json. Infrastructure with no place in the
     # catalog's groups (homepage itself, postfix) has none, and says so.
     grupo = s.ini.get("store", "group", fallback="").strip() or None if s.ini.has_section("store") else None
     return {
@@ -4373,18 +4358,18 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude, falhas=None):
         "description": {"en": vitrine.get("description", ""),
                         "pt": pt.get(d, {}).get("description", "")},
         "main_unit": principal.stem if principal else None,
-        # Images the project hosts, named in install.ini [store]: https only,
+        # Images the project hosts, named in app.json (store): https only,
         # the same rule check.py holds the file to.
         "screenshots": [u for u in re.split(r"[\s,]+", s.ini.get("store", "screenshots", fallback=""))
                         if u.startswith("https://")],
         "installed": bool(instaladas),
         # Whether there is a typed credential to show after the install
-        # ([login] in install.ini); the value itself is asked for apart.
+        # ([login] in app.json); the value itself is asked for apart.
         "has_login": s.login() is not None,
-        # Marked in install.ini [store]: the store shows the reason and offers no install.
+        # Marked in app.json (store): the store shows the reason and offers no install.
         "deprecated": deprecation(s.ini),
         "license": (s.ini.get("store", "license", fallback="").strip() or None) if s.ini.has_section("store") else None,
-        "notes": {"en": notes_of(s.dir, "notes.md"), "pt": notes_of(s.dir, "notes.pt-BR.md") or notes_of(s.dir, "notes.md")},
+        "notes": {"en": notes_of(s.manifest, "en"), "pt": notes_of(s.manifest, "pt")},
         "works_with": works_with(s.ini, s.name),
         "min_podman": min_podman(s),
         "podman_too_old": bool(podman_too_old(s)),
@@ -4428,12 +4413,11 @@ def show_catalog(apps=None, home=None):
     # units are files nobody started, and the real systemd would answer for
     # the real ones that share their names.
     ativos, saude = ({}, {}) if SANDBOX else host_state()
-    en = readme_rows(ROOT / "README.md", r"\./apps/")
-    pt = readme_rows(ROOT / "docs/pt-BR/README.md", r"\.\./\.\./apps/")
     tailnet = find_tailnet()
     pastas = sorted(x.name for x in APPS.iterdir()
                     if x.is_dir() and (apps is None or x.name in apps)
                     and any(x.glob("*.container")))
+    en, pt = app_cards(pastas)
     falhas = {} if SANDBOX else unit_failures(sorted(
         u.stem for d in pastas for u in (APPS / d).glob("*.container") if u.stem in ativos))
     saida = {
@@ -4539,7 +4523,7 @@ def show_secrets(s):
 
     A password you cannot see is a password you cannot use, and the alternative
     was pasting a `podman secret inspect` after every install. `[login]` in
-    install.ini names the one secret that is a typed password — the JWT keys and
+    app.json names the one secret that is a typed password — the JWT keys and
     API tokens next to it are secrets too, and printing those would be noise for
     everyone who is never going to type them.
 

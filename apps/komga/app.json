@@ -1,0 +1,30 @@
+{
+  "spec": 2,
+  "id": "komga",
+  "title": "Komga",
+  "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/svg/komga.svg",
+  "tagline": {
+    "en": "Comics and manga, with reading progress that follows you between devices",
+    "pt": "Quadrinhos e mangá, com o progresso de leitura acompanhando você entre aparelhos"
+  },
+  "category": "Media",
+  "license": "MIT.",
+  "links": {
+    "docs": "https://komga.org/"
+  },
+  "notes": {
+    "en": "Open `https://komga.<your-tailnet>.ts.net` and create the first account — that\nis the setup. Then add a library pointing at `/books`.\n\n### Where the comics live\n\n```ini\nVolume=${MEDIA_DATA_DIR}/comics:/books:ro,Z\n```\n\n`${MEDIA_DATA_DIR}` is the same root [media-stack](../media-stack) uses, out of\n`~/.config/environment.d` — one variable, several services, which is rule 19 of\nthe conventions.\n\nMounted **read-only**: Komga indexes, reads and writes nothing where your files\nare. Deleting from the interface is off as a consequence, which is the right\ntrade for a library you curate elsewhere.\n\n### Memory\n\n`JAVA_TOOL_OPTIONS=-Xmx1g` in the `.env`, because the JVM helps itself to a\nquarter of the host's RAM otherwise, and scanning a large library is the moment\nit does. On a box running seventy other containers, that cap is the difference\nbetween a slow scan and a machine that starts killing things.\n\n### Backup\n\nPacks `config/`: the databases, the index and the thumbnails. Losing it loses\nthe reading progress and the metadata you corrected, not the comics.\n\n### Remove\n\nNeither touches the comics: they live outside the volume.",
+    "pt": "Abrir `https://komga.<your-tailnet>.ts.net` e criar a primeira conta — é essa a\nconfiguração. Depois acrescente uma biblioteca apontando para `/books`.\n\n### Onde os quadrinhos ficam\n\n```ini\nVolume=${MEDIA_DATA_DIR}/comics:/books:ro,Z\n```\n\nO `${MEDIA_DATA_DIR}` é a mesma raiz que o\nmedia-stack usa, vinda do\n`~/.config/environment.d` — uma variável, vários serviços, que é a regra 19 das\nconvenções.\n\nMontado **somente-leitura**: o Komga indexa, lê e não escreve nada onde estão\nos seus arquivos. Apagar pela interface fica desligado por consequência, que é\na troca certa para uma biblioteca que você organiza por fora.\n\n### Memória\n\n`JAVA_TOOL_OPTIONS=-Xmx1g` no `.env`, porque senão a JVM se serve de um quarto\nda RAM do host, e varrer uma biblioteca grande é justamente quando ela faz\nisso. Numa máquina com setenta outros containers, esse teto é a diferença entre\numa varredura lenta e uma máquina começando a matar processos.\n\n### Backup\n\nEmpacota o `config/`: os bancos, o índice e as miniaturas. Perdê-lo perde o\nprogresso de leitura e os metadados que você corrigiu, não os quadrinhos.\n\n### Remover\n\nNenhum dos dois toca nos quadrinhos: eles vivem fora do volume."
+  },
+  "vars": {
+    "MEDIA_DATA_DIR": {
+      "value": "~/data",
+      "note": "The same media root media-stack uses: Komga reads the comics under it. Set once, by whichever of the two is installed first."
+    }
+  },
+  "units": {
+    "komga": {
+      "image": "{version}"
+    }
+  }
+}

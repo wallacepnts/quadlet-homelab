@@ -1,0 +1,41 @@
+{
+  "spec": 2,
+  "id": "gitea-runner",
+  "title": "Gitea Runner",
+  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/gitea.svg",
+  "tagline": {
+    "en": "Runs the Actions workflows of the Gitea next door — CI that never leaves the machine",
+    "pt": "Executa os workflows do Actions do Gitea ao lado — CI que não sai da máquina"
+  },
+  "license": "MIT",
+  "links": {
+    "docs": "https://docs.gitea.com/usage/actions/overview"
+  },
+  "works_with": [
+    "gitea"
+  ],
+  "notes": {
+    "en": "It asks for the registration token. Get it from Gitea, either in\n**Site Administration → Actions → Runners → Create new Runner**, or from the\ncommand line:\n\n```bash\npodman exec -u git gitea gitea actions generate-runner-token\n```\n\nThe token is spent on the first registration. After that the runner uses the\n`.runner` file in its volume and never reads the token again.\n\n### The labels decide what a job costs\n\n`runs-on:` in a workflow matches a label, and a label names an image. Register\nwithout choosing and the runner asks for `ubuntu-latest` and its siblings —\nimages built to look like a GitHub worker, measured in gigabytes, pulled on the\nfirst job. The `.env` names small ones instead:\n\n```ini\nGITEA_RUNNER_LABELS=alpine:docker://docker.io/library/alpine:3\n```\n\nA workflow then says `runs-on: alpine`. Labels are read **once**, at\nregistration: changing them later means deleting `.runner` from the volume and\nletting it register again with a fresh token.\n\n### Two settings that are not upstream defaults\n\n`config.yaml` here differs from the shipped example in two places, both\nmeasured rather than guessed:\n\n- **`cache.dir: /data/cache`.** The default is `$HOME/.cache/actcache`, which\n  lives inside the image — and the unit mounts that read-only. The runner then\n  starts, answers its health check, and logs `cannot init cache server, it will\n  be disabled`. Healthy and half working, which is the failure this repository\n  keeps running into. Pointing it at the volume fixes it and keeps the cache\n  across restarts.\n- **`metrics.enabled: true`.** Off upstream. `Notify=healthy` needs a\n  `HealthCmd` (rule 14 of the conventions), and `/healthz` on `127.0.0.1:9101`\n  is the only thing the runner serves. It stays on loopback: the port is not\n  published and there is no authentication in front of it.\n\n### Update\n\nThe project moved: it used to be published as `gitea/act_runner`, which stopped\nat `0.6.1`, and is now `gitea/runner` on its own versioning. It also lives on\n`gitea.com` and not on GitHub, so `install.ini` compares against the registry\ninstead of a release page that does not exist.\n\n### Backup\n\nWorth little: the volume holds a registration you can recreate in a minute and\na cache that exists to be thrown away. Restoring the `.runner` file onto a\ndifferent machine gives two runners claiming one registration.\n\n### Remove\n\nGitea keeps the runner in its list either way — delete it there too, under\nSite Administration → Actions → Runners.",
+    "pt": "Ele pede o token de registro. Pegue no Gitea, em **Administração do site →\nActions → Runners → Criar novo Runner**, ou pela linha de comando:\n\n```bash\npodman exec -u git gitea gitea actions generate-runner-token\n```\n\nO token se gasta no primeiro registro. Depois disso o runner usa o arquivo\n`.runner` do volume e nunca mais o lê.\n\n### Os labels decidem quanto custa um job\n\nO `runs-on:` de um workflow casa com um label, e um label nomeia uma imagem.\nRegistrar sem escolher faz o runner pedir `ubuntu-latest` e as irmãs — imagens\nfeitas para parecer um worker do GitHub, medidas em gigabytes, baixadas no\nprimeiro job. O `.env` nomeia imagens pequenas no lugar:\n\n```ini\nGITEA_RUNNER_LABELS=alpine:docker://docker.io/library/alpine:3\n```\n\nAí o workflow diz `runs-on: alpine`. Os labels são lidos **uma vez**, no\nregistro: mudá-los depois exige apagar o `.runner` do volume e registrar de\nnovo com um token novo.\n\n### Dois ajustes que não são o padrão do upstream\n\nO `config.yaml` daqui difere do exemplo distribuído em dois pontos, ambos\nmedidos e não adivinhados:\n\n- **`cache.dir: /data/cache`.** O padrão é `$HOME/.cache/actcache`, que fica\n  dentro da imagem — e a unit a monta somente-leitura. O runner então sobe,\n  responde ao health check, e registra `cannot init cache server, it will be\n  disabled`. Saudável e pela metade, que é a falha em que este repositório vive\n  esbarrando. Apontar para o volume resolve e ainda mantém o cache entre\n  reinícios.\n- **`metrics.enabled: true`.** Desligado no upstream. O `Notify=healthy` exige\n  um `HealthCmd` (regra 14 das convenções), e o `/healthz` em `127.0.0.1:9101`\n  é a única coisa que o runner serve. Fica no loopback: a porta não é publicada\n  e não há autenticação na frente dela.\n\n### Atualizar\n\nO projeto mudou de nome: era publicado como `gitea/act_runner`, que parou na\n`0.6.1`, e hoje é `gitea/runner` com versionamento próprio. Ele também vive no\n`gitea.com` e não no GitHub, então o `install.ini` compara com o registry em\nvez de uma página de releases que não existe.\n\n### Backup\n\nVale pouco: o volume guarda um registro que se refaz em um minuto e um cache\nque existe para ser descartado. Restaurar o `.runner` noutra máquina dá dois\nrunners reivindicando um registro só.\n\n### Remover\n\nO Gitea mantém o runner na lista dele de qualquer jeito — apague lá também, em\nAdministração do site → Actions → Runners."
+  },
+  "secrets": {
+    "gitea-runner-token": {
+      "value": "manual the runner registration token from Gitea",
+      "note": "The registration token comes from Gitea, not from here: the admin panel (Site Administration -> Actions -> Runners -> Create new Runner) or `gitea actions generate-runner-token` inside the container. It is spent on the first registration; after that the runner uses the `.runner` file in its volume and the token is no longer read."
+    }
+  },
+  "config": {
+    "config.yaml": {
+      "value": "%h/.config/containers/volumes/gitea-runner/data/config.yaml",
+      "note": "Read by the app, never written by it: the destination is inside a volume, so it cannot be derived from the unit the way an .env can. Without it the runner exits at start with `open config file \"/data/config.yaml\": no such file or directory`, because the unit points CONFIG_FILE there."
+    }
+  },
+  "units": {
+    "gitea-runner": {
+      "upstream": {
+        "value": "registry:^[0-9]+\\.[0-9]+\\.[0-9]+$",
+        "note": "The project lives on gitea.com, not on GitHub: deriving `gitea/runner` from the image name points at a 404 and every run would answer \"no published release\". The registry is the only source that knows. The pattern keeps the plain releases and drops `-dind`, `-dind-rootless`, `latest` and `nightly` — this repository does not use the bundled-daemon flavours, which need --privileged."
+      }
+    }
+  }
+}

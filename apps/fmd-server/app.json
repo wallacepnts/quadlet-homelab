@@ -1,0 +1,36 @@
+{
+  "spec": 2,
+  "id": "fmd-server",
+  "title": "FMD Server",
+  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/fmd.svg",
+  "tagline": {
+    "en": "Find, ring and lock your Android phone from the browser, end-to-end encrypted, without Google",
+    "pt": "Localizar, tocar e bloquear seu celular Android pelo navegador, com criptografia ponta a ponta, sem o Google"
+  },
+  "category": "Home",
+  "license": "GPL-3.0-or-later",
+  "links": {
+    "docs": "https://fmd-foss.org/docs/fmd-server/overview"
+  },
+  "notes": {
+    "en": "The install ends by printing the **registration token**. Enter it in the FMD app\nwhen you point it at `https://fmd.<your-tailnet>.ts.net`.\n\n### Reaching it — and the phone reaching it\n\n**FMD Server has to be served over HTTPS**: its web interface does not work over\nplain HTTP. On the tailnet, tsdproxy provides that. Port `8124` on the LAN is\nplain HTTP, so choosing LAN-only access at install time leaves the web\ninterface unusable.\n\nThe part that is easy to miss: the **phone** reports to\n`fmd.<your-tailnet>.ts.net`, which only resolves while the Tailscale app is\nrunning on the phone. Keep Tailscale always-on there — a lost phone with\nTailscale off reports nothing, however well this side is set up. The FMD app\ncan also be commanded by SMS, which does not depend on this server at all.\n\n### The registration token\n\nFMD Server only checks the token when one is set, and this unit always sets one.\nMeasured on 0.17.0: with `FMD_REGISTRATIONTOKEN` unset, a registration\ncarrying a wrong token is accepted; with it set, the same request answers\n`401 Registration Token not valid`. The token matters only for **creating**\naccounts — an existing account logs in with its own password.\n\n### Update\n\nThe project is **pre-1.0, and says minor versions can introduce breaking\nchanges** — read the release notes before moving from 0.17 to 0.18, and back up\nfirst. It lives on GitLab, so `install.ini` compares against the registry\nthere rather than a GitHub release page.\n\nThe `-alpine` variant, not the default Debian one or the smaller distroless,\nbecause it is the one that carries `wget` — which `HealthCmd` needs, and\n`Notify=healthy` needs `HealthCmd` (rule 14 of the conventions).\n\n### Backup\n\nThe volume holds one SQLite database. It is ciphertext, so the backup is only\nuseful together with the account passwords.",
+    "pt": "A instalação termina imprimindo o **token de registro**. Digite-o no app FMD\nquando apontá-lo para `https://fmd.<your-tailnet>.ts.net`.\n\n### Como se chega nele — e como o celular chega nele\n\n**O FMD Server precisa ser servido por HTTPS**: a interface web não funciona em\nHTTP puro. Na tailnet, o tsdproxy resolve isso. A porta `8124` na LAN é HTTP\npuro, então escolher acesso só pela LAN na instalação deixa a interface web\ninutilizável.\n\nA parte fácil de esquecer: o **celular** reporta para\n`fmd.<your-tailnet>.ts.net`, que só resolve com o app do Tailscale rodando no\ncelular. Deixe o Tailscale sempre ligado lá — um celular perdido com o Tailscale\ndesligado não reporta nada, por melhor que este lado esteja. O app FMD também\naceita comandos por SMS, que não dependem deste servidor.\n\n### O token de registro\n\nO FMD Server só confere o token quando há um definido, e esta unit sempre\ndefine. Medido na 0.17.0: com `FMD_REGISTRATIONTOKEN` ausente, um registro com\ntoken errado é aceito; com ele definido, o mesmo pedido responde\n`401 Registration Token not valid`. O token só importa para **criar** contas —\numa conta existente entra com a própria senha.\n\n### Atualizar\n\nO projeto é **pré-1.0, e avisa que versões minor podem quebrar** — leia as notas\nda release antes de ir da 0.17 para a 0.18, e faça backup antes. Ele vive no\nGitLab, então o `install.ini` compara com o registry de lá em vez de uma\npágina de releases do GitHub.\n\nA variante `-alpine`, e não a Debian padrão nem a distroless menor, porque é a\nque traz `wget` — de que o `HealthCmd` precisa, e o `Notify=healthy` precisa\ndo `HealthCmd` (regra 14 das convenções).\n\n### Backup\n\nO volume guarda um banco SQLite. É texto cifrado, então o backup só serve junto\ncom as senhas das contas."
+  },
+  "secrets": {
+    "fmd-server-registration-token": {
+      "value": "rand-urlsafe 32",
+      "note": "Without it, anyone who can reach the server can register an account on it: FMD Server only checks the token when one is set. Measured — with the variable unset, a registration carrying a wrong token goes straight through."
+    }
+  },
+  "login": {
+    "password": "fmd-server-registration-token"
+  },
+  "units": {
+    "fmd-server": {
+      "upstream": {
+        "value": "registry:^[0-9]+\\.[0-9]+\\.[0-9]+-alpine$",
+        "note": "The project lives on GitLab, not GitHub, and so does its image. The registry is the source that knows; the pattern keeps the alpine variant this unit uses and drops `-debian`, `-distroless`, the bare version and the floating majors."
+      }
+    }
+  }
+}

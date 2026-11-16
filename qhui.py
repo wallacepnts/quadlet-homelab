@@ -114,7 +114,7 @@ def published_port(value):
     return parts[-2], proto or "tcp"
 
 
-# Where an app sits in the catalog: `[store] group` in its install.ini names one of these (English),
+# Where an app sits in the catalog: `[store] group` in its app.json names one of these (English),
 # and the page shows the Portuguese beside it. Only here are the names a person can pick.
 GRUPOS = {
     "AI": "IA",

@@ -1,0 +1,24 @@
+{
+  "spec": 2,
+  "id": "traccar",
+  "title": "Traccar",
+  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/traccar.svg",
+  "tagline": {
+    "en": "GPS tracking — live map, history, geofences and reports, with a phone app",
+    "pt": "Rastreamento de GPS — mapa ao vivo, histórico, geocercas e relatórios, com app no celular"
+  },
+  "category": "Home",
+  "license": "Apache-2.0",
+  "links": {
+    "docs": "https://www.traccar.org"
+  },
+  "notes": {
+    "en": "Open `http://<host-ip>:5056` or `https://traccar.<your-tailnet>.ts.net`.",
+    "pt": "Abrir `http://<ip-do-host>:5056` ou `https://traccar.<your-tailnet>.ts.net`."
+  },
+  "units": {
+    "traccar": {
+      "image": "{version}"
+    }
+  }
+}

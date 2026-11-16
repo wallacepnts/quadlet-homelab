@@ -1,0 +1,37 @@
+{
+  "spec": 2,
+  "id": "mailpit",
+  "title": "Mailpit",
+  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/mailpit.svg",
+  "tagline": {
+    "en": "An SMTP server that catches everything your apps send, to read in the browser instead of a real inbox",
+    "pt": "Servidor SMTP que captura tudo que seus apps enviam, para ler no navegador em vez de numa caixa de entrada de verdade"
+  },
+  "category": "Tools",
+  "license": "MIT",
+  "links": {
+    "docs": "https://mailpit.axllent.org/docs/"
+  },
+  "screenshots": [
+    "https://raw.githubusercontent.com/axllent/mailpit/develop/server/ui-src/screenshot.png"
+  ],
+  "notes": {
+    "en": "The install prints the user and password at the end. Open\n`http://<host-ip>:8025` or `https://mailpit.<your-tailnet>.ts.net`.\n\nThen point your app at the SMTP port — host `<host-ip>`, port **1025**, no\nauthentication, no TLS:\n\n```\nSMTP_HOST=<host-ip>\nSMTP_PORT=1025\n```\n\n### Authentication\n\nThe web UI asks for a password; the SMTP port does not. That is deliberate:\nthe apps sending mail are on your own network and would each need credentials,\nwhile the UI holds everything they sent — password resets, confirmation links,\ninvoices.\n\nBoth come from one secret, `mailpit-ui-auth`, in the `user:password` form\nMailpit reads.\n\n### Your own password\n\nThe install generates one. To choose it, at install time or any time after:\n\n```bash\nqh mailpit --reinstall --ask-secrets --apply\n```\n\nand type **user and password together**, the way Mailpit reads them:\n\n```\nadmin:your-password\n```\n\nMeasured on v1.31.2, two ways to get it wrong without an error:\n\n- **No space in the password.** Mailpit splits the value at whitespace to allow\n  several users, so `admin:my password` makes the password just `my` — and\n  `password` a second entry. The service is up and the password you typed is\n  refused.\n- **Only the password alone**, with no `admin:` in front, and the service still\n  comes up, with authentication on and no one able to log in.\n\nA `:` in the password is fine — it splits at the first one. Enter with nothing\ntyped generates a random one again. `--reinstall` recreates the secret and\nrestarts the service, and leaves the stored mail alone — but it also puts\n`.env.example` back over `~/.config/containers/env/mailpit.env`, so save any\nchange of yours there first. `qh mailpit` prints the\nuser and password in use.",
+    "pt": "A instalação exibe o usuário e a senha no final. Abra\n`http://<ip-do-host>:8025` ou `https://mailpit.<your-tailnet>.ts.net`.\n\nDepois aponte seu app para a porta SMTP — host `<ip-do-host>`, porta **1025**,\nsem autenticação e sem TLS:\n\n```\nSMTP_HOST=<ip-do-host>\nSMTP_PORT=1025\n```\n\n### Autenticação\n\nA interface web pede senha; a porta SMTP não. É de propósito: os apps que\nenviam estão na sua própria rede e cada um precisaria de credencial, enquanto\na interface guarda tudo que eles mandaram — redefinição de senha, link de\nconfirmação, fatura.\n\nAs duas vêm de um segredo só, `mailpit-ui-auth`, no formato `usuário:senha`\nque o Mailpit lê.\n\n### Senha sua\n\nA instalação gera uma. Para escolher a sua, na instalação ou depois dela:\n\n```bash\nqh mailpit --reinstall --ask-secrets --apply\n```\n\ne digite **usuário e senha juntos**, como o Mailpit os lê:\n\n```\nadmin:sua-senha\n```\n\nMedido na v1.31.2, dois jeitos de errar sem erro nenhum:\n\n- **Nada de espaço na senha.** O Mailpit separa o valor em espaços para aceitar\n  vários usuários, então `admin:minha senha` deixa a senha só como `minha` — e\n  `senha` vira uma segunda entrada. O serviço sobe e a senha que você digitou é\n  recusada.\n- **Só a senha**, sem o `admin:` na frente, e o serviço sobe mesmo assim, com\n  autenticação ligada e ninguém conseguindo entrar.\n\n`:` na senha pode — ele separa no primeiro. Enter sem nada digitado gera outra\naleatória. O `--reinstall` recria o segredo e reinicia o serviço, sem tocar nas\nmensagens guardadas — mas também põe o `.env.example` de volta por cima de\n`~/.config/containers/env/mailpit.env`, então guarde antes o que você mudou ali. O `qh mailpit` mostra o usuário e a senha em uso.\n\n### Backup\n\nPara o serviço, empacota os dados, o `.env` e os segredos, e religa. A frio de\npropósito: copiar banco em uso gera um arquivo que só falha na hora de\nrestaurar.\n\nEle pede que você digite `mailpit` para confirmar, porque os dados atuais são\napagados antes de o arquivo ser desempacotado.\n\n### Remover\n\nO nó da tailnet não é removido por aqui — isso é no admin do Tailscale."
+  },
+  "secrets": {
+    "mailpit-ui-auth": {
+      "value": "shell printf 'admin:%s' \"$(openssl rand -hex 12)\"",
+      "note": "Mailpit reads user and password from one variable, as `user:password`."
+    }
+  },
+  "login": {
+    "credentials": "mailpit-ui-auth"
+  },
+  "units": {
+    "mailpit": {
+      "upstream": "axllent/mailpit",
+      "image": "v{version}"
+    }
+  }
+}

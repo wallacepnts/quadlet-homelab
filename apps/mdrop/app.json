@@ -1,0 +1,19 @@
+{
+  "spec": 2,
+  "id": "mdrop",
+  "title": "mdrop",
+  "icon": "https://cdn.simpleicons.org/markdown/888888",
+  "tagline": {
+    "en": "Converts PDF, Office, image and audio to Markdown over the web, stateless and without leaving the machine",
+    "pt": "Converte PDF, Office, imagem e áudio para Markdown pela web, sem estado e sem sair da máquina"
+  },
+  "category": "Tools",
+  "license": "MIT",
+  "links": {
+    "docs": "https://mdrop.remotelab.dev"
+  },
+  "notes": {
+    "en": "Open `http://<host-ip>:8292` or `https://mdrop.<your-tailnet>.ts.net`.",
+    "pt": "Abrir `http://<ip-do-host>:8292` ou `https://mdrop.<your-tailnet>.ts.net`."
+  }
+}

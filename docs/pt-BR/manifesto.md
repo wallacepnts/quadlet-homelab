@@ -1,0 +1,89 @@
+# O manifesto do app: `apps/<app>/app.json`
+
+Tudo o que um app diz de si mesmo mora num arquivo só, ao lado das units. É o modelo da
+[loja de apps do CasaOS](https://github.com/IceWhaleTech/CasaOS-AppStore) — lá um app é um arquivo compose com
+um bloco `x-casaos` que guarda os metadados —, num JSON nosso, ao lado das units do Quadlet em vez de dentro
+delas. `"spec": 2` é a versão deste formato.
+
+Uma pasta é, portanto, as units, o `.env.example` se houver, e este arquivo. Não há README por app, nem
+`install.ini`, nem `notes.md`: a tabela de serviços dos READMEs raiz é gerada a partir dos manifestos, e o
+painel mostra as notas.
+
+```json
+{
+  "spec": 2,
+  "id": "memos",
+  "title": "Memos",
+  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/memos.svg",
+  "tagline": { "en": "Quick notes, self-hosted and markdown-native", "pt": "Notas rápidas, self-hosted e markdown-nativo" },
+  "category": "Productivity",
+  "license": "MIT",
+  "links": { "docs": "https://www.usememos.com/docs" },
+  "screenshots": ["https://..."],
+  "notes": { "en": "Open the page and create the account…", "pt": "Abra a página e crie a conta…" },
+  "units": { "memos": { "upstream": "usememos/memos", "image": "{version}" } }
+}
+```
+
+## Os campos
+
+| Campo | Obrigatório | Significado |
+| --- | --- | --- |
+| `spec` | sim | `2`. |
+| `id` | sim | O nome da pasta. O `check.py` reprova se divergir. |
+| `title` | sim | O nome mostrado na loja e na tabela de serviços. |
+| `icon` | sim | Uma imagem `https://`. |
+| `tagline` | sim | Uma linha, `{"en": …, "pt": …}`: a descrição na tabela e no cartão. |
+| `category` | não | Um dos grupos de `qhui.GRUPOS` (as categorias da loja). Infraestrutura sem lugar entre elas (homepage, postfix, toolbx) não tem. |
+| `license` | não | A licença do projeto, uma linha curta. Aparece ao lado das notas. |
+| `links` | não | `docs` (a documentação do projeto, https), `repo` (`owner/repo` ou URL, só onde o caminho da imagem aponta pro lugar errado). |
+| `screenshots` | não | Até seis imagens `https://` que o próprio projeto hospeda, sem repetir. |
+| `works_with` | não | Outras pastas de app que valem rodar junto. Uma sugestão, nunca um requisito. |
+| `min_podman` | não | `"5.4"`: um piso acima do 5.0 que o `Notify=healthy` já exige. |
+| `deprecated` | não | `{"en": …, "pt": …}`: por que foi descontinuado. A loja não oferece instalar. |
+| `notes` | não | Markdown, por idioma: o que fazer no primeiro acesso e o que o app tem de estranho. O painel mostra. |
+| `secrets` | por `Secret=` | `{"<secret>": "rand-hex 32"}`: como cada secret é feito (`rand-hex N`, `rand-base64 N`, `rand-urlsafe N`, `rand-alnum N`, `shell <cmd>`, `manual <texto>`). |
+| `validate` | não | `{"<secret>": "shell <cmd>"}`: uma conferência de um secret `manual` que só o outro lado sabe julgar. O valor chega por stdin. |
+| `config` | não | `{"<arquivo na pasta>": "<onde cai no host>"}`: arquivos auxiliares que o `qh` copia uma vez e nunca sobrescreve. |
+| `vars` | por `${VAR}` em `Volume=` | `{"MEDIA_DATA_DIR": "~/data"}`: as variáveis do systemd que uma unit usa, e o padrão que a instalação oferece. |
+| `login` | não | `{"user": "admin", "password": "<secret>"}`, ou `{"credentials": "<secret>"}` quando um secret guarda `usuário:senha`: o que a instalação imprime. |
+| `choices` | não | `{"VERSION": {"question": "…", "options": [{"value": "11", "label": "Windows 11"}]}}`: uma escolha numa lista fechada que só importa na primeira instalação. A primeira opção é o padrão. |
+| `backup` | não | `{"mode": "stop", "exclude": ["upload/thumbs"], "note": "…"}`: parar o serviço durante a cópia, e as pastas que se refazem sozinhas. |
+| `units` | não | Por unit, abaixo. |
+
+## `units`
+
+Uma entrada por `.container` que precise, com a chave sendo o basename da unit:
+
+| Campo | Significado |
+| --- | --- |
+| `upstream` | De onde vem a versão dela: `owner/repo` (uma release do GitHub), `registry:<regex>`, `compose:<owner>/<repo>:<arquivo>` (um apoio fixado no que o compose do app valida), ou `-` (nada comparável). |
+| `image` | O formato da tag, `v{version}`, `{version}-alpine`, `{version:2}`. Presente, o `Image=` da unit **não tem tag**, e o `qh` fixa a última release no host (veja [auto-update](./auto-update.md)). |
+| `login`, `choices` | Como acima, para uma pasta de serviços independentes que não dividem um só. |
+
+## Explicar uma entrada
+
+JSON não tem comentário, e o porquê de uma receita ter a forma que tem importa tanto quanto a receita. Qualquer
+entrada de `secrets`, `config`, `vars`, `validate`, `login` ou o `upstream`/`image` de uma unit pode ser escrita
+`{"value": X, "note": "porquê"}` no lugar de `X`; a nota é para pessoas, e nada a lê.
+
+## Gerado, não escrito
+
+A tabela de serviços do `README.md` e do `docs/pt-BR/README.md`, entre os marcadores `services:begin` e
+`services:end`, vem de `title`, `icon` e `tagline`. O `python3 check.py --readme` a reescreve, e o `check.py`
+reprova quando ela está desatualizada.
+
+## O que o formato do CasaOS tem e este (ainda) não
+
+O CasaOS traz `developer`, `author`, `architectures`, `tips.before_install`, `port_map`, `index`, `scheme`,
+`thumbnail`, `release_notes` e uma `description` à parte do `tagline`, além de uma descrição para cada porta,
+volume e variável de ambiente. Aqui as arquiteturas vêm do registry, a porta e o endereço das units, as notas
+de versão do GitHub, e as notas cobrem as `tips`. Nenhum desses é lido hoje; podem entrar no manifesto sem
+mudar o número do spec, como campos opcionais novos.
+
+## Conferir
+
+O `python3 check.py` valida cada manifesto: o número do spec, o `id`, os campos obrigatórios, a categoria, o
+formato de cada objeto, uma chave desconhecida no topo (um erro de digitação), e as regras de cada parte (uma
+receita para cada `Secret=`, um `login` que cita um secret de verdade, um padrão em `vars` para cada `${VAR}` num
+`Volume=`, o formato de `image` para cada unit sem tag). O `python3 manifest.py --selftest` testa o leitor.

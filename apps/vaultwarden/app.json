@@ -1,0 +1,31 @@
+{
+  "spec": 2,
+  "id": "vaultwarden",
+  "title": "Vaultwarden",
+  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/vaultwarden.png",
+  "tagline": {
+    "en": "A password vault compatible with Bitwarden's protocol, light enough to run anywhere",
+    "pt": "Cofre de senhas compatível com o protocolo do Bitwarden, leve o bastante pra rodar em qualquer lugar"
+  },
+  "category": "Network & Security",
+  "license": "AGPL-3.0.",
+  "links": {
+    "docs": "https://github.com/dani-garcia/vaultwarden/wiki"
+  },
+  "notes": {
+    "en": "Open `https://vaultwarden.<your-tailnet>.ts.net`.\n\nThe vault is reachable over the tailnet only. `PublishPort=8082:80` ships\ncommented out in the unit: publishing it would also answer to anyone on the\nLAN, which is a wider door than a password vault needs. Uncomment it if you\nwant `http://<host-ip>:8082` too.",
+    "pt": "Abrir `https://vaultwarden.<your-tailnet>.ts.net`.\n\nO cofre é alcançável só pela tailnet. O `PublishPort=8082:80` vem comentado na\nunit: publicar a porta faria ele atender também a qualquer um na LAN, que é\nporta mais larga do que um cofre de senhas precisa. Descomente se quiser o\n`http://<ip-do-host>:8082` também."
+  },
+  "secrets": {
+    "vaultwarden-admin-token": {
+      "value": "manual generate it with `podman run --rm vaultwarden/server:alpine /vaultwarden hash` and paste the hash",
+      "note": "Vaultwarden expects the token's argon2 HASH, not the token in plain text."
+    }
+  },
+  "units": {
+    "vaultwarden": {
+      "upstream": "dani-garcia/vaultwarden",
+      "image": "{version}-alpine"
+    }
+  }
+}

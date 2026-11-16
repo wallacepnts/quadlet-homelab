@@ -1,0 +1,30 @@
+{
+  "spec": 2,
+  "id": "donetick",
+  "title": "Donetick",
+  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/donetick.svg",
+  "tagline": {
+    "en": "Recurring household chores — who does them, how often, and when they are due",
+    "pt": "Tarefas domésticas recorrentes — quem faz, com que frequência e quando vence"
+  },
+  "category": "Personal",
+  "license": "AGPL-3.0",
+  "links": {
+    "docs": "https://donetick.com"
+  },
+  "notes": {
+    "en": "Open `http://<host-ip>:2021` or `https://donetick.<your-tailnet>.ts.net`.",
+    "pt": "Abrir `http://<ip-do-host>:2021` ou `https://donetick.<your-tailnet>.ts.net`."
+  },
+  "config": {
+    "selfhosted.yaml.example": {
+      "value": "%h/.config/containers/volumes/donetick/config/selfhosted.yaml",
+      "note": "The volume is the /config directory, so the file name cannot be derived from the unit — it has to be stated here."
+    }
+  },
+  "units": {
+    "donetick": {
+      "image": "v{version}"
+    }
+  }
+}

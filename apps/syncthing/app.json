@@ -1,0 +1,24 @@
+{
+  "spec": 2,
+  "id": "syncthing",
+  "title": "Syncthing",
+  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/syncthing.svg",
+  "tagline": {
+    "en": "P2P file sync between devices, with no central server",
+    "pt": "Sincronização de arquivos P2P entre dispositivos, sem servidor central"
+  },
+  "category": "Files",
+  "license": "MPL-2.0.",
+  "links": {
+    "docs": "https://syncthing.net/"
+  },
+  "notes": {
+    "en": "Open `http://<host-ip>:8384` or `https://syncthing.<your-tailnet>.ts.net`.",
+    "pt": "Abrir `http://<ip-do-host>:8384` ou `https://syncthing.<your-tailnet>.ts.net`."
+  },
+  "units": {
+    "syncthing": {
+      "image": "{version}"
+    }
+  }
+}

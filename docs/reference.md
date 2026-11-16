@@ -24,13 +24,12 @@ apps/<app>/
 ├── <app>.container
 ├── <app>-net.network       # only for a stack that talks to itself
 ├── .env.example
-├── install.ini             # secret recipes, validation, login, upstream, image template, store fields
-├── notes.md                # optional: first run and what is odd about the app (English)
-└── notes.pt-BR.md          # the same, in Portuguese
+└── app.json                # everything the app says about itself: see manifest.md
 ```
 
-There is no README per app: the panel shows `notes.md` and the licence, and the row in the root
-README's services table is the shop window.
+There is no README per app: `app.json` holds the title, the one-line description in both languages, the
+category, the notes the panel shows, the secret recipes and the rest ([the manifest](./manifest.md)), and the
+row in the root README's services table is generated from it.
 
 At the root, `qhui.py` holds the language detection and the colouring the
 three tools share.
@@ -98,7 +97,7 @@ come out the same.
 
 A unit carries no dashboard or update-watcher labels (`homepage.*`, `wud.*`): the store's
 catalog reads what it shows from elsewhere. The name, icon and description come from the
-README tables; the category is `[store] group` in the service's `install.ini`, one of AI,
+README tables; the category is `category` in the service's `app.json`, one of AI,
 Automation, Downloads, Files, Home, Media, Monitoring, Network & Security, Personal,
 Productivity, Tools and Virtual Machines. A value outside that set fails `check.py`, which is
 what keeps the catalog from growing a group of one. The tailnet address is derived from

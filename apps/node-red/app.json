@@ -1,0 +1,25 @@
+{
+  "spec": 2,
+  "id": "node-red",
+  "title": "Node-RED",
+  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/node-red.svg",
+  "tagline": {
+    "en": "Flow automation through a visual node editor",
+    "pt": "Automação de fluxos via editor visual de nós"
+  },
+  "category": "Automation",
+  "license": "Apache-2.0",
+  "links": {
+    "docs": "https://nodered.org"
+  },
+  "notes": {
+    "en": "Open `http://<host-ip>:1880` or `https://node-red.<your-tailnet>.ts.net`.",
+    "pt": "Abrir `http://<ip-do-host>:1880` ou `https://node-red.<your-tailnet>.ts.net`."
+  },
+  "units": {
+    "node-red": {
+      "upstream": "node-red/node-red",
+      "image": "{version}-minimal"
+    }
+  }
+}

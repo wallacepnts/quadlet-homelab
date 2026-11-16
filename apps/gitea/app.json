@@ -1,0 +1,35 @@
+{
+  "spec": 2,
+  "id": "gitea",
+  "title": "Gitea",
+  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/gitea.svg",
+  "tagline": {
+    "en": "A light but complete Git server — repositories, issues, pull requests and CI in a single interface",
+    "pt": "Servidor Git leve e completo — repositórios, issues, pull requests e CI numa interface só"
+  },
+  "category": "Tools",
+  "license": "MIT",
+  "links": {
+    "docs": "https://gitea.com"
+  },
+  "screenshots": [
+    "https://dl.gitea.com/screenshots/home.png"
+  ],
+  "works_with": [
+    "gitea-runner"
+  ],
+  "notes": {
+    "en": "Open `http://<host-ip>:3002` or `https://gitea.<your-tailnet>.ts.net`.",
+    "pt": "Abrir `http://<ip-do-host>:3002` ou `https://gitea.<your-tailnet>.ts.net`."
+  },
+  "secrets": {
+    "gitea-secret-key": "rand-base64 32",
+    "gitea-internal-token": "rand-base64 48"
+  },
+  "units": {
+    "gitea": {
+      "upstream": "go-gitea/gitea",
+      "image": "{version}"
+    }
+  }
+}

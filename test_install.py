@@ -553,7 +553,7 @@ def scenario_catalog(home):
     grupos = {x["group"]["en"] for x in apps.values() if x["group"]}
     check(apps["vm"]["group"] == {"en": "Virtual Machines", "pt": "Máquinas Virtuais"}
           and all(g and '"' not in g for g in grupos),
-          "--catalog takes the category from install.ini [store] group, in both languages")
+          "--catalog takes the category from app.json category, in both languages")
     check(apps[APP]["installed"] and all(u["installed"] for u in apps[APP]["units"]),
           "--catalog sees the sandbox install")
     check(not apps[STACK]["installed"], "--catalog does not see what was never installed")
@@ -601,26 +601,19 @@ def scenario_override(tmp):
 
 
 def scenario_deprecated(tmp):
-    """A service marked deprecated in install.ini: qh warns, the catalog says so, `--all` leaves it out.
+    """A service marked deprecated in app.json: qh warns, the catalog says so, `--all` leaves it out.
 
     Run from a copy of the repository, because the marking lives in a file of the repo."""
     import json
     raiz = Path(tmp, "dep-repo")
     raiz.mkdir()
-    for f in ("install.py", "qhui.py", "overrides.py", "trials.py", "imagepin.py"):
+    for f in ("install.py", "qhui.py", "overrides.py", "trials.py", "imagepin.py", "manifest.py"):
         shutil.copy(ROOT / f, raiz / f)
     shutil.copytree(ROOT / "apps", raiz / "apps", ignore_dangling_symlinks=True)   # apps/durockrj may point nowhere
-    import configparser
-    ini = raiz / "apps" / APP / "install.ini"
-    cp = configparser.ConfigParser(interpolation=None)
-    cp.optionxform = str
-    cp.read(ini)
-    if not cp.has_section("store"):          # an app may already carry one, for its screenshots
-        cp.add_section("store")
-    cp.set("store", "deprecated", "Archived upstream.")
-    cp.set("store", "deprecated_pt", "Arquivado no upstream.")
-    with open(ini, "w") as fh:
-        cp.write(fh)
+    import manifest as MF
+    dados = MF.load(raiz / "apps" / APP)
+    dados["deprecated"] = {"en": "Archived upstream.", "pt": "Arquivado no upstream."}
+    MF.path_of(raiz / "apps" / APP).write_text(MF.dump(dados))
     home = str(Path(tmp, "dep-home"))
 
     def executa(*args, lang="en"):
@@ -684,11 +677,13 @@ def scenario_backup_exclude(tmp):
     """`[backup] exclude` leaves rebuildable folders out of the archive, says how much, and the restore brings the folders back."""
     raiz = Path(tmp, "bx-repo")
     raiz.mkdir()
-    for f in ("install.py", "qhui.py", "overrides.py", "trials.py", "imagepin.py"):
+    for f in ("install.py", "qhui.py", "overrides.py", "trials.py", "imagepin.py", "manifest.py"):
         shutil.copy(ROOT / f, raiz / f)
     shutil.copytree(ROOT / "apps", raiz / "apps", ignore_dangling_symlinks=True)
-    with open(raiz / "apps" / APP / "install.ini", "a") as fh:
-        fh.write("\n[backup]\nexclude =\n    data/cache\n    nothing/here\n")
+    import manifest as MF
+    dados = MF.load(raiz / "apps" / APP)
+    dados["backup"] = {"exclude": ["data/cache", "nothing/here"]}
+    MF.path_of(raiz / "apps" / APP).write_text(MF.dump(dados))
     home, out = str(Path(tmp, "bx-home")), str(Path(tmp, "bx-out"))
 
     def executa(*args, stdin=""):

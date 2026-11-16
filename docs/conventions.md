@@ -84,8 +84,8 @@ no `main`, no bare major (`16`, `17-alpine`), and no `AutoUpdate=`: `check.py`
 refuses all of them.
 
 The one exception is an app's own image that follows a GitHub release: its unit has
-`Image=repo` with **no tag**, `install.ini` says what a tag looks like (`[image]
-app = v{version}`), and `qh` pins the latest release **on the host**, in a Quadlet
+`Image=repo` with **no tag**, `app.json` says what a tag looks like (`units.<unit>.image`,
+`v{version}`), and `qh` pins the latest release **on the host**, in a Quadlet
 drop-in. The host still runs a pinned, known tag; the repository just never needs the
 bump. `qh <app> --update --latest` moves it (a new major needs `--major`). Everything
 else — a database or cache pinned to what the app's compose validates, an image by digest
@@ -99,10 +99,10 @@ separate step.
 
 ### 11. Credit the original project
 
-Every service folder based on another project credits it in `install.ini`: `[store] license`
-names the licence, `[store] docs` the project's documentation, and the repository comes from the
-image (or `[store] repo`). The panel shows them, with the licence beside the notes. A fork says
-so in `notes.md`.
+Every service folder based on another project credits it in `app.json`: `license`
+names the licence, `links.docs` the project's documentation, and the repository comes from the
+image (or `links.repo`). The panel shows them, with the licence beside the notes. A fork says
+so in its `notes`.
 
 ### 12. `Label=` values with a space need quotes
 
@@ -398,5 +398,5 @@ The counterexample is [Immich](../apps/immich/), which only speaks Postgres —
 and with a vector extension that ties the database's version to the app's. Not
 every project lets you choose: the signal is usually in the schema or in the
 installation docs (a hardcoded `provider = "postgresql"` in Prisma, for
-example). **Check before assuming**, and record why in the service's `notes.md`,
+example). **Check before assuming**, and record why in the service's `notes`,
 so nobody reopens the discussion later.

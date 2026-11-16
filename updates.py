@@ -22,7 +22,6 @@ behind is information, not a defect; only an execution error fails.
 """
 
 import argparse
-import configparser
 import re
 import sys
 import urllib.error
@@ -35,6 +34,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import imagepin
+import manifest
 import qhui
 from qhui import (translator, directives, directives_of, ref_parts, FLOATING,
                   red, yellow, green, dim)
@@ -453,7 +453,7 @@ def compose_image(spec, ref, image):
     A sidecar follows the version the app validates, not its own upstream: the
     Postgres in immich's compose moves when immich moves it, and reporting
     Postgres's latest release would only ever say "behind". Spelled in
-    install.ini as
+    app.json as
 
         [upstream]
         immich-postgres = compose:immich-app/immich:docker/docker-compose.yml
@@ -519,7 +519,7 @@ def github_repo(image, override):
     """`org/repo` on GitHub from the image, or None when it cannot be derived.
 
     Derives it where the convention holds (ghcr mirrors the repository owner)
-    and accepts an override in `apps/<app>/install.ini`, section [upstream],
+    and accepts an override in `apps/<app>/app.json`, under `units.<unit>.upstream`,
     for the cases where the image name has nothing to do with the project's.
     """
     if override:
@@ -534,7 +534,7 @@ def github_repo(image, override):
         return f"linuxserver/docker-{parts[2]}"
     if parts[0] == "docker.io" and len(parts) == 3:
         # A guess with a good hit rate (traccar/traccar, donetick/donetick);
-        # when it misses, [upstream] in install.ini corrects it.
+        # when it misses, `upstream` in the unit's app.json entry corrects it.
         return f"{parts[1]}/{parts[2]}"
     return None
 
@@ -674,8 +674,7 @@ def services(host=None):
         for p in sorted(host.rglob("*.container")):
             instaladas.setdefault(p.name, p)
     for folder in sorted(p for p in APPS.iterdir() if p.is_dir()):
-        ini = configparser.ConfigParser(interpolation=None)
-        ini.read(folder / "install.ini")
+        ini = manifest.view(folder)
         overrides = dict(ini.items("upstream")) if ini.has_section("upstream") else {}
         principal = folder / f"{folder.name}.container"
         conts = sorted(folder.glob("*.container"))

@@ -1,0 +1,42 @@
+{
+  "spec": 2,
+  "id": "hermes-agent",
+  "title": "Hermes Agent",
+  "icon": "https://cdn.jsdelivr.net/gh/NousResearch/hermes-agent@main/website/static/img/logo.png",
+  "tagline": {
+    "en": "A personal AI agent with skills and memory, exposing an OpenAI-compatible API for the other services to call",
+    "pt": "Agente de IA pessoal com habilidades e memória, expondo uma API compatível com a da OpenAI pros outros serviços chamarem"
+  },
+  "category": "AI",
+  "license": "MIT",
+  "links": {
+    "docs": "https://hermes-agent.nousresearch.com"
+  },
+  "notes": {
+    "en": "Open `http://<host-ip>:8642` or `https://hermes.<your-tailnet>.ts.net`.\n\n### No memory limit\n\nThe unit sets `PidsLimit=`, not `Memory=`. A memory cap in a rootless unit\nneeds the memory controller delegated to the user manager, and on a host where\nit is not, the container cannot be created at all:\n\n```\nmemory.swap.max: no such file or directory\n```\n\nTo check whether your host delegates it:\n\n```bash\nls /sys/fs/cgroup/user.slice/user-$(id -u).slice/user@$(id -u).service/ | grep memory.max\n```",
+    "pt": "Abrir `http://<ip-do-host>:8642` ou `https://hermes.<your-tailnet>.ts.net`.\n\n### Sem limite de memória\n\nA unit define `PidsLimit=`, não `Memory=`. Limite de memória em unit rootless\nexige o controlador de memória delegado ao gerenciador de usuário, e num host\nonde ele não é, o container nem chega a ser criado:\n\n```\nmemory.swap.max: no such file or directory\n```\n\nPra saber se o seu host delega:\n\n```bash\nls /sys/fs/cgroup/user.slice/user-$(id -u).slice/user@$(id -u).service/ | grep memory.max\n```"
+  },
+  "secrets": {
+    "hermes-agent-api-key": {
+      "value": "rand-urlsafe 32",
+      "note": "Bearer key for the OpenAI-compatible gateway on 8642. Minimum 8 characters."
+    },
+    "hermes-agent-dashboard-password": {
+      "value": "rand-urlsafe 24",
+      "note": "Basic-auth password for the dashboard on 9119. The username is in the .env."
+    },
+    "hermes-agent-dashboard-secret": {
+      "value": "rand-hex 32",
+      "note": "Signs the dashboard session cookie; without it every restart logs you out."
+    }
+  },
+  "login": {
+    "user": "admin",
+    "password": "hermes-agent-dashboard-password"
+  },
+  "units": {
+    "hermes-agent": {
+      "image": "v{version}"
+    }
+  }
+}

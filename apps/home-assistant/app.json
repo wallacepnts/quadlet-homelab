@@ -1,0 +1,29 @@
+{
+  "spec": 2,
+  "id": "home-assistant",
+  "title": "Home Assistant",
+  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/home-assistant.svg",
+  "tagline": {
+    "en": "The central home automation hub; it brings devices from any manufacturer into a single panel",
+    "pt": "Hub central de automação residencial, integra dispositivos de qualquer fabricante num painel só"
+  },
+  "category": "Home",
+  "license": "Apache-2.0",
+  "links": {
+    "docs": "https://www.home-assistant.io"
+  },
+  "works_with": [
+    "zigbee2mqtt",
+    "node-red"
+  ],
+  "notes": {
+    "en": "Open `http://<host-ip>:8123` or `https://home-assistant.<your-tailnet>.ts.net`.",
+    "pt": "Abrir `http://<ip-do-host>:8123` ou `https://home-assistant.<your-tailnet>.ts.net`."
+  },
+  "units": {
+    "home-assistant": {
+      "upstream": "home-assistant/core",
+      "image": "{version}"
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "spec": 2,
+  "id": "wger",
+  "title": "wger",
+  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/wger.svg",
+  "tagline": {
+    "en": "Workout planning and tracking, with an exercise database and body measurements",
+    "pt": "Planejamento e acompanhamento de treinos, com banco de exercícios e medidas corporais"
+  },
+  "category": "Personal",
+  "license": "AGPL-3.0",
+  "links": {
+    "docs": "https://wger.de"
+  },
+  "notes": {
+    "en": "Open `http://<host-ip>:8102` or `https://wger.<your-tailnet>.ts.net`.",
+    "pt": "Abrir `http://<ip-do-host>:8102` ou `https://wger.<your-tailnet>.ts.net`."
+  },
+  "secrets": {
+    "wger-secret-key": {
+      "value": "rand-hex 32",
+      "note": "It signs sessions and cookies — changing it logs everyone out."
+    }
+  },
+  "units": {
+    "wger": {
+      "upstream": "wger-project/wger",
+      "image": "{version:2}"
+    }
+  }
+}

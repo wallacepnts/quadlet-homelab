@@ -1,0 +1,412 @@
+{
+  "spec": 2,
+  "id": "vm",
+  "title": "VM",
+  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/qemu.svg",
+  "tagline": {
+    "en": "Windows, macOS, ChromeOS Flex, ZimaOS and 23 Linux distros as VMs in containers, viewed in the browser — needs KVM on the host",
+    "pt": "Windows, macOS, ChromeOS Flex, ZimaOS e 23 distros Linux como VMs em containers, vistas pelo navegador — exige KVM no host"
+  },
+  "category": "Virtual Machines",
+  "license": "MIT",
+  "links": {
+    "docs": "https://github.com/dockur/windows#readme"
+  },
+  "notes": {
+    "en": "Open `http://<host-ip>:3389` or `https://chromeos.<your-tailnet>.ts.net`.",
+    "pt": "Abrir `http://<ip-do-host>:3389` ou `https://chromeos.<your-tailnet>.ts.net`."
+  },
+  "secrets": {
+    "vm-windows-password": {
+      "value": "rand-alnum 20",
+      "note": "The password for the `Docker` account inside Windows, used for RDP on 3389. The image's default is the literal string `admin`; this replaces it."
+    },
+    "vm-windows-arm-password": "rand-alnum 20",
+    "vm-chromeos-password": {
+      "value": "rand-alnum 20",
+      "note": "The viewer login for ChromeOS. Upstream's default is `Docker`/`admin`; this replaces the password. The other VMs here have no viewer login at all."
+    }
+  },
+  "units": {
+    "vm-windows": {
+      "login": {
+        "user": "Docker",
+        "password": "vm-windows-password"
+      },
+      "choices": {
+        "VERSION": {
+          "question": "Which Windows to install (downloaded on first boot)",
+          "options": [
+            {
+              "value": "11",
+              "label": "Windows 11 Pro — 7.9 GB"
+            },
+            {
+              "value": "11l",
+              "label": "Windows 11 LTSC — 4.7 GB, no Store, long-term servicing"
+            },
+            {
+              "value": "11e",
+              "label": "Windows 11 Enterprise — 6.6 GB"
+            },
+            {
+              "value": "10",
+              "label": "Windows 10 Pro — 5.7 GB"
+            },
+            {
+              "value": "10l",
+              "label": "Windows 10 LTSC — 4.6 GB"
+            },
+            {
+              "value": "10e",
+              "label": "Windows 10 Enterprise — 5.2 GB"
+            },
+            {
+              "value": "2025",
+              "label": "Windows Server 2025 — 7.6 GB"
+            },
+            {
+              "value": "2022",
+              "label": "Windows Server 2022 — 6.0 GB"
+            },
+            {
+              "value": "2019",
+              "label": "Windows Server 2019 — 5.3 GB"
+            },
+            {
+              "value": "2016",
+              "label": "Windows Server 2016 — 6.5 GB"
+            },
+            {
+              "value": "tiny11",
+              "label": "Tiny11 — 5.3 GB, trimmed community build"
+            },
+            {
+              "value": "core11",
+              "label": "Tiny11 Core — 3.0 GB, the smallest Windows 11 here"
+            },
+            {
+              "value": "tiny10",
+              "label": "Tiny10 — 3.6 GB"
+            },
+            {
+              "value": "8e",
+              "label": "Windows 8.1 Enterprise — 3.7 GB"
+            },
+            {
+              "value": "7u",
+              "label": "Windows 7 Ultimate — 3.1 GB"
+            },
+            {
+              "value": "vu",
+              "label": "Windows Vista Ultimate — 3.0 GB"
+            },
+            {
+              "value": "xp",
+              "label": "Windows XP Professional — 0.6 GB"
+            },
+            {
+              "value": "2k",
+              "label": "Windows 2000 Professional — 0.4 GB"
+            },
+            {
+              "value": "reactos",
+              "label": "ReactOS — 0.1 GB, not Windows, no licence needed"
+            }
+          ]
+        },
+        "LANGUAGE": {
+          "question": "Installation language — any of the 33 upstream names is accepted, not just these",
+          "options": [
+            {
+              "value": "English"
+            },
+            {
+              "value": "Portuguese",
+              "label": "for pt-BR also set REGION and KEYBOARD in the .env"
+            },
+            {
+              "value": "Spanish"
+            },
+            {
+              "value": "French"
+            },
+            {
+              "value": "German"
+            },
+            {
+              "value": "Italian"
+            },
+            {
+              "value": "Japanese"
+            },
+            {
+              "value": "Chinese"
+            },
+            {
+              "value": "Russian"
+            }
+          ]
+        }
+      },
+      "upstream": {
+        "value": "dockur/windows",
+        "note": "Two of the three image names differ from their GitHub repository: `dockurr` has two r's, and the QEMU org is `qemus` with an s. Without these lines `updates.py` guesses wrong and finds nothing."
+      },
+      "image": "{version:2}"
+    },
+    "vm-windows-arm": {
+      "login": {
+        "user": "Docker",
+        "password": "vm-windows-arm-password"
+      },
+      "choices": {
+        "VERSION": {
+          "question": "Which ARM64 Windows to install (downloaded on first boot)",
+          "options": [
+            {
+              "value": "11",
+              "label": "Windows 11 Pro — 7.5 GB"
+            },
+            {
+              "value": "11l",
+              "label": "Windows 11 LTSC — 4.7 GB, no Store, long-term servicing"
+            },
+            {
+              "value": "11e",
+              "label": "Windows 11 Enterprise — 4.3 GB"
+            },
+            {
+              "value": "10",
+              "label": "Windows 10 Pro — 3.5 GB"
+            },
+            {
+              "value": "10l",
+              "label": "Windows 10 LTSC — 4.1 GB"
+            },
+            {
+              "value": "10e",
+              "label": "Windows 10 Enterprise — 3.4 GB"
+            },
+            {
+              "value": "tiny11",
+              "label": "Tiny11 — 5.1 GB, trimmed community build"
+            },
+            {
+              "value": "core11",
+              "label": "Tiny11 Core — 3.0 GB, the smallest here"
+            }
+          ]
+        },
+        "LANGUAGE": {
+          "question": "Installation language — any of the 33 upstream names is accepted, not just these",
+          "options": [
+            {
+              "value": "English"
+            },
+            {
+              "value": "Portuguese",
+              "label": "for pt-BR also set REGION and KEYBOARD in the .env"
+            },
+            {
+              "value": "Spanish"
+            },
+            {
+              "value": "French"
+            },
+            {
+              "value": "German"
+            },
+            {
+              "value": "Italian"
+            },
+            {
+              "value": "Japanese"
+            },
+            {
+              "value": "Chinese"
+            },
+            {
+              "value": "Russian"
+            }
+          ]
+        }
+      },
+      "upstream": "dockur/windows-arm",
+      "image": "{version:2}"
+    },
+    "vm-chromeos": {
+      "login": {
+        "user": "admin",
+        "password": "vm-chromeos-password"
+      },
+      "choices": {
+        "VERSION": {
+          "question": "Which ChromeOS Flex channel to track",
+          "options": [
+            {
+              "value": "stable",
+              "label": "Stable — updates about every 4 weeks"
+            },
+            {
+              "value": "ltc",
+              "label": "Long-Term Channel — about every 6 months"
+            },
+            {
+              "value": "ltr",
+              "label": "Long-Term Release — about every 18 months"
+            },
+            {
+              "value": "beta",
+              "label": "Beta — about weekly"
+            }
+          ]
+        }
+      },
+      "upstream": "dockur/chromeos",
+      "image": "{version:2}"
+    },
+    "vm-macos": {
+      "choices": {
+        "VERSION": {
+          "question": "Which macOS to install (downloaded on first boot)",
+          "options": [
+            {
+              "value": "15",
+              "label": "macOS 15 Sequoia — upstream's default"
+            },
+            {
+              "value": "14",
+              "label": "macOS 14 Sonoma"
+            },
+            {
+              "value": "13",
+              "label": "macOS 13 Ventura"
+            },
+            {
+              "value": "12",
+              "label": "macOS 12 Monterey"
+            },
+            {
+              "value": "11",
+              "label": "macOS 11 Big Sur"
+            },
+            {
+              "value": "26",
+              "label": "macOS 26 Tahoe — upstream advises against it, runs very slowly"
+            }
+          ]
+        }
+      },
+      "upstream": "dockur/macos",
+      "image": "{version:2}"
+    },
+    "vm-qemu": {
+      "choices": {
+        "BOOT": {
+          "question": "Which OS to install (downloaded on first boot)",
+          "options": [
+            {
+              "value": "alpine",
+              "label": "Alpine Linux — 60 MB, the quickest way to prove KVM works"
+            },
+            {
+              "value": "suse",
+              "label": "openSUSE — 1.0 GB"
+            },
+            {
+              "value": "arch",
+              "label": "Arch Linux — 1.2 GB"
+            },
+            {
+              "value": "zima",
+              "label": "ZimaOS — 1.4 GB"
+            },
+            {
+              "value": "tails",
+              "label": "Tails — 1.5 GB"
+            },
+            {
+              "value": "rocky",
+              "label": "Rocky Linux — 2.1 GB"
+            },
+            {
+              "value": "alma",
+              "label": "Alma Linux — 2.2 GB"
+            },
+            {
+              "value": "mx",
+              "label": "MX Linux — 2.2 GB"
+            },
+            {
+              "value": "fedora",
+              "label": "Fedora — 2.3 GB"
+            },
+            {
+              "value": "nixos",
+              "label": "NixOS — 2.4 GB"
+            },
+            {
+              "value": "cachy",
+              "label": "CachyOS — 2.6 GB"
+            },
+            {
+              "value": "mint",
+              "label": "Linux Mint — 2.8 GB, upstream's own default"
+            },
+            {
+              "value": "ubuntus",
+              "label": "Ubuntu Server — 3.0 GB"
+            },
+            {
+              "value": "debian",
+              "label": "Debian — 3.3 GB"
+            },
+            {
+              "value": "gentoo",
+              "label": "Gentoo — 3.6 GB"
+            },
+            {
+              "value": "slack",
+              "label": "Slackware — 3.7 GB"
+            },
+            {
+              "value": "kali",
+              "label": "Kali Linux — 3.8 GB"
+            },
+            {
+              "value": "zorin",
+              "label": "Zorin OS — 3.8 GB"
+            },
+            {
+              "value": "xubuntu",
+              "label": "Xubuntu — 4.0 GB"
+            },
+            {
+              "value": "manjaro",
+              "label": "Manjaro — 4.1 GB"
+            },
+            {
+              "value": "kubuntu",
+              "label": "Kubuntu — 4.4 GB"
+            },
+            {
+              "value": "ubuntu",
+              "label": "Ubuntu Desktop — 6.0 GB"
+            },
+            {
+              "value": "centos",
+              "label": "CentOS — 7.0 GB"
+            }
+          ]
+        }
+      },
+      "upstream": "qemus/qemu",
+      "image": "{version:2}"
+    },
+    "vm-zima": {
+      "upstream": "dockur/zima",
+      "image": "{version}"
+    }
+  }
+}

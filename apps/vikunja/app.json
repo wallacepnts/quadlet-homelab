@@ -1,0 +1,28 @@
+{
+  "spec": 2,
+  "id": "vikunja",
+  "title": "Vikunja",
+  "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/svg/vikunja.svg",
+  "tagline": {
+    "en": "Tasks with a deadline and a project behind them, in list, kanban or gantt",
+    "pt": "Tarefas com prazo e projeto por trás, em lista, kanban ou gantt"
+  },
+  "category": "Productivity",
+  "license": "AGPL-3.0.",
+  "links": {
+    "docs": "https://vikunja.io/docs/"
+  },
+  "notes": {
+    "en": "Open `https://vikunja.<your-tailnet>.ts.net` and register. Then set\n`VIKUNJA_SERVICE_ENABLEREGISTRATION=false` in the `.env` and restart, or anyone\nwho reaches your tailnet can create an account.\n\n### PUBLICURL is not decoration\n\n`VIKUNJA_SERVICE_PUBLICURL` is the address the frontend calls the API on.\nWrong, and the symptom misleads: the interface loads, looks right, and every\nrequest fails. It is also what invitation and reminder links carry.\n\n### Update\n\nIt migrates the database on start, which is why the release notes are worth a look before a major bump.\n\n### Backup\n\nStops it, packs both volumes and the `.env`, starts it again.",
+    "pt": "Abrir `https://vikunja.<your-tailnet>.ts.net` e se cadastrar. Depois ponha\n`VIKUNJA_SERVICE_ENABLEREGISTRATION=false` no `.env` e reinicie, senão quem\nalcança a sua tailnet cria conta.\n\n### O PUBLICURL não é enfeite\n\nO `VIKUNJA_SERVICE_PUBLICURL` é o endereço em que o frontend chama a API.\nErrado, e o sintoma engana: a interface carrega, parece certa, e toda\nrequisição falha. É também o que os links de convite e de lembrete carregam.\n\n### Atualizar\n\nEle migra o banco no start, e é por isso que as notas da release valem uma lida antes de uma major.\n\n### Backup\n\nPara o serviço, empacota os dois volumes e o `.env`, e sobe de novo."
+  },
+  "units": {
+    "vikunja": {
+      "upstream": {
+        "value": "go-vikunja/vikunja",
+        "note": "Vikunja develops on its own Gitea; the GitHub repository that carries the releases is `go-vikunja/vikunja`, not the `vikunja/vikunja` the image implies."
+      },
+      "image": "{version}"
+    }
+  }
+}

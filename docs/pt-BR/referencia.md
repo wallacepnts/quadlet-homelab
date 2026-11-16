@@ -24,13 +24,12 @@ apps/<app>/
 ├── <app>.container
 ├── <app>-net.network       # só pra stack que conversa entre si
 ├── .env.example
-├── install.ini             # receitas de secret, validação, login, nome no upstream, capturas da loja
-├── notes.md                # opcional: primeiro acesso e o que o app tem de estranho (inglês)
-└── notes.pt-BR.md          # o mesmo, em português
+└── app.json                # tudo o que o app diz de si mesmo: veja manifesto.md
 ```
 
-Não há README por app: o painel mostra o `notes.md` e a licença, e a linha da tabela de serviços
-do README raiz é a vitrine.
+Não há README por app: o `app.json` guarda o título, a descrição de uma linha nos dois idiomas, a categoria,
+as notas que o painel mostra, as receitas de secret e o resto ([o manifesto](./manifesto.md)), e a linha da
+tabela de serviços do README raiz é gerada dele.
 
 Na raiz, o `qhui.py` guarda a detecção de idioma e a coloração que as três
 ferramentas compartilham.
@@ -98,7 +97,7 @@ que o Quadlet gera para cada unit: os argumentos do podman saem os mesmos.
 
 Uma unit não leva labels de painel nem de vigia de atualização (`homepage.*`, `wud.*`): o
 catálogo da loja lê o que mostra de outro lugar. Nome, ícone e descrição vêm das tabelas dos
-README; a categoria é `[store] group` no `install.ini` do serviço, uma de AI, Automation,
+README; a categoria é `category` no `app.json` do serviço, uma de AI, Automation,
 Downloads, Files, Home, Media, Monitoring, Network & Security, Personal, Productivity, Tools e
 Virtual Machines (a loja mostra o nome em português). Valor fora dessa lista reprova o
 `check.py`, que é o que impede o catálogo de criar um grupo de um item só. O endereço da

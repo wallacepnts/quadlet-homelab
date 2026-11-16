@@ -53,6 +53,7 @@ import overrides as O  # noqa: E402
 import qhui  # noqa: E402
 import resources  # noqa: E402
 import imagepin  # noqa: E402
+import manifest  # noqa: E402
 import trials  # noqa: E402
 import wsterm  # noqa: E402
 
@@ -555,13 +556,8 @@ def issues_url(repo):
 
 
 def docs_url(app):
-    """The documentation link the service's `install.ini` names (`[store] docs`), or None."""
-    ini = I.APPS / app / "install.ini"
-    if not ini.is_file():
-        return None
-    cp = configparser.ConfigParser(interpolation=None)
-    cp.read(ini)
-    v = cp.get("store", "docs", fallback="").strip() if cp.has_section("store") else ""
+    """The documentation link the service's `app.json` names (`links.docs`), or None."""
+    v = ((manifest.load(I.APPS / app).get("links") or {}).get("docs") or "").strip()
     return v if v.startswith("https://") else None
 
 
@@ -2641,22 +2637,14 @@ def selftest():
             assert espera_job(corpo)["rc"] == 0 and installed_unit("mailpit") is None, "the typed name deletes it"
             assert not Path(tmp, ".config/containers/volumes/mailpit").exists(), "and its data"
 
-            # deprecated: a service marked in install.ini is not offered for install, but stays manageable
+            # deprecated: a service marked in app.json is not offered for install, but stays manageable
             with tempfile.TemporaryDirectory() as dep:
                 copia = Path(dep, "apps")
                 shutil.copytree(I.APPS, copia, ignore_dangling_symlinks=True)
-                import configparser
                 for nome in ("memos", "homebox"):
-                    ini = copia / nome / "install.ini"
-                    cp = configparser.ConfigParser(interpolation=None)
-                    cp.optionxform = str
-                    cp.read(ini)
-                    if not cp.has_section("store"):      # memos already has one, for its screenshots
-                        cp.add_section("store")
-                    cp.set("store", "deprecated", "Archived upstream.")
-                    cp.set("store", "deprecated_pt", "Arquivado no upstream.")
-                    with open(ini, "w") as fh:
-                        cp.write(fh)
+                    dados = manifest.load(copia / nome)
+                    dados["deprecated"] = {"en": "Archived upstream.", "pt": "Arquivado no upstream."}
+                    manifest.path_of(copia / nome).write_text(manifest.dump(dados))
                 original, I.APPS = I.APPS, copia
                 try:
                     st, _, corpo = pedir("/api/run", json.dumps({"app": "memos", "action": "install"}).encode(), api)
@@ -2861,9 +2849,9 @@ esac
         antes, I.APPS = I.APPS, Path(dd)
         try:
             (I.APPS / "demo").mkdir()
-            (I.APPS / "demo" / "install.ini").write_text("[store]\ngroup = Tools\ndocs = https://docs.example.org/demo\n")
+            manifest.path_of(I.APPS / "demo").write_text(manifest.dump({"links": {"docs": "https://docs.example.org/demo"}}))
             assert docs_url("demo") == "https://docs.example.org/demo", "read from [store] docs"
-            (I.APPS / "demo" / "install.ini").write_text("[store]\ngroup = Tools\n")
+            manifest.path_of(I.APPS / "demo").write_text(manifest.dump({"category": "Tools"}))
             assert docs_url("demo") is None and docs_url("nao-existe") is None
         finally:
             I.APPS = antes

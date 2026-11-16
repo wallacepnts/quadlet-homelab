@@ -1,0 +1,27 @@
+{
+  "spec": 2,
+  "id": "vaultzap",
+  "title": "VaultZap",
+  "icon": "https://raw.githubusercontent.com/wallacepnts/vaultzap/main/internal/web/static/img/favicon.svg",
+  "tagline": {
+    "en": "A local, browsable archive of exported WhatsApp conversations — search, gallery and calendar, fully offline",
+    "pt": "Arquivo local e navegável de conversas exportadas do WhatsApp — busca, galeria e calendário, 100% offline"
+  },
+  "category": "Personal",
+  "license": "AGPL-3.0",
+  "links": {
+    "docs": "https://github.com/wallacepnts/vaultzap#readme"
+  },
+  "notes": {
+    "en": "Open `http://<host-ip>:8927` or `https://vaultzap.<your-tailnet>.ts.net`.\n\n### Update\n\n`AutoUpdate=registry` is on: the image updates on its own.",
+    "pt": "Abrir `http://<ip-do-host>:8927` ou `https://vaultzap.<your-tailnet>.ts.net`.\n\n### Atualizar\n\n`AutoUpdate=registry` ligado: a imagem é atualizada sozinha."
+  },
+  "units": {
+    "vaultzap": {
+      "upstream": {
+        "value": "registry:^v[0-9]+\\.[0-9]+\\.[0-9]+$",
+        "note": "The project tags its images but publishes no GitHub release, so the registry is what knows the latest one."
+      }
+    }
+  }
+}

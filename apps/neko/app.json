@@ -1,0 +1,35 @@
+{
+  "spec": 2,
+  "id": "neko",
+  "title": "neko",
+  "icon": "https://api.iconify.design/mdi/web-box.svg?color=%23888888",
+  "tagline": {
+    "en": "A browser running on the server, streamed to yours — shared control, and nothing it opens touches your machine",
+    "pt": "Um navegador rodando no servidor, transmitido para o seu — controle compartilhado, e nada do que ele abre toca a sua máquina"
+  },
+  "category": "Tools",
+  "license": "Apache-2.0",
+  "links": {
+    "docs": "https://neko.m1k1o.net/"
+  },
+  "notes": {
+    "en": "The install prints the user and password at the end; the admin password is a\nsecond secret. Open `http://<host-ip>:8018` or\n`https://neko.<your-tailnet>.ts.net`.\n\n**Then set `NEKO_NAT1TO1`** in `~/.config/containers/env/neko.env` to the\naddress clients reach the host at — its tailnet IP, or the LAN one. Without it\nthe page loads and the screen stays black: neko advertises the container's own\nIP for the media stream, and nothing outside can route to it. Restart with `qh\nneko --update --apply`.\n\n### Other browsers\n\nThe image name is the flavour: `firefox` is what ships, and upstream also\npublishes `chromium`, `brave`, `vivaldi`, `tor-browser` and a plain `xfce`\ndesktop. Change `Image=` in the unit and `qh neko --update --apply`. Chromium\nderivatives need more shared memory than Firefox — `ShmSize=2g` is already\ngenerous, but that is the knob if a tab dies.\n\n### Backup\n\nThere is nothing to back up: no volume, no state. Removing and reinstalling\ngives you the same thing.",
+    "pt": "A instalação exibe o usuário e a senha no final; a senha de administrador é um\nsegundo segredo. Abra `http://<ip-do-host>:8018` ou\n`https://neko.<your-tailnet>.ts.net`.\n\n**Depois ajuste o `NEKO_NAT1TO1`** no `~/.config/containers/env/neko.env` para\no endereço pelo qual os clientes alcançam o host — o IP da tailnet, ou o da\nLAN. Sem isso a página carrega e a tela fica preta: o neko anuncia o IP do\npróprio container para o fluxo de mídia, e ninguém de fora consegue rotear até\nlá. Reinicie com `qh neko --update --apply`.\n\n### Outros navegadores\n\nO nome da imagem é a variante: `firefox` é o que vem, e o upstream também\npublica `chromium`, `brave`, `vivaldi`, `tor-browser` e um `xfce` de área de\ntrabalho. Troque o `Image=` na unit e rode `qh neko --update --apply`. Os\nderivados do Chromium pedem mais memória compartilhada que o Firefox — o\n`ShmSize=2g` já é generoso, mas é esse o botão se uma aba morrer.\n\n### Backup\n\nNão há o que fazer backup: sem volume, sem estado. Remover e instalar de novo\ndevolve a mesma coisa."
+  },
+  "secrets": {
+    "neko-user-password": {
+      "value": "rand-alnum 20",
+      "note": "Two passwords: one to watch and take control, one to administer the session."
+    },
+    "neko-admin-password": "rand-alnum 20"
+  },
+  "login": {
+    "user": "neko",
+    "password": "neko-user-password"
+  },
+  "units": {
+    "neko": {
+      "image": "{version}"
+    }
+  }
+}

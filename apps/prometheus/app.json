@@ -1,0 +1,37 @@
+{
+  "spec": 2,
+  "id": "prometheus",
+  "title": "Prometheus",
+  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/prometheus.svg",
+  "tagline": {
+    "en": "Scrapes metrics on a schedule and keeps the history — the data source Grafana draws from",
+    "pt": "Coleta métricas em intervalo e guarda o histórico — a fonte de dados que o Grafana desenha"
+  },
+  "category": "Monitoring",
+  "license": "Apache-2.0",
+  "links": {
+    "docs": "https://prometheus.io/docs/introduction/overview/"
+  },
+  "works_with": [
+    "grafana"
+  ],
+  "notes": {
+    "en": "Open `http://<host-ip>:9090` or `https://prometheus.<your-tailnet>.ts.net`.\nStatus → Targets shows what it is scraping and whether each one answered.\n\n### Adding targets\n\nThe shipped config scrapes one thing: Prometheus itself. That proves the file\nis being read and gives you a working query on day one. Anything else you add\nby hand:\n\n```yaml\n  - job_name: node\n    static_configs:\n      - targets: [\"node-exporter:9100\"]\n```\n\nTargets are reachable by **container name**, because every service here joins\n`tsdproxy-net`. No IP, no host port.\n\nA service only appears here if it already speaks the exposition format — most\nin this repository do not. What you usually want first is a `node-exporter`\nfor the machine itself, and it is not shipped here.\n\nAfter editing:\n\n```bash\nqh prometheus --update --apply\n```\n\n### Backup\n\nIt stops the service, packs the config and the history, and starts it again.\nCold on purpose: the TSDB is a database like any other, and copying it live\ngives an archive that only fails when you restore it.",
+    "pt": "Abra `http://<ip-do-host>:9090` ou `https://prometheus.<your-tailnet>.ts.net`.\nEm Status → Targets você vê o que ele coleta e se cada um respondeu.\n\n### Acrescentando alvos\n\nA config que vem coleta uma coisa só: o próprio Prometheus. Isso prova que o\narquivo está sendo lido e já dá uma consulta funcionando. O resto você\nacrescenta:\n\n```yaml\n  - job_name: node\n    static_configs:\n      - targets: [\"node-exporter:9100\"]\n```\n\nOs alvos são alcançados pelo **nome do container**, porque todo serviço daqui\nentra na `tsdproxy-net`. Sem IP, sem porta do host.\n\nUm serviço só entra aqui se já falar o formato de exposição — a maioria dos\ndeste repositório não fala. O que costuma faltar primeiro é um `node-exporter`\npara a própria máquina, e ele não vem aqui.\n\nDepois de editar:\n\n```bash\nqh prometheus --update --apply\n```\n\n### Backup\n\nPara o serviço, empacota a config e o histórico, e religa. A frio de propósito:\no TSDB é um banco como outro qualquer, e copiá-lo em uso dá um arquivo que só\nfalha na hora de restaurar."
+  },
+  "config": {
+    "config/prometheus.yml": {
+      "value": "%h/.config/containers/volumes/prometheus/config/prometheus.yml",
+      "note": "The scrape list. Prometheus refuses to start without it, and the path is inside a volume, so it cannot be derived from the unit."
+    }
+  },
+  "units": {
+    "prometheus": {
+      "upstream": {
+        "value": "prometheus/prometheus",
+        "note": "The image is `prom/prometheus`, the repository is `prometheus/prometheus`."
+      },
+      "image": "v{version}"
+    }
+  }
+}

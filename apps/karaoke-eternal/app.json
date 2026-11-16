@@ -1,0 +1,28 @@
+{
+  "spec": 2,
+  "id": "karaoke-eternal",
+  "title": "Karaoke Eternal",
+  "icon": "https://api.iconify.design/mdi/microphone-variant.svg?color=%23888888",
+  "tagline": {
+    "en": "A karaoke party from your own library — everyone queues songs from their phone, one screen plays",
+    "pt": "Karaokê com a sua própria biblioteca — cada um enfileira do celular, uma tela reproduz"
+  },
+  "category": "Media",
+  "license": "ISC",
+  "links": {
+    "docs": "https://www.karaoke-eternal.com/docs/"
+  },
+  "notes": {
+    "en": "Put the karaoke files in\n`~/.config/containers/volumes/karaoke-eternal/media`, then open\n`http://<host-ip>:8017` or `https://karaoke.<your-tailnet>.ts.net`. **The first\naccount you create is the admin.** In the app, add `/mnt/karaoke` under Media\nFolders and scan.\n\nIt reads CDG+MP3 and MP4; the filename is what it parses for artist and title,\nso `Artist - Title.mp4` is the shape to aim for.\n\n### Rooms\n\nA room is what a player joins; the queue belongs to the room, not to the\nserver. That is how two parties in the same house do not share a queue, and it\nis also why the player asks which room before it starts.\n\n### Backup\n\nIt stops the service, packs the database, the media and the `.env`, and starts\nit again.\n\n### Remove\n\n`--purge` deletes the media too — it lives in a volume like everything else.",
+    "pt": "Coloque os arquivos de karaokê em\n`~/.config/containers/volumes/karaoke-eternal/media` e abra\n`http://<ip-do-host>:8017` ou `https://karaoke.<your-tailnet>.ts.net`. **A\nprimeira conta criada é a de administrador.** No app, acrescente `/mnt/karaoke`\nem Media Folders e mande varrer.\n\nEle lê CDG+MP3 e MP4; o nome do arquivo é o que ele interpreta como artista e\ntítulo, então `Artista - Título.mp4` é o formato a mirar.\n\n### Salas\n\nUma sala é o que um player entra; a fila pertence à sala, não ao servidor. É\nassim que duas festas na mesma casa não dividem fila, e é também por isso que o\nplayer pergunta a sala antes de começar.\n\n### Backup\n\nPara o serviço, empacota o banco, a mídia e o `.env`, e religa.\n\n### Remover\n\nO `--purge` apaga a mídia junto — ela fica num volume como todo o resto."
+  },
+  "units": {
+    "karaoke-eternal": {
+      "upstream": {
+        "value": "bhj/KaraokeEternal",
+        "note": "The image is published by radrootllc, the project lives at bhj/KaraokeEternal — updates.py cannot derive one from the other."
+      },
+      "image": "{version}"
+    }
+  }
+}

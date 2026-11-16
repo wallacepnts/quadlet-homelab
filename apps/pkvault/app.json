@@ -1,0 +1,27 @@
+{
+  "spec": 2,
+  "id": "pkvault",
+  "title": "PKVault",
+  "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/svg/pkvault.svg",
+  "tagline": {
+    "en": "Pokémon storage and save editing across every generation, based on PKHeX, with a Pokédex built from all your saves",
+    "pt": "Armazenamento de Pokémon e edição de saves de todas as gerações, baseado no PKHeX, com uma Pokédex montada a partir de todos os seus saves"
+  },
+  "category": "Personal",
+  "links": {
+    "docs": "https://github.com/Chnapy/PKVault/blob/main/docs/functional/en/README.md"
+  },
+  "notes": {
+    "en": "Then open `https://pkvault.<your-tailnet>.ts.net`.\n\n**There is no login.** Whoever reaches the page can edit and delete your saves.\nOn the tailnet that is you. With `--access tailnet`, the default, the LAN port\nis not even published; with `local` or `both`, port `8126` is open to everyone\non your network — choose those only on a LAN that is yours alone.\n\n### Getting your saves in and out\n\nThe first start creates a sample Emerald save, so the app has something to show.\nRemove it in the settings when yours are in.\n\n- **Upload in the browser** — the simplest way: up to 5 files, 60 MB in total,\n  stored in `saves-uploads/`. Each save has a download button to take the\n  edited file back to the game or emulator.\n- **A folder on the host** — for saves that live on this machine. Put them\n  under the volume, for example in `data/saves/`, and add `/pkvault/saves/` to\n  the save locations in the settings. **Copy them in with `cp`, not `mv`**:\n  measured, a file moved from another folder keeps its old SELinux label and the\n  container cannot read it, while a copy takes the folder's label.\n\nTo keep saves in step with other devices, the project recommends Syncthing\n(which this repository also has). A folder mounted by two units uses `:z`, not\n`:Z` — rule 16 of the conventions.\n\nEvery change is written to a save only when you press save in the app, and a\nbackup of all saves and storage is taken before each write. `BACKUP_FILE_COUNT_LIMIT=30`\nkeeps the latest 30 — without it the folder only grows. Measured: with the\nlimit at 2, four backups leave two on disk.\n\n### Update\n\nThe image is tagged without the `v` the release carries. PKVault bundles its own PKHeX (26.8.26 in 2.3.3), so support for a new game arrives with a PKVault release. The page checks GitHub for a newer release from your browser; that is the only outside call.\n\n### Backup\n\nThe app's own backups are in the same volume, so this copies them too.",
+    "pt": "Depois abra `https://pkvault.<your-tailnet>.ts.net`.\n\n**Não há login.** Quem alcançar a página pode editar e apagar seus saves. Na\ntailnet, esse alguém é você. Com `--access tailnet`, o padrão, a porta da LAN\nnem é publicada; com `local` ou `both`, a porta `8126` fica aberta a todo mundo\nda sua rede — escolha esses só numa LAN que seja só sua.\n\n### Colocando e tirando seus saves\n\nO primeiro start cria um save de exemplo do Emerald, para o app ter o que\nmostrar. Tire-o nas configurações quando os seus estiverem lá.\n\n- **Enviar pelo navegador** — o jeito mais simples: até 5 arquivos, 60 MB no\n  total, guardados em `saves-uploads/`. Cada save tem um botão de download para\n  levar o arquivo editado de volta ao jogo ou emulador.\n- **Uma pasta no host** — para saves que ficam nesta máquina. Ponha-os dentro do\n  volume, por exemplo em `data/saves/`, e acrescente `/pkvault/saves/` aos locais\n  de save nas configurações. **Copie com `cp`, não mova com `mv`**: medido, um\n  arquivo movido de outra pasta mantém o rótulo SELinux antigo e o container não\n  consegue lê-lo, enquanto a cópia recebe o rótulo da pasta.\n\nPara manter os saves em sincronia com outros aparelhos, o projeto recomenda o\nSyncthing (que este repositório também tem). Pasta montada por duas units usa\n`:z`, não `:Z` — regra 16 das convenções.\n\nUma mudança só vai para o save quando você manda salvar no app, e antes de cada\ngravação é feito um backup de todos os saves e do armazenamento. O\n`BACKUP_FILE_COUNT_LIMIT=30` mantém os 30 mais recentes — sem ele a pasta só\ncresce. Medido: com o limite em 2, quatro backups deixam dois no disco.\n\n### Atualizar\n\nA imagem é marcada sem o `v` que a release tem. O PKVault traz o próprio PKHeX (26.8.26 na 2.3.3), então o suporte a um jogo novo chega com uma release do PKVault. A página consulta o GitHub em busca de release nova a partir do seu navegador; é a única chamada para fora.\n\n### Backup\n\nOs backups do próprio app ficam no mesmo volume, então este copia eles também.\n\n### Remover\n\nO nó da tailnet não é removido por aqui — isso é no admin do Tailscale."
+  },
+  "units": {
+    "pkvault": {
+      "upstream": {
+        "value": "Chnapy/PKVault",
+        "note": "The image is tagged `2.3.3`; the release is `v2.3.3`."
+      },
+      "image": "{version}"
+    }
+  }
+}

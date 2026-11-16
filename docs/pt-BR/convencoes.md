@@ -85,8 +85,8 @@ Tag de versão, ou digest onde o projeto não publica versão. Nada de `latest`,
 todos.
 
 A exceção é a imagem do próprio app que acompanha uma release do GitHub: a unit traz
-`Image=repo` **sem tag**, o `install.ini` diz como é uma tag (`[image] app =
-v{version}`), e o `qh` fixa a última release **no host**, num drop-in do Quadlet. O host
+`Image=repo` **sem tag**, o `app.json` diz como é uma tag (`units.<unit>.image`,
+`v{version}`), e o `qh` fixa a última release **no host**, num drop-in do Quadlet. O host
 continua rodando uma tag fixa e conhecida; o repositório só nunca precisa do bump. O
 `qh <app> --update --latest` a muda (um major novo exige `--major`). O resto — banco ou
 cache fixado no que o compose do app valida, imagem por digest — mantém a tag na unit, e
@@ -100,10 +100,10 @@ separado.
 
 ### 11. Créditos ao projeto original
 
-Toda pasta de serviço baseado em outro projeto o credita no `install.ini`:
-`[store] license` diz a licença, `[store] docs` a documentação do projeto, e o repositório vem da
-imagem (ou de `[store] repo`). O painel os mostra, com a licença ao lado das notas. Um fork diz
-isso no `notes.md`.
+Toda pasta de serviço baseado em outro projeto o credita no `app.json`:
+`license` diz a licença, `links.docs` a documentação do projeto, e o repositório vem da
+imagem (ou de `links.repo`). O painel os mostra, com a licença ao lado das notas. Um fork diz
+isso nas `notes` dele.
 
 ### 12. `Label=`/valores com espaço precisam de aspas
 
@@ -401,6 +401,6 @@ O contraexemplo é o [Immich](../../apps/immich), que só fala Postgres — e co
 uma extensão de vetor que amarra a versão do banco à do app. Nem todo
 projeto deixa escolher: o sinal costuma estar no schema ou na doc de
 instalação (um `provider = "postgresql"` fixo no Prisma, por exemplo).
-**Checar antes de assumir**, e registrar o porquê no `notes.md` do serviço,
+**Checar antes de assumir**, e registrar o porquê nas `notes` do serviço,
 pra ninguém reabrir a discussão depois.
 

@@ -17,13 +17,12 @@ the part worth automating — it is the same decision the hook documents:
 
 Detection covers sqlite and none. `stop` cannot be detected — a folder with a
 Mongo in it looks like plain files — so it is declared in the app's
-install.ini under [backup].
+app.json under "backup".
 
 Run it as `qh --zerobyte`: it reads which volume folders are this repository's
 from install.py, so it only works from inside the repository.
 """
 import argparse
-import configparser
 import json
 import os
 import pathlib
@@ -89,7 +88,7 @@ def raizes_do_repositorio():
     Not the same string: actual-budget writes to volumes/actual, and twelve
     media-stack units share volumes/media-stack. `Service.volume_roots()`
     already answers this, so it is imported rather than guessed. The mapping
-    and not just the names, because install.ini lives under the app's folder.
+    and not just the names, because app.json lives under the app's folder.
     """
     from install import APPS, Service
     return {pathlib.Path(r).name: d.name
@@ -118,7 +117,7 @@ MARCAS = {
 # Excluded from every job. Short on purpose: measured across the real volumes,
 # the disposable directories add up to single-digit megabytes, so a long list
 # of guessed patterns would only add ways to drop something that mattered. What
-# an app knows about its own data goes in its install.ini, under [backup].
+# an app knows about its own data goes in its app.json, under "backup".
 EXCLUIR = ["*.tmp", "*.partial", "lost+found", ".Trash-*"]
 # restic's own convention: a directory carrying this file is a cache.
 EXCLUIR_SE = ["CACHEDIR.TAG"]
@@ -149,11 +148,9 @@ def api(base, key, caminho, metodo="GET", corpo=None):
 
 def modo(pasta, app):
     """The mode this folder's data needs: declared, or worked out by looking."""
-    ini = APPS / app / "install.ini"
-    if ini.is_file():
-        m = re.search(r"(?ms)^\[backup\].*?^mode\s*=\s*(\w+)", ini.read_text())
-        if m:
-            return m.group(1).strip()
+    declarado = (manifesto(app).get("backup") or {}).get("mode")
+    if declarado:
+        return str(declarado).strip()
     sqlite = False
     opaco = []
     for raiz, dirs, arquivos in os.walk(pasta, onerror=opaco.append):
@@ -175,15 +172,17 @@ def modo(pasta, app):
 
 def excluir(app):
     """This job's exclude patterns: the shared ones, plus the app's own."""
-    ini = APPS / app / "install.ini"
-    if not ini.is_file():
-        return list(EXCLUIR)
-    # interpolation=None for the same reason install.py does it: the values
-    # carry %h, a systemd specifier that configparser would try to expand.
-    cp = configparser.ConfigParser(interpolation=None)
-    cp.read(ini)
-    bruto = cp.get("backup", "exclude", fallback="")
-    return EXCLUIR + [l.strip() for l in bruto.splitlines() if l.strip()]
+    extras = (manifesto(app).get("backup") or {}).get("exclude") or []
+    return EXCLUIR + [str(x).strip() for x in extras if str(x).strip()]
+
+
+def manifesto(app):
+    """The app's app.json (`backup.mode`, `backup.exclude`), or {} when the folder has none."""
+    arquivo = APPS / app / "app.json"
+    try:
+        return json.loads(arquivo.read_text())
+    except (OSError, ValueError):
+        return {}
 
 
 def ajusta_job(a, key, job, padroes, chamadas=None):
@@ -309,7 +308,7 @@ def main():
     allowlist, alheias = [], []
     for pasta in pastas:
         # Only this repository's services. A folder from somewhere else has no
-        # install.ini to declare its mode and no unit this script can reason
+        # app.json to declare its mode and no unit this script can reason
         # about — the mode would be a guess, and a wrong guess here is a backup
         # that does not restore.
         if pasta.name not in conhecidas:

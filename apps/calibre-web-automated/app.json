@@ -1,0 +1,24 @@
+{
+  "spec": 2,
+  "id": "calibre-web-automated",
+  "title": "Calibre-Web-Automated",
+  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/calibre-web.svg",
+  "tagline": {
+    "en": "An ebook library with automatic conversion, metadata and covers via Calibre, readable straight in the browser",
+    "pt": "Biblioteca de ebooks com conversão, metadados e capas automáticas via Calibre, com leitura direto no navegador"
+  },
+  "category": "Media",
+  "license": "GPL-3.0",
+  "links": {
+    "docs": "https://github.com/crocodilestick/Calibre-Web-Automated"
+  },
+  "notes": {
+    "en": "Open `http://<host-ip>:8105` or `https://calibre-web.<your-tailnet>.ts.net`.",
+    "pt": "Abrir `http://<ip-do-host>:8105` ou `https://calibre-web.<your-tailnet>.ts.net`."
+  },
+  "units": {
+    "calibre-web-automated": {
+      "image": "v{version}"
+    }
+  }
+}

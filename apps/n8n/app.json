@@ -1,0 +1,30 @@
+{
+  "spec": 2,
+  "id": "n8n",
+  "title": "n8n",
+  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/n8n.svg",
+  "tagline": {
+    "en": "Workflow automation through a visual node editor",
+    "pt": "Automação de workflows via editor visual de nós"
+  },
+  "category": "Automation",
+  "links": {
+    "docs": "https://n8n.io"
+  },
+  "screenshots": [
+    "https://raw.githubusercontent.com/n8n-io/n8n/master/assets/n8n-screenshot-readme.png"
+  ],
+  "notes": {
+    "en": "Open `http://<host-ip>:5678` or `https://n8n.<your-tailnet>.ts.net`.",
+    "pt": "Abrir `http://<ip-do-host>:5678` ou `https://n8n.<your-tailnet>.ts.net`."
+  },
+  "secrets": {
+    "n8n-encryption-key": "rand-hex 32"
+  },
+  "units": {
+    "n8n": {
+      "upstream": "n8n-io/n8n",
+      "image": "{version}"
+    }
+  }
+}
