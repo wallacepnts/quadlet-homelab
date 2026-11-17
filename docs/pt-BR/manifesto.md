@@ -35,7 +35,7 @@ apps/memos/
 | Campo | Obrigatório | Significado |
 | --- | --- | --- |
 | `title` | sim | O nome mostrado na loja e na tabela de serviços. |
-| `tagline` | sim | Uma linha de texto: a descrição na tabela e no cartão. |
+| `tagline` | sim | Uma frase curta e simples, até 70 caracteres, sem travessão nem parênteses: o que o app é, como você contaria a um amigo (*A media server for your home collection.*). É a descrição na tabela e no cartão. Ressalvas vão em `notes`. |
 | `category` | não | Um dos grupos de `qhui.GRUPOS` (as categorias da loja). Infraestrutura sem lugar entre elas (homepage, postfix, toolbx) não tem. |
 | `links` | não | `docs` (a documentação do projeto, https), `repo` (`owner/repo` ou URL, só onde o caminho da imagem aponta pro lugar errado). |
 | `min_podman` | não | `"5.4"`: um piso acima do 5.0 que o `Notify=healthy` já exige. |

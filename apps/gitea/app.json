@@ -1,6 +1,6 @@
 {
   "title": "Gitea",
-  "tagline": "A light but complete Git server — repositories, issues, pull requests and CI in a single interface",
+  "tagline": "A simple Git server for your code.",
   "category": "Tools",
   "links": {
     "docs": "https://gitea.com"

@@ -1,6 +1,6 @@
 {
   "title": "any-sync-bundle",
-  "tagline": "The Any-Sync protocol backend, which syncs Anytype's data across devices without relying on the company's cloud",
+  "tagline": "A sync server for the Anytype app.",
   "category": "Productivity",
   "links": {
     "docs": "https://github.com/grishy/any-sync-bundle#readme"

@@ -1,6 +1,6 @@
 {
   "title": "FileBrowser Quantum",
-  "tagline": "A web file manager — search, thumbnails, WebDAV, and a shell over a directory you pick",
+  "tagline": "A file manager in your browser.",
   "category": "Files",
   "links": {
     "docs": "https://filebrowserquantum.com/en/docs/"

@@ -1,6 +1,6 @@
 {
   "title": "CookCLI",
-  "tagline": "Plain-text recipes in the CookLang format — versionable in git, with no database and no forms",
+  "tagline": "Keep your recipes as plain text files.",
   "category": "Productivity",
   "links": {
     "docs": "https://demo.cooklang.org"

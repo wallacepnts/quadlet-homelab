@@ -1,10 +1,11 @@
 {
   "title": "Proxmox VE",
-  "tagline": "The Proxmox hypervisor in a container, for trying it without dedicating a machine — runs privileged",
+  "tagline": "Try the Proxmox virtualization system.",
   "category": "Virtual Machines",
   "links": {
     "docs": "https://pve.proxmox.com/pve-docs/"
   },
+  "notes": "It runs privileged.",
   "secrets": {
     "proxmox-root-password": "rand-alnum 20"
   },

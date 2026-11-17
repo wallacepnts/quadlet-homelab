@@ -1,6 +1,6 @@
 {
   "title": "Gitea Runner",
-  "tagline": "Runs the Actions workflows of the Gitea next door — CI that never leaves the machine",
+  "tagline": "Runs the automated workflows of your Gitea.",
   "links": {
     "docs": "https://docs.gitea.com/usage/actions/overview"
   },

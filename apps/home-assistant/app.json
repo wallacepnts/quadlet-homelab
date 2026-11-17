@@ -1,6 +1,6 @@
 {
   "title": "Home Assistant",
-  "tagline": "The central home automation hub; it brings devices from any manufacturer into a single panel",
+  "tagline": "Control all your smart home devices in one place.",
   "category": "Home",
   "links": {
     "docs": "https://www.home-assistant.io"

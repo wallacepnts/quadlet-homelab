@@ -1,6 +1,6 @@
 {
   "title": "neko",
-  "tagline": "A browser running on the server, streamed to yours — shared control, and nothing it opens touches your machine",
+  "tagline": "A shared browser you can use together.",
   "category": "Tools",
   "links": {
     "docs": "https://neko.m1k1o.net/"

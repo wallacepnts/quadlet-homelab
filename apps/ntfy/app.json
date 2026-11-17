@@ -1,6 +1,6 @@
 {
   "title": "ntfy",
-  "tagline": "A push notification server — where the uptime-kuma, wud and zerobyte alerts go, with a phone app",
+  "tagline": "Send notifications to your phone.",
   "category": "Monitoring",
   "links": {
     "docs": "https://ntfy.sh"

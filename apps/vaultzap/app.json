@@ -1,6 +1,6 @@
 {
   "title": "VaultZap",
-  "tagline": "A local, browsable archive of exported WhatsApp conversations — search, gallery and calendar, fully offline",
+  "tagline": "Browse your exported WhatsApp chats.",
   "category": "Personal",
   "links": {
     "docs": "https://github.com/wallacepnts/vaultzap#readme"

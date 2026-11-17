@@ -1,6 +1,6 @@
 {
   "title": "Grafana",
-  "tagline": "Dashboards over whatever you point it at — it brings no data of its own",
+  "tagline": "Charts and dashboards for your data.",
   "category": "Monitoring",
   "links": {
     "docs": "https://grafana.com/docs/grafana/latest/"

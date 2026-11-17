@@ -1,6 +1,6 @@
 {
   "title": "Kiwix",
-  "tagline": "Wikipedia and other libraries served from disk, read with the internet off",
+  "tagline": "Read Wikipedia and other libraries offline.",
   "category": "Personal",
   "links": {
     "docs": "https://wiki.kiwix.org/"

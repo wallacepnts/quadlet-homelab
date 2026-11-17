@@ -1,6 +1,6 @@
 {
   "title": "Zabbix",
-  "tagline": "Monitoring of servers, networks and services with agents, SNMP, triggers and alerts — server, web interface and PostgreSQL",
+  "tagline": "Monitors your servers and network.",
   "category": "Monitoring",
   "links": {
     "docs": "https://www.zabbix.com/documentation/current/en/manual/installation/containers"

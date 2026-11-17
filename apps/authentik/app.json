@@ -1,10 +1,11 @@
 {
   "title": "Authentik",
-  "tagline": "An identity server (SSO, MFA, OIDC/SAML) — only the core is deployed, no forward-auth via tsdproxy yet (see its notes in the panel)",
+  "tagline": "A login and single sign-on server.",
   "category": "Network & Security",
   "links": {
     "docs": "https://goauthentik.io"
   },
+  "notes": "Only the core is deployed; forward-auth through tsdproxy is not set up yet.",
   "secrets": {
     "authentik-postgres-password": "rand-urlsafe 32",
     "authentik-secret-key": "rand-urlsafe 48"

@@ -1,6 +1,6 @@
 {
   "title": "Audiobookshelf",
-  "tagline": "An audiobook and podcast server, with progress synced across devices",
+  "tagline": "A server for your audiobooks and podcasts.",
   "category": "Media",
   "links": {
     "docs": "https://audiobookshelf.org"

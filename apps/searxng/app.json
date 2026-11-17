@@ -1,6 +1,6 @@
 {
   "title": "SearXNG",
-  "tagline": "Metasearch that queries dozens of engines at once, keeping no profile of you",
+  "tagline": "Search the web without being tracked.",
   "category": "Tools",
   "links": {
     "docs": "https://docs.searxng.org/"

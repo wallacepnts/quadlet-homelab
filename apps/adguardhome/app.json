@@ -1,6 +1,6 @@
 {
   "title": "AdGuard Home",
-  "tagline": "A recursive DNS server that blocks ads and trackers for the whole network",
+  "tagline": "Blocks ads and trackers on your whole network.",
   "category": "Network & Security",
   "links": {
     "docs": "https://adguard.com/adguard-home/overview.html"

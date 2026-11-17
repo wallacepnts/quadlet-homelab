@@ -1,6 +1,6 @@
 {
   "title": "Anki",
-  "tagline": "The sync server from Anki itself, so flashcards, reviews and media sync without AnkiWeb",
+  "tagline": "A sync server for your Anki flashcards.",
   "category": "Productivity",
   "links": {
     "docs": "https://docs.ankiweb.net/sync-server.html"

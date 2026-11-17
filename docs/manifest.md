@@ -35,7 +35,7 @@ apps/memos/
 | Field | Required | Meaning |
 | --- | --- | --- |
 | `title` | yes | The name shown in the store and in the services table. |
-| `tagline` | yes | One line of text: the description in the table and on the card. |
+| `tagline` | yes | One short, plain sentence, up to 70 characters, with no dash or parenthesis: what the app is, as you would tell a friend (*A media server for your home collection.*). It is the description in the table and on the card. Caveats go in `notes`. |
 | `category` | no | One of the groups in `qhui.GRUPOS` (the store's categories). Infrastructure with no place among them (homepage, postfix, toolbx) has none. |
 | `links` | no | `docs` (the project's documentation, https), `repo` (`owner/repo` or a URL, only where the image's own path points at the wrong place). |
 | `min_podman` | no | `"5.4"`: a floor above the 5.0 that `Notify=healthy` already needs. |

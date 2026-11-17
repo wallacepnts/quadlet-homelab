@@ -1,10 +1,11 @@
 {
   "title": "Zigbee2MQTT",
-  "tagline": "A bridge between Zigbee devices and MQTT, with no proprietary hub — no coordinator plugged in yet (see its notes in the panel)",
+  "tagline": "Use Zigbee devices without the maker's hub.",
   "category": "Home",
   "links": {
     "docs": "https://www.zigbee2mqtt.io"
   },
+  "notes": "No Zigbee coordinator is plugged in yet.",
   "config": {
     "configuration.yaml": "%h/.config/containers/volumes/zigbee2mqtt/data/configuration.yaml",
     "mosquitto.conf": "%h/.config/containers/volumes/zigbee2mqtt/mosquitto/config/mosquitto.conf"

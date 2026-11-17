@@ -1,6 +1,6 @@
 {
   "title": "MeTube",
-  "tagline": "A web interface for yt-dlp — paste the URL and the video lands on disk",
+  "tagline": "Download videos from the web.",
   "category": "Downloads",
   "links": {
     "docs": "https://github.com/alexta69/metube#readme"

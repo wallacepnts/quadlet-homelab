@@ -1,6 +1,6 @@
 {
   "title": "Node-RED",
-  "tagline": "Flow automation through a visual node editor",
+  "tagline": "Automate things by connecting blocks.",
   "category": "Automation",
   "links": {
     "docs": "https://nodered.org"

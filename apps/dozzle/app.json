@@ -1,6 +1,6 @@
 {
   "title": "Dozzle",
-  "tagline": "Live logs of every container in the browser, without opening a terminal",
+  "tagline": "Read your containers' logs in the browser.",
   "category": "Monitoring",
   "links": {
     "docs": "https://dozzle.dev/"

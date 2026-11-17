@@ -1,6 +1,6 @@
 {
   "title": "OwnTracks",
-  "tagline": "Personal location tracking through a phone app, with its own MQTT broker and a position history",
+  "tagline": "Track your location from your phone.",
   "category": "Home",
   "links": {
     "docs": "https://owntracks.org/booklet/"

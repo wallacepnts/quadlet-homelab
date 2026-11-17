@@ -1,6 +1,6 @@
 {
   "title": "Invio",
-  "tagline": "Self-hosted invoicing and invoice tracking, on SQLite and with no external service",
+  "tagline": "Create and track invoices.",
   "category": "Personal",
   "links": {
     "docs": "https://github.com/kittendevv/Invio#readme"

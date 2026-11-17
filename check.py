@@ -792,8 +792,12 @@ def regenerated_readmes(folders):
     for pasta in folders:
         m = manifest.load(pasta)
         logo = manifest.icon_file(pasta)
-        if m.get("title") and logo and isinstance(m.get("tagline"), dict):
+        if m.get("title") and logo and isinstance(m.get("tagline"), str):
             apps.append((pasta.name, m, logo))
+    if len(apps) != len(folders):
+        error("table", f"only {len(apps)} of {len(folders)} apps have a title, a tagline and a logo: "
+                       f"the services table would lose the rest")
+        return {}
     saida = {}
     for lang, path in README_TABLES:
         atual = path.read_text()

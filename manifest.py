@@ -204,6 +204,7 @@ def view(folder):
 
 ICON_SUFFIXES = (".svg", ".png", ".webp", ".jpg")
 SHOT_SUFFIXES = (".png", ".webp", ".jpg", ".jpeg", ".gif")
+TAGLINE_MAX = 70
 ICON_MAX, SHOT_MAX, SHOT_COUNT = 512 * 1024, 1024 * 1024, 6
 
 
@@ -257,8 +258,11 @@ def problems(data, grupos, folder=None):
         erros.append('"title" is required')
     if data.get("category") and data["category"] not in grupos:     # optional: infrastructure has none
         erros.append(f'"category" {data["category"]!r} is not one of: {", ".join(grupos)}')
-    if not isinstance(data.get("tagline"), str) or not data["tagline"].strip():
-        erros.append('"tagline" is required: one line of text')
+    tag = data.get("tagline")
+    if not isinstance(tag, str) or not tag.strip():
+        erros.append('"tagline" is required: one short, plain sentence')
+    elif len(tag) > TAGLINE_MAX or "\n" in tag or " — " in tag or "(" in tag:
+        erros.append(f'"tagline" must be one short, plain sentence: up to {TAGLINE_MAX} characters, no dash or parenthesis')
     for k in ("notes", "deprecated"):
         if k in data and not isinstance(data[k], str):
             erros.append(f'"{k}" must be a string')
@@ -329,6 +333,7 @@ def selftest():
                                  "login", "login.y", "choices", "choices.y"}
     assert dump(d).startswith('{\n  "title": "X"')
     assert problems(d, ("Tools",)) == [] and problems({**d, "spec": 2}, ("Tools",)), "no version field: `spec` is a typo now"
+    assert problems({**d, "tagline": "x" * 71}, ("Tools",)) and problems({**d, "tagline": "A tool (with a caveat)"}, ("Tools",))
     assert problems({**d, "tagline": ""}, ("Tools",)) and problems({**d, "tagline": {"en": "a", "pt": "b"}}, ("Tools",))
     assert problems({**d, "category": "Nope"}, ("Tools",)) and problems({**d, "notes": {"en": "x"}}, ("Tools",))
     assert problems({**d, "wat": 1}, ("Tools",)), "an unknown key is a typo"

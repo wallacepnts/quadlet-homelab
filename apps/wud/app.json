@@ -1,6 +1,6 @@
 {
   "title": "WUD (What's Up Docker)",
-  "tagline": "Watches for available image updates for the containers, applying nothing itself — it only reports",
+  "tagline": "Tells you when your containers have updates.",
   "category": "Monitoring",
   "links": {
     "docs": "https://getwud.github.io/wud/"

@@ -1,6 +1,6 @@
 {
   "title": "mdrop",
-  "tagline": "Converts PDF, Office, image and audio to Markdown over the web, stateless and without leaving the machine",
+  "tagline": "Turn documents into Markdown.",
   "category": "Tools",
   "links": {
     "docs": "https://mdrop.remotelab.dev"

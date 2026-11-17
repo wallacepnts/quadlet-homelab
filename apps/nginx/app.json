@@ -1,6 +1,6 @@
 {
   "title": "nginx",
-  "tagline": "A static file server",
+  "tagline": "A web server for static files.",
   "category": "Network & Security",
   "links": {
     "docs": "https://nginx.org/en/docs/"

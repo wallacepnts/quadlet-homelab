@@ -1,6 +1,6 @@
 {
   "title": "Zerobyte",
-  "tagline": "Automates backups (via Restic) of every other service's data in this repository",
+  "tagline": "Backs up your apps' data.",
   "category": "Monitoring",
   "links": {
     "docs": "https://zerobyte.app"

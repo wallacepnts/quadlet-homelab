@@ -1,6 +1,6 @@
 {
   "title": "Mailpit",
-  "tagline": "An SMTP server that catches everything your apps send, to read in the browser instead of a real inbox",
+  "tagline": "Catches the emails your apps send so you can read them.",
   "category": "Tools",
   "links": {
     "docs": "https://mailpit.axllent.org/docs/"

@@ -1,6 +1,6 @@
 {
   "title": "Vaultwarden",
-  "tagline": "A password vault compatible with Bitwarden's protocol, light enough to run anywhere",
+  "tagline": "A password manager you host yourself.",
   "category": "Network & Security",
   "links": {
     "docs": "https://github.com/dani-garcia/vaultwarden/wiki"

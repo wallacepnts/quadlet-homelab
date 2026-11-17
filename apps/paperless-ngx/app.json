@@ -1,6 +1,6 @@
 {
   "title": "Paperless-ngx",
-  "tagline": "Scans, OCRs and indexes documents automatically, with full-text search so you never hunt for paper again",
+  "tagline": "Scan and search your paper documents.",
   "category": "Files",
   "links": {
     "docs": "https://docs.paperless-ngx.com/"

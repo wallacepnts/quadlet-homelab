@@ -1,6 +1,6 @@
 {
   "title": "Uptime Kuma",
-  "tagline": "An uptime monitor for the other services and the tailnet, with history and notifications",
+  "tagline": "Tells you when a service goes down.",
   "category": "Monitoring",
   "links": {
     "docs": "https://uptime.kuma.pet"

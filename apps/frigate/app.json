@@ -1,10 +1,11 @@
 {
   "title": "Frigate",
-  "tagline": "An NVR with AI object detection — CPU-only by default, no camera configured yet (see its notes in the panel)",
+  "tagline": "A security camera recorder that spots people and objects.",
   "category": "Home",
   "links": {
     "docs": "https://frigate.video"
   },
+  "notes": "It runs on the CPU by default, and no camera is configured yet.",
   "vars": {
     "FRIGATE_MEDIA_DIR": "~/frigate-media"
   }

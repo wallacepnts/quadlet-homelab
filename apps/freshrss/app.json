@@ -1,6 +1,6 @@
 {
   "title": "FreshRSS",
-  "tagline": "A self-hosted RSS/Atom feed aggregator, with a compatible API for mobile apps",
+  "tagline": "Read all your news feeds in one place.",
   "category": "Productivity",
   "links": {
     "docs": "https://freshrss.org"

@@ -1,6 +1,6 @@
 {
   "title": "Syncthing",
-  "tagline": "P2P file sync between devices, with no central server",
+  "tagline": "Sync files between your devices.",
   "category": "Files",
   "links": {
     "docs": "https://syncthing.net/"

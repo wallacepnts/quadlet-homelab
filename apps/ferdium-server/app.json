@@ -1,6 +1,6 @@
 {
   "title": "Ferdium Server",
-  "tagline": "Sync for the Ferdium desktop app — your service list on your own server, not Franz's",
+  "tagline": "A sync server for the Ferdium app.",
   "category": "Personal",
   "links": {
     "docs": "https://github.com/ferdium/ferdium-server#readme"

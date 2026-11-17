@@ -1,6 +1,6 @@
 {
   "title": "PKVault",
-  "tagline": "Pokémon storage and save editing across every generation, based on PKHeX, with a Pokédex built from all your saves",
+  "tagline": "Manage your Pokémon save files.",
   "category": "Personal",
   "links": {
     "docs": "https://github.com/Chnapy/PKVault/blob/main/docs/functional/en/README.md"

@@ -1,6 +1,6 @@
 {
   "title": "FMD Server",
-  "tagline": "Find, ring and lock your Android phone from the browser, end-to-end encrypted, without Google",
+  "tagline": "Find your Android phone from the browser.",
   "category": "Home",
   "links": {
     "docs": "https://fmd-foss.org/docs/fmd-server/overview"

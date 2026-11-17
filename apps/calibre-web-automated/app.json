@@ -1,6 +1,6 @@
 {
   "title": "Calibre-Web-Automated",
-  "tagline": "An ebook library with automatic conversion, metadata and covers via Calibre, readable straight in the browser",
+  "tagline": "Read and manage your ebook library in the browser.",
   "category": "Media",
   "links": {
     "docs": "https://github.com/crocodilestick/Calibre-Web-Automated"

@@ -1,6 +1,6 @@
 {
   "title": "Radicale",
-  "tagline": "A light, minimal CalDAV/CardDAV server, on the rebuild that carries the birthday-calendar script (Radicale 3.7.6.0 inside)",
+  "tagline": "A calendar and contacts server.",
   "category": "Productivity",
   "links": {
     "docs": "https://radicale.org/v3.html"

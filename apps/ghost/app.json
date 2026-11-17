@@ -1,10 +1,11 @@
 {
   "title": "Ghost",
-  "tagline": "A self-hosted blog/newsletter (SQLite, development mode — see its notes in the panel)",
+  "tagline": "A blog and newsletter platform.",
   "category": "Productivity",
   "links": {
     "docs": "https://ghost.org"
   },
+  "notes": "It runs on SQLite, in development mode.",
   "units": {
     "ghost": {
       "upstream": "TryGhost/Ghost",

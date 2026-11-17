@@ -1,6 +1,6 @@
 {
   "title": "Retrom",
-  "tagline": "A game library for emulation — one collection, played in the browser or through the desktop client",
+  "tagline": "A library for your retro games.",
   "category": "Media",
   "links": {
     "docs": "https://github.com/JMBeresford/retrom/wiki"

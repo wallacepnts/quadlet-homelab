@@ -149,6 +149,89 @@ Leap 15's problem — it publishes no container image and was not measured here.
 
 | Logo | Application | Description |
 | --- | --- | --- |
+| <img src="./apps/actual-budget/icon.svg" width="48" height="48" alt=""> | [Actual Budget](./apps/actual-budget) | A simple tool to plan and track your money. |
+| <img src="./apps/adguardhome/icon.svg" width="48" height="48" alt=""> | [AdGuard Home](./apps/adguardhome) | Blocks ads and trackers on your whole network. |
+| <img src="./apps/anki/icon.svg" width="48" height="48" alt=""> | [Anki](./apps/anki) | A sync server for your Anki flashcards. |
+| <img src="./apps/any-sync-bundle/icon.svg" width="48" height="48" alt=""> | [any-sync-bundle](./apps/any-sync-bundle) | A sync server for the Anytype app. |
+| <img src="./apps/audiobookshelf/icon.svg" width="48" height="48" alt=""> | [Audiobookshelf](./apps/audiobookshelf) | A server for your audiobooks and podcasts. |
+| <img src="./apps/authentik/icon.svg" width="48" height="48" alt=""> | [Authentik](./apps/authentik) | A login and single sign-on server. |
+| <img src="./apps/beaverhabits/icon.png" width="48" height="48" alt=""> | [Beaver Habits](./apps/beaverhabits) | A simple habit tracker. |
+| <img src="./apps/beszel/icon.svg" width="48" height="48" alt=""> | [Beszel](./apps/beszel) | Shows how busy your server is. |
+| <img src="./apps/calibre-web-automated/icon.svg" width="48" height="48" alt=""> | [Calibre-Web-Automated](./apps/calibre-web-automated) | Read and manage your ebook library in the browser. |
+| <img src="./apps/casa/icon.svg" width="48" height="48" alt=""> | [CasaOS](./apps/casa) | A home server dashboard. |
+| <img src="./apps/changedetection/icon.svg" width="48" height="48" alt=""> | [changedetection.io](./apps/changedetection) | Tells you when a web page changes. |
+| <img src="./apps/collabora/icon.svg" width="48" height="48" alt=""> | [Collabora](./apps/collabora) | Edit documents in your browser. |
+| <img src="./apps/cookcli/icon.svg" width="48" height="48" alt=""> | [CookCLI](./apps/cookcli) | Keep your recipes as plain text files. |
+| <img src="./apps/copyparty/icon.svg" width="48" height="48" alt=""> | [Copyparty](./apps/copyparty) | A file server you can upload to from any device. |
+| <img src="./apps/docuseal/icon.svg" width="48" height="48" alt=""> | [DocuSeal](./apps/docuseal) | Sign documents on your own server. |
+| <img src="./apps/donetick/icon.svg" width="48" height="48" alt=""> | [Donetick](./apps/donetick) | Keep track of household chores. |
+| <img src="./apps/dozzle/icon.svg" width="48" height="48" alt=""> | [Dozzle](./apps/dozzle) | Read your containers' logs in the browser. |
+| <img src="./apps/excalidash/icon.svg" width="48" height="48" alt=""> | [ExcaliDash](./apps/excalidash) | A place to organize and share Excalidraw drawings. |
+| <img src="./apps/faved/icon.svg" width="48" height="48" alt=""> | [Faved](./apps/faved) | A simple place to save bookmarks. |
+| <img src="./apps/ferdium-server/icon.svg" width="48" height="48" alt=""> | [Ferdium Server](./apps/ferdium-server) | A sync server for the Ferdium app. |
+| <img src="./apps/filebrowser/icon.svg" width="48" height="48" alt=""> | [FileBrowser Quantum](./apps/filebrowser) | A file manager in your browser. |
+| <img src="./apps/fmd-server/icon.svg" width="48" height="48" alt=""> | [FMD Server](./apps/fmd-server) | Find your Android phone from the browser. |
+| <img src="./apps/freshrss/icon.svg" width="48" height="48" alt=""> | [FreshRSS](./apps/freshrss) | Read all your news feeds in one place. |
+| <img src="./apps/frigate/icon.svg" width="48" height="48" alt=""> | [Frigate](./apps/frigate) | A security camera recorder that spots people and objects. |
+| <img src="./apps/ghost/icon.webp" width="48" height="48" alt=""> | [Ghost](./apps/ghost) | A blog and newsletter platform. |
+| <img src="./apps/gitea/icon.svg" width="48" height="48" alt=""> | [Gitea](./apps/gitea) | A simple Git server for your code. |
+| <img src="./apps/gitea-runner/icon.svg" width="48" height="48" alt=""> | [Gitea Runner](./apps/gitea-runner) | Runs the automated workflows of your Gitea. |
+| <img src="./apps/grafana/icon.svg" width="48" height="48" alt=""> | [Grafana](./apps/grafana) | Charts and dashboards for your data. |
+| <img src="./apps/hermes-agent/icon.png" width="48" height="48" alt=""> | [Hermes Agent](./apps/hermes-agent) | A personal AI assistant. |
+| <img src="./apps/home-assistant/icon.svg" width="48" height="48" alt=""> | [Home Assistant](./apps/home-assistant) | Control all your smart home devices in one place. |
+| <img src="./apps/homebox/icon.svg" width="48" height="48" alt=""> | [HomeBox](./apps/homebox) | Keep an inventory of everything you own. |
+| <img src="./apps/homepage/icon.png" width="48" height="48" alt=""> | [homepage](./apps/homepage) | A start page for your home server. |
+| <img src="./apps/immich/icon.svg" width="48" height="48" alt=""> | [Immich](./apps/immich) | Back up and browse your photos and videos. |
+| <img src="./apps/instagram-monitor/icon.svg" width="48" height="48" alt=""> | [Instagram Monitor](./apps/instagram-monitor) | Watches Instagram profiles and shows their activity. |
+| <img src="./apps/invio/icon.svg" width="48" height="48" alt=""> | [Invio](./apps/invio) | Create and track invoices. |
+| <img src="./apps/karakeep/icon.svg" width="48" height="48" alt=""> | [Karakeep](./apps/karakeep) | Save and search your bookmarks. |
+| <img src="./apps/karaoke-eternal/icon.svg" width="48" height="48" alt=""> | [Karaoke Eternal](./apps/karaoke-eternal) | Run karaoke parties from your own songs. |
+| <img src="./apps/kiwix/icon.svg" width="48" height="48" alt=""> | [Kiwix](./apps/kiwix) | Read Wikipedia and other libraries offline. |
+| <img src="./apps/koffan/icon.png" width="48" height="48" alt=""> | [Koffan](./apps/koffan) | A shared shopping list. |
+| <img src="./apps/komga/icon.svg" width="48" height="48" alt=""> | [Komga](./apps/komga) | Read your comics and manga. |
+| <img src="./apps/lubelogger/icon.png" width="48" height="48" alt=""> | [LubeLogger](./apps/lubelogger) | Track maintenance for your vehicles. |
+| <img src="./apps/mailpit/icon.svg" width="48" height="48" alt=""> | [Mailpit](./apps/mailpit) | Catches the emails your apps send so you can read them. |
+| <img src="./apps/mdrop/icon.svg" width="48" height="48" alt=""> | [mdrop](./apps/mdrop) | Turn documents into Markdown. |
+| <img src="./apps/media-stack/icon.svg" width="48" height="48" alt=""> | [Media Stack](./apps/media-stack) | A media server and the tools that fill it. |
+| <img src="./apps/memos/icon.svg" width="48" height="48" alt=""> | [Memos](./apps/memos) | A simple place for quick notes. |
+| <img src="./apps/metube/icon.svg" width="48" height="48" alt=""> | [MeTube](./apps/metube) | Download videos from the web. |
+| <img src="./apps/monica/icon.svg" width="48" height="48" alt=""> | [Monica](./apps/monica) | Remember the people in your life. |
+| <img src="./apps/n8n/icon.svg" width="48" height="48" alt=""> | [n8n](./apps/n8n) | Automate tasks between your apps. |
+| <img src="./apps/neko/icon.svg" width="48" height="48" alt=""> | [neko](./apps/neko) | A shared browser you can use together. |
+| <img src="./apps/netbootxyz/icon.svg" width="48" height="48" alt=""> | [netboot.xyz](./apps/netbootxyz) | Install an operating system over the network. |
+| <img src="./apps/nginx/icon.svg" width="48" height="48" alt=""> | [nginx](./apps/nginx) | A web server for static files. |
+| <img src="./apps/node-red/icon.svg" width="48" height="48" alt=""> | [Node-RED](./apps/node-red) | Automate things by connecting blocks. |
+| <img src="./apps/ntfy/icon.svg" width="48" height="48" alt=""> | [ntfy](./apps/ntfy) | Send notifications to your phone. |
+| <img src="./apps/omni-tools/icon.png" width="48" height="48" alt=""> | [Omni Tools](./apps/omni-tools) | Handy tools that run in your browser. |
+| <img src="./apps/openwebui/icon.svg" width="48" height="48" alt=""> | [Open WebUI](./apps/openwebui) | A chat interface for AI models. |
+| <img src="./apps/openwa/icon.svg" width="48" height="48" alt=""> | [OpenWA](./apps/openwa) | Send WhatsApp messages from your other apps. |
+| <img src="./apps/owncloud/icon.svg" width="48" height="48" alt=""> | [ownCloud](./apps/owncloud) | Your own cloud for files. |
+| <img src="./apps/owntracks/icon.svg" width="48" height="48" alt=""> | [OwnTracks](./apps/owntracks) | Track your location from your phone. |
+| <img src="./apps/paperless-ngx/icon.svg" width="48" height="48" alt=""> | [Paperless-ngx](./apps/paperless-ngx) | Scan and search your paper documents. |
+| <img src="./apps/pkvault/icon.svg" width="48" height="48" alt=""> | [PKVault](./apps/pkvault) | Manage your Pokémon save files. |
+| <img src="./apps/postfix/icon.svg" width="48" height="48" alt=""> | [Postfix](./apps/postfix) | Sends email on behalf of your other apps. |
+| <img src="./apps/postiz/icon.svg" width="48" height="48" alt=""> | [Postiz](./apps/postiz) | Schedule your social media posts. |
+| <img src="./apps/prometheus/icon.svg" width="48" height="48" alt=""> | [Prometheus](./apps/prometheus) | Collects numbers about how your services run. |
+| <img src="./apps/proxmox/icon.svg" width="48" height="48" alt=""> | [Proxmox VE](./apps/proxmox) | Try the Proxmox virtualization system. |
+| <img src="./apps/radicale/icon.svg" width="48" height="48" alt=""> | [Radicale](./apps/radicale) | A calendar and contacts server. |
+| <img src="./apps/rclone/icon.svg" width="48" height="48" alt=""> | [rclone](./apps/rclone) | Move files between your cloud accounts. |
+| <img src="./apps/retrom/icon.webp" width="48" height="48" alt=""> | [Retrom](./apps/retrom) | A library for your retro games. |
+| <img src="./apps/searxng/icon.png" width="48" height="48" alt=""> | [SearXNG](./apps/searxng) | Search the web without being tracked. |
+| <img src="./apps/stirling-pdf/icon.svg" width="48" height="48" alt=""> | [Stirling-PDF](./apps/stirling-pdf) | Edit and convert PDF files. |
+| <img src="./apps/syncthing/icon.svg" width="48" height="48" alt=""> | [Syncthing](./apps/syncthing) | Sync files between your devices. |
+| <img src="./apps/toolbx/icon.png" width="48" height="48" alt=""> | [Toolbx](./apps/toolbx) | Throwaway Linux shells for trying things. |
+| <img src="./apps/traccar/icon.svg" width="48" height="48" alt=""> | [Traccar](./apps/traccar) | Track vehicles and devices by GPS. |
+| <img src="./apps/tsdproxy/icon.svg" width="48" height="48" alt=""> | [tsdproxy](./apps/tsdproxy) | Puts your apps on your tailnet automatically. |
+| <img src="./apps/uptime-kuma/icon.svg" width="48" height="48" alt=""> | [Uptime Kuma](./apps/uptime-kuma) | Tells you when a service goes down. |
+| <img src="./apps/vaultwarden/icon.png" width="48" height="48" alt=""> | [Vaultwarden](./apps/vaultwarden) | A password manager you host yourself. |
+| <img src="./apps/vaultzap/icon.svg" width="48" height="48" alt=""> | [VaultZap](./apps/vaultzap) | Browse your exported WhatsApp chats. |
+| <img src="./apps/vikunja/icon.svg" width="48" height="48" alt=""> | [Vikunja](./apps/vikunja) | A to-do list for tasks and projects. |
+| <img src="./apps/vm/icon.svg" width="48" height="48" alt=""> | [VM](./apps/vm) | Run Windows, macOS and Linux in a container. |
+| <img src="./apps/wger/icon.svg" width="48" height="48" alt=""> | [wger](./apps/wger) | Plan and track your workouts. |
+| <img src="./apps/wud/icon.png" width="48" height="48" alt=""> | [WUD (What's Up Docker)](./apps/wud) | Tells you when your containers have updates. |
+| <img src="./apps/zabbix/icon.svg" width="48" height="48" alt=""> | [Zabbix](./apps/zabbix) | Monitors your servers and network. |
+| <img src="./apps/zerobyte/icon.png" width="48" height="48" alt=""> | [Zerobyte](./apps/zerobyte) | Backs up your apps' data. |
+| <img src="./apps/zigbee2mqtt/icon.svg" width="48" height="48" alt=""> | [Zigbee2MQTT](./apps/zigbee2mqtt) | Use Zigbee devices without the maker's hub. |
 
 <!-- services:end -->
 

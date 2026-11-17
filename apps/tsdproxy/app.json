@@ -1,6 +1,6 @@
 {
   "title": "tsdproxy",
-  "tagline": "Publishes containers on the tailnet automatically, from labels alone — no per-service proxy configuration",
+  "tagline": "Puts your apps on your tailnet automatically.",
   "category": "Network & Security",
   "links": {
     "docs": "https://almeidapaulopt.github.io/tsdproxy/"
