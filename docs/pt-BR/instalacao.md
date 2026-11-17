@@ -390,6 +390,16 @@ todos juntos, senão as dependências seguem gravando.
 
 Remover a unit não desregistra o nó da tailnet; isso é no admin do Tailscale.
 
+## A atualização volta sozinha
+
+`qh <app> --update --apply` (e o botão de atualizar do painel) guarda as units e o pin de versão que vai
+substituir. Depois do restart espera até 120 segundos que cada container reiniciado fique saudável (uma unit sem
+healthcheck precisa ficar ativa por alguns segundos); se algum não subir, ficar unhealthy ou entrar em loop de
+restart, as units e o pin anteriores voltam, os serviços reiniciam na versão antiga, e a execução termina como falha
+com uma linha `[rolled back]`, que o histórico mostra como "voltou à versão anterior". A imagem nova continua
+baixada. `--rollback-wait SEGUNDOS` muda a espera, e `0` desliga a volta. Instalação, restauração e unit parada
+de propósito ficam de fora.
+
 ## Instâncias
 
 O mesmo app pode ser instalado mais de uma vez: **Nova instância** no painel do app, ou

@@ -1677,7 +1677,65 @@ def restart_order(paths):
     return saida
 
 
-def plan_update(s, access="tailnet", href_local=False, latest=False, major=False):
+ROLLBACK_WAIT = 120      # seconds an updated service has to be healthy before the update is taken back
+
+
+class UpdateRolledBack(OSError):
+    """The new version did not come up and the previous one was put back: the run must still end in failure."""
+
+
+def unit_health(unit, cname):
+    """'healthy', 'unhealthy', 'running' (no healthcheck), 'starting', or 'down', for a unit and its container."""
+    ativo = subprocess.run(["systemctl", "--user", "is-active", unit], capture_output=True, text=True).stdout.strip()
+    if ativo in ("failed", "inactive", "deactivating"):
+        return "down"
+    if ativo == "activating":
+        # `auto-restart` is a loop; a first start is just starting
+        sub = subprocess.run(["systemctl", "--user", "show", "-p", "SubState", "--value", unit],
+                             capture_output=True, text=True).stdout.strip()
+        return "down" if sub == "auto-restart" else "starting"
+    if not cname:
+        return "running"
+    st = subprocess.run(["podman", "ps", "--filter", f"name=^{cname}$", "--format", "{{.Status}}"],
+                        capture_output=True, text=True).stdout.strip()
+    if "(starting)" in st:
+        return "starting"
+    return estado_do_container(st) if st else "down"
+
+
+def wait_healthy(units, wait, sleep=time.sleep, now=time.monotonic, health=unit_health):
+    """(True, "") when every (unit, container) came up healthy within `wait` seconds, else (False, reason).
+
+    A unit with no healthcheck is taken as good once it has stayed active for a few seconds."""
+    limite, quieto = now() + wait, now() + min(wait, 15)
+    pendentes = dict(units)
+    while pendentes:
+        for unit, cname in list(pendentes.items()):
+            h = health(unit, cname)
+            if h in ("down", "unhealthy"):
+                return False, f"{unit} is {h}"
+            if h == "healthy" or (h == "running" and now() >= quieto):
+                del pendentes[unit]
+        if not pendentes:
+            return True, ""
+        if now() >= limite:
+            return False, f"{', '.join(pendentes)} not healthy after {wait}s"
+        sleep(2)
+    return True, ""
+
+
+def snapshot_paths(s):
+    """The files an update rewrites: the units, the version pin's drop-in, and any stray old copy."""
+    dest = s.unit_dest
+    caminhos = []
+    for u in s.units:
+        caminhos.append(dest / u.name)
+        if u.suffix == ".container":
+            caminhos.append(imagepin.dropin_path(dest / u.name))
+    return caminhos + list(s.strays())
+
+
+def plan_update(s, access="tailnet", href_local=False, latest=False, major=False, rollback_wait=None):
     """Re-copies the units over the installed ones and restarts. Touches no
     data, env or secret.
 
@@ -1727,6 +1785,11 @@ def plan_update(s, access="tailnet", href_local=False, latest=False, major=False
         return [], [EM_DIA] + pin_warnings(pins)
 
     steps.append((f"mkdir -p {dest}", lambda: dest.mkdir(parents=True, exist_ok=True)))
+    espera = ROLLBACK_WAIT if rollback_wait is None else rollback_wait
+    anterior = {}
+    if espera > 0:
+        steps.append(("keep the current units and version pin (to roll back to)",
+                      lambda: anterior.update({p: (p.read_bytes() if p.is_file() else None) for p in snapshot_paths(s)})))
 
     # Rule 6 applies to an update too. `plan_install` creates every `Volume=`
     # path; this one created only the systemd directory, so a bump that adds a
@@ -1814,6 +1877,41 @@ def plan_update(s, access="tailnet", href_local=False, latest=False, major=False
     # until the next login. Restarting the main one alone hid three of them.
     targets = restart_order(s.units)
     paths = {u.stem: u for u in s.units if u.suffix == ".container"}
+    reiniciadas = []                      # (unit, container) of what this update restarts
+    desfeito = []
+
+    def voltar(motivo):
+        """Puts the previous units and pin back, reloads, restarts them, and ends the run as a failure."""
+        if desfeito or not anterior:
+            raise UpdateRolledBack(motivo)
+        desfeito.append(1)
+        say(f"\n{red('!!')} {motivo} — " + loc("rolling back to the version that was running"))
+        for p, dados in anterior.items():
+            if dados is None:
+                if p.exists():
+                    p.unlink()
+                    try:
+                        p.parent.rmdir() if p.parent.name.endswith(".d") else None
+                    except OSError:
+                        pass
+            else:
+                p.parent.mkdir(parents=True, exist_ok=True)
+                p.write_bytes(dados)
+        run_lenient(["systemctl", "--user", "daemon-reload"])
+        for unit, _ in reiniciadas:
+            run_lenient(["systemctl", "--user", "reset-failed", unit])
+            run_lenient(["systemctl", "--user", "restart", unit])
+        say(f"{yellow('[rolled back]')} " + loc("the previous version is back: ") + ", ".join(u for u, _ in reiniciadas))
+        raise UpdateRolledBack(f"{motivo}; " + loc("rolled back to the previous version"))
+
+    def reinicia(unit, cname):
+        reiniciadas.append((unit, container_name(paths[unit]) if unit in paths else None))
+        try:
+            restart_unit(unit, cname)
+        except subprocess.CalledProcessError as e:
+            ultima = ((e.stderr or "").strip().splitlines() or [""])[-1]
+            voltar(f"{unit} did not start" + (f": {ultima}" if ultima else ""))
+
     for unit in targets:
         path = paths.get(unit)
         cname = container_name(path) if path and waits_for_health(path) else None
@@ -1822,7 +1920,16 @@ def plan_update(s, access="tailnet", href_local=False, latest=False, major=False
             steps.append(skipped_restart(unit))
             continue
         steps.append((f"systemctl --user restart {unit}{mark}",
-                      lambda unit=unit, cname=cname: restart_unit(unit, cname)))
+                      lambda unit=unit, cname=cname: reinicia(unit, cname)))
+    if espera > 0 and any(not unit_masked(s.home, u) for u in targets):
+        def confere():
+            if SANDBOX:
+                say(f"       (sandbox, not checked: health of {', '.join(u for u, _ in reiniciadas)})")
+                return
+            ok, motivo = wait_healthy(reiniciadas, espera)
+            if not ok:
+                voltar(motivo)
+        steps.append((f"wait until it is healthy (up to {espera}s), or put the previous version back", confere))
     return steps, warnings
 
 
@@ -4847,7 +4954,7 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
     for problem in preflight(s, tailnet, modo_efetivo == "local"):
         say(f"  !  {problem}")
     if a.update:
-        verb, (steps, warnings) = "update", plan_update(s, access, href_local, a.latest, a.major)
+        verb, (steps, warnings) = "update", plan_update(s, access, href_local, a.latest, a.major, a.rollback_wait)
     elif a.backup:
         verb, (steps, warnings) = "backup", plan_backup(s, a.out)
     elif a.restore:
@@ -5095,6 +5202,8 @@ def main():
     action.add_argument("--verify", action="store_true",
                         help=loc("checks that the service exists and answers, and exits != 0 "
                                  "if not (runs on its own after every --apply)"))
+    ap.add_argument("--rollback-wait", type=int, default=None, metavar="SECONDS",
+                    help=loc("with --update: seconds the new version has to be healthy before it is rolled back (default 120, 0 = never roll back)"))
     ap.add_argument("--instance", metavar="NAME",
                     help=loc("install the app once more, as <app>-NAME: its own units, volumes, secrets and port"))
     ap.add_argument("--option", action="append", default=[], metavar="KEY=VALUE",

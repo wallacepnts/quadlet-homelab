@@ -54,6 +54,7 @@ const T = {
     optionsTitle: "Opções de instalação", optionLocked: "escolhido na instalação; mudar move os dados (remova o app com os dados e instale de novo)",
     newInstance: "Nova instância", instanceName: "Nome da instância (letras minúsculas, números e -)", instanceCreate: "Criar instância",
     instanceOf: (b) => `instância de ${b}`,
+    rolledBack: "voltou à versão anterior",
     httpsNeeded: "precisa de HTTPS",
     httpsWarn: "Este app precisa de HTTPS: pela rede local (HTTP) o cofre e o service worker falham sem avisar. Use o acesso pela tailnet.",
     podmanOld: (need, host) => `Este app precisa do Podman ${need}+; o host tem ${host}. Atualize o Podman antes de instalar.`,
@@ -183,6 +184,7 @@ const T = {
     optionsTitle: "Install options", optionLocked: "chosen at the install; changing it moves the data (remove the app with its data and install again)",
     newInstance: "New instance", instanceName: "Instance name (lowercase letters, digits and -)", instanceCreate: "Create instance",
     instanceOf: (b) => `instance of ${b}`,
+    rolledBack: "rolled back to the previous version",
     httpsNeeded: "needs HTTPS",
     httpsWarn: "This app needs HTTPS: over the local network (HTTP) the vault and the service worker fail without saying why. Use tailnet access.",
     podmanOld: (need, host) => `This app needs Podman ${need}+; the host has ${host}. Update Podman before installing.`,
@@ -932,7 +934,7 @@ async function renderHistory() {
         h("td", {}, quando(e.start)),
         !S.histApp && h("td", {}, appName(e.app)),
         h("td", {}, t("act")[e.action] || e.action, e.unit && e.unit !== e.app ? ` (${e.unit})` : ""),
-        h("td", { class: e.rc === 0 ? "ok" : "bad" }, e.rc === 0 ? "✓" : `✗ ${e.rc ?? "?"}`),
+        h("td", { class: e.rc === 0 ? "ok" : "bad" }, e.rc === 0 ? "✓" : `✗ ${e.rc ?? "?"}${e.rolled_back ? ` ↩ ${t("rolledBack")}` : ""}`),
         h("td", {}, `${Math.max(0, Math.round(e.end - e.start))}s`));
       tr.onclick = () => showRun(e);
       tr.onkeydown = (ev) => { if (ev.key === "Enter") showRun(e); };

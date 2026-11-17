@@ -845,6 +845,50 @@ def scenario_instances(tmp):
     check(not any(p.name.startswith(f"{APP}-") for p in (ROOT / "apps").iterdir()), "instances: no generated folder is left in apps/")
 
 
+def scenario_rollback(tmp):
+    """An update whose new version does not start puts the previous units back, and still ends as a failure."""
+    home = str(Path(tmp) / "rb")
+    run(APP, "--apply", "--prefix", home)
+    u = path(home, "systemd", f"{APP}.container")
+    antes = u.read_bytes() + b"# the version that was running\n"
+    u.write_bytes(antes)
+    s = I.Service(APP, home)
+    I.SANDBOX = True
+    original = I.restart_unit
+    try:
+        steps, _ = I.plan_update(s, "tailnet", False, False, False, 30)
+        check(any("put the previous version back" in d for d, _ in steps) and any("keep the current units" in d for d, _ in steps),
+              "rollback: the update plan keeps the old units and checks health")
+
+        def quebra(unit, cname=None):
+            raise subprocess.CalledProcessError(1, ["systemctl"], "", "Job failed")
+        I.restart_unit = quebra
+        erro = None
+        for _, acao in steps:
+            try:
+                acao()
+            except I.UpdateRolledBack as e:
+                erro = e
+                break
+        check(erro is not None and "rolled back" in str(erro), "rollback: a start that fails ends the update as a failure")
+        check(u.read_bytes() == antes, "rollback: the previous unit is back, byte for byte")
+        steps2, _ = I.plan_update(s, "tailnet", False, False, False, 0)
+        check(not any("put the previous version back" in d for d, _ in steps2), "rollback: --rollback-wait 0 turns it off")
+    finally:
+        I.restart_unit = original
+        I.SANDBOX = False
+    seq = {"a": ["starting", "healthy"], "b": ["running"]}
+    relogio = [0]
+    ok, _ = I.wait_healthy([("a", "a"), ("b", None)], 60, lambda n: relogio.__setitem__(0, relogio[0] + n), lambda: relogio[0], lambda u, c: seq[u].pop(0) if len(seq[u]) > 1 else seq[u][0])
+    check(ok, "rollback: healthy within the time is an update that stays")
+    relogio[0] = 0
+    ok, motivo = I.wait_healthy([("a", "a")], 10, lambda n: relogio.__setitem__(0, relogio[0] + n), lambda: relogio[0], lambda u, c: "starting")
+    check(not ok and "not healthy after 10s" in motivo, "rollback: never healthy is a rollback")
+    relogio[0] = 0
+    ok, motivo = I.wait_healthy([("a", "a")], 10, lambda n: None, lambda: relogio[0], lambda u, c: "unhealthy")
+    check(not ok and "unhealthy" in motivo, "rollback: an unhealthy container is a rollback at once")
+
+
 def main():
     with tempfile.TemporaryDirectory() as tmp:
         home, out = str(Path(tmp) / "home"), str(Path(tmp) / "backups")
@@ -856,6 +900,7 @@ def main():
         print("customization:");      scenario_override(tmp)
         print("install options:");    scenario_options(tmp)
         print("instances:");          scenario_instances(tmp)
+        print("rollback:");           scenario_rollback(tmp)
         print("deprecated:");         scenario_deprecated(tmp)
         print("drift:");              scenario_drift(home)
         print("failure:");            scenario_failure(home, tmp)

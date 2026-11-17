@@ -468,7 +468,8 @@ def history_add(job):
         saida = "…\n" + saida[-OUTPUT_CAP:]
     linha = json.dumps({"id": job.id, "app": job.app, "action": job.action, "unit": job.unit,
                         "start": round(job.started, 1), "end": round(time.time(), 1),
-                        "rc": job.rc, "from": job.origem, "output": saida},
+                        "rc": job.rc, "from": job.origem, "output": saida,
+                        "rolled_back": "[rolled back]" in saida},
                        ensure_ascii=False)
     f = history_file()
     f.parent.mkdir(parents=True, exist_ok=True)

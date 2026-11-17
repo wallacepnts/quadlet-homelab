@@ -391,6 +391,16 @@ stop them all together, or the dependencies keep writing.
 Removing the unit does not deregister the tailnet node; that is done in the
 Tailscale admin.
 
+## Updates roll back by themselves
+
+`qh <app> --update --apply` (and the panel's update button) keeps the units and the version pin it is about to
+replace. After the restart it waits up to 120 seconds for every restarted container to be healthy (a unit
+with no healthcheck must stay active for a few seconds); if one does not start, is unhealthy, or restarts in a
+loop, the previous units and pin are put back, the services restart on the old version, and the run ends as a
+failure with a `[rolled back]` line, which the history shows as "rolled back to the previous version". The new
+image stays pulled. `--rollback-wait SECONDS` changes the wait, and `0` turns the rollback off. An install, a
+restore and a unit that was stopped on purpose are not part of it.
+
 ## Instances
 
 The same app can be installed more than once: **New instance** in the app's panel, or

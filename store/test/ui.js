@@ -75,7 +75,8 @@ const rotas = {
     { kind: "recipe", url: "https://github.com/me/qh/tree/main/apps/homebox" }] },
   "/api/history": { entries: [
     { id: "a1", app: "homebox", action: "install", unit: "", start: 1700000000, end: 1700000042, rc: 0, from: "127.0.0.1" },
-    { id: "a2", app: "homebox", action: "restart", unit: "homebox", start: 1700000100, end: 1700000101, rc: 1, from: "127.0.0.1" }] },
+    { id: "a2", app: "homebox", action: "restart", unit: "homebox", start: 1700000100, end: 1700000101, rc: 1, from: "127.0.0.1" },
+    { id: "a3", app: "homebox", action: "update", unit: "", start: 1700000200, end: 1700000300, rc: 1, from: "127.0.0.1", rolled_back: true }] },
   "/api/history/a2": { id: "a2", app: "homebox", action: "restart", unit: "homebox", rc: 1, from: "127.0.0.1", output: "Job failed\n" },
   "/api/env": { files: [{ file: "homebox.env", units: ["homebox"], entries: [
     { key: "TZ", value: "UTC", active: true, help: "Time zone", sensitive: false },
@@ -174,7 +175,7 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
     && ancorasProjeto.every((a) => a.attrs.target === "_blank" && /noopener/.test(a.attrs.rel)), "Problemas leva às issues, e todos abrem em outra aba com noopener");
   await api.openHistory("homebox"); await esperar(50);
   const linhasHist = [...$("h-list").walk()].filter((e) => e.tag === "tr" && e.attrs.class === "run");
-  confere($("history").open && linhasHist.length === 2 && /✓/.test(linhasHist[0].textContent) && /✗ 1/.test(linhasHist[1].textContent), "histórico: linhas com o resultado");
+  confere($("history").open && linhasHist.length === 3 && /✓/.test(linhasHist[0].textContent) && /✗ 1/.test(linhasHist[1].textContent) && /voltou à versão anterior/.test(linhasHist[2].textContent) && !/voltou/.test(linhasHist[1].textContent), "histórico: linhas com o resultado, e a que voltou à versão anterior");
   await linhasHist[1].onclick();
   confere(/Job failed/.test($("h-out").textContent) && /de 127\.0\.0\.1/.test($("h-out").textContent), "histórico: a saída e de onde veio");
   $("history").open = false;
