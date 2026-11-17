@@ -70,7 +70,7 @@ def dump(data):
 
 KEY_ORDER = ["title", "short_desc", "description", "author", "website", "source", "docs", "architectures", "category",
              "min_podman", "requires_https", "deprecated", "notes", "secrets", "validate", "config", "vars",
-             "login", "choices", "options", "backup", "units", "instance"]
+             "login", "choices", "options", "widgets", "backup", "units", "instance"]
 
 
 def ordered(data):
@@ -394,6 +394,11 @@ def problems(data, grupos, folder=None):
             erros.append(f'"{k}" must be an object')
     if "units" in data and not isinstance(data["units"], dict):
         erros.append('"units" must be an object')
+    ws = data.get("widgets")
+    if ws is not None and (not isinstance(ws, list) or not ws or not all(
+            isinstance(w, dict) and isinstance(w.get("type"), str) and set(w) <= {"type", "unit"}
+            and (w.get("unit") is None or isinstance(w["unit"], str)) for w in ws)):
+        erros.append('"widgets" is a list of {"type": "...", "unit": "..."} (unit only in a folder of several)')
     if "instance" in data:
         erros.append('"instance" is written by qh into the folder of an instance, never by hand')
     erros += option_problems(data, folder)
@@ -487,6 +492,8 @@ def selftest():
     assert bad({"database": {**opt["database"], "question": ""}}) and bad({"database": {**opt["database"], "x": 1}})
     assert bad({"database": {**opt["database"], "values": {"a": {"label": "A"}, "b": {"label": "B", "secrets": ["nope"]}}}})
     assert bad({"database": {**opt["database"], "values": {"a": {"label": "A"}, "b": {"label": "B", "env": {"1x": "y"}}}}})
+    assert problems({**d, "widgets": [{"type": "immich"}, {"type": "sonarr", "unit": "x"}]}, ("Tools",)) == []
+    assert problems({**d, "widgets": [{"kind": "immich"}]}, ("Tools",)) and problems({**d, "widgets": []}, ("Tools",))
     assert problems({**d, "wat": 1}, ("Tools",)), "an unknown key is a typo"
     assert problems({**d, "icon": "https://x/y.svg"}, ("Tools",)), "the logo is a file now, not a field"
     assert problems({**d, "license": "MIT"}, ("Tools",)), "no licence field: the project's own repository says"

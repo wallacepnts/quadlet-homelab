@@ -1,5 +1,16 @@
 {
   "title": "Media Stack",
+  "short_desc": {
+    "en": "A media server and the tools that fill it.",
+    "pt": "Um servidor de mídia e as ferramentas que o abastecem."
+  },
+  "description": {
+    "en": "Jellyfin, Navidrome, Seerr, Prowlarr, Sonarr, Radarr, Lidarr, Bazarr, SABnzbd, Deluge, Dispatcharr, Downtify and an optional Gluetun — a media server plus automation, a shared data root, each app on its own version",
+    "pt": "Jellyfin, Navidrome, Seerr, Prowlarr, Sonarr, Radarr, Lidarr, Bazarr, SABnzbd, Deluge, Dispatcharr, Downtify e um Gluetun opcional — servidor de mídia + automação, raiz de dados compartilhada, cada app com sua própria versão"
+  },
+  "author": "jellyfin",
+  "source": "https://github.com/jellyfin/jellyfin",
+  "docs": "https://jellyfin.org",
   "category": "Downloads",
   "notes": "Each unit publishes its own port and its own tailnet name; the addresses are\nprinted at the end of the install.\n\n### Update\n\nEach unit carries its own tag — the table above lists them. Nothing updates\non its own; the command above applies whatever the repository pins.",
   "config": {
@@ -8,6 +19,20 @@
   "vars": {
     "MEDIA_DATA_DIR": "~/data"
   },
+  "widgets": [
+    {
+      "type": "jellyfin",
+      "unit": "media-stack-jellyfin"
+    },
+    {
+      "type": "sonarr",
+      "unit": "media-stack-sonarr"
+    },
+    {
+      "type": "radarr",
+      "unit": "media-stack-radarr"
+    }
+  ],
   "backup": {
     "exclude": [
       "jellyfin/cache"
@@ -27,16 +52,5 @@
     "media-stack-seerr": {
       "image": "v{version}"
     }
-  },
-  "short_desc": {
-    "en": "A media server and the tools that fill it.",
-    "pt": "Um servidor de mídia e as ferramentas que o abastecem."
-  },
-  "description": {
-    "en": "Jellyfin, Navidrome, Seerr, Prowlarr, Sonarr, Radarr, Lidarr, Bazarr, SABnzbd, Deluge, Dispatcharr, Downtify and an optional Gluetun — a media server plus automation, a shared data root, each app on its own version",
-    "pt": "Jellyfin, Navidrome, Seerr, Prowlarr, Sonarr, Radarr, Lidarr, Bazarr, SABnzbd, Deluge, Dispatcharr, Downtify e um Gluetun opcional — servidor de mídia + automação, raiz de dados compartilhada, cada app com sua própria versão"
-  },
-  "docs": "https://jellyfin.org",
-  "source": "https://github.com/jellyfin/jellyfin",
-  "author": "jellyfin"
+  }
 }

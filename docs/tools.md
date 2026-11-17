@@ -482,3 +482,22 @@ network (rate and total since boot, counting the real interfaces and not the con
 copy of the same traffic), refreshed every five seconds from `/api/host`. **Edit** adds, orders and removes
 widgets — your apps at a glance, notes, quick links — and the choice is kept in this browser (localStorage),
 not on the server.
+
+## Quick Launch, appearance, groups, bookmarks and service widgets
+
+- **Quick Launch:** type any letter on the page (or `/`) and a search opens over it: the installed apps first, then the
+  store's. Enter takes the highlighted one (opens the app, or its page in the store), and the last line searches the
+  web. It does not open while you are typing in a field or with a window open.
+- **Appearance** (Settings): theme (system, light, dark), accent colour (eight, all AA), card style (shadow or thin
+  border), density, and a background image (PNG, JPEG or WebP up to 8 MB, with blur and a veil). It is kept on the
+  server (`~/.config/quadlet-homelab/store-ui.json` and `store-bg.*`), so every browser sees the same.
+- **Site monitor:** a running container whose app does not answer gets a red dot; one that answers says how fast in
+  the dot's tooltip. The server asks each app's address once a minute (`/api/monitor`).
+- **Groups** (My apps → Organize): your own groups, apps moved into them, a group folded or shown as a row of icons.
+  **Bookmarks** (below My apps): shortcuts to what is not an app, in groups. Both are kept in this browser.
+- **Service widgets** (`widgets` in `app.json`, see [manifest](./manifest.md)): numbers from inside an app on its tile
+  and in its panel. The key is typed in the panel (Set up the widget) and kept in
+  `~/.config/quadlet-homelab/widgets.json` (mode 600); the server calls the app, so the key never reaches the
+  browser. Numbers that call for attention are coloured (inbox waiting, downloads wanted, monitors down).
+- **More sidebar widgets:** date and time with a greeting, weather (Open-Meteo, looked up by the server with the city
+  you typed) and a search box that opens Quick Launch.

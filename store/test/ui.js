@@ -40,8 +40,12 @@ global.document = {
   createElement: (t) => new El(t), createTextNode: (s) => new Txt(s),
   getElementById: (id) => (byId[id] ||= Object.assign(new El("div"), { id })),
   querySelector: (sel) => { for (const e of Object.values(byId)) { const r = e.querySelector(sel); if (r) return r; } return null; },
+  querySelectorAll: (sel) => (sel === "dialog" ? Object.values(byId).filter((e) => "open" in e && e.open && ["panel", "custom", "ql", "settings", "history", "resources", "bulk"].includes(e.id)) : []),
 };
 global.Node = El;
+const docOuvintes = {};
+document.addEventListener = (e, f) => { docOuvintes[e] = f; };
+global.window = { open: (...a) => { (global.abertos ||= []).push(a); } };
 const guardado = new Map();
 global.localStorage = { getItem: (k) => (k === "qh-lang" ? "pt" : guardado.has(k) ? guardado.get(k) : null), setItem: (k, v) => guardado.set(k, String(v)) };
 global.navigator = { language: "pt-BR" };
@@ -403,6 +407,16 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   api.renderGrid();
   confere(!/reiniciou|loop de restart|falhou \(/.test($("grid").textContent), "sem falha: sem selo");
 
+  // site monitor: a running app that does not answer is a red dot; one that answers says how fast
+  api.S.mon = { homebox: { ok: false, status: null, ms: null } };
+  api.setView("apps"); api.renderGrid();
+  confere(pontos("não responde") === 1, "monitor: rodando mas sem resposta vira bolinha vermelha");
+  api.S.mon = { homebox: { ok: true, status: 200, ms: 42 } };
+  api.renderGrid();
+  confere(pontos("rodando · responde em 42 ms") === 1, "monitor: respondendo, o tempo vai no tooltip");
+  api.S.mon = {};
+  api.renderGrid();
+
   // a newer version: a small arrow on the icon, no words
   const upAntes = api.S.upd.homebox;
   api.S.upd.homebox = { bucket: "BEHIND", there: "9.9", unit: "homebox" };
@@ -539,6 +553,21 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
                            kinds: { failed: true, unhealthy: true, restart_loop: true, backup: true, update: true, disk: true } },
                            kinds: ["failed", "unhealthy", "restart_loop", "backup", "update", "disk"], sent: 0 };
   rotas["/api/alerts/test"] = { ok: true };
+  rotas["/api/ui"] = { theme: "system", accent: "orange", card: "shadow", density: "comfortable", bg_blur: 8, bg_dim: 35, background: false, bg_version: null };
+  await api.openSettings(); await esperar(50);
+  // appearance: picking applies at once, on <html>, and is saved on the server
+  confere(/Aparência/.test($("s-body").textContent) && /Cor de destaque/.test($("s-body").textContent) && /Imagem de fundo/.test($("s-body").textContent), "Configurações: seção de aparência");
+  const antesAp = posts.length;
+  rotas["/api/ui"] = { ...rotas["/api/ui"], theme: "dark", accent: "teal", density: "compact" };     // what the server answers once saved
+  [...$("s-body").walk()].find((e) => e.tag === "button" && e.attrs["aria-label"] === "Petróleo").listeners.click(); await esperar(30);
+  porTexto($("s-body"), "Escuro")[0].listeners.click(); await esperar(30);
+  porTexto($("s-body"), "Compacta")[0].listeners.click(); await esperar(30);
+  const raizAttr = document.documentElement.attrs;
+  confere(raizAttr["data-accent"] === "teal" && raizAttr["data-theme"] === "dark" && raizAttr["data-density"] === "compact", `aplica na hora, no <html> (${JSON.stringify(raizAttr)})`);
+  const salvos = posts.slice(antesAp).filter((x) => x.rota === "/api/ui").map((x) => { const { lang, ...resto } = x.corpo; return JSON.stringify(resto); });
+  confere(salvos.join(" ") === '{"accent":"teal"} {"theme":"dark"} {"density":"compact"}', `e salva cada escolha no servidor (${salvos})`);
+  confere(porTexto($("s-body"), "Escuro")[0].attrs["aria-pressed"] === "true" && porTexto($("s-body"), "Claro")[0].attrs["aria-pressed"] === "false", "o botão escolhido fica marcado");
+  rotas["/api/ui"] = { ...rotas["/api/ui"], background: true, bg_version: 5 };
   await api.openSettings(); await esperar(50);
   confere(/Alertas/.test($("s-body").textContent) && /Disco cheio/.test($("s-body").textContent) && /Backup falhou/.test($("s-body").textContent), "Configurações: seção de alertas");
   const entradas = [...$("s-body").walk()].filter((e) => e.tag === "input" && ["text", "password"].includes(e.attrs.type));
@@ -743,6 +772,113 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   confere(/Nenhum app instalado ainda\./.test($("empty").textContent) && botaoLoja && /Abrir a Loja/.test(botaoLoja.textContent), "sem instalados: convida a abrir a Loja");
   botaoLoja.listeners.click(); await esperar(20);
   confere(api.S.view === "store", "…e o botão leva à Loja");
+
+  api.S.apps = guardados;
+
+  // Quick Launch: any letter typed on the page opens the search; installed first; Enter takes the highlighted one
+  for (const id of ["panel", "custom", "settings", "history", "resources", "bulk", "ql"]) $(id).open = false;
+  docOuvintes.keydown({ key: "m", target: { tagName: "BODY" }, preventDefault() {} });
+  confere($("ql").open && $("ql-input").value === "m", "Quick Launch: uma letra na página abre a busca com ela");
+  const itensQl = () => [...$("ql-list").walk()].filter((e) => e.attrs && e.attrs.role === "option");
+  confere(/Memos/.test(itensQl()[0].textContent) && /Abrir/.test(itensQl()[0].textContent) && /na web/.test(itensQl().pop().textContent),
+    `instalado primeiro, com Abrir, e a busca na web por último (${itensQl().map((e) => e.textContent).join(" | ")})`);
+  global.abertos = [];
+  $("ql-input").listeners.keydown({ key: "Enter", preventDefault() {} });
+  confere(!$("ql").open && global.abertos.length === 1 && global.abertos[0][0] === "https://memos.example.ts", `Enter abre o app (${JSON.stringify(global.abertos)})`);
+  docOuvintes.keydown({ key: "g", target: { tagName: "BODY" }, preventDefault() {} });
+  $("ql-input").value = "git"; $("ql-input").listeners.input();
+  confere(/Gitea/.test(itensQl()[0].textContent) && /Ver na loja/.test(itensQl()[0].textContent), "o que não está instalado leva à página na loja");
+  $("ql-input").listeners.keydown({ key: "ArrowDown", preventDefault() {} });
+  $("ql-input").listeners.keydown({ key: "Enter", preventDefault() {} });
+  confere(global.abertos.some((a) => /duckduckgo\.com\/\?q=git/.test(a[0])), "a seta desce até a busca na web, e Enter a abre");
+  $("ql").open = false;
+  docOuvintes.keydown({ key: "a", target: { tagName: "INPUT" }, preventDefault() {} });
+  confere(!$("ql").open, "digitar num campo não abre a busca");
+  $("panel").open = true;
+  docOuvintes.keydown({ key: "a", target: { tagName: "BODY" }, preventDefault() {} });
+  confere(!$("ql").open, "com uma janela aberta, também não");
+  $("panel").open = false;
+
+  // info widgets: the clock greets, the weather asks for a city and goes through the server, the search opens Quick Launch
+  api.S.sideEdit = true; api.renderSide();
+  for (const tipo of ["clock", "weather", "search"]) {
+    const sel = [...$("side-body").walk()].find((e) => e.tag === "select"); sel.value = tipo; sel.listeners.change({ target: sel });
+  }
+  confere(/Bom dia|Boa tarde|Boa noite/.test($("side-body").textContent) && /\d\d:\d\d/.test($("side-body").textContent), "relógio: saudação e hora");
+  const cidade = [...$("side-body").walk()].find((e) => e.tag === "input" && e.attrs.placeholder === "Cidade");
+  confere(!!cidade && /Open-Meteo, pelo servidor/.test($("side-body").textContent), "clima: pede a cidade e diz por onde consulta");
+  rotas["/api/weather"] = { weather: { place: "Recife, Pernambuco, BR", temp: 29.4, code: 2, wind: 14, max: 31, min: 24.5 } };
+  cidade.value = "Recife";
+  porTexto($("side-body"), "Mostrar")[0].listeners.click(); await esperar(40);
+  confere(/29°/.test($("side-body").textContent) && /parcialmente nublado/.test($("side-body").textContent) && /máx 31° · mín 25°/.test($("side-body").textContent),
+    `clima: temperatura, céu, máxima e mínima (${$("side-body").textContent.slice(0, 200)})`);
+  const buscaW = [...$("side-body").walk()].find((e) => e.tag === "input" && e.attrs.type === "search");
+  buscaW.value = "memos"; buscaW.listeners.keydown({ key: "Enter", preventDefault() {} });
+  confere($("ql").open && $("ql-input").value === "memos", "busca: Enter abre o Quick Launch com o texto");
+  $("ql").open = false; api.S.sideEdit = false;
+  api.S.widgets = [{ id: "w-perf", type: "perf" }]; api.renderSide();
+
+  // bookmarks: groups of links below My apps, kept in the browser, http(s) only
+  api.setView("apps");
+  confere(!$("bookmarks").hidden && /Favoritos/.test($("bookmarks").textContent) && /roteador/.test($("bookmarks").textContent), "favoritos: aparecem em Meus apps, com a dica");
+  porTexto($("bookmarks"), "Editar favoritos")[0].listeners.click();
+  const nomeGrupo = [...$("bookmarks").walk()].find((e) => e.tag === "input" && e.attrs.placeholder === "Nome do grupo");
+  nomeGrupo.value = "Rede"; porTexto($("bookmarks"), "Novo grupo de favoritos")[0].listeners.click();
+  const [nomeL, urlL] = [...$("bookmarks").walk()].filter((e) => e.tag === "input" && ["Nome", "https://…"].includes(e.attrs.placeholder));
+  nomeL.value = "Roteador"; urlL.value = "javascript:alert(1)"; porTexto($("bookmarks"), "Adicionar")[0].listeners.click();
+  confere(!/Roteador/.test(JSON.stringify(guardado.get("qh-bookmarks") || "")), "favoritos: recusa o que não é http(s)");
+  const [nomeL2, urlL2] = [...$("bookmarks").walk()].filter((e) => e.tag === "input" && ["Nome", "https://…"].includes(e.attrs.placeholder));
+  nomeL2.value = "Roteador"; urlL2.value = "http://192.168.1.1"; porTexto($("bookmarks"), "Adicionar")[0].listeners.click();
+  porTexto($("bookmarks"), "Pronto")[0].listeners.click();
+  const linkBm = [...$("bookmarks").walk()].find((e) => e.tag === "a");
+  confere(linkBm && linkBm.attrs.href === "http://192.168.1.1" && /noopener/.test(linkBm.attrs.rel) && /Rede/.test($("bookmarks").textContent), "favoritos: o link fica no grupo, abre em outra aba");
+  api.setView("store");
+  confere($("bookmarks").hidden, "favoritos: não aparecem na Loja");
+
+  // groups in My apps: a group made, an app moved into it, folded, icons only
+  api.setView("apps");
+  porTexto($("summary"), "Organizar")[0].listeners.click();
+  const nomeG = [...$("grid").walk()].find((e) => e.tag === "input" && e.attrs.placeholder === "Nome do grupo");
+  nomeG.value = "Notas"; porTexto($("grid"), "Novo grupo")[0].listeners.click();
+  const escolheMemos = [...$("grid").walk()].find((e) => e.tag === "select" && /Memos/.test(e.attrs["aria-label"] || ""));
+  escolheMemos.value = JSON.parse(guardado.get("qh-groups")).groups[0].id; escolheMemos.listeners.change({ target: escolheMemos });
+  const secoesG = () => [...$("grid").walk()].filter((e) => e.attrs && e.attrs.class === "grp");
+  confere($("grid").className === "apps grouped" && /Notas/.test(secoesG()[0].textContent) && /Memos/.test(secoesG()[0].textContent)
+    && /Sem grupo/.test(secoesG()[1].textContent) && /Homebox/.test(secoesG()[1].textContent), "grupos: o app vai para o grupo, o resto fica em Sem grupo");
+  porTexto($("summary"), "Pronto")[0].listeners.click();
+  [...secoesG()[0].walk()].find((e) => e.attrs && e.attrs.class === "grp-fold").listeners.click();
+  confere(!/Memos/.test(secoesG()[0].textContent.replace(/Notas.*/, "")) && ![...secoesG()[0].walk()].some((e) => e.attrs && /grp-grid/.test(e.attrs.class || "")), "grupos: recolher esconde os apps do grupo");
+  [...secoesG()[0].walk()].find((e) => e.attrs && e.attrs.class === "grp-fold").listeners.click();
+  porTexto(secoesG()[0], "Só ícones")[0].listeners.click();
+  confere([...secoesG()[0].walk()].some((e) => e.attrs && e.attrs.class === "grp-grid icons"), "grupos: só ícones");
+  guardado.delete("qh-groups"); api.renderGrid();
+  confere($("grid").className === "apps", "sem grupos: a grade simples de sempre");
+
+  // service widgets: two numbers on the tile, all of them in the panel, the key typed there and never shown back
+  api.S.svc = { homebox: [{ type: "immich", unit: "homebox", slot: "homebox", auth: ["key"], configured: true, url: true,
+    fields: [{ key: "photos", value: 12400, kind: "count", level: null }, { key: "storage", value: 5 * 2 ** 30, kind: "bytes", level: null },
+             { key: "videos", value: 30, kind: "count", level: "warn" }] }] };
+  api.setView("apps"); api.renderGrid();
+  const linhaSvc = [...$("grid").walk()].find((e) => e.attrs && /svc-line/.test(e.attrs.class || ""));
+  confere(linhaSvc && /12k fotos/.test(linhaSvc.textContent) && /5\.0 GB armazenamento/.test(linhaSvc.textContent) && !/vídeos/.test(linhaSvc.textContent),
+    `widget: o azulejo mostra os dois primeiros números (${linhaSvc && linhaSvc.textContent})`);
+  api.openPanel("homebox"); await esperar(30);
+  confere(!$("p-svc").hidden && /Números do app/.test($("p-svc").textContent) && /30vídeos/.test($("p-svc").textContent.replace(/\s/g, "")), `widget: o painel mostra todos (${$("p-svc").textContent})`);
+  confere([...$("p-svc").walk()].some((e) => e.attrs && e.attrs.class === "svc-stat lv-warn"), "widget: o destaque pinta o número");
+  porTexto($("p-svc"), "Configurar widget")[0].listeners.click(); await esperar(20);
+  const chaveSvc = [...$("p-section").walk()].find((e) => e.tag === "input" && e.attrs["aria-label"] === "Chave de API");
+  confere(chaveSvc && chaveSvc.attrs.type === "password" && /já definida/.test(chaveSvc.attrs.placeholder) && /Chaves de API/.test($("p-section").textContent),
+    "widget: a chave é um campo de senha, já definida não volta, e a tela diz onde achar");
+  rotas["/api/svc/config"] = { apps: api.S.svc };
+  chaveSvc.value = "nova-chave";
+  const antesSvc = posts.length;
+  porTexto($("p-section"), "Salvar")[0].listeners.click(); await esperar(40);
+  const envSvc = posts.slice(antesSvc).find((x) => x.rota === "/api/svc/config");
+  confere(envSvc && envSvc.corpo.slot === "homebox" && envSvc.corpo.values.key === "nova-chave" && !("url" in envSvc.corpo.values), `widget: salva a chave no servidor (${JSON.stringify(envSvc && envSvc.corpo)})`);
+  api.S.svc = { homebox: [{ type: "immich", unit: "homebox", slot: "homebox", auth: ["key"], configured: true, url: true, error: "HTTP 401" }] };
+  api.renderGrid();
+  confere([...$("grid").walk()].some((e) => e.attrs && /svc-line/.test(e.attrs.class || "") && e.attrs.title === "HTTP 401"), "widget: uma chave recusada vira um aviso discreto no azulejo");
+  api.S.svc = {}; api.renderGrid(); $("panel").open = false;
 
   console.log(falhas ? `\n${falhas} falha(s)` : "\ntudo passou");
   process.exit(falhas ? 1 : 0);

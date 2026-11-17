@@ -42,6 +42,11 @@
       }
     }
   },
+  "widgets": [
+    {
+      "type": "paperless"
+    }
+  ],
   "units": {
     "paperless-ngx-broker": {
       "upstream": "compose:paperless-ngx/paperless-ngx:docker/compose/docker-compose.sqlite-tika.yml"

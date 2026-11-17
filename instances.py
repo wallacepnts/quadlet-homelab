@@ -246,6 +246,8 @@ def derive_manifest(m, base_name, inst, ids):
                 for k in ("units", "secrets"):
                     if k in v:
                         v[k] = [r(x) for x in v[k]]
+    if isinstance(novo.get("widgets"), list):
+        novo["widgets"] = [{**w, "unit": r(w["unit"])} if isinstance(w, dict) and w.get("unit") else w for w in novo["widgets"]]
     novo["instance"] = {"of": base_name, "name": inst}
     return novo
 

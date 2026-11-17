@@ -33,6 +33,7 @@
 <div id="toast" role="status" hidden></div>
 <main id="grid"></main>
 <p id="empty" hidden></p>
+<section id="bookmarks" aria-label="Favoritos" hidden></section>
 <footer class="status"><span id="host" class="muted" title=""></span><span id="checked" class="muted"></span></footer>
 </div>
 <aside id="side" aria-labelledby="side-title">
@@ -56,6 +57,7 @@
   <form id="p-form" hidden></form>
   <section id="p-section" hidden></section>
   <p id="p-desc"></p>
+  <div id="p-svc" class="svc" hidden></div>
   <div id="p-shots" class="shots" hidden></div>
   <details id="p-notes" class="notes" hidden><summary id="p-notes-title"></summary><div id="p-notes-body" class="md"></div></details>
   <div id="p-options" class="perms" hidden></div>
@@ -66,6 +68,10 @@
   <details id="p-tech" class="tech"><summary id="p-tech-title"></summary><table id="p-units"></table></details>
   <details id="p-log" class="tech" hidden><summary id="p-log-title"></summary><pre id="p-out" hidden></pre></details>
   <p id="p-clean" class="note" hidden></p>
+</dialog>
+<dialog id="ql" class="ql" aria-label="Quick launch">
+  <input id="ql-input" type="search" autocomplete="off" spellcheck="false" aria-controls="ql-list">
+  <ul id="ql-list" role="listbox"></ul>
 </dialog>
 <dialog id="custom" class="sheet" aria-labelledby="c-title">
   <div class="sheet-head">

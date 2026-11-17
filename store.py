@@ -25,6 +25,9 @@ No dependencies: stdlib only.
 """
 
 import argparse
+import ssl
+import urllib.error
+import urllib.request
 import configparser
 import contextlib
 import hashlib
@@ -53,6 +56,7 @@ import overrides as O  # noqa: E402
 import qhui  # noqa: E402
 import resources  # noqa: E402
 import alerts as A  # noqa: E402
+import svcwidgets as W  # noqa: E402
 import imagepin  # noqa: E402
 import manifest  # noqa: E402
 import trials  # noqa: E402
@@ -408,6 +412,266 @@ def alerts_state(home=None):
         return json.loads(A.state_file(home or alert_home()).read_text())
     except (OSError, ValueError):
         return {}
+
+
+# -- appearance -------------------------------------------------------------------
+
+UI_DEFAULTS = {"theme": "system", "accent": "orange", "card": "shadow", "density": "comfortable",
+               "bg_blur": 8, "bg_dim": 35}
+UI_CHOICES = {"theme": ("system", "light", "dark"),
+              "accent": ("orange", "blue", "green", "teal", "purple", "pink", "red", "slate"),
+              "card": ("shadow", "hairline"), "density": ("comfortable", "compact")}
+UI_RANGES = {"bg_blur": (0, 20), "bg_dim": (0, 80)}
+BG_MAX = 8 * 1024 * 1024
+BG_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".webp": "image/webp"}
+
+
+def ui_dir():
+    return Path(PREFIX or Path.home()) / ".config/quadlet-homelab"
+
+
+def ui_settings():
+    """The panel's appearance (theme, accent, background...), kept on the server so every browser sees the same."""
+    try:
+        d = json.loads((ui_dir() / "store-ui.json").read_text())
+    except (OSError, ValueError):
+        d = {}
+    saida = dict(UI_DEFAULTS)
+    saida.update({k: v for k, v in (d if isinstance(d, dict) else {}).items() if ui_clean({k: v})[1] == []})
+    bg = ui_background()
+    saida["background"] = bool(bg)
+    saida["bg_version"] = int(bg.stat().st_mtime) if bg else None
+    return saida
+
+
+def ui_clean(d):
+    """(the valid settings out of `d`, errors)."""
+    ok, erros = {}, []
+    for k, v in d.items():
+        if k in UI_CHOICES:
+            (ok.__setitem__(k, v) if v in UI_CHOICES[k] else erros.append(f"{k}: one of {', '.join(UI_CHOICES[k])}"))
+        elif k in UI_RANGES:
+            lo, hi = UI_RANGES[k]
+            (ok.__setitem__(k, v) if isinstance(v, int) and not isinstance(v, bool) and lo <= v <= hi
+             else erros.append(f"{k}: a whole number from {lo} to {hi}"))
+        else:
+            erros.append(f"unknown setting {k!r}")
+    return ok, erros
+
+
+def ui_save(d):
+    ok, erros = ui_clean(d)
+    if erros:
+        return erros
+    atual = {k: v for k, v in ui_settings().items() if k in UI_DEFAULTS}
+    atual.update(ok)
+    ui_dir().mkdir(parents=True, exist_ok=True)
+    (ui_dir() / "store-ui.json").write_text(json.dumps(atual, indent=2) + "\n")
+    return []
+
+
+def ui_background():
+    return next((ui_dir() / f"store-bg{e}" for e in BG_TYPES if (ui_dir() / f"store-bg{e}").is_file()), None)
+
+
+def bg_kind(dados):
+    """The extension of an image by its first bytes (never by what the browser claims), or None."""
+    if dados.startswith(b"\x89PNG\r\n\x1a\n"):
+        return ".png"
+    if dados.startswith(b"\xff\xd8\xff"):
+        return ".jpg"
+    if dados[:4] == b"RIFF" and dados[8:12] == b"WEBP":
+        return ".webp"
+    return None
+
+
+def ui_set_background(dados):
+    """Saves the background image (or removes it, for an empty body). Returns an error, or None."""
+    for e in BG_TYPES:
+        (ui_dir() / f"store-bg{e}").unlink(missing_ok=True)
+    if not dados:
+        return None
+    tipo = bg_kind(dados)
+    if not tipo:
+        return "not a PNG, JPEG or WebP image"
+    ui_dir().mkdir(parents=True, exist_ok=True)
+    (ui_dir() / f"store-bg{tipo}").write_bytes(dados)
+    return None
+
+
+# -- site monitor -----------------------------------------------------------------
+
+MON, MON_LOCK, MON_TTL = {"at": 0.0, "data": {}}, threading.Lock(), 60
+
+
+def probe(url, timeout=5):
+    """{ok, status, ms} for one address: up when it answers at all below a 500 (a login page's 401 is up).
+
+    Only reachability is asked, nothing is sent, so the certificate is not checked: a self-signed app is
+    still an app that answers."""
+    inicio = time.monotonic()
+    ctx = ssl._create_unverified_context()
+    status = None
+    for metodo in ("HEAD", "GET"):
+        try:
+            req = urllib.request.Request(url, method=metodo, headers={"User-Agent": "qh-store-monitor"})
+            with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:
+                status = resp.status
+            break
+        except urllib.error.HTTPError as e:
+            status = e.code
+            if e.code != 405 or metodo == "GET":      # some apps refuse HEAD: then a GET
+                break
+        except (urllib.error.URLError, OSError, ValueError):
+            return {"ok": False, "status": None, "ms": None}
+    return {"ok": status is not None and status < 500, "status": status, "ms": round((time.monotonic() - inicio) * 1000)}
+
+
+def monitor(force=False, sondar=probe):
+    """{app: {ok, status, ms}} of the installed apps that have one address to open, refreshed once a minute.
+
+    It catches the container that is "healthy" while the app inside it does not answer. A sandbox has no
+    apps running, so it answers empty."""
+    if PREFIX and sondar is probe:
+        return {}
+    with MON_LOCK:
+        if not force and time.time() - MON["at"] < MON_TTL:
+            return MON["data"]
+        alvos = {}
+        for a in catalog("en")["apps"]:
+            instaladas = {u["unit"] for u in a["units"] if u["installed"] and not u.get("stopped")}
+            urls = [w.get("tailnet") or w.get("local") for w in a.get("web", []) if w["unit"] in instaladas]
+            urls = [u for u in urls if u]
+            if len(urls) == 1:
+                alvos[a["id"]] = urls[0]
+        with ThreadPoolExecutor(8) as ex:
+            res = dict(zip(alvos, ex.map(sondar, alvos.values())))
+        MON.update(at=time.time(), data=res)
+        return res
+
+
+# -- weather (the sidebar's widget) ------------------------------------------------
+
+WEATHER, WEATHER_LOCK, WEATHER_TTL = {}, threading.Lock(), 15 * 60
+
+
+def get_json(url, timeout=10):
+    req = urllib.request.Request(url, headers={"User-Agent": "qh-store"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read(1 << 20))
+
+
+def weather(city, lang="en", buscar=get_json):
+    """{place, temp, code, wind, max, min} for a city name, from Open-Meteo (no key), kept for 15 minutes.
+
+    The only thing that leaves the server is the city's name, and only when someone added the widget."""
+    chave = (city.strip().lower(), lang)
+    with WEATHER_LOCK:
+        if chave in WEATHER and time.time() - WEATHER[chave][0] < WEATHER_TTL:
+            return WEATHER[chave][1]
+    from urllib.parse import quote
+    g = buscar(f"https://geocoding-api.open-meteo.com/v1/search?name={quote(city.strip())}&count=1&language={lang}&format=json")
+    lugares = g.get("results") or []
+    if not lugares:
+        return None
+    p = lugares[0]
+    f = buscar("https://api.open-meteo.com/v1/forecast?latitude={}&longitude={}&current=temperature_2m,weather_code,wind_speed_10m"
+               "&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1".format(p["latitude"], p["longitude"]))
+    cur, dia = f.get("current") or {}, f.get("daily") or {}
+    saida = {"place": ", ".join(x for x in (p.get("name"), p.get("admin1"), p.get("country_code")) if x),
+             "temp": cur.get("temperature_2m"), "code": cur.get("weather_code"), "wind": cur.get("wind_speed_10m"),
+             "max": (dia.get("temperature_2m_max") or [None])[0], "min": (dia.get("temperature_2m_min") or [None])[0]}
+    with WEATHER_LOCK:
+        WEATHER[chave] = (time.time(), saida)
+    return saida
+
+
+# -- service widgets ---------------------------------------------------------------
+
+SVC, SVC_LOCK, SVC_TTL = {"at": 0.0, "data": {}}, threading.Lock(), 60
+
+
+def svc_home():
+    return Path(PREFIX) if PREFIX else Path.home()
+
+
+def svc_slots(apps):
+    """[(app, widget, slot, unit, url)] of the widgets of the installed apps, with the address to call."""
+    saida = []
+    cfg = W.load(svc_home())
+    for a in apps:
+        ws = manifest.load(I.APPS / a["id"]).get("widgets") or []
+        instaladas = {u["unit"] for u in a["units"] if u["installed"]}
+        for w in ws if isinstance(ws, list) else []:
+            if not isinstance(w, dict) or w.get("type") not in W.TYPES:
+                continue
+            unit = w.get("unit") or a.get("main_unit")
+            if unit not in instaladas:
+                continue
+            web = next((x for x in a.get("web", []) if x["unit"] == unit), {})
+            url = (cfg.get(W.slot(a["id"], w)) or {}).get("url") or web.get("tailnet") or web.get("local")
+            saida.append((a["id"], w, W.slot(a["id"], w), unit, url))
+    return saida
+
+
+def svc_state(force=False, apps=None, get=W.http_get):
+    """{app: [{type, unit, slot, auth, configured, url, fields | error}]}, read at most once a minute.
+
+    The credential never leaves: what goes back is whether there is one, and the numbers."""
+    with SVC_LOCK:
+        if not force and apps is None and time.time() - SVC["at"] < SVC_TTL:
+            return SVC["data"]
+        apps = catalog("en")["apps"] if apps is None else apps
+        cfg = W.load(svc_home())
+        itens = []
+        for app, w, slot, unit, url in svc_slots(apps):
+            cred = cfg.get(slot) or {}
+            itens.append(({"type": w["type"], "unit": unit, "slot": slot, "auth": list(W.AUTH[W.TYPES[w["type"]][0]]),
+                           "configured": W.configured(w["type"], cred), "url": bool(url)}, app, cred, url))
+        def ler(item):
+            meta, _app, cred, url = item
+            if not (meta["configured"] and url) or (PREFIX and get is W.http_get):
+                return meta
+            return {**meta, **W.read(meta["type"], url, cred, get)}
+        with ThreadPoolExecutor(8) as ex:
+            lidos = list(ex.map(ler, itens))
+        saida = {}
+        for (_, app, _, _), meta in zip(itens, lidos):
+            saida.setdefault(app, []).append(meta)
+        SVC.update(at=time.time(), data=saida)
+        return saida
+
+
+def svc_config(app, slot, valores):
+    """Saves a widget's credential: only the keys its type takes (plus an address), an empty one kept as it was.
+    Returns an error, or None."""
+    pastas = {x[2]: x[1] for x in svc_slots([a for a in catalog("en")["apps"] if a["id"] == app])}
+    if slot not in pastas:
+        return "unknown widget"
+    campos = W.AUTH[W.TYPES[pastas[slot]["type"]][0]]
+    cfg = W.load(svc_home())
+    atual = dict(cfg.get(slot) or {})
+    if valores.get("clear"):
+        atual = {}
+    for k, v in valores.items():
+        if k in ("clear", "lang"):
+            continue
+        if k not in campos and k != "url":
+            return f"unknown field {k!r}"
+        if not isinstance(v, str) or len(v) > 500:
+            return f"{k}: text up to 500 characters"
+        v = v.strip()
+        if k == "url" and v and not re.fullmatch(r"https?://[^\s]+", v):
+            return "url: an http:// or https:// address"
+        if v:
+            atual[k] = v
+        elif k == "url":
+            atual.pop("url", None)
+    cfg[slot] = atual
+    W.save(svc_home(), cfg)
+    with SVC_LOCK:
+        SVC["at"] = 0.0
+    return None
 
 
 def settings():
@@ -1887,6 +2151,35 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, {"links": links(app)})
         if url.path == "/api/settings":
             return self._json(200, settings())
+        if url.path == "/api/ui":
+            return self._json(200, ui_settings())
+        if url.path == "/api/weather":
+            cidade = q.get("city", "").strip()
+            if not cidade or len(cidade) > 80:
+                return self._json(400, {"error": "city"})
+            if PREFIX:
+                return self._json(200, {"weather": None})      # a sandbox does not reach the network
+            try:
+                return self._json(200, {"weather": weather(cidade, "pt" if q.get("lang") == "pt" else "en")})
+            except (urllib.error.URLError, OSError, ValueError, KeyError) as e:
+                return self._json(502, {"error": f"open-meteo: {e}"})
+        if url.path == "/api/svc":
+            return self._json(200, {"apps": svc_state(force=q.get("refresh") == "1")})
+        if url.path == "/api/monitor":
+            return self._json(200, {"apps": monitor()})
+        if url.path == "/ui/background":
+            f = ui_background()
+            if not f:
+                return self._json(404, {"error": "not found"})
+            corpo = f.read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", BG_TYPES[f.suffix])
+            self.send_header("Content-Length", str(len(corpo)))
+            self.send_header("Cache-Control", "private, max-age=86400")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.end_headers()
+            self.wfile.write(corpo)
+            return
         if url.path == "/api/alerts":
             return self._json(200, {"config": A.public(A.load(alert_home())), "kinds": list(A.KINDS),
                                     "sent": len(alerts_state())})
@@ -1978,6 +2271,13 @@ class Handler(BaseHTTPRequestHandler):
         # with the cookie still fails, without a CSRF token to keep in sync.
         if self.headers.get("X-QH-Store") != "1":
             return self._json(403, {"error": "missing X-QH-Store"})
+        if url.path == "/api/ui/background":
+            try:
+                dados = self._body(BG_MAX)
+            except ValueError:
+                return self._json(413, {"error": "the image is over 8 MB"})
+            erro = ui_set_background(dados)
+            return self._json(400, {"error": erro}) if erro else self._json(200, ui_settings())
         if url.path == "/api/backup/upload":
             app = parse_qs(url.query).get("app", [""])[0]
             if not service_dir(app):
@@ -2039,6 +2339,16 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(409, {"error": loc("another job is running")})
             return self._json(202, {"job": job.id})
 
+        if url.path == "/api/svc/config":
+            app, slot = d.get("app", ""), d.get("slot", "")
+            valores = d.get("values") or {}
+            if not service_dir(app) or not isinstance(valores, dict):
+                return self._json(400, {"error": loc("unknown service")})
+            erro = svc_config(app, slot, valores)
+            return self._json(400, {"error": erro}) if erro else self._json(200, {"apps": svc_state(force=True)})
+        if url.path == "/api/ui":
+            erros = ui_save({k: v for k, v in d.items() if k != "lang"}) if isinstance(d, dict) else ["an object"]
+            return self._json(400, {"error": "; ".join(erros)}) if erros else self._json(200, ui_settings())
         if url.path == "/api/alerts":
             atual = A.load(alert_home())
             if d.get("clear_token"):
@@ -2782,6 +3092,92 @@ def selftest():
             assert cfg1["access"] == "both" and cfg1["default"] is False, cfg1
             st, _, corpo = pedir("/api/settings", json.dumps({"access": "tailnet"}).encode(), api)
             assert espera_job(corpo)["rc"] == 0
+            # service widgets: the address from the catalog, the credential from the panel, never sent back
+            falso_cat = [{"id": "immich", "main_unit": "immich", "web": [{"unit": "immich", "local": "http://x:2283", "tailnet": None}],
+                          "units": [{"unit": "immich", "installed": True}]},
+                         {"id": "media-stack", "main_unit": None, "web": [{"unit": "media-stack-sonarr", "local": "http://x:8989", "tailnet": "https://sonarr.t"}],
+                          "units": [{"unit": "media-stack-sonarr", "installed": True}, {"unit": "media-stack-jellyfin", "installed": False}]}]
+            pedidos = []
+            def api_falsa(u, h=None):
+                pedidos.append((u, h))
+                return {"photos": 3, "videos": 1, "usage": 10} if "statistics" in u else {"totalRecords": 4} if "pageSize" in u else [{}]
+            st0 = svc_state(apps=falso_cat, get=api_falsa)
+            assert [x["type"] for x in st0["immich"]] == ["immich"] and [x["type"] for x in st0["media-stack"]] == ["sonarr"], "only the installed units' widgets"
+            assert st0["immich"][0]["configured"] is False and "fields" not in st0["immich"][0] and not pedidos, "nothing is asked without a key"
+            antes_cat = catalog
+            globals()["catalog"] = lambda lang="en": {"apps": falso_cat}
+            try:
+                assert pedir("/api/svc/config", json.dumps({"app": "immich", "slot": "immich", "values": {"password": "x"}}).encode(), api)[0] == 400, "only the fields the type takes"
+                assert pedir("/api/svc/config", json.dumps({"app": "immich", "slot": "nope", "values": {"key": "x"}}).encode(), api)[0] == 400
+                assert pedir("/api/svc/config", json.dumps({"app": "immich", "slot": "immich", "values": {"url": "ftp://x"}}).encode(), api)[0] == 400
+                st, _, c = pedir("/api/svc/config", json.dumps({"app": "immich", "slot": "immich", "values": {"key": "segredo-123"}}).encode(), api)
+                assert st == 200 and b"segredo-123" not in c, "the key never comes back"
+                assert W.load(Path(tmp))["immich"] == {"key": "segredo-123"}
+                pedir("/api/svc/config", json.dumps({"app": "media-stack", "slot": "media-stack/media-stack-sonarr", "values": {"key": "k2"}}).encode(), api)
+                lido = svc_state(apps=falso_cat, get=api_falsa)
+                assert {x["key"]: x["value"] for x in lido["immich"][0]["fields"]} == {"photos": 3, "videos": 1, "storage": 10}, lido
+                assert pedidos[0] == ("http://x:2283/api/server/statistics", {"x-api-key": "segredo-123"})
+                assert any(u.startswith("https://sonarr.t/api/v3/") for u, _ in pedidos), "the tailnet address first, when there is one"
+                pedir("/api/svc/config", json.dumps({"app": "immich", "slot": "immich", "values": {"key": ""}}).encode(), api)
+                assert W.load(Path(tmp))["immich"] == {"key": "segredo-123"}, "an empty box keeps the key"
+                pedir("/api/svc/config", json.dumps({"app": "immich", "slot": "immich", "values": {"clear": True}}).encode(), api)
+                assert W.load(Path(tmp))["immich"] == {}, "clear forgets it"
+            finally:
+                globals()["catalog"] = antes_cat
+
+            # weather: the city's name is all that leaves; the answer is kept for 15 minutes
+            chamadas = []
+            def falso(u):
+                chamadas.append(u)
+                if "geocoding" in u:
+                    return {"results": [{"name": "Recife", "admin1": "Pernambuco", "country_code": "BR", "latitude": -8.05, "longitude": -34.9}]}
+                return {"current": {"temperature_2m": 29.4, "weather_code": 2, "wind_speed_10m": 14.0},
+                        "daily": {"temperature_2m_max": [31.0], "temperature_2m_min": [24.5]}}
+            w = weather("Recife", "pt", falso)
+            assert w == {"place": "Recife, Pernambuco, BR", "temp": 29.4, "code": 2, "wind": 14.0, "max": 31.0, "min": 24.5}, w
+            assert weather(" recife ", "pt", falso) is w and len(chamadas) == 2, "the same city within 15 minutes asks nothing"
+            assert "name=Recife" in chamadas[0] and "latitude=-8.05" in chamadas[1]
+            assert weather("Nowhere", "pt", lambda u: {"results": []}) is None
+            assert pedir("/api/weather?city=", headers=ok)[0] == 400
+            assert json.loads(pedir("/api/weather?city=Recife", headers=ok)[2]) == {"weather": None}, "a sandbox does not reach the network"
+
+            # site monitor: up when it answers below a 500 (a 401 login page is up), down when nothing answers
+            class Site(BaseHTTPRequestHandler):
+                def do_HEAD(self):
+                    codigo = {"/up": 200, "/login": 401, "/nohead": 405, "/broken": 502}[self.path]
+                    self.send_response(codigo); self.end_headers()
+                def do_GET(self):
+                    self.send_response(200); self.end_headers()
+                def log_message(self, *a): pass
+            site = ThreadingHTTPServer(("127.0.0.1", 0), Site)
+            threading.Thread(target=site.serve_forever, daemon=True).start()
+            raiz = f"http://127.0.0.1:{site.server_address[1]}"
+            assert probe(raiz + "/up")["ok"] and probe(raiz + "/login")["ok"], "answering, even with a login page, is up"
+            sem_head = probe(raiz + "/nohead")
+            assert sem_head["ok"] is True and sem_head["status"] == 200, "a refused HEAD falls back to GET"
+            assert probe(raiz + "/broken")["ok"] is False and probe(raiz + "/broken")["status"] == 502
+            assert probe("http://127.0.0.1:1/")["ok"] is False and probe("http://127.0.0.1:1/")["status"] is None, "nothing listening is down"
+            site.shutdown()
+            assert json.loads(pedir("/api/monitor", headers=ok)[2]) == {"apps": {}}, "a sandbox monitors nothing"
+
+            # appearance: validated, kept on the server; the background is sniffed by its bytes, served only after login
+            u0 = json.loads(pedir("/api/ui", headers=ok)[2])
+            assert u0["theme"] == "system" and u0["accent"] == "orange" and u0["background"] is False, u0
+            assert pedir("/api/ui", json.dumps({"theme": "neon"}).encode(), api)[0] == 400
+            assert pedir("/api/ui", json.dumps({"bg_blur": 99}).encode(), api)[0] == 400
+            assert pedir("/api/ui", json.dumps({"nope": 1}).encode(), api)[0] == 400
+            st, _, c = pedir("/api/ui", json.dumps({"theme": "dark", "accent": "teal", "density": "compact", "lang": "pt"}).encode(), api)
+            assert st == 200 and json.loads(c)["accent"] == "teal" and json.loads(pedir("/api/ui", headers=ok)[2])["density"] == "compact"
+            png = b"\x89PNG\r\n\x1a\n" + b"\0" * 64
+            assert pedir("/api/ui/background", b"<svg onload=alert(1)>", api)[0] == 400, "only PNG, JPEG or WebP, by their bytes"
+            st, _, c = pedir("/api/ui/background", png, api)
+            assert st == 200 and json.loads(c)["background"] is True
+            assert pedir("/ui/background")[0] in (303, 401), "the background needs the login too"
+            st, cab, c = pedir("/ui/background", headers=ok)
+            assert st == 200 and c == png and cab.get("Content-Type") == "image/png", (st, cab)
+            assert json.loads(pedir("/api/ui/background", b"", api)[2])["background"] is False, "an empty body removes it"
+            pedir("/api/ui", json.dumps({"theme": "system", "accent": "orange", "density": "comfortable"}).encode(), api)
+
             # alerts: opt-in, validated, the token never comes back, a test message reaches the ntfy topic
             recebido = []
             class Ntfy(BaseHTTPRequestHandler):

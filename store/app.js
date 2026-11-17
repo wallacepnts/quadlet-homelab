@@ -58,6 +58,33 @@ const T = {
     planTitle: "O que vai acontecer",
     dockerImage: "Imagem Docker", dockerTag: "Tag", containerName: "Nome do contêiner", noLimit: "sem limite", latestPinned: "a última versão",
     emptyRows: "Clique em “+” para adicionar um.", hHost: "Host", hContainer: "Contêiner", hProto: "Protocolo", hIp: "IP (opcional)", hKey: "Chave", hValue: "Valor", hLabel: "Rótulo",
+    qlPlaceholder: "Buscar apps… (Enter abre, Esc fecha)", qlOpen: "Abrir", qlStore: "Ver na loja", qlManage: "Gerenciar", qlWeb: (q) => `Buscar “${q}” na web`, qlNone: "Nenhum app com esse nome.",
+    appearance: "Aparência", apTheme: "Tema", apThemes: { system: "Como o sistema", light: "Claro", dark: "Escuro" }, apAccent: "Cor de destaque",
+    apAccents: { orange: "Laranja", blue: "Azul", green: "Verde", teal: "Petróleo", purple: "Roxo", pink: "Rosa", red: "Vermelho", slate: "Grafite" },
+    apCard: "Cartões", apCards: { shadow: "Com sombra", hairline: "Com borda fina" }, apDensity: "Densidade", apDensities: { comfortable: "Confortável", compact: "Compacta" },
+    apBg: "Imagem de fundo", apBgPick: "Escolher imagem…", apBgRemove: "Tirar o fundo", apBgBlur: "Desfoque", apBgDim: "Véu sobre a imagem",
+    apBgHint: "PNG, JPEG ou WebP, até 8 MB. Fica no servidor, para todos os navegadores.", apSaved: "Aparência salva.",
+    monDown: "não responde", monStatus: (c) => `responde com erro ${c}`, monMs: (ms) => `responde em ${ms} ms`,
+    wClock: "Data e hora", wWeather: "Clima", wSearch: "Busca", hello: ["Boa noite", "Bom dia", "Boa tarde", "Boa noite"],
+    weatherCity: "Cidade", weatherSet: "Mostrar", weatherHint: "A cidade é consultada na Open-Meteo, pelo servidor.", weatherNone: "Cidade não encontrada.",
+    weatherMaxMin: (a, b) => `máx ${a}° · mín ${b}°`, weatherWind: (v) => `vento ${v} km/h`, searchHint: "Buscar apps ou na web…",
+    wmo: { 0: "céu limpo", 1: "quase limpo", 2: "parcialmente nublado", 3: "nublado", 45: "neblina", 48: "neblina", 51: "garoa", 53: "garoa", 55: "garoa forte",
+      61: "chuva fraca", 63: "chuva", 65: "chuva forte", 71: "neve fraca", 73: "neve", 75: "neve forte", 80: "pancadas", 81: "pancadas", 82: "pancadas fortes", 95: "trovoada", 96: "trovoada", 99: "trovoada" },
+    bookmarks: "Favoritos", bmEdit: "Editar favoritos", bmDone: "Pronto", bmNewGroup: "Novo grupo de favoritos", bmGroupName: "Nome do grupo", bmAdd: "Adicionar",
+    bmRemoveGroup: "Apagar grupo", bmEmpty: "Guarde aqui atalhos para o que não é app: o roteador, o admin do Tailscale…",
+    organize: "Organizar", organizeDone: "Pronto", newGroup: "Novo grupo", groupName: "Nome do grupo", noGroup: "Sem grupo", groupIcons: "Só ícones",
+    groupTiles: "Azulejos", groupRemove: "Apagar grupo", moveTo: "Grupo",
+    svcField: { photos: "fotos", videos: "vídeos", storage: "armazenamento", queries: "consultas", blocked: "bloqueadas", blocked_pct: "bloqueado",
+      latency: "latência", documents: "documentos", inbox: "na caixa de entrada", up: "no ar", down: "fora do ar", wanted: "faltando", queued: "na fila",
+      series: "séries", movies: "filmes", streams: "tocando agora", songs: "músicas" },
+    svcNames: { immich: "Immich", adguard: "AdGuard Home", paperless: "Paperless-ngx", "uptime-kuma": "Uptime Kuma", sonarr: "Sonarr", radarr: "Radarr", jellyfin: "Jellyfin" },
+    svcTitle: "Números do app", svcSetup: "Configurar widget", svcConnect: "Conecte para ver os números do app aqui.", svcSave: "Salvar", svcForget: "Esquecer",
+    svcKey: "Chave de API", svcUser: "Usuário", svcPassword: "Senha", svcSlug: "Slug da página de status", svcUrl: "Endereço (opcional)",
+    svcKeyKept: "já definida; deixe em branco para manter", svcNoUrl: "Sem endereço: o app não tem uma página publicada.",
+    svcHelp: { immich: "Em Immich: Conta → Chaves de API, com a permissão server.statistics.", adguard: "O usuário e a senha de entrar no AdGuard Home.",
+      paperless: "Em Paperless: Meu perfil → Token de API.", "uptime-kuma": "Crie uma página de status no Uptime Kuma e use o slug do endereço dela.",
+      sonarr: "Em Sonarr: Settings → General → API Key.", radarr: "Em Radarr: Settings → General → API Key.", jellyfin: "Em Jellyfin: Painel → Chaves de API." },
+    svcSecure: "A chave fica no servidor; o navegador só recebe os números.",
     sideBtn: "Barra lateral", sideTitle: "Painel", sideEdit: "Editar", sideDone: "Pronto", addWidget: "Adicionar widget…", remove: "Remover", moveUp: "Subir", moveDown: "Descer",
     wPerf: "Desempenho do servidor", wApps: "Seus apps", wNotes: "Notas", wLinks: "Links rápidos",
     perfCpu: "Processador", perfMem: "Memória", perfDisk: "Disco", perfNet: "Rede", perfLoad: "carga", perfCores: "núcleos", perfSince: "desde o início", perfNone: "sem dados",
@@ -202,6 +229,33 @@ const T = {
     planTitle: "What will happen",
     dockerImage: "Docker image", dockerTag: "Tag", containerName: "Container name", noLimit: "no limit", latestPinned: "the latest version",
     emptyRows: "Click “+” to add one.", hHost: "Host", hContainer: "Container", hProto: "Protocol", hIp: "IP (optional)", hKey: "Key", hValue: "Value", hLabel: "Label",
+    qlPlaceholder: "Search apps… (Enter opens, Esc closes)", qlOpen: "Open", qlStore: "See in the store", qlManage: "Manage", qlWeb: (q) => `Search the web for “${q}”`, qlNone: "No app by that name.",
+    appearance: "Appearance", apTheme: "Theme", apThemes: { system: "Like the system", light: "Light", dark: "Dark" }, apAccent: "Accent colour",
+    apAccents: { orange: "Orange", blue: "Blue", green: "Green", teal: "Teal", purple: "Purple", pink: "Pink", red: "Red", slate: "Slate" },
+    apCard: "Cards", apCards: { shadow: "With a shadow", hairline: "With a thin border" }, apDensity: "Density", apDensities: { comfortable: "Comfortable", compact: "Compact" },
+    apBg: "Background image", apBgPick: "Choose an image…", apBgRemove: "Remove the background", apBgBlur: "Blur", apBgDim: "Veil over the image",
+    apBgHint: "PNG, JPEG or WebP, up to 8 MB. Kept on the server, for every browser.", apSaved: "Appearance saved.",
+    monDown: "not answering", monStatus: (c) => `answers with error ${c}`, monMs: (ms) => `answers in ${ms} ms`,
+    wClock: "Date and time", wWeather: "Weather", wSearch: "Search", hello: ["Good evening", "Good morning", "Good afternoon", "Good evening"],
+    weatherCity: "City", weatherSet: "Show", weatherHint: "The city is looked up on Open-Meteo, by the server.", weatherNone: "City not found.",
+    weatherMaxMin: (a, b) => `high ${a}° · low ${b}°`, weatherWind: (v) => `wind ${v} km/h`, searchHint: "Search apps or the web…",
+    wmo: { 0: "clear sky", 1: "mainly clear", 2: "partly cloudy", 3: "overcast", 45: "fog", 48: "fog", 51: "drizzle", 53: "drizzle", 55: "heavy drizzle",
+      61: "light rain", 63: "rain", 65: "heavy rain", 71: "light snow", 73: "snow", 75: "heavy snow", 80: "showers", 81: "showers", 82: "heavy showers", 95: "thunderstorm", 96: "thunderstorm", 99: "thunderstorm" },
+    bookmarks: "Bookmarks", bmEdit: "Edit bookmarks", bmDone: "Done", bmNewGroup: "New bookmark group", bmGroupName: "Group name", bmAdd: "Add",
+    bmRemoveGroup: "Delete group", bmEmpty: "Keep shortcuts here to what is not an app: the router, the Tailscale admin…",
+    organize: "Organize", organizeDone: "Done", newGroup: "New group", groupName: "Group name", noGroup: "No group", groupIcons: "Icons only",
+    groupTiles: "Tiles", groupRemove: "Delete group", moveTo: "Group",
+    svcField: { photos: "photos", videos: "videos", storage: "storage", queries: "queries", blocked: "blocked", blocked_pct: "blocked",
+      latency: "latency", documents: "documents", inbox: "in the inbox", up: "up", down: "down", wanted: "wanted", queued: "queued",
+      series: "series", movies: "movies", streams: "playing now", songs: "songs" },
+    svcNames: { immich: "Immich", adguard: "AdGuard Home", paperless: "Paperless-ngx", "uptime-kuma": "Uptime Kuma", sonarr: "Sonarr", radarr: "Radarr", jellyfin: "Jellyfin" },
+    svcTitle: "The app's numbers", svcSetup: "Set up the widget", svcConnect: "Connect it to see the app's numbers here.", svcSave: "Save", svcForget: "Forget",
+    svcKey: "API key", svcUser: "User", svcPassword: "Password", svcSlug: "Status page slug", svcUrl: "Address (optional)",
+    svcKeyKept: "already set; leave blank to keep it", svcNoUrl: "No address: the app has no published page.",
+    svcHelp: { immich: "In Immich: Account → API keys, with the server.statistics permission.", adguard: "The user and password you sign in to AdGuard Home with.",
+      paperless: "In Paperless: My profile → API token.", "uptime-kuma": "Create a status page in Uptime Kuma and use the slug of its address.",
+      sonarr: "In Sonarr: Settings → General → API Key.", radarr: "In Radarr: Settings → General → API Key.", jellyfin: "In Jellyfin: Dashboard → API keys." },
+    svcSecure: "The key stays on the server; the browser only gets the numbers.",
     sideBtn: "Sidebar", sideTitle: "Dashboard", sideEdit: "Edit", sideDone: "Done", addWidget: "Add a widget…", remove: "Remove", moveUp: "Move up", moveDown: "Move down",
     wPerf: "Server performance", wApps: "Your apps", wNotes: "Notes", wLinks: "Quick links",
     perfCpu: "Processor", perfMem: "Memory", perfDisk: "Disk", perfNet: "Network", perfLoad: "load", perfCores: "cores", perfSince: "since boot", perfNone: "no data",
@@ -553,6 +607,8 @@ function renderFilters() {
   $("summary").hidden = !mine.length;
   const comAtualizacao = contar(hasUpdate);
   fill($("summary"), t("summaryLine")(rodando, parados, pausados),
+    h("button", { type: "button", class: "ghost organize", "aria-pressed": String(!!S.organize),
+      onclick: () => { S.organize = !S.organize; renderGroups(); renderGrid(); } }, S.organize ? t("organizeDone") : t("organize")),
     comAtualizacao ? " " : null,
     comAtualizacao ? h("button", { type: "button", id: "update-all", class: "ghost",
       onclick: (ev) => {
@@ -633,7 +689,19 @@ function runDot(a) {
   const st = health(a);
   if (st && st[0] === "bad") return ["bad", st[1]];
   const r = runState(a);
-  return r === "running" ? ["ok", t("running")] : r === "paused" ? ["warn", t("pausedBadge")] : ["off", t("stoppedBadge")];
+  // The site monitor: a running container whose app does not answer is a red dot, not a green one.
+  const m = (S.mon || {})[a.id];
+  if (r === "running" && m && !m.ok) return ["bad", m.status ? t("monStatus")(m.status) : t("monDown")];
+  if (r === "running") return ["ok", m && m.ok ? `${t("running")} · ${t("monMs")(m.ms)}` : t("running")];
+  return r === "paused" ? ["warn", t("pausedBadge")] : ["off", t("stoppedBadge")];
+}
+
+async function pollMonitor() {
+  if (document.hidden || !S.apps.some((a) => a.installed)) return;
+  try {
+    S.mon = (await api("/api/monitor")).apps;
+    if (S.view === "apps") renderGrid();
+  } catch (e) { /* next turn */ }
 }
 
 function tile(a) {
@@ -645,13 +713,14 @@ function tile(a) {
       sobe && h("span", { class: "upd", title: t("updateAvailable"), role: "img", "aria-label": t("updateAvailable") }, "↑")),
     h("h3", {}, a.name),
     !silencioso && h("span", { class: `badge ${st[0]}`, title: st[2] || null }, st[1]),
+    svcLine(a),
   ];
   return h("div", { class: "card tile" },
     h("span", { class: `dot ${dotCls}`, title: dotTxt, role: "img", "aria-label": dotTxt }),
     url
       ? h("a", { class: "tile-open", href: url, target: "_blank", rel: "noopener noreferrer",
-                 "aria-label": `${t("open")} ${a.name}` }, ...corpo)
-      : h("button", { class: "tile-open", type: "button", onclick: () => openPanel(a.id) }, ...corpo),
+                 "aria-label": `${t("open")} ${a.name}`, title: a.name }, ...corpo)
+      : h("button", { class: "tile-open", type: "button", title: a.name, onclick: () => openPanel(a.id) }, ...corpo),
     url && h("button", { class: "gear", type: "button", title: t("manage"),
                          "aria-label": `${t("manage")} ${a.name}`, onclick: () => openPanel(a.id) }, "⚙"));
 }
@@ -677,8 +746,10 @@ function renderGrid() {
   const pool = meus ? installed().filter(FILTERS[S.filter] || (() => true))
                     : S.apps.filter((a) => !S.group || groupOf(a) === S.group);
   const shown = pool.filter((a) => matches(a, q));
-  $("grid").className = meus ? "apps" : "";
-  fill($("grid"), ...shown.map(meus ? tile : storeCard));
+  const agrupado = meus && shown.length ? groupedTiles(shown) : null;
+  $("grid").className = meus ? (agrupado ? "apps grouped" : "apps") : "";
+  fill($("grid"), ...(agrupado || shown.map(meus ? tile : storeCard)));
+  renderBookmarks();
   $("empty").hidden = shown.length > 0;
   if (!shown.length) {
     const semApps = meus && !installed().length && !q;
@@ -798,6 +869,7 @@ function renderPanel() {
   $("p-desc").textContent = plain(sobre || a.description[S.lang] || a.description.en)
     + deInst;
 
+  renderSvc(a);
   // Images the project hosts (app.json, screenshots); each opens full size in a new tab.
   fill($("p-shots"), ...(a.screenshots || []).map((u) =>
     h("a", { href: u, target: "_blank", rel: "noopener noreferrer", "aria-label": t("shots") },
@@ -1656,6 +1728,7 @@ async function renderSettings() {
       h("div", { class: "row" },
         h("button", { type: "button", onclick: () => rodar(false) }, t("saveRule")),
         h("button", { type: "button", class: "ghost", onclick: () => rodar(true) }, t("applyRule")))),
+    await appearanceSection(),
     await alertsSection(),
     h("section", {}, h("p", { class: "muted" }, c.tailnet ? t("tailnetOn") : t("tailnetOff"))));
 }
@@ -1971,9 +2044,10 @@ setInterval(pollStats, 10000);
 
 // The host in one line, at the top: load over the CPUs, memory used, hottest sensor, uptime.
 // A few file reads on the server; a field the host does not report is simply left out.
+const duracao = (seg) => (seg >= 86400 ? `${Math.floor(seg / 86400)} d` : seg >= 3600 ? `${Math.floor(seg / 3600)} h` : `${Math.max(1, Math.floor(seg / 60))} min`);
 function hostLine(h) {
   const gb = (b) => (b / 2 ** 30).toFixed(1);
-  const up = h.uptime === null ? null : h.uptime >= 86400 ? `${Math.floor(h.uptime / 86400)} d` : `${Math.floor(h.uptime / 3600)} h`;
+  const up = h.uptime === null ? null : duracao(h.uptime);
   const partes = [
     h.load === null ? null : `${t("hostCpu")} ${Math.round((h.load / h.cpus) * 100)}%`,
     h.mem ? `${t("hostMem")} ${gb(h.mem.used)}/${gb(h.mem.total)} GB` : null,
@@ -1981,6 +2055,352 @@ function hostLine(h) {
     up ? `${t("hostUp")} ${up}` : null,
   ].filter(Boolean);
   return partes.join(" · ");
+}
+
+// -- service widgets -------------------------------------------------------------------------
+// Numbers from inside an app (photos in Immich, blocked queries in AdGuard...), read by the server with a
+// key typed here and kept there. The tile shows the first two; the panel shows them all.
+const compacto = (n) => (n === null || n === undefined ? "—" : Math.abs(n) >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : Math.abs(n) >= 1e4 ? `${Math.round(n / 1e3)}k`
+  : Math.abs(n) >= 1e3 ? `${(n / 1e3).toFixed(1)}k` : String(n));
+const valorSvc = (x) => (x.kind === "bytes" ? bytes(x.value || 0) : x.kind === "ms" ? `${x.value} ms` : x.kind === "pct" ? `${x.value}%` : compacto(x.value));
+
+function svcLine(a) {
+  const ws = (S.svc || {})[a.id] || [];
+  const com = ws.find((w) => w.fields && w.fields.length);
+  const erro = ws.find((w) => w.error);
+  if (!com) return erro ? h("p", { class: "svc-line muted", title: erro.error }, "⚠") : null;
+  return h("p", { class: "svc-line" }, ...com.fields.slice(0, 2).flatMap((x, i) => [i ? " · " : null,
+    h("span", { class: x.level ? `lv-${x.level}` : null }, h("strong", {}, valorSvc(x)), ` ${t("svcField")[x.key] || x.key}`)]).filter(Boolean));
+}
+
+function renderSvc(a) {
+  const ws = (S.svc || {})[a.id] || [];
+  $("p-svc").hidden = !a.installed || !ws.length;
+  fill($("p-svc"), ws.length ? h("h3", {}, t("svcTitle")) : null, ...ws.map((w) => h("div", { class: "svc-block" },
+    h("div", { class: "svc-head" }, h("strong", {}, t("svcNames")[w.type] || w.type),
+      h("button", { type: "button", class: "ghost", onclick: () => svcForm(a, w) }, t("svcSetup"))),
+    w.fields ? h("div", { class: "svc-stats" }, ...w.fields.map((x) => h("div", { class: `svc-stat${x.level ? ` lv-${x.level}` : ""}` },
+      h("span", { class: "svc-val" }, valorSvc(x)), h("span", { class: "svc-lbl" }, t("svcField")[x.key] || x.key))))
+      : w.error ? h("p", { class: "note" }, w.error)
+      : h("p", { class: "muted" }, w.url ? t("svcConnect") : t("svcNoUrl")))));
+}
+
+function svcForm(a, w) {
+  const rotulo = { key: t("svcKey"), user: t("svcUser"), password: t("svcPassword"), slug: t("svcSlug") };
+  const campos = w.auth.map((k) => [k, h("input", { type: k === "key" || k === "password" ? "password" : "text", autocomplete: "off",
+    placeholder: w.configured && (k === "key" || k === "password") ? t("svcKeyKept") : "", "aria-label": rotulo[k] })]);
+  const url = h("input", { type: "text", autocomplete: "off", placeholder: "https://…", "aria-label": t("svcUrl") });
+  const aviso = h("p", { class: "muted" });
+  const enviar = async (valores) => {
+    try { S.svc = (await api("/api/svc/config", { app: a.id, slot: w.slot, values: valores })).apps; renderSvc(a); renderGrid(); $("p-section").hidden = true; }
+    catch (e) { aviso.textContent = String(e.message); }
+  };
+  section(h("h3", {}, `${t("svcSetup")} · ${t("svcNames")[w.type] || w.type}`),
+    h("p", { class: "help" }, t("svcHelp")[w.type] || ""),
+    ...campos.map(([k, el]) => h("label", { class: "field" }, rotulo[k], el)),
+    h("label", { class: "field" }, t("svcUrl"), url),
+    h("p", { class: "help" }, t("svcSecure")),
+    h("div", { class: "row" },
+      h("button", { type: "button", onclick: () => enviar({ ...Object.fromEntries(campos.map(([k, el]) => [k, el.value])), ...(url.value.trim() ? { url: url.value } : {}) }) }, t("svcSave")),
+      w.configured ? h("button", { type: "button", class: "danger", onclick: () => enviar({ clear: true }) }, t("svcForget")) : null),
+    aviso);
+}
+
+async function pollSvc() {
+  if (document.hidden || !S.apps.some((a) => a.installed)) return;
+  try {
+    S.svc = (await api("/api/svc")).apps;
+    if (S.view === "apps") renderGrid();
+    const a = S.current && current();
+    if (a && $("panel").open) renderSvc(a);
+  } catch (e) { /* next turn */ }
+}
+
+// -- appearance -----------------------------------------------------------------------------
+// Theme, accent, card style, density and a background image: kept on the server (/api/ui), applied as
+// data attributes on <html> and CSS variables, so the stylesheet does all the drawing.
+const ACCENT_SWATCH = { orange: "#c2410c", blue: "#1d4ed8", green: "#15803d", teal: "#0f766e", purple: "#7e22ce", pink: "#be185d", red: "#b91c1c", slate: "#334155" };
+
+function applyUi(u) {
+  S.ui = u;
+  const raiz = document.documentElement;
+  raiz.setAttribute("data-theme", u.theme);
+  raiz.setAttribute("data-accent", u.accent);
+  raiz.setAttribute("data-card", u.card);
+  raiz.setAttribute("data-density", u.density);
+  document.body.classList.toggle("has-bg", !!u.background);
+  const st = document.body.style;
+  if (st.setProperty) {
+    if (u.background) st.setProperty("--bg-img", `url("/ui/background?v=${u.bg_version}")`);
+    st.setProperty("--bg-blur", `${u.bg_blur}px`);
+    st.setProperty("--bg-dim", String(u.bg_dim / 100));
+  }
+}
+
+async function loadUi() {
+  try { applyUi(await api("/api/ui")); } catch (e) { /* the defaults in the stylesheet */ }
+}
+
+async function saveUi(mudanca, aviso) {
+  applyUi({ ...S.ui, ...mudanca });                   // at once: what you pick is what you see
+  try { applyUi(await api("/api/ui", mudanca)); if (aviso) aviso.textContent = t("apSaved"); }
+  catch (e) { if (aviso) aviso.textContent = String(e.message); }
+}
+
+async function appearanceSection() {
+  if (!S.ui) await loadUi();
+  if (!S.ui) return null;
+  const u = S.ui, aviso = h("p", { class: "muted" });
+  const segmento = (chave, rotulos) => {
+    const botoesSeg = Object.keys(rotulos).map((v) => {
+      const b = h("button", { type: "button", "aria-pressed": String(u[chave] === v),
+        onclick: async () => { for (const x of botoesSeg) x.setAttribute("aria-pressed", String(x === b)); await saveUi({ [chave]: v }, aviso); } }, rotulos[v]);
+      return b;
+    });
+    return h("div", { class: "seg", role: "group" }, ...botoesSeg);
+  };
+  const cores = Object.keys(ACCENT_SWATCH).map((k) => {
+    const b = h("button", { type: "button", class: "swatch", title: t("apAccents")[k], "aria-label": t("apAccents")[k], "aria-pressed": String(u.accent === k),
+      onclick: async () => { for (const x of cores) x.setAttribute("aria-pressed", String(x === b)); await saveUi({ accent: k }, aviso); } });
+    b.style.background = ACCENT_SWATCH[k];
+    return b;
+  });
+  const arquivo = h("input", { type: "file", accept: "image/png,image/jpeg,image/webp", "aria-label": t("apBgPick") });
+  arquivo.addEventListener("change", async () => {
+    const f = arquivo.files && arquivo.files[0];
+    if (!f) return;
+    try {
+      const r = await fetch("/api/ui/background", { method: "POST", body: f, headers: { "X-QH-Store": "1", "Content-Type": "application/octet-stream" } });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error);
+      applyUi(d); aviso.textContent = t("apSaved"); renderSettings();
+    } catch (e) { aviso.textContent = String(e.message); }
+  });
+  const deslize = (chave, max) => {
+    const el = h("input", { type: "range", min: 0, max, step: 1, value: u[chave] });
+    el.value = String(u[chave]);
+    el.addEventListener("input", () => applyUi({ ...S.ui, [chave]: Number(el.value) }));
+    el.addEventListener("change", () => saveUi({ [chave]: Number(el.value) }, aviso));
+    return el;
+  };
+  return h("section", {}, h("h3", {}, t("appearance")),
+    h("div", { class: "ap-grid" },
+      h("label", {}, t("apTheme"), segmento("theme", t("apThemes"))),
+      h("label", {}, t("apCard"), segmento("card", t("apCards"))),
+      h("label", {}, t("apDensity"), segmento("density", t("apDensities")))),
+    h("p", { class: "lead-sm" }, t("apAccent")), h("div", { class: "swatches" }, ...cores),
+    h("p", { class: "lead-sm" }, t("apBg")),
+    h("div", { class: "row" }, arquivo,
+      u.background ? h("button", { type: "button", class: "ghost", onclick: async () => {
+        const r = await fetch("/api/ui/background", { method: "POST", body: "", headers: { "X-QH-Store": "1" } });
+        applyUi(await r.json()); renderSettings(); } }, t("apBgRemove")) : null),
+    h("p", { class: "help" }, t("apBgHint")),
+    u.background ? h("div", { class: "ap-grid" }, h("label", {}, t("apBgBlur"), deslize("bg_blur", 20)), h("label", {}, t("apBgDim"), deslize("bg_dim", 80))) : null,
+    aviso);
+}
+
+// -- Quick Launch ---------------------------------------------------------------------------
+// Start typing anywhere and a search opens over the page: the installed apps first, then the store's.
+// Enter takes the highlighted one (open the app, or its page when it is not installed); the last line
+// searches the web. No shortcut to learn: any letter starts it, and "/" opens it empty.
+const QL = { sel: 0, itens: [] };
+
+function qlResults(q) {
+  const termo = q.trim().toLowerCase();
+  if (!termo) return [];
+  const casa = (a) => `${a.name} ${a.id}`.toLowerCase();
+  const nota = (a) => (casa(a).startsWith(termo) ? 0 : casa(a).includes(termo) ? 1 : 2);
+  const achados = S.apps.filter((a) => matches(a, termo))
+    .sort((x, y) => (y.installed - x.installed) || (nota(x) - nota(y)) || x.name.localeCompare(y.name));
+  return achados.slice(0, 8).map((a) => {
+    const url = a.installed ? openUrl(a) : null;
+    return { app: a, rotulo: a.installed ? (url ? t("qlOpen") : t("qlManage")) : t("qlStore"),
+      ir: () => { if (url) window.open(url, "_blank", "noopener"); else { if (!a.installed) setView("store"); openPanel(a.id); } } };
+  }).concat([{ web: true, rotulo: t("qlWeb")(q.trim()),
+    ir: () => window.open(`https://duckduckgo.com/?q=${encodeURIComponent(q.trim())}`, "_blank", "noopener") }]);
+}
+
+function qlRender() {
+  const campo = $("ql-input");
+  QL.itens = qlResults(campo.value);
+  QL.sel = Math.min(QL.sel, Math.max(0, QL.itens.length - 1));
+  const lista = QL.itens.map((it, i) => h("li", { role: "option", "aria-selected": String(i === QL.sel), class: it.web ? "ql-web" : null,
+    onclick: () => { $("ql").close(); it.ir(); } },
+    it.web ? h("span", { class: "ico sm ql-g", "aria-hidden": "true" }, "↗")
+      : h("span", { class: "ico sm" }, h("img", { src: it.app.icon, alt: "", referrerpolicy: "no-referrer" })),
+    h("span", { class: "ql-name" }, it.web ? it.rotulo : it.app.name,
+      it.web ? null : h("small", {}, plain(it.app.description[S.lang] || it.app.description.en))),
+    it.web ? null : h("span", { class: "ql-act" }, it.rotulo)));
+  fill($("ql-list"), ...(QL.itens.length > 1 || !campo.value.trim() ? lista : [h("li", { class: "ql-none" }, t("qlNone")), ...lista]));
+}
+
+function quickLaunch(inicial = "") {
+  const campo = $("ql-input");
+  campo.placeholder = t("qlPlaceholder");
+  campo.value = inicial;
+  QL.sel = 0;
+  qlRender();
+  if (!$("ql").open) $("ql").showModal();
+  campo.focus();
+}
+
+$("ql-input").addEventListener("input", () => { QL.sel = 0; qlRender(); });
+$("ql-input").addEventListener("keydown", (ev) => {
+  if (ev.key === "ArrowDown" || ev.key === "ArrowUp") {
+    ev.preventDefault();
+    QL.sel = (QL.sel + (ev.key === "ArrowDown" ? 1 : -1) + QL.itens.length) % Math.max(1, QL.itens.length);
+    qlRender();
+  } else if (ev.key === "Enter") {
+    ev.preventDefault();
+    const it = QL.itens[QL.sel];
+    if (it) { $("ql").close(); it.ir(); }
+  }
+});
+document.addEventListener("keydown", (ev) => {
+  if (ev.ctrlKey || ev.metaKey || ev.altKey || ev.defaultPrevented) return;
+  const alvo = ev.target || {};
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test(alvo.tagName || "") || alvo.isContentEditable) return;
+  if ([...document.querySelectorAll("dialog")].some((d) => d.open)) return;
+  if (ev.key === "/") { ev.preventDefault(); quickLaunch(""); }
+  else if (ev.key.length === 1 && /\S/.test(ev.key)) { ev.preventDefault(); quickLaunch(ev.key); }
+});
+
+// A greeting, the time and the date; it redraws with the other live widgets.
+function clockWidget() {
+  const ola = h("p", { class: "w-hello" }), hora = h("p", { class: "w-time" }), dia = h("p", { class: "muted" });
+  const update = () => {
+    const agora = new Date(), loc = S.lang === "pt" ? "pt-BR" : "en";
+    ola.textContent = t("hello")[Math.floor(agora.getHours() / 6)];
+    hora.textContent = agora.toLocaleTimeString(loc, { hour: "2-digit", minute: "2-digit" });
+    dia.textContent = agora.toLocaleDateString(loc, { weekday: "long", day: "numeric", month: "long" });
+  };
+  update();
+  return { el: h("div", { class: "w-clock" }, ola, hora, dia), update };
+}
+
+// Weather for a city, through the server (Open-Meteo, no key): the browser never calls out.
+function weatherWidget(w) {
+  const raiz = h("div", { class: "w-weather" });
+  const pedir = async () => {
+    const cidade = dadosDe(w.id).city;
+    if (!cidade) return formulario();
+    try {
+      const { weather: x } = await api(`/api/weather?city=${encodeURIComponent(cidade)}&lang=${S.lang}`);
+      if (!x) return fill(raiz, h("p", { class: "muted" }, t("weatherNone")), formulario(true));
+      fill(raiz, h("p", { class: "w-temp" }, `${Math.round(x.temp)}°`, h("span", {}, t("wmo")[x.code] || "")),
+        h("p", { class: "muted" }, x.place),
+        h("p", { class: "muted" }, [x.max !== null ? t("weatherMaxMin")(Math.round(x.max), Math.round(x.min)) : null,
+          x.wind !== null ? t("weatherWind")(Math.round(x.wind)) : null].filter(Boolean).join(" · ")));
+    } catch (e) { fill(raiz, h("p", { class: "muted" }, String(e.message))); }
+  };
+  const formulario = (so) => {
+    const campo = h("input", { type: "text", placeholder: t("weatherCity"), "aria-label": t("weatherCity"), autocomplete: "off" });
+    const el = h("div", { class: "w-add" }, campo, h("button", { type: "button", class: "ghost", onclick: () => {
+      if (!campo.value.trim()) return;
+      guardaDados(w.id, { city: campo.value.trim() }); pedir(); } }, t("weatherSet")), h("p", { class: "help" }, t("weatherHint")));
+    if (so) return el;
+    fill(raiz, el);
+    return el;
+  };
+  pedir();
+  let ultima = Date.now();
+  return { el: raiz, update: () => { if (Date.now() - ultima > 15 * 60 * 1000) { ultima = Date.now(); pedir(); } } };
+}
+
+// A search box: Enter opens the Quick Launch with what was typed.
+function searchWidget() {
+  const campo = h("input", { type: "search", placeholder: t("searchHint"), "aria-label": t("wSearch"), autocomplete: "off" });
+  campo.addEventListener("keydown", (ev) => { if (ev.key === "Enter" && campo.value.trim()) { ev.preventDefault(); quickLaunch(campo.value.trim()); campo.value = ""; } });
+  return { el: campo };
+}
+
+// -- bookmarks -------------------------------------------------------------------------------
+// Shortcuts to what is not an app (the router, the Tailscale admin), in groups, below My apps.
+// Kept in this browser, like the widgets. A letter in a coloured square stands for the icon:
+// nothing is fetched from the site itself.
+const loadBm = () => { try { const v = JSON.parse(localStorage.getItem("qh-bookmarks")); return Array.isArray(v) ? v : []; } catch (e) { return []; } };
+const saveBm = (v) => localStorage.setItem("qh-bookmarks", JSON.stringify(v));
+const corDe = (txt) => { let n = 0; for (const c of txt) n = (n * 31 + c.charCodeAt(0)) % 360; return n; };
+
+function renderBookmarks() {
+  const el = $("bookmarks");
+  if (S.view !== "apps") { el.hidden = true; return; }
+  el.hidden = false;
+  const grupos = loadBm(), ed = S.bmEdit;
+  const salvar = (g) => { saveBm(g); renderBookmarks(); };
+  const blocos = grupos.map((g, gi) => {
+    const nome = h("input", { type: "text", placeholder: t("linkName"), "aria-label": t("linkName"), autocomplete: "off" });
+    const url = h("input", { type: "text", placeholder: t("linkUrl"), "aria-label": "URL", autocomplete: "off" });
+    const aviso = h("span", { class: "muted" });
+    return h("section", { class: "bm-group" },
+      h("header", {}, h("h3", {}, g.name),
+        ed ? h("button", { type: "button", class: "ghost", onclick: () => salvar(grupos.filter((_, j) => j !== gi)) }, t("bmRemoveGroup")) : null),
+      h("div", { class: "bm-list" }, ...g.links.map((l, li) => {
+        const letra = h("span", { class: "bm-ico", "aria-hidden": "true" }, (l.name || "?").trim()[0].toUpperCase());
+        letra.style.background = `hsl(${corDe(l.name)} 55% 42%)`;
+        return h("span", { class: "bm" }, h("a", { href: l.url, target: "_blank", rel: "noopener noreferrer", title: l.url }, letra, l.name),
+          ed ? h("button", { type: "button", class: "icon text", "aria-label": `${t("remove")} ${l.name}`,
+            onclick: () => { g.links.splice(li, 1); salvar(grupos); } }, "✕") : null);
+      })),
+      ed ? h("div", { class: "bm-add" }, nome, url, h("button", { type: "button", class: "ghost", onclick: () => {
+        const u = url.value.trim();
+        if (!/^https?:\/\/\S+$/i.test(u)) { aviso.textContent = t("linkBad"); return; }
+        g.links.push({ name: nome.value.trim() || u.replace(/^https?:\/\//i, "").split("/")[0], url: u });
+        salvar(grupos); } }, t("bmAdd")), aviso) : null);
+  });
+  const novo = h("input", { type: "text", placeholder: t("bmGroupName"), "aria-label": t("bmGroupName"), autocomplete: "off" });
+  fill(el,
+    h("div", { class: "bm-head" }, h("h2", {}, t("bookmarks")),
+      h("button", { type: "button", class: "ghost", onclick: () => { S.bmEdit = !S.bmEdit; renderBookmarks(); } }, ed ? t("bmDone") : t("bmEdit"))),
+    !grupos.length && !ed ? h("p", { class: "muted" }, t("bmEmpty")) : null,
+    ...blocos,
+    ed ? h("div", { class: "bm-add" }, novo, h("button", { type: "button", onclick: () => {
+      if (!novo.value.trim()) return;
+      salvar([...grupos, { name: novo.value.trim(), links: [] }]); } }, t("bmNewGroup"))) : null);
+}
+
+// -- groups in My apps ---------------------------------------------------------------------
+// The person's own groups ("Media", "Home"...): an app goes in one, a group can be folded, and it can show
+// its apps as tiles or as a row of icons. Kept in this browser. With none, My apps is the plain grid.
+const loadGrp = () => { try { const v = JSON.parse(localStorage.getItem("qh-groups")); return v && Array.isArray(v.groups) ? v : { groups: [], assign: {} }; } catch (e) { return { groups: [], assign: {} }; } };
+const saveGrp = (v) => localStorage.setItem("qh-groups", JSON.stringify(v));
+
+function groupedTiles(apps) {
+  const cfg = loadGrp(), ed = S.organize;
+  if (!cfg.groups.length && !ed) return null;
+  const salvar = () => { saveGrp(cfg); renderGrid(); };
+  const seletor = (a) => {
+    const s = h("select", { "aria-label": `${t("moveTo")} ${a.name}`, class: "grp-pick", onchange: (ev) => {
+      if (ev.target.value) cfg.assign[a.id] = ev.target.value; else delete cfg.assign[a.id];
+      salvar(); } }, h("option", { value: "" }, t("noGroup")), ...cfg.groups.map((g) => h("option", { value: g.id, selected: cfg.assign[a.id] === g.id }, g.name)));
+    s.value = cfg.assign[a.id] || "";
+    return s;
+  };
+  const cartao = (a) => { const el = tile(a); if (ed) el.append(seletor(a)); return el; };
+  const secoes = cfg.groups.map((g) => {
+    const deles = apps.filter((a) => cfg.assign[a.id] === g.id);
+    return h("section", { class: "grp" },
+      h("header", {},
+        h("button", { type: "button", class: "grp-fold", "aria-expanded": String(!g.collapsed), onclick: () => { g.collapsed = !g.collapsed; salvar(); } },
+          `${g.collapsed ? "▸" : "▾"} ${g.name}`, h("span", { class: "count" }, String(deles.length))),
+        h("button", { type: "button", class: "ghost grp-mode", onclick: () => { g.icons = !g.icons; salvar(); } }, g.icons ? t("groupTiles") : t("groupIcons")),
+        ed ? h("button", { type: "button", class: "danger grp-del", onclick: () => {
+          cfg.groups = cfg.groups.filter((x) => x !== g);
+          for (const k of Object.keys(cfg.assign)) if (cfg.assign[k] === g.id) delete cfg.assign[k];
+          salvar(); } }, t("groupRemove")) : null),
+      g.collapsed ? null : h("div", { class: `grp-grid${g.icons ? " icons" : ""}` }, ...deles.map(cartao)));
+  });
+  const soltos = apps.filter((a) => !cfg.groups.some((g) => g.id === cfg.assign[a.id]));
+  const novo = h("input", { type: "text", placeholder: t("groupName"), "aria-label": t("groupName"), autocomplete: "off" });
+  return [
+    ...secoes,
+    soltos.length ? h("section", { class: "grp" }, cfg.groups.length ? h("header", {}, h("span", { class: "grp-fold plain" }, t("noGroup"))) : null,
+      h("div", { class: "grp-grid" }, ...soltos.map(cartao))) : null,
+    ed ? h("div", { class: "bm-add grp-new" }, novo, h("button", { type: "button", onclick: () => {
+      if (!novo.value.trim()) return;
+      cfg.groups.push({ id: `g${Date.now().toString(36)}`, name: novo.value.trim(), collapsed: false, icons: false });
+      salvar(); } }, t("newGroup"))) : null,
+  ];
 }
 
 // -- the sidebar: widgets ------------------------------------------------------------------
@@ -1992,7 +2412,11 @@ const WIDGETS = {
   apps: { title: "wApps", build: appsWidget },
   notes: { title: "wNotes", build: notesWidget },
   links: { title: "wLinks", build: linksWidget },
+  clock: { title: "wClock", build: clockWidget },
+  weather: { title: "wWeather", build: weatherWidget },
+  search: { title: "wSearch", build: searchWidget },
 };
+const MULTI = new Set(["notes", "links", "weather"]);     // the ones that make sense more than once
 
 function loadWidgets() {
   try {
@@ -2040,7 +2464,7 @@ function perfWidget() {
     L.Net.valor.textContent = n && n.rx_rate !== null ? `↓ ${bytes(n.rx_rate)}/s  ↑ ${bytes(n.tx_rate)}/s` : (n ? "…" : t("perfNone"));
     L.Net.sub.textContent = n ? `${t("perfSince")}: ↓ ${bytes(n.rx)} ↑ ${bytes(n.tx)}` : "";
     extra.textContent = [d.temp === null || d.temp === undefined ? null : `${d.temp} °C`, d.uptime === null || d.uptime === undefined ? null
-      : `${t("hostUp")} ${d.uptime >= 86400 ? `${Math.floor(d.uptime / 86400)} d` : `${Math.floor(d.uptime / 3600)} h`}`].filter(Boolean).join(" · ");
+      : `${t("hostUp")} ${duracao(d.uptime)}`].filter(Boolean).join(" · ");
   };
   if (S.hostData) update(S.hostData);
   return { el: h("div", { class: "perf" }, ...Object.values(L).map((x) => x.el), extra), update };
@@ -2115,7 +2539,7 @@ function renderSide() {
     saveWidgets();
     renderSide();
   } }, h("option", { value: "" }, t("addWidget")),
-    ...Object.entries(WIDGETS).filter(([k]) => k === "notes" || k === "links" || !S.widgets.some((w) => w.type === k))
+    ...Object.entries(WIDGETS).filter(([k]) => MULTI.has(k) || !S.widgets.some((w) => w.type === k))
       .map(([k, v]) => h("option", { value: k }, t(v.title))));
   fill($("side-body"), ...cartoes, edit ? seletor : null);
   $("side-edit").textContent = edit ? t("sideDone") : t("sideEdit");
@@ -2143,6 +2567,11 @@ $("side-btn").addEventListener("click", () => {
 });
 $("side-edit").addEventListener("click", () => { S.sideEdit = !S.sideEdit; renderSide(); });
 $("side-close").addEventListener("click", () => { S.sideOpen = false; localStorage.setItem("qh-side", "0"); applySide(); });
+loadUi();
+setTimeout(pollMonitor, 3000);
+setTimeout(pollSvc, 2000);
+setInterval(pollSvc, 60000);
+setInterval(pollMonitor, 60000);
 S.widgets = loadWidgets();
 S.sideOpen = localStorage.getItem("qh-side") === "1" || (localStorage.getItem("qh-side") === null && (globalThis.innerWidth || 0) >= 1100);
 renderSide();

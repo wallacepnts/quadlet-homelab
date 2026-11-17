@@ -21,6 +21,7 @@ from collections import defaultdict
 from pathlib import Path
 
 import manifest
+import svcwidgets
 import instances
 from qhui import (translator, directives, directives_of, published_port, format_unit,
                   red, yellow, green, dim, GRUPOS, valid_template, ENV_TYPES, ENV_TYPE_LINE, env_value_problem)
@@ -621,6 +622,14 @@ def check_manifest(folders):
                                  else [] if key == "requires_https"
                                  else deprecated_problemas(valor)):
                     error("manifest", f"apps/{folder.name}: app.json [store] {key} {problema}")
+        # widgets: a type the store knows how to read, and a unit that is in this folder
+        for w in (manifest.load(folder).get("widgets") or []) if isinstance(manifest.load(folder).get("widgets"), list) else []:
+            if not isinstance(w, dict):
+                continue
+            if w.get("type") not in svcwidgets.TYPES:
+                error("manifest", f"apps/{folder.name}: widget type {w.get('type')!r} is not one of: {', '.join(svcwidgets.TYPES)}")
+            if w.get("unit") and not (folder / f"{w['unit']}.container").is_file():
+                error("manifest", f"apps/{folder.name}: widget unit {w['unit']!r} is not a .container in the folder")
         # options: a `database` choice that offers SQLite defaults to it (the repository's rule: SQLite whenever the app supports it)
         for chave, o in (manifest.load(folder).get("options") or {}).items():
             if isinstance(o, dict) and chave == "database" and "sqlite" in (o.get("values") or {}) and o.get("default") != "sqlite":

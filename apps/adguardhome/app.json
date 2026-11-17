@@ -1,12 +1,5 @@
 {
   "title": "AdGuard Home",
-  "category": "Network & Security",
-  "units": {
-    "adguardhome": {
-      "upstream": "AdguardTeam/AdGuardHome",
-      "image": "v{version}"
-    }
-  },
   "short_desc": {
     "en": "Blocks ads and trackers on your whole network.",
     "pt": "Bloqueia anúncios e rastreadores em toda a sua rede."
@@ -15,7 +8,19 @@
     "en": "A recursive DNS server that blocks ads and trackers for the whole network",
     "pt": "Servidor DNS recursivo com bloqueio de anúncios e rastreadores pra toda a rede"
   },
-  "docs": "https://adguard.com/adguard-home/overview.html",
+  "author": "AdguardTeam",
   "source": "https://github.com/AdguardTeam/AdGuardHome",
-  "author": "AdguardTeam"
+  "docs": "https://adguard.com/adguard-home/overview.html",
+  "category": "Network & Security",
+  "widgets": [
+    {
+      "type": "adguard"
+    }
+  ],
+  "units": {
+    "adguardhome": {
+      "upstream": "AdguardTeam/AdGuardHome",
+      "image": "v{version}"
+    }
+  }
 }

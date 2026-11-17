@@ -87,6 +87,21 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
     return fim();
   }
 
+  if (MODO === "f9") {
+    // reads only: Quick Launch, Settings → Appearance (looked at, nothing picked), a group and a bookmark group are NOT created
+    await ev("document.dispatchEvent(new KeyboardEvent('keydown', { key: 'v', bubbles: true }))"); await esperar(500);
+    console.log("quick launch aberto:", await ev("document.getElementById('ql').open"), "| itens:", await ev("document.querySelectorAll('#ql-list li').length"));
+    await foto("30-quick-launch");
+    await ev("document.getElementById('ql').close()"); await esperar(200);
+    await ev("document.getElementById('settings-btn').click()"); await esperar(1500);
+    await ev("document.getElementById('s-body').scrollTo(0, 0)"); await foto("31-aparencia");
+    await ev("document.getElementById('s-close').click()"); await esperar(200);
+    await ev("document.documentElement.setAttribute('data-theme','dark'); document.documentElement.setAttribute('data-accent','teal')"); await esperar(300);
+    await foto("32-escuro-petroleo");
+    await ev("document.documentElement.setAttribute('data-theme','light'); document.documentElement.setAttribute('data-accent','orange'); document.documentElement.setAttribute('data-density','compact'); document.documentElement.setAttribute('data-card','hairline')"); await esperar(300);
+    await foto("33-compacto-borda");
+    return fim();
+  }
   if (MODO === "abas-loja") {
     await tab("tab-store");
     await abrir("Immich"); await esperar(1500);

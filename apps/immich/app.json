@@ -1,9 +1,25 @@
 {
   "title": "Immich",
+  "short_desc": {
+    "en": "Back up and browse your photos and videos.",
+    "pt": "Faça backup e navegue pelas suas fotos e vídeos."
+  },
+  "description": {
+    "en": "Photo and video backup and organisation, with face recognition and smart search",
+    "pt": "Backup e organização de fotos/vídeos, com reconhecimento facial e busca smart"
+  },
+  "author": "immich-app",
+  "source": "https://github.com/immich-app/immich",
+  "docs": "https://immich.app",
   "category": "Media",
   "secrets": {
     "immich-db-password": "rand-base64 24"
   },
+  "widgets": [
+    {
+      "type": "immich"
+    }
+  ],
   "backup": {
     "exclude": [
       "upload/thumbs",
@@ -28,16 +44,5 @@
     "immich-redis": {
       "upstream": "compose:immich-app/immich:docker/docker-compose.yml"
     }
-  },
-  "short_desc": {
-    "en": "Back up and browse your photos and videos.",
-    "pt": "Faça backup e navegue pelas suas fotos e vídeos."
-  },
-  "description": {
-    "en": "Photo and video backup and organisation, with face recognition and smart search",
-    "pt": "Backup e organização de fotos/vídeos, com reconhecimento facial e busca smart"
-  },
-  "docs": "https://immich.app",
-  "source": "https://github.com/immich-app/immich",
-  "author": "immich-app"
+  }
 }
