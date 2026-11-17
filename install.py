@@ -1103,6 +1103,51 @@ def _selftest_podman():
     assert parse_version("5.10") > parse_version("5.9"), "versions compare as numbers, not text"
 
 
+def permissions(ds):
+    """What a unit set asks for that reaches past its own container, read from its directives.
+
+    `ds` is [(key, value)] as `Service.ds`. Each entry is {kind, items}: `podman_socket` (the Podman API,
+    which controls every container of the user), `privileged`, `host_network`, `cgroupns_host`,
+    `selinux_off` (SecurityLabelDisable), `devices` and `capabilities` (the ones added on top of
+    DropCapability). Nothing is declared in app.json: the unit is the source."""
+    saida = {}
+    def add(kind, item=None):
+        lista = saida.setdefault(kind, [])
+        if item and item not in lista:
+            lista.append(item)
+    for k, v in ds:
+        v = v.strip()
+        if k == "Volume" and re.search(r"(podman|docker)\.sock$", v.split(":")[0]):
+            add("podman_socket")
+        elif k == "PodmanArgs":
+            if "--privileged" in v.split():
+                add("privileged")
+            if "--cgroupns=host" in v.split():
+                add("cgroupns_host")
+        elif k == "Privileged" and v.lower() == "true":
+            add("privileged")
+        elif k == "Network" and v == "host":
+            add("host_network")
+        elif k == "SecurityLabelDisable" and v.lower() == "true":
+            add("selinux_off")
+        elif k == "AddDevice":
+            add("devices", v.split(":")[0])
+        elif k == "AddCapability":
+            add("capabilities", v.upper())
+    ordem = ("privileged", "podman_socket", "host_network", "cgroupns_host", "selinux_off", "devices", "capabilities")
+    return [{"kind": k, "items": saida[k]} for k in ordem if k in saida]
+
+
+def _selftest_permissions():
+    ds = [("Volume", "%t/podman/podman.sock:/var/run/docker.sock:ro,z"), ("Volume", "%h/x:/y:Z"),
+          ("PodmanArgs", "--privileged"), ("Network", "host"), ("AddDevice", "/dev/net/tun:/dev/net/tun"),
+          ("AddDevice", "/dev/kvm"), ("AddCapability", "chown"), ("AddCapability", "CHOWN"), ("SecurityLabelDisable", "true")]
+    p = {x["kind"]: x["items"] for x in permissions(ds)}
+    assert list(p) == ["privileged", "podman_socket", "host_network", "selinux_off", "devices", "capabilities"], p
+    assert p["devices"] == ["/dev/net/tun", "/dev/kvm"] and p["capabilities"] == ["CHOWN"]
+    assert permissions([("Volume", "%h/a:/b:Z"), ("Image", "x")]) == []
+
+
 def deprecation(ini):
     """{en, pt} from `[store] deprecated` (and `deprecated_pt`) in an app.json, or None.
 
@@ -2966,6 +3011,7 @@ def find_tailnet():
 
 def selftest():
     _selftest_podman()
+    _selftest_permissions()
     _selftest_env_types()
     _selftest_failures()
     """Checks the internal-port -> host-port match, which is the part of
@@ -4354,6 +4400,7 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude, falhas=None):
         "about": {"en": vitrine.get("long", ""), "pt": pt.get(d, {}).get("long", "")},
         "author": vitrine.get("author"), "website": vitrine.get("website"),
         "architectures": vitrine.get("architectures"),
+        "permissions": permissions(s.ds),
         "main_unit": principal.stem if principal else None,
         # Images the project hosts, named in app.json (store): https only,
         # the same rule check.py holds the file to.

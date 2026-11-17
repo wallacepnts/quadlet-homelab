@@ -195,3 +195,7 @@ pre.term:focus { outline: 2px solid var(--accent); }
 .picker { flex-basis: 100%; border: 1px solid var(--line); border-radius: 8px; padding: .5rem .7rem; margin-top: .3rem; background: var(--card); }
 .picker-bar { display: flex; align-items: center; gap: .5rem; margin-bottom: .3rem; overflow-wrap: anywhere; }
 .picker-list { list-style: none; margin: 0 0 .5rem; padding: 0; display: flex; flex-wrap: wrap; gap: .3rem; max-height: 12rem; overflow: auto; }
+
+.perms { margin: .6rem 0; padding: .5rem .75rem; border-left: 3px solid var(--warn); background: rgba(255,170,0,.08); font-size: .9rem; }
+.perms .perm { margin-top: .2rem; }
+.perm-privileged, .perm-podman_socket { color: var(--bad, #e5484d); font-weight: 600; }

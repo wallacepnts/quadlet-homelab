@@ -38,6 +38,13 @@ const T = {
     resNone: "Nada sobrando.", resRemove: "Apagar", resSure: "Confirmar", resVolumesWarn: "Volume guarda dados. Digite volumes para apagar:",
     cleanHint: (n, s) => `${n} imagem(ns) sem uso ocupam até ${s}.`, cleanOpen: "Limpar…",
     resWorking: "Apagando…",
+    permsTitle: "Permissões", perm: {
+      privileged: "Container privilegiado: tem acesso quase total ao host",
+      podman_socket: "Controla todo o seu Podman: vê, para e cria qualquer container",
+      host_network: "Usa a rede do host, sem isolamento de rede",
+      cgroupns_host: "Enxerga os cgroups do host",
+      selinux_off: "Sem o rótulo SELinux: pode ler volumes de outros apps",
+      devices: "Acessa dispositivos do host", capabilities: "Capabilities extras do kernel" },
     podmanOld: (need, host) => `Este app precisa do Podman ${need}+; o host tem ${host}. Atualize o Podman antes de instalar.`,
     hostCpu: "carga", hostMem: "RAM", hostUp: "ligado há",
     trialLabel: "Experimentar", trialKeep: "Manter", trialBadge: "experimento",
@@ -149,6 +156,13 @@ const T = {
     resNone: "Nothing left over.", resRemove: "Delete", resSure: "Confirm", resVolumesWarn: "A volume holds data. Type volumes to delete:",
     cleanHint: (n, s) => `${n} unused image(s) take up to ${s}.`, cleanOpen: "Clean up…",
     resWorking: "Deleting…",
+    permsTitle: "Permissions", perm: {
+      privileged: "Privileged container: near-total access to the host",
+      podman_socket: "Controls all of your Podman: sees, stops and creates any container",
+      host_network: "Uses the host network, with no network isolation",
+      cgroupns_host: "Sees the host's cgroups",
+      selinux_off: "No SELinux label: can read other apps' volumes",
+      devices: "Accesses host devices", capabilities: "Extra kernel capabilities" },
     podmanOld: (need, host) => `This app needs Podman ${need}+; the host has ${host}. Update Podman before installing.`,
     hostCpu: "load", hostMem: "RAM", hostUp: "up",
     trialLabel: "Try it", trialKeep: "Keep", trialBadge: "trial",
@@ -750,6 +764,12 @@ function renderPanel() {
   $("p-notes").hidden = !notas;
   $("p-notes-title").textContent = t("notes");
   fill($("p-notes-body"), ...(notas ? md(notas) : []));
+  // What the unit asks for beyond its own container, read from the unit itself: seen before the click.
+  const perms = a.permissions || [];
+  $("p-perms").hidden = !perms.length;
+  fill($("p-perms"), ...(perms.length ? [h("strong", {}, t("permsTitle"))] : []),
+    ...perms.map((p) => h("div", { class: `perm perm-${p.kind}` },
+      t("perm")[p.kind] + (p.kind === "devices" || p.kind === "capabilities" ? `: ${p.items.join(", ")}` : ""))));
   $("p-notice").hidden = !motivo && !trial && !velho;
   if (motivo) $("p-notice").textContent = `${t("deprecatedNote")} ${motivo}${a.installed ? "" : ` ${t("noInstall")}`}`;
   else if (velho) $("p-notice").textContent = velho;

@@ -490,6 +490,15 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   confere($("p-notes").hidden === true, "sem notas: nada");
   $("panel").open = false;
 
+  // permissions: what the unit asks for, read from the unit, shown before the install
+  hn.permissions = [{ kind: "podman_socket", items: [] }, { kind: "devices", items: ["/dev/kvm"] }];
+  api.openPanel("homebox"); await esperar(30);
+  confere($("p-perms").hidden === false && /Controla todo o seu Podman/.test($("p-perms").textContent) && /\/dev\/kvm/.test($("p-perms").textContent), `painel: permissões (${$("p-perms").textContent})`);
+  hn.permissions = [];
+  api.openPanel("homebox"); await esperar(30);
+  confere($("p-perms").hidden === true, "sem permissões sensíveis: nada");
+  $("panel").open = false;
+
   // minimum Podman: the panel says when the host is older than the app needs
   api.S.podman = "4.9.0";
   Object.assign(api.S.apps.find((x) => x.id === "homebox"), { podman_too_old: true, min_podman: "5.0" });
