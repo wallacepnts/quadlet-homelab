@@ -1,5 +1,4 @@
 {
-  "spec": 2,
   "title": "VM",
   "tagline": "Windows, macOS, ChromeOS Flex, ZimaOS and 23 Linux distros as VMs in containers, viewed in the browser — needs KVM on the host",
   "category": "Virtual Machines",

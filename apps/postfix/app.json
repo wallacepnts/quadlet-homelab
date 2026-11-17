@@ -1,5 +1,4 @@
 {
-  "spec": 2,
   "title": "Postfix",
   "tagline": "An SMTP relay for the other containers — they hand mail to one place, and the credentials of the provider live here only",
   "links": {

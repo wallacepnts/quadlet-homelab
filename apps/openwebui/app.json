@@ -1,5 +1,4 @@
 {
-  "spec": 2,
   "title": "Open WebUI",
   "tagline": "A web chat interface plus a local LLM server, CPU-only by default (NVIDIA/AMD GPU options are documented)",
   "category": "AI",

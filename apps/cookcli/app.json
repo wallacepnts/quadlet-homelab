@@ -1,5 +1,4 @@
 {
-  "spec": 2,
   "title": "CookCLI",
   "tagline": "Plain-text recipes in the CookLang format — versionable in git, with no database and no forms",
   "category": "Productivity",

@@ -1,5 +1,4 @@
 {
-  "spec": 2,
   "title": "Uptime Kuma",
   "tagline": "An uptime monitor for the other services and the tailnet, with history and notifications",
   "category": "Monitoring",

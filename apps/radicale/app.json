@@ -1,5 +1,4 @@
 {
-  "spec": 2,
   "title": "Radicale",
   "tagline": "A light, minimal CalDAV/CardDAV server, on the rebuild that carries the birthday-calendar script (Radicale 3.7.6.0 inside)",
   "category": "Productivity",

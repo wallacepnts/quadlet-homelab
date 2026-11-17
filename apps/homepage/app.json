@@ -1,5 +1,4 @@
 {
-  "spec": 2,
   "title": "homepage",
   "tagline": "A dashboard that discovers and organises the other containers by itself through labels, with no config to edit per new service",
   "links": {

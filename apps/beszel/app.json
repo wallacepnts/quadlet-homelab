@@ -1,5 +1,4 @@
 {
-  "spec": 2,
   "title": "Beszel",
   "tagline": "A light dashboard for monitoring this host's resources (CPU/RAM/disk/network/containers)",
   "category": "Monitoring",

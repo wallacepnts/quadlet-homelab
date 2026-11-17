@@ -1,5 +1,4 @@
 {
-  "spec": 2,
   "title": "tsdproxy",
   "tagline": "Publishes containers on the tailnet automatically, from labels alone — no per-service proxy configuration",
   "category": "Network & Security",

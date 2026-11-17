@@ -1,5 +1,4 @@
 {
-  "spec": 2,
   "title": "Mailpit",
   "tagline": "An SMTP server that catches everything your apps send, to read in the browser instead of a real inbox",
   "category": "Tools",

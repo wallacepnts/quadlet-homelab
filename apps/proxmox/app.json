@@ -1,5 +1,4 @@
 {
-  "spec": 2,
   "title": "Proxmox VE",
   "tagline": "The Proxmox hypervisor in a container, for trying it without dedicating a machine — runs privileged",
   "category": "Virtual Machines",

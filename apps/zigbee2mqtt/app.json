@@ -1,5 +1,4 @@
 {
-  "spec": 2,
   "title": "Zigbee2MQTT",
   "tagline": "A bridge between Zigbee devices and MQTT, with no proprietary hub — no coordinator plugged in yet (see its notes in the panel)",
   "category": "Home",

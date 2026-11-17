@@ -1,5 +1,4 @@
 {
-  "spec": 2,
   "title": "Prometheus",
   "tagline": "Scrapes metrics on a schedule and keeps the history — the data source Grafana draws from",
   "category": "Monitoring",

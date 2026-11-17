@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""`apps/<app>/app.json`: everything one app says about itself, in one file (spec 2).
+"""`apps/<app>/app.json`: everything one app says about itself, in one file.
 
 The model is CasaOS's app store, where an app is a compose file with an `x-casaos` block that
 carries its metadata, but in JSON of our own, beside the unit files instead of inside them:
 
     {
-      "spec": 2,
       "title": "Memos",
       "tagline": "Self-hosted quick notes",
       "category": "Productivity",                     # one of qhui.GRUPOS
@@ -42,7 +41,6 @@ import re
 import sys
 from pathlib import Path
 
-SPEC = 2
 FILE = "app.json"
 
 
@@ -66,7 +64,7 @@ def dump(data):
     return json.dumps(ordered(data), ensure_ascii=False, indent=2) + "\n"
 
 
-KEY_ORDER = ["spec", "title", "tagline", "category", "links",
+KEY_ORDER = ["title", "tagline", "category", "links",
              "min_podman", "deprecated", "notes", "secrets", "validate", "config", "vars",
              "login", "choices", "backup", "units"]
 
@@ -255,8 +253,6 @@ def problems(data, grupos, folder=None):
 
     With `folder` the files beside it are checked too (the logo has to be there)."""
     erros = []
-    if data.get("spec") != SPEC:
-        erros.append(f'"spec" must be {SPEC}')
     if not data.get("title"):
         erros.append('"title" is required')
     if data.get("category") and data["category"] not in grupos:     # optional: infrastructure has none
@@ -309,7 +305,7 @@ def splice(readme_text, tabela):
 
 
 def selftest():
-    d = {"spec": 2, "title": "X", "category": "Tools", "tagline": "a one-liner",
+    d = {"title": "X", "category": "Tools", "tagline": "a one-liner",
          "links": {"docs": "https://d", "repo": "o/r"}, "min_podman": "5.4", "deprecated": "gone",
          "secrets": {"s1": "rand-hex 8", "s2": "shell x"},
          "config": {"c.conf": "%h/c"}, "vars": {"V": "~/v"}, "validate": {"s1": "shell y"},
@@ -331,8 +327,8 @@ def selftest():
     assert v.has_section("vars") and not v.has_section("nope") and v.get("nope", "k", fallback="f") == "f"
     assert set(v.sections()) >= {"secrets", "upstream", "image", "store", "backup", "config", "vars", "validate",
                                  "login", "login.y", "choices", "choices.y"}
-    assert dump(d).startswith('{\n  "spec": 2,\n  "title": "X"')
-    assert problems(d, ("Tools",)) == [] and problems({**d, "spec": 1}, ("Tools",))
+    assert dump(d).startswith('{\n  "title": "X"')
+    assert problems(d, ("Tools",)) == [] and problems({**d, "spec": 2}, ("Tools",)), "no version field: `spec` is a typo now"
     assert problems({**d, "tagline": ""}, ("Tools",)) and problems({**d, "tagline": {"en": "a", "pt": "b"}}, ("Tools",))
     assert problems({**d, "category": "Nope"}, ("Tools",)) and problems({**d, "notes": {"en": "x"}}, ("Tools",))
     assert problems({**d, "wat": 1}, ("Tools",)), "an unknown key is a typo"

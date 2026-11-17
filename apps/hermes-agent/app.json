@@ -1,5 +1,4 @@
 {
-  "spec": 2,
   "title": "Hermes Agent",
   "tagline": "A personal AI agent with skills and memory, exposing an OpenAI-compatible API for the other services to call",
   "category": "AI",

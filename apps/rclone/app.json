@@ -1,5 +1,4 @@
 {
-  "spec": 2,
   "title": "rclone",
   "tagline": "Web GUI for the cloud accounts in your rclone config: browse, copy and sync files between them",
   "category": "Files",

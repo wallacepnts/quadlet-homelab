@@ -1,5 +1,4 @@
 {
-  "spec": 2,
   "title": "OpenWA",
   "tagline": "A WhatsApp API gateway — turns the account into REST plus webhooks, for n8n and Home Assistant to use",
   "category": "Automation",

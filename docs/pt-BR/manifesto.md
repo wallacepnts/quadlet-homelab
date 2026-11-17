@@ -3,7 +3,7 @@
 Tudo o que um app diz de si mesmo mora num arquivo só, ao lado das units. É o modelo da
 [loja de apps do CasaOS](https://github.com/IceWhaleTech/CasaOS-AppStore) — lá um app é um arquivo compose com
 um bloco `x-casaos` que guarda os metadados —, num JSON nosso, ao lado das units do Quadlet em vez de dentro
-delas. `"spec": 2` é a versão deste formato.
+delas.
 
 Uma pasta é, portanto, as units, o `.env.example` se houver, este arquivo e o logo. Não há README por app, nem
 `install.ini`, nem `notes.md`: a tabela de serviços dos READMEs raiz é gerada a partir dos manifestos, e o painel
@@ -11,7 +11,6 @@ mostra as notas. Tudo é escrito em inglês, uma vez: não há cópia por idioma
 
 ```json
 {
-  "spec": 2,
   "title": "Memos",
   "tagline": "Quick notes, self-hosted and markdown-native",
   "category": "Productivity",
@@ -35,7 +34,6 @@ apps/memos/
 
 | Campo | Obrigatório | Significado |
 | --- | --- | --- |
-| `spec` | sim | `2`. |
 | `title` | sim | O nome mostrado na loja e na tabela de serviços. |
 | `tagline` | sim | Uma linha de texto: a descrição na tabela e no cartão. |
 | `category` | não | Um dos grupos de `qhui.GRUPOS` (as categorias da loja). Infraestrutura sem lugar entre elas (homepage, postfix, toolbx) não tem. |
@@ -78,7 +76,7 @@ também: o porquê de uma receita ter a forma que tem pertence a `docs/`, não a
 
 ## Conferir
 
-O `python3 check.py` valida cada manifesto: o número do spec, os campos obrigatórios, o arquivo do logo, a
+O `python3 check.py` valida cada manifesto: os campos obrigatórios, o arquivo do logo, a
 categoria, o formato de cada objeto, uma chave desconhecida no topo (um erro de digitação), e as regras de cada
 parte (uma receita para cada `Secret=`, um `login` que cita um secret de verdade, um padrão em `vars` para cada
 `${VAR}` num `Volume=`, o formato para cada unit sem tag). O `python3 manifest.py --selftest` testa o leitor.

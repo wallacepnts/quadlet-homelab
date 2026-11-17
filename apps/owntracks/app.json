@@ -1,5 +1,4 @@
 {
-  "spec": 2,
   "title": "OwnTracks",
   "tagline": "Personal location tracking through a phone app, with its own MQTT broker and a position history",
   "category": "Home",

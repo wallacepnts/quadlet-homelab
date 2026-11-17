@@ -1,5 +1,4 @@
 {
-  "spec": 2,
   "title": "Zerobyte",
   "tagline": "Automates backups (via Restic) of every other service's data in this repository",
   "category": "Monitoring",

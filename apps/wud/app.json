@@ -1,5 +1,4 @@
 {
-  "spec": 2,
   "title": "WUD (What's Up Docker)",
   "tagline": "Watches for available image updates for the containers, applying nothing itself — it only reports",
   "category": "Monitoring",

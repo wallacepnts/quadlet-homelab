@@ -1,5 +1,4 @@
 {
-  "spec": 2,
   "title": "Frigate",
   "tagline": "An NVR with AI object detection — CPU-only by default, no camera configured yet (see its notes in the panel)",
   "category": "Home",

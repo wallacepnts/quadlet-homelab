@@ -1,5 +1,4 @@
 {
-  "spec": 2,
   "title": "any-sync-bundle",
   "tagline": "The Any-Sync protocol backend, which syncs Anytype's data across devices without relying on the company's cloud",
   "category": "Productivity",

@@ -1,5 +1,4 @@
 {
-  "spec": 2,
   "title": "netboot.xyz",
   "tagline": "A network boot (PXE) menu for installing or trying distros and tools without writing a USB stick",
   "category": "Network & Security",

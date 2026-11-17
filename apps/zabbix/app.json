@@ -1,5 +1,4 @@
 {
-  "spec": 2,
   "title": "Zabbix",
   "tagline": "Monitoring of servers, networks and services with agents, SNMP, triggers and alerts — server, web interface and PostgreSQL",
   "category": "Monitoring",

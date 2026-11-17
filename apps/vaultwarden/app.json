@@ -1,5 +1,4 @@
 {
-  "spec": 2,
   "title": "Vaultwarden",
   "tagline": "A password vault compatible with Bitwarden's protocol, light enough to run anywhere",
   "category": "Network & Security",

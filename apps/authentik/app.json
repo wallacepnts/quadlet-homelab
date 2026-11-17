@@ -1,5 +1,4 @@
 {
-  "spec": 2,
   "title": "Authentik",
   "tagline": "An identity server (SSO, MFA, OIDC/SAML) — only the core is deployed, no forward-auth via tsdproxy yet (see its notes in the panel)",
   "category": "Network & Security",

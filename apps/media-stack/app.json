@@ -1,5 +1,4 @@
 {
-  "spec": 2,
   "title": "Media Stack",
   "tagline": "Jellyfin, Navidrome, Seerr, Prowlarr, Sonarr, Radarr, Lidarr, Bazarr, SABnzbd, Deluge, Dispatcharr, Downtify and an optional Gluetun — a media server plus automation, a shared data root, each app on its own version",
   "category": "Downloads",

@@ -1,5 +1,4 @@
 {
-  "spec": 2,
   "title": "Toolbx",
   "tagline": "Disposable Arch, Fedora, RHEL and Ubuntu shells, on the official Toolbx images — somewhere to install a one-off tool that is not the host",
   "links": {

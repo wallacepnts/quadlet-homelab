@@ -1,5 +1,4 @@
 {
-  "spec": 2,
   "title": "CasaOS",
   "tagline": "A home server dashboard that talks to the Podman socket — it sees every container you run; installing apps from its own store did not work here",
   "category": "Tools",

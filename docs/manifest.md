@@ -3,7 +3,7 @@
 Everything an app says about itself lives in one file, next to its units. It is the model of
 [CasaOS's app store](https://github.com/IceWhaleTech/CasaOS-AppStore) — there an app is a compose file
 with an `x-casaos` block holding its metadata — in JSON of our own, beside the Quadlet units instead of
-inside them. `"spec": 2` is the version of this format.
+inside them.
 
 A folder is therefore the units, the `.env.example` if there is one, this file, and the logo. There is no README
 per app, no `install.ini`, no `notes.md`: the services table in the root READMEs is generated from the manifests,
@@ -11,7 +11,6 @@ and the panel shows the notes. Everything is written in English, once: there is 
 
 ```json
 {
-  "spec": 2,
   "title": "Memos",
   "tagline": "Quick notes, self-hosted and markdown-native",
   "category": "Productivity",
@@ -35,7 +34,6 @@ apps/memos/
 
 | Field | Required | Meaning |
 | --- | --- | --- |
-| `spec` | yes | `2`. |
 | `title` | yes | The name shown in the store and in the services table. |
 | `tagline` | yes | One line of text: the description in the table and on the card. |
 | `category` | no | One of the groups in `qhui.GRUPOS` (the store's categories). Infrastructure with no place among them (homepage, postfix, toolbx) has none. |
@@ -78,7 +76,7 @@ purpose, and so were comments: why a recipe is shaped the way it is belongs in `
 
 ## Checking
 
-`python3 check.py` validates every manifest: the spec number, the required fields, the logo file, the category, the
+`python3 check.py` validates every manifest: the required fields, the logo file, the category, the
 shape of each object, an unknown top-level key (a typo), and the rules of each part (a recipe for every `Secret=`, a
 `login` that names a real secret, a `vars` default for every `${VAR}` in a `Volume=`, the shape for every unit
 without a tag). `python3 manifest.py --selftest` tests the reader.
