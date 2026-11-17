@@ -23,6 +23,7 @@ import collections
 import configparser
 import difflib
 import importlib.util
+import json
 import os
 import re
 import secrets
@@ -595,8 +596,40 @@ def preflight(s, tailnet, local=False):
     return problems
 
 
+def options_file(home):
+    return Path(home) / ".config/quadlet-homelab/options.json"
+
+
+def saved_options(home, app):
+    """{option: value} chosen at the install of `app`, or {} (read-only afterwards: a switch would be a migration)."""
+    try:
+        return json.loads(options_file(home).read_text()).get(app, {})
+    except (OSError, ValueError, AttributeError):
+        return {}
+
+
+def save_options(home, app, chosen):
+    f = options_file(home)
+    try:
+        todos = json.loads(f.read_text())
+    except (OSError, ValueError):
+        todos = {}
+    if chosen is None:
+        todos.pop(app, None)
+    else:
+        todos[app] = chosen
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text(json.dumps(todos, indent=2) + "\n")
+
+
+def options_dropin(unit_path):
+    """Where the chosen options' environment, secrets and ordering go for the main unit."""
+    p = Path(unit_path)
+    return p.parent / (p.name + ".d") / "20-options.conf"
+
+
 class Service:
-    def __init__(self, name, prefix=None, only=None):
+    def __init__(self, name, prefix=None, only=None, options=None):
         self.name = name
         self.only = only
         self.dir = APPS / name
@@ -609,6 +642,14 @@ class Service:
         self.ini = manifest.view(self.dir)
 
         self.units = sorted(self.dir.glob("*.container")) + sorted(self.dir.glob("*.network"))
+        # The install options (app.json "options"): what was chosen at the install, or what is passed now,
+        # or the defaults. A unit only some value names is part of the service only when a chosen value says so.
+        self.options = manifest.chosen_options(self.manifest, options if options is not None
+                                               else saved_options(self.home, name))
+        if self.manifest.get("options"):
+            ligadas = set(manifest.active_units(self.manifest, [u.stem for u in self.units if u.suffix == ".container"],
+                                                self.options))
+            self.units = [u for u in self.units if u.suffix != ".container" or u.stem in ligadas]
         # What the folder holds, before any filtering: `unit_dest` reads this,
         # because installing one unit of a stack must still land in the stack's
         # subfolder alongside the others.
@@ -1162,6 +1203,55 @@ def deprecation(ini):
     return {"en": en, "pt": ini.get("store", "deprecated_pt", fallback="").strip() or en}
 
 
+def options_dropin_text(s):
+    """The drop-in of the main unit for the chosen options, or None when they add nothing.
+
+    The optional units a chosen value switches on become `Requires=`/`After=` of the main unit (they are
+    not in its own text, since a unit that is not installed would fail it), its `env` becomes
+    `Environment=`, and a `"secret:VARIABLE"` entry becomes `Secret=…,type=env,target=VARIABLE`."""
+    m = s.manifest
+    if not m.get("options"):
+        return None
+    nomes = [u.stem for u in s.units if u.suffix == ".container"]
+    extras = [u for u in nomes if u in manifest.option_units(m)]
+    env, segredos = manifest.option_env(m, s.options), manifest.option_secret_env(m, s.options)
+    if not (extras or env or segredos):
+        return None
+    texto = ""
+    if extras:
+        deps = " ".join(f"{u}.service" for u in extras)
+        texto += f"[Unit]\nAfter={deps}\nRequires={deps}\n\n"
+    if env or segredos:
+        texto += "[Container]\n" + "".join(f"Environment={k}={v}\n" for k, v in env.items())
+        texto += "".join(f"Secret={n},type=env,target={var}\n" for n, var in segredos)
+    return texto
+
+
+def option_steps(s, dest, warnings):
+    """Steps that record the chosen install options and write the main unit's drop-in for them."""
+    if not s.manifest.get("options"):
+        return []
+    saida = []
+    escolha = ", ".join(f"{k}={v}" for k, v in s.options.items())
+    saida.append((f"record the install options ({escolha})",
+                  lambda: save_options(s.home, s.name, dict(s.options))))
+    texto = options_dropin_text(s)
+    main = s.main_unit()
+    if main is None or s.only:
+        if texto:
+            warnings.append("the options add a drop-in, but there is no single main unit to put it on")
+        return saida
+    alvo = options_dropin(dest / main.name)
+    if texto:
+        def escrever(alvo=alvo, texto=texto):
+            alvo.parent.mkdir(parents=True, exist_ok=True)
+            alvo.write_text(texto)
+        saida.append((f"write {alvo}  (what the chosen options add to {main.stem})", escrever))
+    elif alvo.exists():
+        saida.append((f"rm {alvo}  (the chosen options add nothing)", lambda alvo=alvo: alvo.unlink()))
+    return saida
+
+
 def plan_install(s, tailnet, force=False, interactive=False, access="tailnet",
                  href_local=False, ask_secrets=False):
     steps = []      # (description, callable, or None when it is only a warning)
@@ -1191,6 +1281,8 @@ def plan_install(s, tailnet, force=False, interactive=False, access="tailnet",
             mark = "  (on the tailnet, href to the LAN)"
         steps.append((f"cp {u.relative_to(ROOT)} -> {target}{mark}",
                       lambda u=u, target=target: write_unit(u, target, access, href_local)))
+
+    steps.extend(option_steps(s, dest, warnings))
 
     for path, is_file in s.volumes():
         if is_file is None:
@@ -2103,6 +2195,9 @@ def plan_remove(s, purge):
                     steps.append((f"rm {overrides.dropin_path(target)}  (your customization)",
                                   rotulado("units removed",
                                            lambda target=target: overrides.remove_override(target))))
+    if s.manifest.get("options") and not s.only and saved_options(s.home, s.name):
+        steps.append(("forget the chosen install options",
+                      lambda: save_options(s.home, s.name, None)))
     for u in s.units:
         if u.suffix == ".container" and imagepin.read_pin(dest / u.name) is not None and (s.only or dest.name != s.name or not dest.is_dir()):
             steps.append((f"rm {imagepin.dropin_path(dest / u.name)}  (the version it was pinned to)",
@@ -4400,6 +4495,11 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude, falhas=None):
         "about": {"en": vitrine.get("long", ""), "pt": pt.get(d, {}).get("long", "")},
         "author": vitrine.get("author"), "website": vitrine.get("website"),
         "architectures": vitrine.get("architectures"),
+        # An install choice the developer offers (app.json options): asked on the first install, read-only after.
+        "options": [{"key": k, "question": o["question"], "default": o["default"], "chosen": s.options[k],
+                     "values": [{"value": n, "label": v["label"]} for n, v in o["values"].items()]}
+                    for k, o in (s.manifest.get("options") or {}).items()],
+        "options_locked": bool(instaladas) and bool(saved_options(s.home, d)),
         "permissions": permissions(s.ds),
         "main_unit": principal.stem if principal else None,
         # Images the project hosts, named in app.json (store): https only,
@@ -4603,6 +4703,39 @@ def find_app(name):
     return (hits[0].parent.name, name) if hits else (None, None)
 
 
+def parse_options(app, dados, perguntar, home=None):
+    """{option: value} from `--option KEY=VALUE` (checked against the app's options), or None to use what is saved.
+
+    In a terminal, an option left out of a first install is asked. A bad key or value ends the run."""
+    m = manifest.load(APPS / app)
+    ops = m.get("options") or {}
+    escolhidas = {}
+    for x in dados or []:
+        k, _, v = x.partition("=")
+        if k not in ops:
+            raise SystemExit(f"{app}: no option {k!r}" + (f" (has: {', '.join(ops)})" if ops else " (this app has none)"))
+        if v not in ops[k]["values"]:
+            raise SystemExit(f"{app}: {k} is one of: {', '.join(ops[k]['values'])}")
+        escolhidas[k] = v
+    if not ops:
+        return None
+    ja = saved_options(home or Path.home(), app)
+    for k, v in escolhidas.items():
+        if k in ja and ja[k] != v:
+            raise SystemExit(f"{app}: {k} was chosen as {ja[k]!r} at the install; changing it moves the data "
+                             f"(remove the service with its data and install again)")
+    for k, o in ops.items():
+        if k in escolhidas or k in ja or not perguntar:
+            continue
+        print(f"\n{o['question']}")
+        nomes = list(o["values"])
+        for n, nome in enumerate(nomes, 1):
+            print(f"  {n}) {o['values'][nome]['label']}" + ("  [default]" if nome == o["default"] else ""))
+        resp = input("> ").strip()
+        escolhidas[k] = nomes[int(resp) - 1] if resp.isdigit() and 1 <= int(resp) <= len(nomes) else o["default"]
+    return escolhidas or None
+
+
 def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
     feitos = {} if feitos is None else feitos
     verbos = {} if verbos is None else verbos
@@ -4612,7 +4745,10 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
         return 0
 
     folder, only = find_app(app)
-    s = Service(folder, a.prefix, only)
+    escolhidas = parse_options(folder, a.option, a.apply and not a.prefix and sys.stdin.isatty()
+                               and not (a.update or a.backup or a.restore or a.remove or a.reinstall),
+                               Path(a.prefix) if a.prefix else None)
+    s = Service(folder, a.prefix, only, escolhidas)
 
     if a.trial:
         # A trial ends by removing the service. So it may only ever be armed on one this very
@@ -4888,6 +5024,8 @@ def main():
     action.add_argument("--verify", action="store_true",
                         help=loc("checks that the service exists and answers, and exits != 0 "
                                  "if not (runs on its own after every --apply)"))
+    ap.add_argument("--option", action="append", default=[], metavar="KEY=VALUE",
+                    help=loc("an install option of the app (app.json options), e.g. database=postgres; asked for in a terminal when left out"))
     ap.add_argument("--ask-secrets", action="store_true",
                     help=loc("type each secret instead of generating it "
                              "(Enter takes the generated one)"))

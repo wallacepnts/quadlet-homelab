@@ -263,7 +263,7 @@ def option_problems(data, folder=None):
 
     `options.<key>` is a choice the developer offers at the first install (a database, say):
     `{"question": "...", "default": "<value>", "values": {"<value>": {"label": "...", "units": [...],
-    "env": {"VAR": "x"}, "secrets": ["name"]}}}`. A value switches on the optional units it names, adds
+    "env": {"VAR": "x"}, "secrets": ["name", "other:VAR"]}}}`. A value switches on the optional units it names, adds
     the variables to the `.env` and brings the secrets it needs. With `folder`, a named unit has to be a
     `.container` there; a named secret has to be one `secrets` makes."""
     ops = data.get("options")
@@ -313,7 +313,7 @@ def option_problems(data, folder=None):
                     if not (Path(folder) / f"{u}.container").is_file():
                         erros.append(f"{ov}: unit {u!r} is not a .container in the folder")
             for sec in v.get("secrets", []) if isinstance(v.get("secrets"), list) else []:
-                if sec not in feitos:
+                if sec.partition(":")[0] not in feitos:
                     erros.append(f'{ov}: secret {sec!r} has no recipe in "secrets"')
     return erros
 
@@ -347,8 +347,15 @@ def option_env(data, chosen=None):
 
 def option_secrets(data, chosen=None):
     """The extra secrets the chosen values need, in order, without repeats."""
-    return list(dict.fromkeys(s for chave, nome in chosen_options(data, chosen).items()
+    return list(dict.fromkeys(s.partition(":")[0] for chave, nome in chosen_options(data, chosen).items()
                               for s in data["options"][chave]["values"][nome].get("secrets", [])))
+
+
+def option_secret_env(data, chosen=None):
+    """[(secret, VARIABLE)]: the chosen values' `"secret:VARIABLE"` entries, which hand a secret to the
+    main unit as an environment variable. A bare `"secret"` is only created (another unit uses it)."""
+    return [(s.partition(":")[0], s.partition(":")[2]) for chave, nome in chosen_options(data, chosen).items()
+            for s in data["options"][chave]["values"][nome].get("secrets", []) if ":" in s]
 
 
 # -- validation -------------------------------------------------------------------------------
@@ -467,6 +474,10 @@ def selftest():
     assert active_units(dd, ["x", "x-pg"]) == ["x"] and active_units(dd, ["x", "x-pg"], {"database": "postgres"}) == ["x", "x-pg"]
     assert option_env(dd) == {} and option_env(dd, {"database": "postgres"}) == {"DB": "pg"}
     assert option_secrets(dd, {"database": "postgres"}) == ["s1"] and option_secrets(dd) == []
+    dm = {**d, "options": {"database": {**opt["database"], "values": {**opt["database"]["values"],
+          "postgres": {"label": "P", "secrets": ["s1:DB_PASS"]}}}}}
+    assert problems(dm, ("Tools",)) == [] and option_secret_env(dm, {"database": "postgres"}) == [("s1", "DB_PASS")]
+    assert option_secrets(dm, {"database": "postgres"}) == ["s1"] and option_secret_env(dm) == []
     bad = lambda o: problems({**d, "options": o}, ("Tools",))
     assert bad({"Database": opt["database"]}) and bad({"database": {**opt["database"], "default": "mysql"}})
     assert bad({"database": {**opt["database"], "values": {"a": {"label": "A"}}}}), "one value is no choice"

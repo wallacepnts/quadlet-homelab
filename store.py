@@ -2094,6 +2094,13 @@ class Handler(BaseHTTPRequestHandler):
                 if not isinstance(entrada, str) or entrada.strip() != app:
                     return self._json(400, {"error": loc("a restore overwrites the data: "
                                                          "type the service name to confirm")})
+            escolhas = d.get("options") or {}
+            if escolhas:
+                ops = (manifest.load(I.APPS / app).get("options") or {})
+                if (action != "install" or not isinstance(escolhas, dict)
+                        or any(k not in ops or v not in ops[k]["values"] for k, v in escolhas.items())):
+                    return self._json(400, {"error": loc("unknown action")})
+                extra = [*extra, *(f"--option={k}={v}" for k, v in escolhas.items())]
             cmd = qh(app, *extra, "--apply")
             custom = d.get("custom") or {}
             depois = None

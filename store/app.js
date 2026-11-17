@@ -51,6 +51,7 @@ const T = {
     alertKinds: { failed: "Unit falhou", unhealthy: "Container unhealthy", restart_loop: "Loop de reinício", backup: "Backup falhou",
                   update: "Versão nova do projeto", disk: "Disco cheio" },
     alertSave: "Salvar alertas", alertTest: "Enviar teste", alertSaved: "Alertas salvos.", alertTested: "Teste enviado.",
+    optionsTitle: "Opções de instalação", optionLocked: "escolhido na instalação; mudar move os dados (remova o app com os dados e instale de novo)",
     httpsNeeded: "precisa de HTTPS",
     httpsWarn: "Este app precisa de HTTPS: pela rede local (HTTP) o cofre e o service worker falham sem avisar. Use o acesso pela tailnet.",
     podmanOld: (need, host) => `Este app precisa do Podman ${need}+; o host tem ${host}. Atualize o Podman antes de instalar.`,
@@ -177,6 +178,7 @@ const T = {
     alertKinds: { failed: "Unit failed", unhealthy: "Container unhealthy", restart_loop: "Restart loop", backup: "Backup failed",
                   update: "New upstream release", disk: "Disk almost full" },
     alertSave: "Save alerts", alertTest: "Send a test", alertSaved: "Alerts saved.", alertTested: "Test sent.",
+    optionsTitle: "Install options", optionLocked: "chosen at the install; changing it moves the data (remove the app with its data and install again)",
     httpsNeeded: "needs HTTPS",
     httpsWarn: "This app needs HTTPS: over the local network (HTTP) the vault and the service worker fail without saying why. Use tailnet access.",
     podmanOld: (need, host) => `This app needs Podman ${need}+; the host has ${host}. Update Podman before installing.`,
@@ -782,6 +784,12 @@ function renderPanel() {
   fill($("p-notes-body"), ...(notas ? md(notas) : []));
   // What the unit asks for beyond its own container, read from the unit itself: seen before the click.
   const perms = a.permissions || [];
+  // The install options, read-only once chosen.
+  const ops = a.installed ? (a.options || []) : [];
+  $("p-options").hidden = !ops.length;
+  fill($("p-options"), ...(ops.length ? [h("strong", {}, t("optionsTitle"))] : []),
+    ...ops.map((o) => h("div", {}, `${o.question} ${(o.values.find((v) => v.value === o.chosen) || {}).label || o.chosen}`)),
+    ...(ops.length && a.options_locked ? [h("div", { class: "muted" }, t("optionLocked"))] : []));
   $("p-perms").hidden = !perms.length;
   fill($("p-perms"), ...(perms.length ? [h("strong", {}, t("permsTitle"))] : []),
     ...perms.map((p) => h("div", { class: `perm perm-${p.kind}` },
@@ -1326,6 +1334,15 @@ function buildForm(a, action, file = "") {
     campos.push(h("label", { class: "check" }, h("input", { id: "trial-purge", type: "checkbox" }), " " + t("trialPurge")));
     campos.push(h("p", { class: "help" }, t("trialHint")));
   }
+  if (action === "install") {
+    // What the developer offers at the first install (a database, say): chosen here, read-only afterwards.
+    for (const o of a.options || []) {
+      const sel = h("select", { "data-option": o.key, "aria-label": o.question },
+        ...o.values.map((v) => h("option", { value: v.value, selected: v.value === o.chosen }, v.label)));
+      sel.value = o.chosen;
+      campos.push(h("label", {}, `${o.question} `, sel));
+    }
+  }
   if (action === "install" && S.preCustom[a.id])
     campos.push(h("p", { class: "note" }, t("preRides")(Object.keys(S.preCustom[a.id]).join(", "))));
   if (action === "remove") {
@@ -1358,6 +1375,8 @@ async function run(action, file = "") {
   const confirm = ($("p-form").querySelector("[data-confirm]") || {}).value || "";
   for (const i of $("p-form").querySelectorAll("[data-secret]")) if (i.value) secrets[i.dataset.secret] = i.value;
   for (const i of $("p-form").querySelectorAll("[data-var]")) if (i.value) vars[i.dataset.var] = i.value;
+  const options = {};
+  if (action === "install") for (const i of $("p-form").querySelectorAll("[data-option]")) options[i.dataset.option] = i.value;
   const trial = action === "install" ? ($("trial") || {}).value || "" : "";
   const trial_purge = !!trial && !!($("trial-purge") || {}).checked;
   $("p-form").hidden = true;
@@ -1365,7 +1384,7 @@ async function run(action, file = "") {
   const purge = action === "remove" && !!($("p-form").querySelector("[data-purge]") || {}).checked;
   await follow(() => api("/api/run", { app: a.id, action, secrets, vars, file, confirm,
                                        ...(trial ? { trial, trial_purge } : {}), ...(custom ? { custom } : {}),
-                                       ...(purge ? { purge: true } : {}) }));
+                                       ...(purge ? { purge: true } : {}), ...(Object.keys(options).length ? { options } : {}) }));
   if (custom) delete S.preCustom[a.id];
   if (action === "backup" || action === "restore") showBackups(a);
 }

@@ -777,6 +777,38 @@ def scenario_pins(tmp):
     check(I.imagepin.tag_of(next(v for k, v in I.directives_of(lu) if k == "Image")) == "", "while the unit itself goes back to the repository's")
 
 
+def scenario_options(tmp):
+    """app.json `options`: a unit only a chosen value names, its drop-in, the saved choice, read-only afterwards."""
+    app, pg = "paperless-ngx", "paperless-ngx-postgres"
+    casa = str(Path(tmp) / "opt-default")
+    run(app, "--apply", "--prefix", casa)
+    d = path(casa, "systemd", app)
+    check((d / f"{app}.container").is_file() and not (d / f"{pg}.container").exists(), "options: the default leaves the optional unit out")
+    check(not (d / f"{app}.container.d" / "20-options.conf").exists(), "options: the default adds no drop-in")
+    check('"database": "sqlite"' in Path(casa, ".config/quadlet-homelab/options.json").read_text(), "options: the choice is recorded")
+    r = run(app, "--apply", "--prefix", casa, "--option", "database=postgres", expected=1)
+    check("moves the data" in r.stdout + r.stderr, "options: changing it after the install is refused")
+    run(app, "--update", "--apply", "--prefix", casa)
+    check(not (d / f"{pg}.container").exists(), "options: an update keeps the saved choice")
+
+    pgh = str(Path(tmp) / "opt-pg")
+    run(app, "--apply", "--prefix", pgh, "--option", "database=postgres")
+    d = path(pgh, "systemd", app)
+    drop = (d / f"{app}.container.d" / "20-options.conf").read_text()
+    check((d / f"{pg}.container").is_file(), "options: a chosen value installs its unit")
+    check("Requires=paperless-ngx-postgres.service" in drop and "Environment=PAPERLESS_DBENGINE=postgresql" in drop
+          and "Secret=paperless-ngx-db-password,type=env,target=PAPERLESS_DBPASS" in drop, "options: the drop-in carries Requires, env and the secret")
+    check(path(pgh, "volumes", app, "postgres").is_dir(), "options: the chosen unit's volume is made")
+    run(app, "--update", "--apply", "--prefix", pgh)
+    check((d / f"{app}.container.d" / "20-options.conf").is_file() and (d / f"{pg}.container").is_file(), "options: an update keeps the units and the drop-in")
+    r = run(app, "--apply", "--prefix", str(Path(tmp) / "opt-bad"), "--option", "database=mysql", expected=1)
+    check("is one of" in r.stdout + r.stderr, "options: a value that is not offered is refused")
+    r = run(app, "--apply", "--prefix", str(Path(tmp) / "opt-bad"), "--option", "nope=1", expected=1)
+    check("no option" in r.stdout + r.stderr, "options: an unknown option is refused")
+    run(app, "--remove", "--apply", "--prefix", pgh)
+    check("paperless-ngx" not in Path(pgh, ".config/quadlet-homelab/options.json").read_text(), "options: removing forgets the choice")
+
+
 def main():
     with tempfile.TemporaryDirectory() as tmp:
         home, out = str(Path(tmp) / "home"), str(Path(tmp) / "backups")
@@ -786,6 +818,7 @@ def main():
         print("user files:");         scenario_no_overwrite(home)
         print("catalog:");            scenario_catalog(home)
         print("customization:");      scenario_override(tmp)
+        print("install options:");    scenario_options(tmp)
         print("deprecated:");         scenario_deprecated(tmp)
         print("drift:");              scenario_drift(home)
         print("failure:");            scenario_failure(home, tmp)

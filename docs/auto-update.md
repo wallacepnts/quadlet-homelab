@@ -76,6 +76,8 @@ Some images are not on the latest release, and not by accident:
   upstream. A newer Meilisearch can need a re-index the app does not know about.
 - **zabbix-postgres** stays on the major the official compose validates, not the newest Postgres: a major of the
   database is its own migration.
+- **paperless-ngx-postgres** (the PostgreSQL option) stays on the major the official `postgres-tika` compose validates
+  (18), the Alpine variant, for the same reason as zabbix-postgres.
 - **postiz-redis** follows Valkey, not the Redis 7.2 of Postiz's compose, so there is no compose to compare against;
   the registry is the reference, taking the newest Valkey on the same Alpine-suffixed tag.
 - **anki** has no official image. The one used is built from the Dockerfile in Anki's repository by a third party, on

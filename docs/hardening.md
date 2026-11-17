@@ -101,6 +101,7 @@ and is maintained by hand.
 | `paperless-ngx` | yes | **none** |
 | `paperless-ngx-broker` | yes | **none** + `User=999` |
 | `paperless-ngx-gotenberg` | yes | **none** |
+| `paperless-ngx-postgres` | yes | **none** + `User=70` |
 | `paperless-ngx-tika` | yes | **none** |
 | `pkvault` | yes | 4 (`chown`, `dac_override`, `setgid`, `setuid`) |
 | `postfix` | no | 6 (`chown`, `dac_override`, `fowner`, `net_bind_service`, `setgid`, `setuid`) |

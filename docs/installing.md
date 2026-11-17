@@ -254,6 +254,20 @@ qh filebrowser --reinstall --ask-secrets --apply
 Enter takes the generated value, so you can type the one password you log in
 with and leave the rest random. Needs a terminal and `--apply`.
 
+## Install options
+
+An app that offers a choice at the first install (a database, say: `options` in its `app.json`, see
+[manifest](./manifest.md)) asks for it in a terminal, and takes the default when there is none:
+
+```bash
+qh paperless-ngx --option database=postgres --apply
+```
+
+The units the chosen value names are installed with the app, and its environment, secrets and ordering go in a
+drop-in of the main unit (`<unit>.container.d/20-options.conf`). The choice is saved in
+`~/.config/quadlet-homelab/options.json` and is read-only afterwards, because changing it moves the data: remove
+the app with its data and install again. An update keeps it.
+
 ### Secrets that are only wrong at the far end
 
 An auth key the other side refuses is the worst kind of wrong value: the

@@ -439,6 +439,27 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   confere(!api.S.preCustom.gitea, "depois de instalar, o que estava guardado é descartado");
   $("panel").open = false;
 
+  // install options: asked in the install form, sent with the install, read-only in the panel once installed
+  const gt = api.S.apps.find((x) => x.id === "gitea");
+  gt.options = [{ key: "database", question: "Which database?", default: "sqlite", chosen: "sqlite",
+                  values: [{ value: "sqlite", label: "SQLite" }, { value: "postgres", label: "PostgreSQL" }] }];
+  api.openPanel("gitea"); await esperar(30);
+  porTexto($("p-actions"), "Instalar")[0].listeners.click(); await esperar(100);
+  const seletor = [...$("p-form").walk()].find((e) => e.tag === "select" && e.attrs["data-option"] === "database");
+  confere(seletor && /Which database/.test($("p-form").textContent) && /PostgreSQL/.test($("p-form").textContent), "o formulário pergunta a opção de instalação");
+  seletor.value = "postgres";
+  const antesOp = posts.length;
+  await $("p-form").onsubmit({ preventDefault() {} }); await esperar(1000);
+  const comOpcao = posts.slice(antesOp).find((x) => x.rota === "/api/run");
+  confere(comOpcao && comOpcao.corpo.options && comOpcao.corpo.options.database === "postgres", `a instalação leva a opção escolhida (${JSON.stringify(comOpcao && comOpcao.corpo.options)})`);
+  gt.options[0].chosen = "postgres"; gt.options_locked = true; gt.installed = true;
+  api.openPanel("gitea"); await esperar(30);
+  confere($("p-options").hidden === false && /PostgreSQL/.test($("p-options").textContent) && /mudar move os dados/.test($("p-options").textContent), "instalado: a opção aparece só para leitura");
+  gt.options = []; gt.installed = false;
+  api.openPanel("gitea"); await esperar(30);
+  confere($("p-options").hidden === true, "sem opções: nada");
+  $("panel").open = false;
+
   // the panel on its own: settings, update everything, delete the data
   rotas["/api/settings"] = { access: "tailnet", default: true, drift: ["memos", "gitea"], tailnet: false, modes: ["local", "tailnet", "both"] };
   rotas["/api/job/js"] = { output: "rule saved\n", next: 1, rc: 0 };

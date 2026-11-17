@@ -620,6 +620,10 @@ def check_manifest(folders):
                                  else [] if key == "requires_https"
                                  else deprecated_problemas(valor)):
                     error("manifest", f"apps/{folder.name}: app.json [store] {key} {problema}")
+        # options: a `database` choice that offers SQLite defaults to it (the repository's rule: SQLite whenever the app supports it)
+        for chave, o in (manifest.load(folder).get("options") or {}).items():
+            if isinstance(o, dict) and chave == "database" and "sqlite" in (o.get("values") or {}) and o.get("default") != "sqlite":
+                error("manifest", f"apps/{folder.name}: options.database offers sqlite, so sqlite is the default (conventions: SQLite first)")
         # [vars]: every ${VAR} a Volume= of this folder names needs a default
         # here, because it is what the install offers when it asks — and a
         # variable left unset turns `${MEDIA_DATA_DIR}/downloads` into

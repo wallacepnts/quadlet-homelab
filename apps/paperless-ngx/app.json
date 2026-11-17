@@ -1,8 +1,46 @@
 {
   "title": "Paperless-ngx",
+  "short_desc": {
+    "en": "Scan and search your paper documents.",
+    "pt": "Digitalize e pesquise os seus documentos de papel."
+  },
+  "description": {
+    "en": "Scans, OCRs and indexes documents automatically, with full-text search so you never hunt for paper again",
+    "pt": "Digitaliza, faz OCR e indexa documentos automaticamente, com busca full-text pra nunca mais procurar papel"
+  },
+  "author": "paperless-ngx",
+  "source": "https://github.com/paperless-ngx/paperless-ngx",
+  "docs": "https://docs.paperless-ngx.com/",
   "category": "Files",
   "secrets": {
-    "paperless-ngx-secret-key": "rand-base64 64"
+    "paperless-ngx-secret-key": "rand-base64 64",
+    "paperless-ngx-db-password": "rand-urlsafe 32"
+  },
+  "options": {
+    "database": {
+      "question": "Which database?",
+      "default": "sqlite",
+      "values": {
+        "sqlite": {
+          "label": "SQLite (simplest, the default)"
+        },
+        "postgres": {
+          "label": "PostgreSQL (for a large library or many users)",
+          "units": [
+            "paperless-ngx-postgres"
+          ],
+          "env": {
+            "PAPERLESS_DBENGINE": "postgresql",
+            "PAPERLESS_DBHOST": "db",
+            "PAPERLESS_DBNAME": "paperless",
+            "PAPERLESS_DBUSER": "paperless"
+          },
+          "secrets": [
+            "paperless-ngx-db-password:PAPERLESS_DBPASS"
+          ]
+        }
+      }
+    }
   },
   "units": {
     "paperless-ngx-broker": {
@@ -13,17 +51,9 @@
     },
     "paperless-ngx-gotenberg": {
       "upstream": "compose:paperless-ngx/paperless-ngx:docker/compose/docker-compose.sqlite-tika.yml"
+    },
+    "paperless-ngx-postgres": {
+      "upstream": "compose:paperless-ngx/paperless-ngx:docker/compose/docker-compose.postgres-tika.yml"
     }
-  },
-  "short_desc": {
-    "en": "Scan and search your paper documents.",
-    "pt": "Digitalize e pesquise os seus documentos de papel."
-  },
-  "description": {
-    "en": "Scans, OCRs and indexes documents automatically, with full-text search so you never hunt for paper again",
-    "pt": "Digitaliza, faz OCR e indexa documentos automaticamente, com busca full-text pra nunca mais procurar papel"
-  },
-  "docs": "https://docs.paperless-ngx.com/",
-  "source": "https://github.com/paperless-ngx/paperless-ngx",
-  "author": "paperless-ngx"
+  }
 }

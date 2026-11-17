@@ -252,6 +252,20 @@ Pra digitar os secrets em vez de gerá-los:
 qh filebrowser --reinstall --ask-secrets --apply
 ```
 
+## Opções de instalação
+
+Um app que oferece uma escolha na primeira instalação (um banco de dados, por exemplo: `options` no `app.json`,
+veja o [manifesto](./manifesto.md)) a pergunta num terminal, e usa o padrão quando não há terminal:
+
+```bash
+qh paperless-ngx --option database=postgres --apply
+```
+
+As units que o valor escolhido cita são instaladas com o app, e o ambiente, os secrets e a ordem dele vão num
+drop-in da unit principal (`<unit>.container.d/20-options.conf`). A escolha fica em
+`~/.config/quadlet-homelab/options.json` e depois é só leitura, porque mudá-la move os dados: remova o app com os
+dados e instale de novo. Uma atualização a mantém.
+
 Enter aceita o valor gerado, então dá pra digitar a única senha que você usa
 pra entrar e deixar o resto aleatório. Exige terminal e `--apply`.
 

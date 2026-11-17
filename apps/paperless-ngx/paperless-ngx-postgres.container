@@ -1,0 +1,37 @@
+[Unit]
+Description=Paperless-ngx PostgreSQL
+
+[Container]
+Image=docker.io/library/postgres:18.7-alpine3.24
+ContainerName=paperless-ngx-postgres
+
+Network=paperless-ngx-net.network
+NetworkAlias=db
+
+Environment=POSTGRES_DB=paperless
+Environment=POSTGRES_USER=paperless
+Secret=paperless-ngx-db-password,type=env,target=POSTGRES_PASSWORD
+
+Volume=%h/.config/containers/volumes/paperless-ngx/postgres:/var/lib/postgresql:Z
+
+ReadOnly=true
+Tmpfs=/tmp:size=64M
+Tmpfs=/var/run/postgresql:size=16M
+DropCapability=ALL
+User=70
+PidsLimit=256
+NoNewPrivileges=true
+
+HealthCmd=CMD-SHELL pg_isready -d paperless -U paperless
+HealthInterval=5s
+HealthTimeout=5s
+HealthRetries=12
+HealthStartPeriod=10s
+Notify=healthy
+
+[Service]
+Restart=always
+TimeoutStartSec=90
+
+[Install]
+WantedBy=default.target
