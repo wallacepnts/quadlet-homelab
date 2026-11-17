@@ -56,6 +56,7 @@ const T = {
     instanceOf: (b) => `instância de ${b}`,
     readyToInstall: (n) => `Pronto para instalar ${n}. Leva cerca de um minuto.`,
     planTitle: "O que vai acontecer",
+    updateAvailable: "Atualização disponível",
     getApp: "Obter", installNow: "Instalar agora", advanced: "Avançado", rolledBack: "voltou à versão anterior", techDetails: "Detalhes técnicos", logTitle: "O que foi feito", closeLabel: "Fechar",
     httpsNeeded: "precisa de HTTPS",
     httpsWarn: "Este app precisa de HTTPS: pela rede local (HTTP) o cofre e o service worker falham sem avisar. Use o acesso pela tailnet.",
@@ -188,6 +189,7 @@ const T = {
     instanceOf: (b) => `instance of ${b}`,
     readyToInstall: (n) => `Ready to install ${n}. It takes about a minute.`,
     planTitle: "What will happen",
+    updateAvailable: "Update available",
     getApp: "Get", installNow: "Install now", advanced: "Advanced", rolledBack: "rolled back to the previous version", techDetails: "Technical details", logTitle: "What was done", closeLabel: "Close",
     httpsNeeded: "needs HTTPS",
     httpsWarn: "This app needs HTTPS: over the local network (HTTP) the vault and the service worker fail without saying why. Use tailnet access.",
@@ -602,13 +604,24 @@ async function control(a, verb) {
   await load();
 }
 
+// Running, paused and stopped are told by one coloured dot, nothing written; a newer version by a small
+// arrow on the icon. Only what needs a decision (a failure, discontinued, a trial) keeps its words.
+function runDot(a) {
+  const st = health(a);
+  if (st && st[0] === "bad") return ["bad", st[1]];
+  const r = runState(a);
+  return r === "running" ? ["ok", t("running")] : r === "paused" ? ["warn", t("pausedBadge")] : ["off", t("stoppedBadge")];
+}
+
 function tile(a) {
-  const st = health(a), url = openUrl(a);
+  const st = health(a), url = openUrl(a), [dotCls, dotTxt] = runDot(a), sobe = hasUpdate(a);
+  const silencioso = !st || [t("running"), t("pausedBadge"), t("stoppedBadge"), t("changed")].includes(st[1])
+    || st[1].startsWith(t("newVersion"));
   const corpo = [
-    h("span", { class: "ico" }, h("img", { src: a.icon, alt: "", loading: "lazy", referrerpolicy: "no-referrer" })),
-    h("h3", {}, a.name),
-    st && h("span", { class: `badge ${st[0]}`, title: st[2] || null }, st[1]),
-    h("p", { class: "version", "data-res": a.id }, resText(a)),
+    h("span", { class: "ico" }, h("img", { src: a.icon, alt: "", loading: "lazy", referrerpolicy: "no-referrer" }),
+      sobe && h("span", { class: "upd", title: t("updateAvailable"), role: "img", "aria-label": t("updateAvailable") }, "↑")),
+    h("h3", {}, h("span", { class: `dot ${dotCls}`, title: dotTxt, role: "img", "aria-label": dotTxt }), a.name),
+    !silencioso && h("span", { class: `badge ${st[0]}`, title: st[2] || null }, st[1]),
   ];
   return h("div", { class: "card tile" },
     url
@@ -616,8 +629,7 @@ function tile(a) {
                  "aria-label": `${t("open")} ${a.name}` }, ...corpo)
       : h("button", { class: "tile-open", type: "button", onclick: () => openPanel(a.id) }, ...corpo),
     url && h("button", { class: "gear", type: "button", title: t("manage"),
-                         "aria-label": `${t("manage")} ${a.name}`, onclick: () => openPanel(a.id) }, "⚙"),
-    controls(a));
+                         "aria-label": `${t("manage")} ${a.name}`, onclick: () => openPanel(a.id) }, "⚙"));
 }
 
 function storeCard(a) {
@@ -755,7 +767,7 @@ function renderPanel() {
   const a = current();
   $("p-icon").src = a.icon || "";
   $("p-name").textContent = a.name;
-  $("p-meta").textContent = [(a.group && a.group[S.lang]) || "", a.author].filter(Boolean).join(" · ");
+  $("p-meta").textContent = [a.installed ? runDot(a)[1] : "", (a.group && a.group[S.lang]) || "", a.author].filter(Boolean).join(" · ");
   const sobre = a.about && (a.about[S.lang] || a.about.en);
   const deInst = a.instance_of ? ` — ${t("instanceOf")(a.instance_of)}` : "";
   $("p-desc").textContent = plain(sobre || a.description[S.lang] || a.description.en)

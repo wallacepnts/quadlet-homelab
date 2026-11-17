@@ -112,8 +112,10 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
 
 (async () => {
   await esperar(100);
-  const card = document.querySelector('[data-res="homebox"]');
-  confere(card && card.textContent === "1.5% · 150 MB", `o azulejo mostra CPU e memória (${card && card.textContent})`);
+  const azulejo = [...$("grid").walk()].find((e) => e.attrs && e.attrs.class === "card tile");
+  confere(azulejo && !/MB|%/.test(azulejo.textContent) && !document.querySelector('[data-res="homebox"]'), `o azulejo não mostra recursos (${azulejo && azulejo.textContent})`);
+  const pontos = (txt) => [...$("grid").walk()].filter((e) => e.attrs && /^dot /.test(e.attrs.class || "") && e.attrs.title === txt).length;
+  confere(pontos("rodando") >= 1 && !/rodando/.test(azulejo.textContent), "rodando é só a bolinha verde, sem texto");
 
   // the panel of an installed app: resources, disk, architectures, and no stray "null"
   api.openPanel("homebox"); await esperar(100);
@@ -365,6 +367,16 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   api.renderGrid();
   confere(!/reiniciou|loop de restart|falhou \(/.test($("grid").textContent), "sem falha: sem selo");
 
+  // a newer version: a small arrow on the icon, no words
+  const upAntes = api.S.upd.homebox;
+  api.S.upd.homebox = { bucket: "BEHIND", there: "9.9", unit: "homebox" };
+  api.setView("apps"); api.renderGrid();
+  const tileHb = [...$("grid").walk()].find((e) => e.attrs && e.attrs.class === "card tile" && /Homebox|HomeBox/i.test(e.textContent));
+  const seta = tileHb && [...tileHb.walk()].find((e) => e.attrs && e.attrs.class === "upd");
+  confere(seta && seta.attrs.title === "Atualização disponível" && !/nova versão|9\.9/.test(tileHb.textContent), "nova versão: só uma setinha no ícone, sem texto");
+  if (upAntes === undefined) delete api.S.upd.homebox; else api.S.upd.homebox = upAntes;
+  api.renderGrid();
+
   // play / pause / stop: the three buttons enable by state, and a click asks the server
   const bc = api.S.apps.find((x) => x.id === "homebox");
   const estadoBotoes = () => [...$("p-actions").walk()].filter((e) => e.attrs && e.attrs.class === "ctl").map((e) => (e.attrs.disabled === undefined ? "on" : "off")).join(",");
@@ -379,7 +391,7 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   confere(estadoBotoes() === "on,off,off", `parado: só iniciar (${estadoBotoes()})`);
   bc.units = [unidade("homebox", { service: "inactive", container: null, stopped: true })];
   api.setView("apps"); api.renderGrid();
-  confere(/parado/.test($("grid").textContent) && !/Atenção|atenção/.test($("grid").textContent), "parado de propósito: selo neutro, não alarme");
+  confere(pontos("parado") === 1 && !/parado|Atenção|atenção/.test($("grid").textContent), "parado de propósito: bolinha neutra, sem texto, não alarme");
   bc.units = [unidade("homebox")];
   rotas["/api/control"] = { job: "jc" }; rotas["/api/job/jc"] = { output: "", next: 0, rc: 0 };
   api.openPanel("homebox"); await esperar(30);
