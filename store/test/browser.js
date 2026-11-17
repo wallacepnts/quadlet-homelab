@@ -87,6 +87,21 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
     return fim();
   }
 
+  if (MODO === "install") {
+    // reads only: opens an uninstalled app and asks for the plan; never confirms
+    await tab("tab-store");
+    console.log("abrir Mailpit:", await abrir("Mailpit")); await esperar(1500);
+    await foto("10-loja-detalhe");
+    console.log("Instalar:", await botao("Instalar")); await esperar(2500);
+    await foto("11-instalar-plano");
+    console.log("status:", await ev("document.getElementById('p-status').textContent"), "| form:", await ev("document.getElementById('p-form').textContent.slice(0, 120)"));
+    await send("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 2, mobile: true });
+    await esperar(800); await foto("12-celular-instalar");
+    await ev("document.getElementById('p-close').click()"); await esperar(300);
+    await foto("13-celular-loja");
+    return fim();
+  }
+
   // Customize, on the first installed app that offers it
   const app = MODO === "sandbox" ? "HomeBox" : "Actual Budget";
   await abrir(app); await ate("document.getElementById('p-info').textContent.includes('Disco') && !document.getElementById('p-info').textContent.includes('calculando')", 25000);

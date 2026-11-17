@@ -4,60 +4,64 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>qh store</title>
+<link rel="icon" href="data:,">
 <link rel="stylesheet" href="/style.css">
 <script src="/app.js" defer></script>
 </head>
 <body>
-<header>
-  <h1>qh store</h1>
-  <div id="tabs" role="tablist">
+<a class="skip" href="#grid">Ir para o conteúdo</a>
+<header class="top">
+  <div class="brand"><span class="mark" aria-hidden="true"></span><h1>qh</h1></div>
+  <nav id="tabs" role="tablist">
     <button id="tab-apps" type="button" role="tab"></button>
     <button id="tab-store" type="button" role="tab"></button>
+  </nav>
+  <div class="search"><input id="search" type="search" autocomplete="off"></div>
+  <div class="tools">
+    <button id="history-btn" type="button" class="icon"></button>
+    <button id="resources-btn" type="button" class="icon"></button>
+    <button id="settings-btn" type="button" class="icon"></button>
+    <button id="recheck" type="button" class="icon"></button>
+    <button id="lang" type="button" class="icon text"></button>
   </div>
-  <input id="search" type="search">
-  <span id="host" class="muted" title=""></span>
-  <span id="checked" class="muted"></span>
-  <button id="history-btn" type="button" class="ghost"></button>
-  <button id="resources-btn" type="button" class="ghost"></button>
-  <button id="settings-btn" type="button" class="ghost"></button>
-  <button id="recheck" type="button" class="ghost"></button>
-  <button id="lang" type="button" class="ghost"></button>
 </header>
-<nav id="groups"></nav>
+<nav id="groups" aria-label="Categorias"></nav>
 <p id="summary" class="muted" hidden></p>
 <div id="toast" role="status" hidden></div>
 <main id="grid"></main>
 <p id="empty" hidden></p>
-<dialog id="panel">
+<footer class="status"><span id="host" class="muted" title=""></span><span id="checked" class="muted"></span></footer>
+<dialog id="panel" aria-labelledby="p-name">
   <div class="panel-head">
-    <img id="p-icon" alt="" referrerpolicy="no-referrer">
+    <span class="ico lg"><img id="p-icon" alt="" referrerpolicy="no-referrer"></span>
     <div>
       <h2 id="p-name"></h2>
       <p id="p-meta"></p>
     </div>
-    <button id="p-close" type="button" class="ghost">✕</button>
+    <button id="p-close" type="button" class="icon text" aria-label="Fechar">✕</button>
   </div>
-  <p id="p-desc"></p>
+  <div id="p-actions"></div>
+  <p id="p-status" class="status-line" role="status" aria-live="polite" hidden></p>
   <p id="p-notice" class="note" hidden></p>
   <div id="p-fail" class="note" hidden></div>
+  <form id="p-form" hidden></form>
+  <section id="p-section" hidden></section>
+  <p id="p-desc"></p>
+  <div id="p-shots" class="shots" hidden></div>
+  <details id="p-notes" class="notes" hidden><summary id="p-notes-title"></summary><div id="p-notes-body" class="md"></div></details>
   <div id="p-options" class="perms" hidden></div>
   <div id="p-perms" class="perms" hidden></div>
   <p id="p-info" class="muted"></p>
   <div id="p-project" class="project"></div>
-  <details id="p-notes" class="notes" hidden><summary id="p-notes-title"></summary><div id="p-notes-body" class="md"></div></details>
-  <div id="p-shots" class="shots" hidden></div>
   <div id="p-links"></div>
-  <table id="p-units"></table>
-  <div id="p-actions"></div>
-  <section id="p-section" hidden></section>
-  <form id="p-form" hidden></form>
-  <pre id="p-out" hidden></pre>
+  <details id="p-tech" class="tech"><summary id="p-tech-title"></summary><table id="p-units"></table></details>
+  <details id="p-log" class="tech" hidden><summary id="p-log-title"></summary><pre id="p-out" hidden></pre></details>
   <p id="p-clean" class="note" hidden></p>
 </dialog>
 <dialog id="resources">
   <div class="panel-head">
     <h2 id="r-title"></h2>
-    <button id="r-close" type="button" class="ghost">✕</button>
+    <button id="r-close" type="button" class="icon text" aria-label="Fechar">✕</button>
   </div>
   <div id="r-body"></div>
   <pre id="r-out" hidden></pre>
@@ -65,7 +69,7 @@
 <dialog id="settings">
   <div class="panel-head">
     <h2 id="s-title"></h2>
-    <button id="s-close" type="button" class="ghost">✕</button>
+    <button id="s-close" type="button" class="icon text" aria-label="Fechar">✕</button>
   </div>
   <div id="s-body"></div>
   <pre id="s-out" hidden></pre>
@@ -73,14 +77,14 @@
 <dialog id="bulk">
   <div class="panel-head">
     <h2 id="b-title"></h2>
-    <button id="b-close" type="button" class="ghost">✕</button>
+    <button id="b-close" type="button" class="icon text" aria-label="Fechar">✕</button>
   </div>
   <pre id="b-out"></pre>
 </dialog>
 <dialog id="history">
   <div class="panel-head">
     <h2 id="h-title"></h2>
-    <button id="h-close" type="button" class="ghost">✕</button>
+    <button id="h-close" type="button" class="icon text" aria-label="Fechar">✕</button>
   </div>
   <div id="h-list"></div>
   <pre id="h-out" hidden></pre>

@@ -54,7 +54,9 @@ const T = {
     optionsTitle: "Opções de instalação", optionLocked: "escolhido na instalação; mudar move os dados (remova o app com os dados e instale de novo)",
     newInstance: "Nova instância", instanceName: "Nome da instância (letras minúsculas, números e -)", instanceCreate: "Criar instância",
     instanceOf: (b) => `instância de ${b}`,
-    rolledBack: "voltou à versão anterior",
+    readyToInstall: (n) => `Pronto para instalar ${n}. Leva cerca de um minuto.`,
+    planTitle: "O que vai acontecer",
+    getApp: "Obter", installNow: "Instalar agora", advanced: "Avançado", rolledBack: "voltou à versão anterior", techDetails: "Detalhes técnicos", logTitle: "O que foi feito", closeLabel: "Fechar",
     httpsNeeded: "precisa de HTTPS",
     httpsWarn: "Este app precisa de HTTPS: pela rede local (HTTP) o cofre e o service worker falham sem avisar. Use o acesso pela tailnet.",
     podmanOld: (need, host) => `Este app precisa do Podman ${need}+; o host tem ${host}. Atualize o Podman antes de instalar.`,
@@ -184,7 +186,9 @@ const T = {
     optionsTitle: "Install options", optionLocked: "chosen at the install; changing it moves the data (remove the app with its data and install again)",
     newInstance: "New instance", instanceName: "Instance name (lowercase letters, digits and -)", instanceCreate: "Create instance",
     instanceOf: (b) => `instance of ${b}`,
-    rolledBack: "rolled back to the previous version",
+    readyToInstall: (n) => `Ready to install ${n}. It takes about a minute.`,
+    planTitle: "What will happen",
+    getApp: "Get", installNow: "Install now", advanced: "Advanced", rolledBack: "rolled back to the previous version", techDetails: "Technical details", logTitle: "What was done", closeLabel: "Close",
     httpsNeeded: "needs HTTPS",
     httpsWarn: "This app needs HTTPS: over the local network (HTTP) the vault and the service worker fail without saying why. Use tailnet access.",
     podmanOld: (need, host) => `This app needs Podman ${need}+; the host has ${host}. Update Podman before installing.`,
@@ -464,11 +468,16 @@ const groupOf = (app) => (app.group ? app.group[S.lang] : t("other"));
 function renderChrome() {
   document.documentElement.lang = S.lang === "pt" ? "pt-BR" : "en";
   $("search").placeholder = t("search");
+  // Icon buttons: the glyph is drawn in CSS; the words are the accessible name and the tooltip.
   $("lang").textContent = t("lang");
-  $("recheck").textContent = t("recheck");
-  $("history-btn").textContent = t("history");
-  $("resources-btn").textContent = t("resources");
-  $("settings-btn").textContent = t("settings");
+  for (const [id, key] of [["recheck", "recheck"], ["history-btn", "history"], ["resources-btn", "resources"], ["settings-btn", "settings"]]) {
+    $(id).textContent = "";
+    $(id).title = t(key);
+    $(id).setAttribute("aria-label", t(key));
+  }
+  $("p-close").setAttribute("aria-label", t("closeLabel"));
+  $("p-tech-title").textContent = t("techDetails");
+  $("p-log-title").textContent = t("logTitle");
   renderTabs();
 }
 
@@ -596,7 +605,7 @@ async function control(a, verb) {
 function tile(a) {
   const st = health(a), url = openUrl(a);
   const corpo = [
-    h("img", { src: a.icon, alt: "", loading: "lazy", referrerpolicy: "no-referrer" }),
+    h("span", { class: "ico" }, h("img", { src: a.icon, alt: "", loading: "lazy", referrerpolicy: "no-referrer" })),
     h("h3", {}, a.name),
     st && h("span", { class: `badge ${st[0]}`, title: st[2] || null }, st[1]),
     h("p", { class: "version", "data-res": a.id }, resText(a)),
@@ -613,14 +622,16 @@ function tile(a) {
 
 function storeCard(a) {
   return h("button", { class: "card", type: "button", onclick: () => openPanel(a.id) },
+    h("span", { class: "ico sm" }, h("img", { src: a.icon, alt: "", loading: "lazy", referrerpolicy: "no-referrer" })),
     h("div", { class: "top" },
-      h("img", { src: a.icon, alt: "", loading: "lazy", referrerpolicy: "no-referrer" }),
       h("div", {}, h("h3", {}, a.name),
-        h("p", { class: "version" }, a.installed ? tagOf((mainUnit(a) || {}).installed_image) : ""))),
+        h("p", { class: "version" }, [groupOf(a), a.installed ? tagOf((mainUnit(a) || {}).installed_image) : ""].filter(Boolean).join(" · ")))),
     h("p", { class: "desc" }, plain(a.description[S.lang] || a.description.en)),
     a.deprecated
       ? h("span", { class: "badge warn" }, a.installed ? `${t("deprecatedBadge")} · ${t("installedBadge")}` : t("deprecatedBadge"))
-      : a.installed && h("span", { class: "badge plain" }, t("installedBadge")));
+      : null,
+    a.deprecated ? null : h("span", { class: a.installed ? "get got" : "get", "aria-hidden": "true" },
+      a.installed ? `✓ ${t("installedBadge")}` : t("getApp")));
 }
 
 function renderGrid() {
@@ -686,6 +697,10 @@ function openPanel(id) {
   loadInfo(id);
   $("p-form").hidden = true;
   $("p-out").hidden = true;
+  $("p-log").hidden = true;
+  $("p-log").open = false;
+  setStatus(null);
+  $("p-tech").open = false;
   $("p-clean").hidden = true;
   $("p-section").hidden = true;
   $("panel").showModal();
@@ -740,11 +755,11 @@ function renderPanel() {
   const a = current();
   $("p-icon").src = a.icon || "";
   $("p-name").textContent = a.name;
-  $("p-meta").textContent = (a.group && a.group[S.lang]) || "";
+  $("p-meta").textContent = [(a.group && a.group[S.lang]) || "", a.author].filter(Boolean).join(" · ");
   const sobre = a.about && (a.about[S.lang] || a.about.en);
   const deInst = a.instance_of ? ` — ${t("instanceOf")(a.instance_of)}` : "";
   $("p-desc").textContent = plain(sobre || a.description[S.lang] || a.description.en)
-    + deInst + (a.author ? ` — ${a.author}` : "") + (a.architectures ? ` (${a.architectures.join(", ")})` : "");
+    + deInst;
 
   // Images the project hosts (app.json, screenshots); each opens full size in a new tab.
   fill($("p-shots"), ...(a.screenshots || []).map((u) =>
@@ -753,8 +768,9 @@ function renderPanel() {
   $("p-shots").hidden = !(a.screenshots || []).length;
 
   const instaladas = new Set(a.units.filter((u) => u.installed).map((u) => u.unit));
+  // With a single address the primary "Open" button already goes there; the list is for stacks with several.
   fill($("p-links"), ...a.web
-    .filter((w) => instaladas.has(w.unit) && (w.tailnet || w.local))
+    .filter((w) => a.web.length > 1 && instaladas.has(w.unit) && (w.tailnet || w.local))
     .map((w) => h("a", { href: w.tailnet || w.local, target: "_blank", rel: "noopener noreferrer" },
       `${t("open")} ${a.web.length > 1 ? w.unit : ""}`.trim() + " ↗")));
 
@@ -808,7 +824,9 @@ function renderPanel() {
   else if (velho) $("p-notice").textContent = velho;
   else if (httpsRisco) $("p-notice").textContent = t("httpsWarn");
   else if (trial) $("p-notice").textContent = trial;
-  const acoes = a.installed ? [controls(a)] : [];
+  // The thing most people came for goes first and is the loudest: open the app.
+  const abrir = a.installed ? openUrl(a) : null;
+  const acoes = a.installed ? [abrir ? h("a", { class: "btn", href: abrir, target: "_blank", rel: "noopener noreferrer" }, t("open")) : null, controls(a)].filter(Boolean) : [];
   if (!a.installed) {
     if (!a.deprecated) {
       const deps = needs(a);
@@ -858,9 +876,18 @@ function renderPanel() {
   fill($("p-actions"), ...acoes, a.installed && a.web.length ? accessPicker(a) : null);
 }
 
+// One plain line says how it is going; the raw output is there for whoever wants it, one click away.
+function setStatus(kind, texto) {
+  const el = $("p-status");
+  el.hidden = !kind;
+  el.className = kind ? `status-line ${kind}` : "status-line";
+  el.textContent = texto || "";
+}
+
 function out(text, append = false) {
   const pre = $("p-out");
   pre.hidden = false;
+  $("p-log").hidden = false;
   pre.textContent = append ? pre.textContent + text : text;
   pre.scrollTop = pre.scrollHeight;
 }
@@ -876,6 +903,7 @@ async function plan(action, file = "") {
   try {
     const p = await api(`/api/plan?app=${encodeURIComponent(a.id)}&action=${action}` +
                         `&file=${encodeURIComponent(file)}&lang=${S.lang}`);
+    $("p-log-title").textContent = t("planTitle");
     out(`# ${t("plan")}\n\n${p.output}`);
     if (p.nothing) {
       // No Confirm for a plan with no steps: it would run and change nothing.
@@ -1336,14 +1364,9 @@ function buildForm(a, action, file = "") {
   if (action === "install") {
     // The services it needs come first, and so do their questions.
     const deps = needs(a);
+    campos.push(h("p", { class: "lead" }, t("readyToInstall")(a.name)));
     if (deps.length) campos.push(h("p", { class: "note" }, t("requiresNote")(deps.map((x) => x.name).join(", "))));
     for (const x of [...deps, a]) campos.push(...asksFields(x));
-    campos.push(h("label", { for: "trial" }, t("trialLabel")));
-    campos.push(h("select", { id: "trial", "data-trial": "1" },
-      ...[["", t("trialNone")], ["1h", "1 h"], ["6h", "6 h"], ["1d", "1 d"], ["7d", "7 d"], ["reboot", t("trialReboot")]]
-        .map(([v, r]) => h("option", { value: v }, r))));
-    campos.push(h("label", { class: "check" }, h("input", { id: "trial-purge", type: "checkbox" }), " " + t("trialPurge")));
-    campos.push(h("p", { class: "help" }, t("trialHint")));
   }
   if (action === "install") {
     // What the developer offers at the first install (a database, say): chosen here, read-only afterwards.
@@ -1353,6 +1376,16 @@ function buildForm(a, action, file = "") {
       sel.value = o.chosen;
       campos.push(h("label", {}, `${o.question} `, sel));
     }
+  }
+  if (action === "install") {
+    // Trying an app for a while is for people who know they want it: tucked away, not in the way of the install.
+    campos.push(h("details", { class: "tech adv" }, h("summary", {}, t("advanced")),
+      h("label", { for: "trial" }, t("trialLabel")),
+      h("select", { id: "trial", "data-trial": "1" },
+        ...[["", t("trialNone")], ["1h", "1 h"], ["6h", "6 h"], ["1d", "1 d"], ["7d", "7 d"], ["reboot", t("trialReboot")]]
+          .map(([v, r]) => h("option", { value: v }, r))),
+      h("label", { class: "check" }, h("input", { id: "trial-purge", type: "checkbox" }), " " + t("trialPurge")),
+      h("p", { class: "help" }, t("trialHint"))));
   }
   if (action === "install" && S.preCustom[a.id])
     campos.push(h("p", { class: "note" }, t("preRides")(Object.keys(S.preCustom[a.id]).join(", "))));
@@ -1368,7 +1401,7 @@ function buildForm(a, action, file = "") {
   }
   campos.push(h("div", {},
     h("button", { type: "submit", class: ["remove", "restore"].includes(action) ? "danger" : null },
-      t("confirm")), " ",
+      action === "install" ? t("installNow") : t("confirm")), " ",
     h("button", { type: "button", class: "ghost", onclick: () => { form.hidden = true; } }, t("cancel"))));
   fill(form, ...campos);
   form.onsubmit = (ev) => { ev.preventDefault(); run(action, file); };
@@ -1650,6 +1683,8 @@ function showInstance(a) {
 
 async function follow(start) {
   busy(true);
+  setStatus("busy", t("working"));
+  $("p-log-title").textContent = t("logTitle");
   out(`${t("working")}\n`);
   try {
     const { job } = await start();
@@ -1661,8 +1696,11 @@ async function follow(start) {
       if (st.output) out(st.output, true);
     } while (st.rc === null);
     out(`\n${st.rc === 0 ? t("done") : `${t("failed")} (${st.rc}).`}\n`, true);
+    setStatus(st.rc === 0 ? "ok" : "bad", st.rc === 0 ? t("done") : `${t("failed")} (${st.rc})`);
+    if (st.rc !== 0) $("p-log").open = true;
   } catch (e) {
     out(e.status === 409 ? t("busy") : String(e.message), true);
+    setStatus("bad", e.status === 409 ? t("busy") : String(e.message));
   } finally {
     busy(false);
     await load();
