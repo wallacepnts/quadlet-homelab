@@ -1,12 +1,8 @@
 {
   "spec": 2,
   "title": "AdGuard Home",
-  "tagline": {
-    "en": "A recursive DNS server that blocks ads and trackers for the whole network",
-    "pt": "Servidor DNS recursivo com bloqueio de anúncios e rastreadores pra toda a rede"
-  },
+  "tagline": "A recursive DNS server that blocks ads and trackers for the whole network",
   "category": "Network & Security",
-  "license": "GPL-3.0",
   "links": {
     "docs": "https://adguard.com/adguard-home/overview.html"
   },

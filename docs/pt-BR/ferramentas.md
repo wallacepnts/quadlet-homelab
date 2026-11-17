@@ -323,8 +323,7 @@ Um serviço descontinuado — arquivado no upstream, ou com a imagem fixada que 
 do registry — é marcado no mesmo arquivo:
 
 ```json
-"deprecated": {"en": "Archived upstream on 2026-03-01; no release since 1.4.2.",
-               "pt": "Arquivado no upstream em 01/03/2026; sem release desde a 1.4.2."}
+"deprecated": "Archived upstream on 2026-03-01; no release since 1.4.2."
 ```
 
 A loja mostra um selo "descontinuado" com o motivo e não oferece a instalação, e o
@@ -390,11 +389,6 @@ partida. Rede fica se é a padrão, está em uso ou é declarada por um `.networ
 sai quando nenhum container o monta e nenhum `.volume` o declara. Apagar pede duas vezes, e
 volume (dados) pede a palavra digitada. No terminal: `python3 resources.py` para ver,
 `prune images|networks|volumes --apply` para fazer.
-
-**Funciona com** é uma sugestão no painel: `"works_with": ["grafana", "ntfy"]`
-lista outras pastas de serviço que valem rodar junto, cada uma um link
-para o seu painel, com ✓ quando instalada. Nunca é requisito (isso é o dono de uma
-rede, que o `qh` já exige); o `check.py` reprova nome que não seja uma pasta.
 
 **Podman mínimo**: uma unit com `Notify=healthy` exige o Podman 5.0, e `"min_podman": "5.4"`
 sobe esse piso para um serviço que usa uma chave de Quadlet mais

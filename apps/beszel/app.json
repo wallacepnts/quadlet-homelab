@@ -1,20 +1,13 @@
 {
   "spec": 2,
   "title": "Beszel",
-  "tagline": {
-    "en": "A light dashboard for monitoring this host's resources (CPU/RAM/disk/network/containers)",
-    "pt": "Dashboard leve de monitoramento de recursos (CPU/RAM/disco/rede/containers) deste host"
-  },
+  "tagline": "A light dashboard for monitoring this host's resources (CPU/RAM/disk/network/containers)",
   "category": "Monitoring",
-  "license": "MIT",
   "links": {
     "docs": "https://beszel.dev"
   },
   "secrets": {
-    "beszel-agent-key": {
-      "value": "manual the SSH public key Beszel shows when adding the system",
-      "note": "Both come from Beszel's own UI, when registering the system — they are not generated here (see the README, agent section)."
-    },
+    "beszel-agent-key": "manual the SSH public key Beszel shows when adding the system",
     "beszel-agent-token": "manual the token shown on that same Beszel screen"
   },
   "units": {

@@ -8,9 +8,8 @@ const T = {
     noneInstalled: "Nenhum app instalado ainda.", goStore: "Abrir a Loja", manage: "Gerenciar",
     installedBadge: "instalado", deprecatedBadge: "descontinuado", deprecatedNote: "Descontinuado:",
     noInstall: "Não dá para instalar este app daqui.",
-    worksWith: "Funciona com",
     play: "Iniciar / retomar", pause: "Pausar", stopApp: "Parar", pausedBadge: "pausado",
-    notes: "Notas", license: "licença",
+    notes: "Notas",
     settings: "Configurações", accessRule: "Como os apps são acessados", saveRule: "Salvar regra", applyRule: "Aplicar aos instalados",
     accessDesc: { local: "Só pela rede local (sem tsdproxy)", tailnet: "Só pela tailnet (fecha a porta da LAN)", both: "Rede local e tailnet" },
     ruleDefault: "Ainda não escolhida: vale tailnet.", ruleSaved: "Regra salva.",
@@ -120,9 +119,8 @@ const T = {
     noneInstalled: "No app installed yet.", goStore: "Open the Store", manage: "Manage",
     installedBadge: "installed", deprecatedBadge: "discontinued", deprecatedNote: "Discontinued:",
     noInstall: "It cannot be installed from here.",
-    worksWith: "Works with",
     play: "Start / resume", pause: "Pause", stopApp: "Stop", pausedBadge: "paused",
-    notes: "Notes", license: "license",
+    notes: "Notes",
     settings: "Settings", accessRule: "How apps are reached", saveRule: "Save rule", applyRule: "Apply to the installed",
     accessDesc: { local: "Local network only (no tsdproxy)", tailnet: "Tailnet only (closes the LAN port)", both: "Local network and tailnet" },
     ruleDefault: "Not chosen yet: tailnet applies.", ruleSaved: "Rule saved.",
@@ -737,14 +735,6 @@ function renderPanel() {
         u.service === "active" && (u.container || "—") !== "—"
           ? h("button", { type: "button", class: "ghost", onclick: () => showConsole(u.unit) }, t("console")) : null))));
 
-  // Suggested companions, each one a way into its own panel; the ones already here say so.
-  const juntos = (a.works_with || []).map((id) => S.apps.find((x) => x.id === id)).filter(Boolean);
-  $("p-with").hidden = !juntos.length;
-  fill($("p-with"), ...(juntos.length ? [`${t("worksWith")}: `] : []), ...juntos.flatMap((x, i) => [
-    i ? ", " : null,
-    h("a", { href: `#${x.id}`, class: "with", onclick: (ev) => { ev.preventDefault(); openPanel(x.id); } },
-      x.installed ? `${x.name} ✓` : x.name)]));
-
   // The reason, where it is read; and a service that is discontinued is not offered for install.
   const motivo = depReason(a);
   const trial = a.installed && a.trial ? t("trialEnds")(trialWhen(a.trial), a.trial.purge) : null;
@@ -754,8 +744,8 @@ function renderPanel() {
   const velho = a.podman_too_old ? t("podmanOld")(a.min_podman, S.podman) : null;
   // What to do at the first run and what is odd about the app: the notes that live beside its unit (no README per app).
   const notas = a.notes && (a.notes[S.lang] || a.notes.en);
-  $("p-notes").hidden = !notas && !a.license;
-  $("p-notes-title").textContent = [notas ? t("notes") : null, a.license ? `${t("license")}: ${a.license}` : null].filter(Boolean).join(" · ");
+  $("p-notes").hidden = !notas;
+  $("p-notes-title").textContent = t("notes");
   fill($("p-notes-body"), ...(notas ? md(notas) : []));
   $("p-notice").hidden = !motivo && !trial && !velho;
   if (motivo) $("p-notice").textContent = `${t("deprecatedNote")} ${motivo}${a.installed ? "" : ` ${t("noInstall")}`}`;

@@ -1103,15 +1103,6 @@ def _selftest_podman():
     assert parse_version("5.10") > parse_version("5.9"), "versions compare as numbers, not text"
 
 
-def works_with(ini, name=""):
-    """Folder names from `[store] works_with` (comma-separated): services this one is worth running beside.
-
-    A suggestion, never a requirement — a requirement is a network's owner, which
-    `missing_prereqs` already enforces. The store shows them in the panel."""
-    bruto = ini.get("store", "works_with", fallback="") if ini.has_section("store") else ""
-    return [x for x in dict.fromkeys(p.strip() for p in bruto.split(",")) if x and x != name]
-
-
 def deprecation(ini):
     """{en, pt} from `[store] deprecated` (and `deprecated_pt`) in an app.json, or None.
 
@@ -4262,9 +4253,10 @@ def app_cards(pastas):
         if not m:
             continue
         logo = manifest.icon_file(APPS / d)
+        # One line of English: there is no translation to keep, so the Portuguese page shows it too.
         en[d] = {"icon": f"/assets/{d}/{logo}" if logo else None, "name": m.get("title", d),
-                 "description": (m.get("tagline") or {}).get("en", "")}
-        pt[d] = {"description": (m.get("tagline") or {}).get("pt", "")}
+                 "description": m.get("tagline") or ""}
+        pt[d] = {"description": m.get("tagline") or ""}
     return en, pt
 
 
@@ -4303,12 +4295,11 @@ def parse_failures(texto):
     return saida
 
 
-def notes_of(m, lang):
-    """The app's notes (markdown: what to do at the first run, what is odd about it) in `lang`, or None.
+def notes_of(m):
+    """The app's notes (markdown, English: what to do at the first run, what is odd about it), or None.
 
-    They live in `app.json` under "notes", per language; Portuguese falls back to English."""
-    n = (m or {}).get("notes") or {}
-    return (n.get(lang) or n.get("en") or "").strip() or None
+    They live in `app.json` under "notes"; the panel shows them."""
+    return ((m or {}).get("notes") or "").strip() or None
 
 
 def catalog_entry(d, home, tailnet, en, pt, ativos, saude, falhas=None):
@@ -4370,9 +4361,7 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude, falhas=None):
         "has_login": s.login() is not None,
         # Marked in app.json (store): the store shows the reason and offers no install.
         "deprecated": deprecation(s.ini),
-        "license": (s.ini.get("store", "license", fallback="").strip() or None) if s.ini.has_section("store") else None,
-        "notes": {"en": notes_of(s.manifest, "en"), "pt": notes_of(s.manifest, "pt")},
-        "works_with": works_with(s.ini, s.name),
+        "notes": {"en": notes_of(s.manifest), "pt": notes_of(s.manifest)},
         "min_podman": min_podman(s),
         "podman_too_old": bool(podman_too_old(s)),
         # Armed with `--trial`: the store shows when it ends, and offers to keep it.

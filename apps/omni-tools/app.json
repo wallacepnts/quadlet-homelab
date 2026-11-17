@@ -1,12 +1,8 @@
 {
   "spec": 2,
   "title": "Omni Tools",
-  "tagline": {
-    "en": "Converters, generators and calculators that run in the browser — nothing is sent to the server",
-    "pt": "Conversores, geradores e calculadoras que rodam no navegador — nada é enviado ao servidor"
-  },
+  "tagline": "Converters, generators and calculators that run in the browser — nothing is sent to the server",
   "category": "Tools",
-  "license": "MIT",
   "links": {
     "docs": "https://omnitools.app"
   }

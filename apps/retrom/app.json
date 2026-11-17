@@ -1,22 +1,14 @@
 {
   "spec": 2,
   "title": "Retrom",
-  "tagline": {
-    "en": "A game library for emulation — one collection, played in the browser or through the desktop client",
-    "pt": "Biblioteca de jogos para emulação — uma coleção só, jogada no navegador ou pelo cliente de desktop"
-  },
+  "tagline": "A game library for emulation — one collection, played in the browser or through the desktop client",
   "category": "Media",
-  "license": "GPL-3.0",
   "links": {
     "docs": "https://github.com/JMBeresford/retrom/wiki"
   },
-  "notes": {
-    "en": "Put the games under `~/.config/containers/volumes/retrom/library`, in the\n[folder structure Retrom\nexpects](https://github.com/JMBeresford/retrom/wiki/Library-Structure), then\nopen `http://<host-ip>:5101` or `https://retrom.<your-tailnet>.ts.net`.\n\n**The first start takes about 90 seconds** — it downloads EmulatorJS and runs\nthe database migrations. `TimeoutStartSec=300` and a 180 second health start\nperiod are there for that; a restart afterwards is quick.\n\n### Metadata\n\nCover art and descriptions come from IGDB or SteamGridDB, and both want an API\nkey. Without one the library still works, listed by filename. The keys are set\nfrom the client, not here — see [Metadata\nProviders](https://github.com/JMBeresford/retrom/wiki/Metadata-Providers).\n\n### Backup\n\nIt stops the service, packs the three volumes and the `.env`, and starts it\nagain. Cold on purpose: Retrom carries an embedded PostgreSQL, and copying it\nlive gives an archive that only fails when you restore it. That is also why\n`stop` is the mode to use if you add it to\n[Zerobyte's backup hook](../zerobyte).\n\n### Remove\n\n`--purge` deletes the library too — the games are in a volume like everything\nelse.",
-    "pt": "Coloque os jogos em `~/.config/containers/volumes/retrom/library`, na\n[estrutura de pastas que o Retrom\nespera](https://github.com/JMBeresford/retrom/wiki/Library-Structure), e abra\n`http://<ip-do-host>:5101` ou `https://retrom.<your-tailnet>.ts.net`.\n\n**O primeiro start leva uns 90 segundos** — ele baixa o EmulatorJS e roda as\nmigrações do banco. O `TimeoutStartSec=300` e os 180 segundos de carência do\nhealthcheck existem por isso; os restarts seguintes são rápidos.\n\n### Metadados\n\nCapas e descrições vêm do IGDB ou do SteamGridDB, e os dois pedem chave de\nAPI. Sem chave a biblioteca funciona igual, listada pelo nome do arquivo. As\nchaves são configuradas pelo cliente, não aqui — veja [Metadata\nProviders](https://github.com/JMBeresford/retrom/wiki/Metadata-Providers).\n\n### Backup\n\nPara o serviço, empacota os três volumes e o `.env`, e religa. A frio de\npropósito: o Retrom carrega um PostgreSQL embutido, e copiá-lo em uso dá um\narquivo que só falha na hora de restaurar. É também por isso que o modo a usar\nno [gancho de backup do Zerobyte](../zerobyte) é o `stop`.\n\n### Remover\n\nO `--purge` apaga a biblioteca junto — os jogos ficam num volume como todo o\nresto."
-  },
+  "notes": "Put the games under `~/.config/containers/volumes/retrom/library`, in the\n[folder structure Retrom\nexpects](https://github.com/JMBeresford/retrom/wiki/Library-Structure), then\nopen `http://<host-ip>:5101` or `https://retrom.<your-tailnet>.ts.net`.\n\n**The first start takes about 90 seconds** — it downloads EmulatorJS and runs\nthe database migrations. `TimeoutStartSec=300` and a 180 second health start\nperiod are there for that; a restart afterwards is quick.\n\n### Metadata\n\nCover art and descriptions come from IGDB or SteamGridDB, and both want an API\nkey. Without one the library still works, listed by filename. The keys are set\nfrom the client, not here — see [Metadata\nProviders](https://github.com/JMBeresford/retrom/wiki/Metadata-Providers).\n\n### Backup\n\nIt stops the service, packs the three volumes and the `.env`, and starts it\nagain. Cold on purpose: Retrom carries an embedded PostgreSQL, and copying it\nlive gives an archive that only fails when you restore it. That is also why\n`stop` is the mode to use if you add it to\n[Zerobyte's backup hook](../zerobyte).\n\n### Remove\n\n`--purge` deletes the library too — the games are in a volume like everything\nelse.",
   "backup": {
-    "mode": "stop",
-    "note": "Embedded PostgreSQL: no online dump from outside the container."
+    "mode": "stop"
   },
   "units": {
     "retrom": {

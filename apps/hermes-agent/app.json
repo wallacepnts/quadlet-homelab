@@ -1,19 +1,12 @@
 {
   "spec": 2,
   "title": "Hermes Agent",
-  "tagline": {
-    "en": "A personal AI agent with skills and memory, exposing an OpenAI-compatible API for the other services to call",
-    "pt": "Agente de IA pessoal com habilidades e memória, expondo uma API compatível com a da OpenAI pros outros serviços chamarem"
-  },
+  "tagline": "A personal AI agent with skills and memory, exposing an OpenAI-compatible API for the other services to call",
   "category": "AI",
-  "license": "MIT",
   "links": {
     "docs": "https://hermes-agent.nousresearch.com"
   },
-  "notes": {
-    "en": "### No memory limit\n\nThe unit sets `PidsLimit=`, not `Memory=`. A memory cap in a rootless unit\nneeds the memory controller delegated to the user manager, and on a host where\nit is not, the container cannot be created at all:\n\n```\nmemory.swap.max: no such file or directory\n```\n\nTo check whether your host delegates it:\n\n```bash\nls /sys/fs/cgroup/user.slice/user-$(id -u).slice/user@$(id -u).service/ | grep memory.max\n```",
-    "pt": "### Sem limite de memória\n\nA unit define `PidsLimit=`, não `Memory=`. Limite de memória em unit rootless\nexige o controlador de memória delegado ao gerenciador de usuário, e num host\nonde ele não é, o container nem chega a ser criado:\n\n```\nmemory.swap.max: no such file or directory\n```\n\nPra saber se o seu host delega:\n\n```bash\nls /sys/fs/cgroup/user.slice/user-$(id -u).slice/user@$(id -u).service/ | grep memory.max\n```"
-  },
+  "notes": "### No memory limit\n\nThe unit sets `PidsLimit=`, not `Memory=`. A memory cap in a rootless unit\nneeds the memory controller delegated to the user manager, and on a host where\nit is not, the container cannot be created at all:\n\n```\nmemory.swap.max: no such file or directory\n```\n\nTo check whether your host delegates it:\n\n```bash\nls /sys/fs/cgroup/user.slice/user-$(id -u).slice/user@$(id -u).service/ | grep memory.max\n```",
   "secrets": {
     "hermes-agent-api-key": "rand-urlsafe 32",
     "hermes-agent-dashboard-password": "rand-urlsafe 24",

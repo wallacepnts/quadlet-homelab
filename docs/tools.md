@@ -321,8 +321,7 @@ A service that is discontinued — archived upstream, or with its pinned image g
 from the registry — is marked in the same file:
 
 ```json
-"deprecated": {"en": "Archived upstream on 2026-03-01; no release since 1.4.2.",
-               "pt": "Arquivado no upstream em 01/03/2026; sem release desde a 1.4.2."}
+"deprecated": "Archived upstream on 2026-03-01; no release since 1.4.2."
 ```
 
 The store shows a "discontinued" badge with the reason and offers no install
@@ -388,11 +387,6 @@ again at its next start. A network is kept if it is the default, used, or declar
 `.network` file; a volume only when no container mounts it and no `.volume` file
 declares it. Deleting asks twice, and volumes (data) want the word typed. The same from
 a terminal: `python3 resources.py` to see, `prune images|networks|volumes --apply` to do.
-
-**Works with** is a suggestion in the panel: `"works_with": ["grafana", "ntfy"]`
-lists other service folders worth running beside this one, each a link
-to its panel, ticked when installed. It is never a requirement (that is a network's
-owner, which `qh` already enforces); `check.py` fails a name that is not a folder.
 
 **Minimum Podman**: a unit with `Notify=healthy` needs Podman 5.0, and `"min_podman": "5.4"`
 raises that floor for a service that uses a newer Quadlet key.

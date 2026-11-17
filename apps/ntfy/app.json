@@ -1,12 +1,8 @@
 {
   "spec": 2,
   "title": "ntfy",
-  "tagline": {
-    "en": "A push notification server — where the uptime-kuma, wud and zerobyte alerts go, with a phone app",
-    "pt": "Servidor de notificações push — destino dos alertas do uptime-kuma, wud e zerobyte, com app no celular"
-  },
+  "tagline": "A push notification server — where the uptime-kuma, wud and zerobyte alerts go, with a phone app",
   "category": "Monitoring",
-  "license": "Apache-2.0",
   "links": {
     "docs": "https://ntfy.sh"
   },

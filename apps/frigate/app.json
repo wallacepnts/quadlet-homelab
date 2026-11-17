@@ -1,12 +1,8 @@
 {
   "spec": 2,
   "title": "Frigate",
-  "tagline": {
-    "en": "An NVR with AI object detection — CPU-only by default, no camera configured yet (see its notes in the panel)",
-    "pt": "NVR com detecção de objetos por IA — CPU-only por padrão, sem câmera configurada ainda (veja as notas dele no painel)"
-  },
+  "tagline": "An NVR with AI object detection — CPU-only by default, no camera configured yet (see its notes in the panel)",
   "category": "Home",
-  "license": "MIT",
   "links": {
     "docs": "https://frigate.video"
   },

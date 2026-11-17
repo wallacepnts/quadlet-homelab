@@ -1,12 +1,8 @@
 {
   "spec": 2,
   "title": "FreshRSS",
-  "tagline": {
-    "en": "A self-hosted RSS/Atom feed aggregator, with a compatible API for mobile apps",
-    "pt": "Agregador de feeds RSS/Atom self-hosted, com API compatível pra apps móveis"
-  },
+  "tagline": "A self-hosted RSS/Atom feed aggregator, with a compatible API for mobile apps",
   "category": "Productivity",
-  "license": "AGPL-3.0",
   "links": {
     "docs": "https://freshrss.org"
   },

@@ -7,31 +7,27 @@ carries its metadata, but in JSON of our own, beside the unit files instead of i
     {
       "spec": 2,
       "title": "Memos",
-      "tagline": {"en": "Self-hosted quick notes", "pt": "Notas rápidas self-hosted"},
+      "tagline": "Self-hosted quick notes",
       "category": "Productivity",                     # one of qhui.GRUPOS
-      "license": "MIT",
       "links": {"docs": "https://www.usememos.com/docs", "repo": "usememos/memos"},
-      "works_with": ["ntfy"],                         # suggestions, never requirements
       "min_podman": "5.4",
-      "deprecated": {"en": "why", "pt": "porquê"},    # no install is offered
-      "notes": {"en": "markdown", "pt": "markdown"},  # first run, what is odd about it
+      "deprecated": "why it is discontinued",         # no install is offered
+      "notes": "markdown: first run, what is odd about it",
       "secrets": {"memos-token": "rand-hex 32"},      # how each Secret= is made
       "validate": {"authkey": "shell ..."},           # a value only the far end can judge
       "config": {"nginx.conf": "%h/.config/.../nginx.conf"},
       "vars": {"MEDIA_DATA_DIR": "~/data"},           # systemd variables a Volume= uses, with a default
       "login": {"user": "admin", "password": "memos-token"},
-      "choices": {"VERSION": {"question": "...", "options": [{"value": "11", "label": "..."}]}},
+      "choices": {"VERSION": {"question": "...", "options": [{"value": "11", "label": "..."}, "10"]}},
       "backup": {"mode": "stop", "exclude": ["upload/thumbs"]},
       "units": {
-        "memos": {"upstream": "usememos/memos", "image": "{version}"}
+        "memos": {"upstream": "usememos/memos"}       # `image` only when the tag is not just {version}
       }
     }
 
 The app's logo and screenshots are files in its folder, not fields: `icon.svg` (or `.png`, `.webp`, `.jpg`) and,
 optionally, `screenshots/1.png`, `screenshots/2.png`... The store serves them itself.
 
-Every entry that explains itself may be written `{"value": X, "note": "why"}` instead of `X`: JSON has
-no comments, and the reason a recipe is shaped the way it is matters as much as the recipe.
 `units.<unit>` also takes `login` and `choices`, for a folder of independent services.
 
 The rest of the code reads this through `view()`, which answers the questions a ConfigParser did
@@ -48,7 +44,6 @@ from pathlib import Path
 
 SPEC = 2
 FILE = "app.json"
-LANGS = ("en", "pt")
 
 
 def path_of(folder):
@@ -71,8 +66,8 @@ def dump(data):
     return json.dumps(ordered(data), ensure_ascii=False, indent=2) + "\n"
 
 
-KEY_ORDER = ["spec", "title", "tagline", "category", "license", "links",
-             "works_with", "min_podman", "deprecated", "notes", "secrets", "validate", "config", "vars",
+KEY_ORDER = ["spec", "title", "tagline", "category", "links",
+             "min_podman", "deprecated", "notes", "secrets", "validate", "config", "vars",
              "login", "choices", "backup", "units"]
 
 
@@ -80,19 +75,6 @@ def ordered(data):
     saida = {k: data[k] for k in KEY_ORDER if k in data}
     saida.update({k: v for k, v in data.items() if k not in saida})
     return saida
-
-
-def unwrap(v):
-    """`X` or `{"value": X, "note": ...}` -> X."""
-    return v["value"] if isinstance(v, dict) and "value" in v else v
-
-
-def note_of(v):
-    return v.get("note") if isinstance(v, dict) else None
-
-
-def wrap(value, note=None):
-    return {"value": value, "note": note} if note else value
 
 
 # -- the ConfigParser-shaped view -----------------------------------------------------------
@@ -118,7 +100,7 @@ class View:
 
         def pairs(secao, mapa):
             if mapa:
-                s.setdefault(secao, {}).update({k: unwrap(v) for k, v in mapa.items()})
+                s.setdefault(secao, {}).update(dict(mapa))
 
         pairs("secrets", d.get("secrets"))
         pairs("validate", d.get("validate"))
@@ -126,15 +108,15 @@ class View:
         pairs("vars", d.get("vars"))
         login = d.get("login")
         if login:
-            s["login"] = {k: unwrap(v) for k, v in login.items()}
+            s["login"] = {k: v for k, v in login.items()}
         upstream, image = {}, {}
         for unit, u in (d.get("units") or {}).items():
             if "upstream" in u:
-                upstream[unit] = unwrap(u["upstream"])
+                upstream[unit] = u["upstream"]
             if "image" in u:
-                image[unit] = unwrap(u["image"])
+                image[unit] = u["image"]
             if u.get("login"):
-                s[f"login.{unit}"] = {k: unwrap(v) for k, v in u["login"].items()}
+                s[f"login.{unit}"] = {k: v for k, v in u["login"].items()}
             if u.get("choices"):
                 s[f"choices.{unit}"] = {k: self._choice(v) for k, v in u["choices"].items()}
         # A unit whose Image= has no tag follows a GitHub release and needs a template; `{version}` is the
@@ -157,22 +139,16 @@ class View:
         if d.get("choices"):
             s["choices"] = {k: self._choice(v) for k, v in d["choices"].items()}
         loja = {}
-        for chave in ("category", "license"):
-            if d.get(chave):
-                loja["group" if chave == "category" else chave] = d[chave]
+        if d.get("category"):
+            loja["group"] = d["category"]
         links = d.get("links") or {}
         for chave in ("docs", "repo"):
             if links.get(chave):
                 loja[chave] = links[chave]
-        if d.get("works_with"):
-            loja["works_with"] = ", ".join(d["works_with"])
         if d.get("min_podman"):
             loja["min_podman"] = d["min_podman"]
-        dep = d.get("deprecated")
-        if dep:
-            loja["deprecated"] = dep.get("en", "")
-            if dep.get("pt"):
-                loja["deprecated_pt"] = dep["pt"]
+        if d.get("deprecated"):
+            loja["deprecated"] = d["deprecated"]
         if loja:
             s["store"] = loja
         backup = d.get("backup")
@@ -186,9 +162,13 @@ class View:
 
     @staticmethod
     def _choice(c):
-        c = unwrap(c)
-        return "\n".join([c["question"]] + [f"{o['value']}: {o['label']}" if o.get("label") else o["value"]
-                                            for o in c["options"]])
+        """`{"question": q, "options": [...]}` as the block the installer parses: the question, then one
+        `value: label` line per option. An option is `{"value", "label"}`, or just the value as a string."""
+        def linha(o):
+            if isinstance(o, str):
+                return o
+            return f"{o['value']}: {o['label']}" if o.get("label") else o["value"]
+        return "\n".join([c["question"]] + [linha(o) for o in c["options"]])
 
     # the ConfigParser surface the code used
     def sections(self):
@@ -281,9 +261,11 @@ def problems(data, grupos, folder=None):
         erros.append('"title" is required')
     if data.get("category") and data["category"] not in grupos:     # optional: infrastructure has none
         erros.append(f'"category" {data["category"]!r} is not one of: {", ".join(grupos)}')
-    tag = data.get("tagline")
-    if not isinstance(tag, dict) or not all(isinstance(tag.get(l), str) and tag.get(l).strip() for l in LANGS):
-        erros.append('"tagline" needs a non-empty "en" and "pt"')
+    if not isinstance(data.get("tagline"), str) or not data["tagline"].strip():
+        erros.append('"tagline" is required: one line of text')
+    for k in ("notes", "deprecated"):
+        if k in data and not isinstance(data[k], str):
+            erros.append(f'"{k}" must be a string')
     for k in ("secrets", "validate", "config", "vars"):
         if k in data and not isinstance(data[k], dict):
             erros.append(f'"{k}" must be an object')
@@ -301,7 +283,7 @@ def problems(data, grupos, folder=None):
 
 TABLE_BEGIN = "<!-- services:begin (generated from apps/*/app.json: python3 check.py --readme) -->"
 TABLE_END = "<!-- services:end -->"
-HEAD = {"en": ("Logo", "Application", "Description"), "pt": ("Logo", "Aplicativo", "Descrição")}
+HEAD = {"en": ("Logo", "Application", "Description"), "pt": ("Logo", "Aplicativo", "Descrição")}   # the line itself is English in both
 
 
 def services_table(entries, lang):
@@ -313,7 +295,7 @@ def services_table(entries, lang):
     linhas = [f"| {cab[0]} | {cab[1]} | {cab[2]} |", "| --- | --- | --- |"]
     for nome, d, icon in sorted(entries, key=lambda x: x[1]["title"].casefold()):
         linhas.append(f'| <img src="{prefixo}{nome}/{icon}" width="48" height="48" alt=""> | '
-                      f'[{d["title"]}]({prefixo}{nome}) | {d["tagline"][lang]} |')
+                      f'[{d["title"]}]({prefixo}{nome}) | {d["tagline"]} |')
     return "\n".join(linhas)
 
 
@@ -327,36 +309,36 @@ def splice(readme_text, tabela):
 
 
 def selftest():
-    d = {"spec": 2, "title": "X", "category": "Tools",
-         "tagline": {"en": "a", "pt": "b"}, "license": "MIT", "links": {"docs": "https://d", "repo": "o/r"},
-         "works_with": ["p", "q"], "min_podman": "5.4",
-         "deprecated": {"en": "gone", "pt": "foi"},
-         "secrets": {"s1": "rand-hex 8", "s2": {"value": "shell x", "note": "because"}},
+    d = {"spec": 2, "title": "X", "category": "Tools", "tagline": "a one-liner",
+         "links": {"docs": "https://d", "repo": "o/r"}, "min_podman": "5.4", "deprecated": "gone",
+         "secrets": {"s1": "rand-hex 8", "s2": "shell x"},
          "config": {"c.conf": "%h/c"}, "vars": {"V": "~/v"}, "validate": {"s1": "shell y"},
          "login": {"user": "u", "password": "s1"},
-         "choices": {"VERSION": {"question": "Which?", "options": [{"value": "1", "label": "One"}, {"value": "2"}]}},
+         "choices": {"VERSION": {"question": "Which?", "options": [{"value": "1", "label": "One"}, "2"]}},
          "backup": {"mode": "stop", "exclude": ["a/b", "c"]},
          "units": {"x": {"upstream": "o/r", "image": "v{version}"},
-                   "y": {"upstream": {"value": "-", "note": "infra"}, "login": {"user": "z", "password": "s2"},
+                   "y": {"upstream": "-", "login": {"user": "z", "password": "s2"},
                          "choices": {"K": {"question": "Q", "options": [{"value": "a", "label": "A"}]}}}}}
     v = View(d)
-    assert v.get("secrets", "s2") == "shell x" and v.get("secrets", "s1") == "rand-hex 8", "a note is not part of the value"
-    assert note_of(d["secrets"]["s2"]) == "because" and note_of("plain") is None
+    assert v.get("secrets", "s2") == "shell x" and v.get("secrets", "s1") == "rand-hex 8"
     assert v.items("upstream") == [("x", "o/r"), ("y", "-")] and v.items("image") == [("x", "v{version}")]
-    assert v.get("store", "group") == "Tools" and not v.has_option("store", "screenshots")
-    assert v.get("store", "works_with") == "p, q" and v.get("store", "deprecated_pt") == "foi"
+    assert v.get("store", "group") == "Tools" and v.get("store", "docs") == "https://d" and v.get("store", "deprecated") == "gone"
+    assert not v.has_option("store", "screenshots") and not v.has_option("store", "works_with")
     assert v.get("backup", "exclude") == "\na/b\nc" and v.get("backup", "mode") == "stop"
-    assert v.get("choices", "VERSION") == "Which?\n1: One\n2" and v.get("choices.y", "K") == "Q\na: A"
+    assert v.get("choices", "VERSION") == "Which?\n1: One\n2", "an option may be just its value"
+    assert v.get("choices.y", "K") == "Q\na: A"
     assert v.get("login.y", "user") == "z" and v.get("login", "password") == "s1"
     assert v.has_section("vars") and not v.has_section("nope") and v.get("nope", "k", fallback="f") == "f"
     assert set(v.sections()) >= {"secrets", "upstream", "image", "store", "backup", "config", "vars", "validate",
                                  "login", "login.y", "choices", "choices.y"}
     assert dump(d).startswith('{\n  "spec": 2,\n  "title": "X"')
     assert problems(d, ("Tools",)) == [] and problems({**d, "spec": 1}, ("Tools",))
-    assert problems({**d, "tagline": {"en": "a"}}, ("Tools",)) and problems({**d, "category": "Nope"}, ("Tools",))
+    assert problems({**d, "tagline": ""}, ("Tools",)) and problems({**d, "tagline": {"en": "a", "pt": "b"}}, ("Tools",))
+    assert problems({**d, "category": "Nope"}, ("Tools",)) and problems({**d, "notes": {"en": "x"}}, ("Tools",))
     assert problems({**d, "wat": 1}, ("Tools",)), "an unknown key is a typo"
     assert problems({**d, "icon": "https://x/y.svg"}, ("Tools",)), "the logo is a file now, not a field"
-    tab = services_table([("x", d, "icon.svg"), ("a", {**d, "title": "a-first", "tagline": {"en": "e", "pt": "p"}}, "icon.png")], "pt")
+    assert problems({**d, "license": "MIT"}, ("Tools",)), "no licence field: the project's own repository says"
+    tab = services_table([("x", d, "icon.svg"), ("a", {**d, "title": "a-first", "tagline": "p"}, "icon.png")], "pt")
     assert tab.splitlines()[0] == "| Logo | Aplicativo | Descrição |", tab
     assert '<img src="../../apps/a/icon.png"' in tab.splitlines()[2] and "[a-first](../../apps/a) | p |" in tab.splitlines()[2], tab
     import tempfile

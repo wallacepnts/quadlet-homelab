@@ -1,39 +1,20 @@
 {
   "spec": 2,
   "title": "tsdproxy",
-  "tagline": {
-    "en": "Publishes containers on the tailnet automatically, from labels alone — no per-service proxy configuration",
-    "pt": "Publica containers na tailnet automaticamente, só com labels — sem configurar proxy manualmente por serviço"
-  },
+  "tagline": "Publishes containers on the tailnet automatically, from labels alone — no per-service proxy configuration",
   "category": "Network & Security",
-  "license": "MIT",
   "links": {
     "docs": "https://almeidapaulopt.github.io/tsdproxy/"
   },
-  "notes": {
-    "en": "### Publishing something that is not a container\n\nA container is discovered by its labels. The host's own daemons have none, so\nthey go in `config/lists.yaml` instead — one entry per name, and tsdproxy\nrereads that file without a restart.\n\nThe file carries **Cockpit**, the web console openSUSE already carries\n(`cockpit.socket` on 9090, plus `cockpit-podman` if you want the containers\nlisted there too), commented out. Uncomment it, replace `<host-ip>` with this\nmachine's address, and it answers on `https://cockpit.<your-tailnet>.ts.net`:\n\n```yaml\ncockpit:\n  ports:\n    443/https:\n      targets:\n        - https://<host-ip>:9090\n```\n\nTwo details that are not obvious:\n\n- The address has to be a **real** one. `host.containers.internal` only\n  answers on Podman's default network, and tsdproxy lives on `tsdproxy-net` —\n  from there it times out. The tailscale address is the steadier choice, since\n  it does not move with DHCP.\n- The target is `https://`, not `http://` — Cockpit serves TLS itself on 9090.\n  With the scheme right, its origin check passes as-is and no\n  `/etc/cockpit/cockpit.conf` is needed; get it wrong and the login page loads\n  but the session never opens.\n\nCockpit is the one host service worth this: disks, network, journal and the\nsystem's own updates, none of which a container can show you. Creating\ncontainers *through* it is another matter — a unit that is `--replace --rm`\ncomes back as soon as Cockpit stops it, and anything created by hand is\ninvisible to this repository. Read, do not write.\n\nThat is why the entry ships commented out: pointing at a closed port, it\npublishes a name that answers 502 — and most hosts do not run Cockpit.",
-    "pt": "### Publicar algo que não é container\n\nContainer é descoberto pelas labels. Os serviços do próprio host não têm\nlabel nenhuma, então vão no `config/lists.yaml` — uma entrada por nome, e o\ntsdproxy relê esse arquivo sem reiniciar.\n\nO arquivo traz o **Cockpit**, o console web que o openSUSE tem de fábrica\n(`cockpit.socket` na 9090, mais o `cockpit-podman` se quiser os containers\nlistados lá também), comentado. Descomente, troque `<host-ip>` pelo endereço\ndesta máquina, e ele atende em `https://cockpit.<your-tailnet>.ts.net`:\n\n```yaml\ncockpit:\n  ports:\n    443/https:\n      targets:\n        - https://<host-ip>:9090\n```\n\nDois detalhes que não são óbvios:\n\n- O endereço tem que ser **real**. O `host.containers.internal` só responde na\n  rede default do Podman, e o tsdproxy vive na `tsdproxy-net` — de lá ele dá\n  timeout. O endereço tailscale é o mais estável, porque não muda com DHCP.\n- O alvo é `https://`, não `http://` — o Cockpit serve TLS por conta própria na\n  9090. Com o esquema certo a checagem de origem dele passa como está, sem\n  precisar de `/etc/cockpit/cockpit.conf`; com o errado a tela de login abre\n  mas a sessão nunca sobe.\n\nO Cockpit é o serviço do host que vale essa entrada: disco, rede, journal e as\natualizações do próprio sistema, nada disso um container mostra. Criar\ncontainer *por ele* é outra história — uma unit `--replace --rm` volta assim\nque o Cockpit a para, e o que for criado na mão fica invisível para este\nrepositório. Ler, não escrever.\n\nPor isso a entrada vem comentada: apontando para porta fechada, ela publica\num nome que responde 502 — e a maioria dos hosts não roda Cockpit."
-  },
+  "notes": "### Publishing something that is not a container\n\nA container is discovered by its labels. The host's own daemons have none, so\nthey go in `config/lists.yaml` instead — one entry per name, and tsdproxy\nrereads that file without a restart.\n\nThe file carries **Cockpit**, the web console openSUSE already carries\n(`cockpit.socket` on 9090, plus `cockpit-podman` if you want the containers\nlisted there too), commented out. Uncomment it, replace `<host-ip>` with this\nmachine's address, and it answers on `https://cockpit.<your-tailnet>.ts.net`:\n\n```yaml\ncockpit:\n  ports:\n    443/https:\n      targets:\n        - https://<host-ip>:9090\n```\n\nTwo details that are not obvious:\n\n- The address has to be a **real** one. `host.containers.internal` only\n  answers on Podman's default network, and tsdproxy lives on `tsdproxy-net` —\n  from there it times out. The tailscale address is the steadier choice, since\n  it does not move with DHCP.\n- The target is `https://`, not `http://` — Cockpit serves TLS itself on 9090.\n  With the scheme right, its origin check passes as-is and no\n  `/etc/cockpit/cockpit.conf` is needed; get it wrong and the login page loads\n  but the session never opens.\n\nCockpit is the one host service worth this: disks, network, journal and the\nsystem's own updates, none of which a container can show you. Creating\ncontainers *through* it is another matter — a unit that is `--replace --rm`\ncomes back as soon as Cockpit stops it, and anything created by hand is\ninvisible to this repository. Read, do not write.\n\nThat is why the entry ships commented out: pointing at a closed port, it\npublishes a name that answers 502 — and most hosts do not run Cockpit.",
   "secrets": {
-    "authkey": {
-      "value": "manual a REUSABLE auth key from https://login.tailscale.com/admin/settings/keys (one-off does not work: tsdproxy registers a node per proxy, and the check below spends one use)",
-      "note": "The tailnet auth key, generated in the Tailscale admin. Reusable and non-expiring is the most practical for a proxy that registers several nodes."
-    }
+    "authkey": "manual a REUSABLE auth key from https://login.tailscale.com/admin/settings/keys (one-off does not work: tsdproxy registers a node per proxy, and the check below spends one use)"
   },
   "validate": {
-    "authkey": {
-      "value": "shell podman run --rm -i --entrypoint /bin/sh docker.io/tailscale/tailscale:v1.102.3 -c 'k=$(cat); tailscaled --tun=userspace-networking --state=mem: >/dev/null 2>&1 & sleep 4; tailscale up --authkey=\"$k\" --hostname=qh-keycheck --accept-dns=false || exit 1; tailscale logout || true'",
-      "note": "Checked before the secret is stored, because a key the control plane refuses leaves tsdproxy healthy and publishing nothing — the failure looks like success everywhere except the tailnet. The value arrives on stdin. It registers a node and logs it out in the same breath, so nothing is left behind: measured, `tailscale logout` removes it from the tailnet entirely, while a node merely stopped would stay listed as offline. It DOES spend one use of the key, which is why [secrets] above asks for a reusable one. `|| exit 1` is the contract install.py reads: 1 means the key is bad, and any other non-zero (podman's 125 for an image that will not pull, say) means the check could not run and must not condemn the value. `logout || true` keeps a cleanup failure from being read as a bad key. The image is pinned like every other in this repository (rule 9); it is only ever run by this check, so nothing here restarts when it moves."
-    }
+    "authkey": "shell podman run --rm -i --entrypoint /bin/sh docker.io/tailscale/tailscale:v1.102.3 -c 'k=$(cat); tailscaled --tun=userspace-networking --state=mem: >/dev/null 2>&1 & sleep 4; tailscale up --authkey=\"$k\" --hostname=qh-keycheck --accept-dns=false || exit 1; tailscale logout || true'"
   },
   "config": {
-    "config/tsdproxy.yaml": {
-      "value": "%h/.config/containers/volumes/tsdproxy/config/tsdproxy.yaml",
-      "note": "Without it tsdproxy starts on its own defaults and does not read the podman socket, so no container is published."
-    },
-    "config/lists.yaml": {
-      "value": "%h/.config/containers/volumes/tsdproxy/config/lists.yaml",
-      "note": "The host's own services, Cockpit among them. Edit <host-ip> after the install; tsdproxy rereads this one without a restart."
-    }
+    "config/tsdproxy.yaml": "%h/.config/containers/volumes/tsdproxy/config/tsdproxy.yaml",
+    "config/lists.yaml": "%h/.config/containers/volumes/tsdproxy/config/lists.yaml"
   }
 }

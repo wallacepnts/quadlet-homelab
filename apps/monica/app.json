@@ -1,24 +1,14 @@
 {
   "spec": 2,
   "title": "Monica",
-  "tagline": {
-    "en": "A personal CRM — relationship history, contacts, reminders",
-    "pt": "CRM pessoal — histórico de relacionamentos, contatos, lembretes"
-  },
+  "tagline": "A personal CRM — relationship history, contacts, reminders",
   "category": "Personal",
-  "license": "AGPL-3.0",
   "links": {
     "docs": "https://beta.monicahq.com",
     "repo": "monicahq/monica"
   },
-  "notes": {
-    "en": "### Update\n\nBy digest, because `monica-next` publishes no versioned image — only `main` and\n`main-fpm`, rebuilt as the branch moves. The digest freezes one build of it.",
-    "pt": "### Atualizar\n\nPor digest, porque o `monica-next` não publica imagem com versão — só `main` e\n`main-fpm`, reconstruídas conforme o branch anda. O digest congela um build dela."
-  },
+  "notes": "### Update\n\nBy digest, because `monica-next` publishes no versioned image — only `main` and\n`main-fpm`, rebuilt as the branch moves. The digest freezes one build of it.",
   "secrets": {
-    "monica-app-key": {
-      "value": "shell printf 'base64:%s' \"$(openssl rand -base64 32)\"",
-      "note": "O Laravel exige o prefixo `base64:` no APP_KEY, e exatamente 32 bytes."
-    }
+    "monica-app-key": "shell printf 'base64:%s' \"$(openssl rand -base64 32)\""
   }
 }

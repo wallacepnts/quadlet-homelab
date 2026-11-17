@@ -1,12 +1,8 @@
 {
   "spec": 2,
   "title": "Calibre-Web-Automated",
-  "tagline": {
-    "en": "An ebook library with automatic conversion, metadata and covers via Calibre, readable straight in the browser",
-    "pt": "Biblioteca de ebooks com conversão, metadados e capas automáticas via Calibre, com leitura direto no navegador"
-  },
+  "tagline": "An ebook library with automatic conversion, metadata and covers via Calibre, readable straight in the browser",
   "category": "Media",
-  "license": "GPL-3.0",
   "links": {
     "docs": "https://github.com/crocodilestick/Calibre-Web-Automated"
   },

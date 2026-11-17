@@ -1,10 +1,7 @@
 {
   "spec": 2,
   "title": "Invio",
-  "tagline": {
-    "en": "Self-hosted invoicing and invoice tracking, on SQLite and with no external service",
-    "pt": "Emissão e controle de faturas self-hosted, com SQLite e sem depender de serviço externo"
-  },
+  "tagline": "Self-hosted invoicing and invoice tracking, on SQLite and with no external service",
   "category": "Personal",
   "links": {
     "docs": "https://github.com/kittendevv/Invio#readme"

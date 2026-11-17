@@ -1,12 +1,8 @@
 {
   "spec": 2,
   "title": "Donetick",
-  "tagline": {
-    "en": "Recurring household chores — who does them, how often, and when they are due",
-    "pt": "Tarefas domésticas recorrentes — quem faz, com que frequência e quando vence"
-  },
+  "tagline": "Recurring household chores — who does them, how often, and when they are due",
   "category": "Personal",
-  "license": "AGPL-3.0",
   "links": {
     "docs": "https://donetick.com"
   },

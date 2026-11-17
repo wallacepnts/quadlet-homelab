@@ -1,19 +1,11 @@
 {
   "spec": 2,
   "title": "Home Assistant",
-  "tagline": {
-    "en": "The central home automation hub; it brings devices from any manufacturer into a single panel",
-    "pt": "Hub central de automação residencial, integra dispositivos de qualquer fabricante num painel só"
-  },
+  "tagline": "The central home automation hub; it brings devices from any manufacturer into a single panel",
   "category": "Home",
-  "license": "Apache-2.0",
   "links": {
     "docs": "https://www.home-assistant.io"
   },
-  "works_with": [
-    "zigbee2mqtt",
-    "node-red"
-  ],
   "units": {
     "home-assistant": {
       "upstream": "home-assistant/core"

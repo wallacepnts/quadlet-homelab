@@ -1,12 +1,8 @@
 {
   "spec": 2,
   "title": "Copyparty",
-  "tagline": {
-    "en": "A file server with browser or phone uploads, resumable transfers and WebDAV",
-    "pt": "Servidor de arquivos com upload pelo navegador ou celular, retomada de transferência e WebDAV"
-  },
+  "tagline": "A file server with browser or phone uploads, resumable transfers and WebDAV",
   "category": "Files",
-  "license": "MIT",
   "links": {
     "docs": "https://github.com/9001/copyparty#readme"
   },

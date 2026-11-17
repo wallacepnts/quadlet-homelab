@@ -1,12 +1,8 @@
 {
   "spec": 2,
   "title": "mdrop",
-  "tagline": {
-    "en": "Converts PDF, Office, image and audio to Markdown over the web, stateless and without leaving the machine",
-    "pt": "Converte PDF, Office, imagem e áudio para Markdown pela web, sem estado e sem sair da máquina"
-  },
+  "tagline": "Converts PDF, Office, image and audio to Markdown over the web, stateless and without leaving the machine",
   "category": "Tools",
-  "license": "MIT",
   "links": {
     "docs": "https://mdrop.remotelab.dev"
   }

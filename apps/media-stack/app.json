@@ -1,36 +1,22 @@
 {
   "spec": 2,
   "title": "Media Stack",
-  "tagline": {
-    "en": "Jellyfin, Navidrome, Seerr, Prowlarr, Sonarr, Radarr, Lidarr, Bazarr, SABnzbd, Deluge, Dispatcharr, Downtify and an optional Gluetun — a media server plus automation, a shared data root, each app on its own version",
-    "pt": "Jellyfin, Navidrome, Seerr, Prowlarr, Sonarr, Radarr, Lidarr, Bazarr, SABnzbd, Deluge, Dispatcharr, Downtify e um Gluetun opcional — servidor de mídia + automação, raiz de dados compartilhada, cada app com sua própria versão"
-  },
+  "tagline": "Jellyfin, Navidrome, Seerr, Prowlarr, Sonarr, Radarr, Lidarr, Bazarr, SABnzbd, Deluge, Dispatcharr, Downtify and an optional Gluetun — a media server plus automation, a shared data root, each app on its own version",
   "category": "Downloads",
-  "license": "GPL-2.0 ·",
   "links": {
     "docs": "https://jellyfin.org"
   },
-  "notes": {
-    "en": "Each unit publishes its own port and its own tailnet name; the addresses are\nprinted at the end of the install.\n\n### Update\n\nEach unit carries its own tag — the table above lists them. Nothing updates\non its own; the command above applies whatever the repository pins.",
-    "pt": "Cada unit publica a própria porta e o próprio nome na tailnet; os endereços\nsaem no fim da instalação.\n\n### Atualizar\n\nCada unit tem a própria tag — a tabela acima lista todas. Nada atualiza\nsozinho; o comando acima aplica o que o repositório pinou."
-  },
+  "notes": "Each unit publishes its own port and its own tailnet name; the addresses are\nprinted at the end of the install.\n\n### Update\n\nEach unit carries its own tag — the table above lists them. Nothing updates\non its own; the command above applies whatever the repository pins.",
   "config": {
-    ".env.example": {
-      "value": "%h/.config/containers/env/media-stack.env",
-      "note": "The stack has two EnvironmentFile= entries, so the generic `.env.example` has to say which of the two it is. media-stack-gluetun.env.example matches on its own, because its name already lines up with the destination."
-    }
+    ".env.example": "%h/.config/containers/env/media-stack.env"
   },
   "vars": {
-    "MEDIA_DATA_DIR": {
-      "value": "~/data",
-      "note": "The one path decision in this stack: the root the media lives under, read by every unit through Volume=${MEDIA_DATA_DIR}. It is a variable of the systemd --user manager, not of an .env, because Quadlet expands Volume= there (rule 19). The install asks for it when it is unset, with this one Enter away."
-    }
+    "MEDIA_DATA_DIR": "~/data"
   },
   "backup": {
     "exclude": [
       "jellyfin/cache"
-    ],
-    "note": "Jellyfin rebuilds its cache (images, transcodes) on its own."
+    ]
   },
   "units": {
     "media-stack-gluetun": {

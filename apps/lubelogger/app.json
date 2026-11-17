@@ -1,12 +1,8 @@
 {
   "spec": 2,
   "title": "LubeLogger",
-  "tagline": {
-    "en": "Vehicle maintenance records — oil changes, services, costs and reminders, per vehicle",
-    "pt": "Registro de manutenção veicular — trocas de óleo, revisões, gastos e lembretes, por veículo"
-  },
+  "tagline": "Vehicle maintenance records — oil changes, services, costs and reminders, per vehicle",
   "category": "Personal",
-  "license": "MIT",
   "links": {
     "docs": "https://lubelogger.com"
   },

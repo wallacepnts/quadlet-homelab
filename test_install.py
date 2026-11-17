@@ -612,7 +612,7 @@ def scenario_deprecated(tmp):
     shutil.copytree(ROOT / "apps", raiz / "apps", ignore_dangling_symlinks=True)   # apps/durockrj may point nowhere
     import manifest as MF
     dados = MF.load(raiz / "apps" / APP)
-    dados["deprecated"] = {"en": "Archived upstream.", "pt": "Arquivado no upstream."}
+    dados["deprecated"] = "Archived upstream."
     MF.path_of(raiz / "apps" / APP).write_text(MF.dump(dados))
     home = str(Path(tmp, "dep-home"))
 
@@ -623,11 +623,11 @@ def scenario_deprecated(tmp):
     out, _ = executa(APP, "--prefix", home)
     check("this service is marked deprecated: Archived upstream." in out, "qh warns, with the reason, before installing")
     out, _ = executa(APP, "--prefix", home, lang="pt")
-    check("descontinuado: Arquivado no upstream." in out, "…in Portuguese, with the Portuguese reason")
+    check("descontinuado: Archived upstream." in out, "…in Portuguese, with the reason as written (one language)")
     cat = json.loads(executa("--catalog", APP, "--prefix", home)[0])["apps"][0]
     check(cat["units"][0]["failure"] is None, "--catalog has a failure field per unit (empty in the sandbox, which asks no systemd)")
     check(cat["has_data"] is True, "--catalog says whether the service keeps data (the store offers a backup before updating)")
-    check(cat["deprecated"] == {"en": "Archived upstream.", "pt": "Arquivado no upstream."}, "--catalog carries the reason in both languages")
+    check(cat["deprecated"] == {"en": "Archived upstream.", "pt": "Archived upstream."}, "--catalog carries the reason (the same text for both pages)")
     outro = json.loads(executa("--catalog", STACK, "--prefix", home)[0])["apps"][0]
     check(outro["deprecated"] is None, "and null for a service that is not marked")
     out, rc = executa("--all", "--prefix", home)

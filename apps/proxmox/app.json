@@ -1,12 +1,8 @@
 {
   "spec": 2,
   "title": "Proxmox VE",
-  "tagline": {
-    "en": "The Proxmox hypervisor in a container, for trying it without dedicating a machine — runs privileged",
-    "pt": "O hypervisor Proxmox num container, pra experimentar sem dedicar uma máquina — roda privileged"
-  },
+  "tagline": "The Proxmox hypervisor in a container, for trying it without dedicating a machine — runs privileged",
   "category": "Virtual Machines",
-  "license": "MIT",
   "links": {
     "docs": "https://pve.proxmox.com/pve-docs/"
   },

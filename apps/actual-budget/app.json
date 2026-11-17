@@ -1,12 +1,8 @@
 {
   "spec": 2,
   "title": "Actual Budget",
-  "tagline": {
-    "en": "Fast, privacy-focused personal finance management using the envelope budgeting method",
-    "pt": "Rápido e focado em privacidade pra gerenciar finanças pessoais, usando a metodologia de Orçamento de Envelope"
-  },
+  "tagline": "Fast, privacy-focused personal finance management using the envelope budgeting method",
   "category": "Personal",
-  "license": "MIT",
   "links": {
     "docs": "https://actualbudget.org"
   },

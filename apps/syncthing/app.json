@@ -1,12 +1,8 @@
 {
   "spec": 2,
   "title": "Syncthing",
-  "tagline": {
-    "en": "P2P file sync between devices, with no central server",
-    "pt": "Sincronização de arquivos P2P entre dispositivos, sem servidor central"
-  },
+  "tagline": "P2P file sync between devices, with no central server",
   "category": "Files",
-  "license": "MPL-2.0.",
   "links": {
     "docs": "https://syncthing.net/"
   }

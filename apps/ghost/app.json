@@ -1,12 +1,8 @@
 {
   "spec": 2,
   "title": "Ghost",
-  "tagline": {
-    "en": "A self-hosted blog/newsletter (SQLite, development mode — see its notes in the panel)",
-    "pt": "Blog/newsletter self-hosted (SQLite, modo development — ver README)"
-  },
+  "tagline": "A self-hosted blog/newsletter (SQLite, development mode — see its notes in the panel)",
   "category": "Productivity",
-  "license": "MIT",
   "links": {
     "docs": "https://ghost.org"
   },

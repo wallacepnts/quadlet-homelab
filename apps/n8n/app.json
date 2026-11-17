@@ -1,10 +1,7 @@
 {
   "spec": 2,
   "title": "n8n",
-  "tagline": {
-    "en": "Workflow automation through a visual node editor",
-    "pt": "Automação de workflows via editor visual de nós"
-  },
+  "tagline": "Workflow automation through a visual node editor",
   "category": "Automation",
   "links": {
     "docs": "https://n8n.io"

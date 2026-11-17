@@ -1,12 +1,8 @@
 {
   "spec": 2,
   "title": "wger",
-  "tagline": {
-    "en": "Workout planning and tracking, with an exercise database and body measurements",
-    "pt": "Planejamento e acompanhamento de treinos, com banco de exercícios e medidas corporais"
-  },
+  "tagline": "Workout planning and tracking, with an exercise database and body measurements",
   "category": "Personal",
-  "license": "AGPL-3.0",
   "links": {
     "docs": "https://wger.de"
   },

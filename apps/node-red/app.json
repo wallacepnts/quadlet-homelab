@@ -1,12 +1,8 @@
 {
   "spec": 2,
   "title": "Node-RED",
-  "tagline": {
-    "en": "Flow automation through a visual node editor",
-    "pt": "Automação de fluxos via editor visual de nós"
-  },
+  "tagline": "Flow automation through a visual node editor",
   "category": "Automation",
-  "license": "Apache-2.0",
   "links": {
     "docs": "https://nodered.org"
   },

@@ -1,12 +1,8 @@
 {
   "spec": 2,
   "title": "Authentik",
-  "tagline": {
-    "en": "An identity server (SSO, MFA, OIDC/SAML) — only the core is deployed, no forward-auth via tsdproxy yet (see its notes in the panel)",
-    "pt": "Servidor de identidade (SSO, MFA, OIDC/SAML) — só o core implantado, sem forward-auth via tsdproxy ainda (veja as notas dele no painel)"
-  },
+  "tagline": "An identity server (SSO, MFA, OIDC/SAML) — only the core is deployed, no forward-auth via tsdproxy yet (see its notes in the panel)",
   "category": "Network & Security",
-  "license": "MIT",
   "links": {
     "docs": "https://goauthentik.io"
   },

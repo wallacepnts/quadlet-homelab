@@ -1,12 +1,8 @@
 {
   "spec": 2,
   "title": "Traccar",
-  "tagline": {
-    "en": "GPS tracking — live map, history, geofences and reports, with a phone app",
-    "pt": "Rastreamento de GPS — mapa ao vivo, histórico, geocercas e relatórios, com app no celular"
-  },
+  "tagline": "GPS tracking — live map, history, geofences and reports, with a phone app",
   "category": "Home",
-  "license": "Apache-2.0",
   "links": {
     "docs": "https://www.traccar.org"
   }

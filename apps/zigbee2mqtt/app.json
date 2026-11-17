@@ -1,27 +1,14 @@
 {
   "spec": 2,
   "title": "Zigbee2MQTT",
-  "tagline": {
-    "en": "A bridge between Zigbee devices and MQTT, with no proprietary hub — no coordinator plugged in yet (see its notes in the panel)",
-    "pt": "Ponte entre dispositivos Zigbee e MQTT, sem hub proprietário — sem coordenador ligado ainda (veja as notas dele no painel)"
-  },
+  "tagline": "A bridge between Zigbee devices and MQTT, with no proprietary hub — no coordinator plugged in yet (see its notes in the panel)",
   "category": "Home",
-  "license": "GPL-3.0",
   "links": {
     "docs": "https://www.zigbee2mqtt.io"
   },
-  "works_with": [
-    "home-assistant"
-  ],
   "config": {
-    "configuration.yaml": {
-      "value": "%h/.config/containers/volumes/zigbee2mqtt/data/configuration.yaml",
-      "note": "The serial port, the MQTT address and the permit-join setting. The app refuses to start without it."
-    },
-    "mosquitto.conf": {
-      "value": "%h/.config/containers/volumes/zigbee2mqtt/mosquitto/config/mosquitto.conf",
-      "note": "Mosquitto listens on nothing but localhost unless this says otherwise."
-    }
+    "configuration.yaml": "%h/.config/containers/volumes/zigbee2mqtt/data/configuration.yaml",
+    "mosquitto.conf": "%h/.config/containers/volumes/zigbee2mqtt/mosquitto/config/mosquitto.conf"
   },
   "units": {
     "zigbee2mqtt-mosquitto": {

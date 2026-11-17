@@ -1,12 +1,8 @@
 {
   "spec": 2,
   "title": "Paperless-ngx",
-  "tagline": {
-    "en": "Scans, OCRs and indexes documents automatically, with full-text search so you never hunt for paper again",
-    "pt": "Digitaliza, faz OCR e indexa documentos automaticamente, com busca full-text pra nunca mais procurar papel"
-  },
+  "tagline": "Scans, OCRs and indexes documents automatically, with full-text search so you never hunt for paper again",
   "category": "Files",
-  "license": "GPL-3.0.",
   "links": {
     "docs": "https://docs.paperless-ngx.com/"
   },

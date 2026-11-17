@@ -479,15 +479,15 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   confere(apagou && apagou.corpo.action === "remove" && apagou.corpo.purge === true && apagou.corpo.confirm === "homebox", `o remove leva purge e o nome digitado (${JSON.stringify(apagou && apagou.corpo)})`);
   $("panel").open = false;
 
-  // notes and licence: what used to be an app's README
+  // notes: what used to be an app's README
   const hn = api.S.apps.find((x) => x.id === "homebox");
-  hn.notes = { en: "Open the page.\n\n### Password\n\nIt is generated.", pt: "Abra a página.\n\n### Senha\n\nÉ gerada." }; hn.license = "MIT";
+  hn.notes = { en: "Open the page.\n\n### Password\n\nIt is generated.", pt: "Open the page.\n\n### Password\n\nIt is generated." };
   api.openPanel("homebox"); await esperar(30);
-  confere($("p-notes").hidden === false && /Notas · licença: MIT/.test($("p-notes-title").textContent), `painel: notas e licença (${$("p-notes-title").textContent})`);
-  confere(/Abra a página/.test($("p-notes-body").textContent) && /Senha/.test($("p-notes-body").textContent), `as notas aparecem em português, renderizadas (${JSON.stringify($("p-notes-body").textContent)})`);
-  hn.notes = null; hn.license = null;
+  confere($("p-notes").hidden === false && /Notas/.test($("p-notes-title").textContent), `painel: notas (${$("p-notes-title").textContent})`);
+  confere(/Open the page/.test($("p-notes-body").textContent) && /Password/.test($("p-notes-body").textContent), "as notas aparecem, renderizadas");
+  hn.notes = null;
   api.openPanel("homebox"); await esperar(30);
-  confere($("p-notes").hidden === true, "sem notas nem licença: nada");
+  confere($("p-notes").hidden === true, "sem notas: nada");
   $("panel").open = false;
 
   // minimum Podman: the panel says when the host is older than the app needs
@@ -496,15 +496,6 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   api.openPanel("homebox"); await esperar(50);
   confere(/precisa do Podman 5\.0\+; o host tem 4\.9\.0/.test($("p-notice").textContent), `painel: Podman antigo (${$("p-notice").textContent})`);
   api.S.apps.find((x) => x.id === "homebox").podman_too_old = false;
-  $("panel").open = false;
-
-  // works with: suggested companions, as links; the installed ones are ticked
-  api.S.apps.find((x) => x.id === "homebox").works_with = ["memos", "gitea", "naoexiste"];
-  api.openPanel("homebox"); await esperar(50);
-  confere($("p-with").hidden === false && /^Funciona com: Memos ✓, Gitea$/.test($("p-with").textContent), `painel: Funciona com (${$("p-with").textContent})`);
-  api.S.apps.find((x) => x.id === "homebox").works_with = [];
-  api.openPanel("homebox"); await esperar(50);
-  confere($("p-with").hidden === true, "sem sugestões: a linha some");
   $("panel").open = false;
 
   // trial: the notice says when it ends, there is a Keep button, and the install form offers the choice

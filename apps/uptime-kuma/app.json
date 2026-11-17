@@ -1,16 +1,9 @@
 {
   "spec": 2,
   "title": "Uptime Kuma",
-  "tagline": {
-    "en": "An uptime monitor for the other services and the tailnet, with history and notifications",
-    "pt": "Monitor de disponibilidade dos outros serviços e da tailnet, com histórico e notificação"
-  },
+  "tagline": "An uptime monitor for the other services and the tailnet, with history and notifications",
   "category": "Monitoring",
-  "license": "MIT",
   "links": {
     "docs": "https://uptime.kuma.pet"
-  },
-  "works_with": [
-    "ntfy"
-  ]
+  }
 }

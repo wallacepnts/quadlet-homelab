@@ -99,10 +99,9 @@ separate step.
 
 ### 11. Credit the original project
 
-Every service folder based on another project credits it in `app.json`: `license`
-names the licence, `links.docs` the project's documentation, and the repository comes from the
-image (or `links.repo`). The panel shows them, with the licence beside the notes. A fork says
-so in its `notes`.
+Every service folder based on another project credits it by linking it: `links.docs` is the
+project's documentation, and the repository comes from the image (or `links.repo`); the panel shows
+both. A fork says so in its `notes`.
 
 ### 12. `Label=` values with a space need quotes
 

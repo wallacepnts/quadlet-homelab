@@ -1,12 +1,8 @@
 {
   "spec": 2,
   "title": "VM",
-  "tagline": {
-    "en": "Windows, macOS, ChromeOS Flex, ZimaOS and 23 Linux distros as VMs in containers, viewed in the browser — needs KVM on the host",
-    "pt": "Windows, macOS, ChromeOS Flex, ZimaOS e 23 distros Linux como VMs em containers, vistas pelo navegador — exige KVM no host"
-  },
+  "tagline": "Windows, macOS, ChromeOS Flex, ZimaOS and 23 Linux distros as VMs in containers, viewed in the browser — needs KVM on the host",
   "category": "Virtual Machines",
-  "license": "MIT",
   "links": {
     "docs": "https://github.com/dockur/windows#readme"
   },
@@ -106,34 +102,18 @@
         "LANGUAGE": {
           "question": "Installation language — any of the 33 upstream names is accepted, not just these",
           "options": [
-            {
-              "value": "English"
-            },
+            "English",
             {
               "value": "Portuguese",
               "label": "for pt-BR also set REGION and KEYBOARD in the .env"
             },
-            {
-              "value": "Spanish"
-            },
-            {
-              "value": "French"
-            },
-            {
-              "value": "German"
-            },
-            {
-              "value": "Italian"
-            },
-            {
-              "value": "Japanese"
-            },
-            {
-              "value": "Chinese"
-            },
-            {
-              "value": "Russian"
-            }
+            "Spanish",
+            "French",
+            "German",
+            "Italian",
+            "Japanese",
+            "Chinese",
+            "Russian"
           ]
         }
       },
@@ -186,34 +166,18 @@
         "LANGUAGE": {
           "question": "Installation language — any of the 33 upstream names is accepted, not just these",
           "options": [
-            {
-              "value": "English"
-            },
+            "English",
             {
               "value": "Portuguese",
               "label": "for pt-BR also set REGION and KEYBOARD in the .env"
             },
-            {
-              "value": "Spanish"
-            },
-            {
-              "value": "French"
-            },
-            {
-              "value": "German"
-            },
-            {
-              "value": "Italian"
-            },
-            {
-              "value": "Japanese"
-            },
-            {
-              "value": "Chinese"
-            },
-            {
-              "value": "Russian"
-            }
+            "Spanish",
+            "French",
+            "German",
+            "Italian",
+            "Japanese",
+            "Chinese",
+            "Russian"
           ]
         }
       },

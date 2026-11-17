@@ -2687,14 +2687,14 @@ def selftest():
                 shutil.copytree(I.APPS, copia, ignore_dangling_symlinks=True)
                 for nome in ("memos", "homebox"):
                     dados = manifest.load(copia / nome)
-                    dados["deprecated"] = {"en": "Archived upstream.", "pt": "Arquivado no upstream."}
+                    dados["deprecated"] = "Archived upstream."
                     manifest.path_of(copia / nome).write_text(manifest.dump(dados))
                 original, I.APPS = I.APPS, copia
                 try:
                     st, _, corpo = pedir("/api/run", json.dumps({"app": "memos", "action": "install"}).encode(), api)
                     assert st == 400 and "Archived upstream." in json.loads(corpo)["error"], (st, corpo)
                     st, _, corpo = pedir("/api/run", json.dumps({"app": "memos", "action": "install", "lang": "pt"}).encode(), api)
-                    assert st == 400 and "Arquivado no upstream." in json.loads(corpo)["error"], "the reason follows the page's language"
+                    assert st == 400 and "Archived upstream." in json.loads(corpo)["error"], "the reason is the same on the Portuguese page"
                     st, _, corpo = pedir("/api/plan?app=memos&action=install", headers=ok)
                     assert st == 400 and "memos" in json.loads(corpo)["error"], "the plan of an install is refused too"
                     assert pedir("/api/plan?app=memos&action=update", headers=ok)[0] == 200, "only the install is refused"

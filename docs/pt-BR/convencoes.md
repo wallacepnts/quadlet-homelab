@@ -100,10 +100,9 @@ separado.
 
 ### 11. Créditos ao projeto original
 
-Toda pasta de serviço baseado em outro projeto o credita no `app.json`:
-`license` diz a licença, `links.docs` a documentação do projeto, e o repositório vem da
-imagem (ou de `links.repo`). O painel os mostra, com a licença ao lado das notas. Um fork diz
-isso nas `notes` dele.
+Toda pasta de serviço baseado em outro projeto o credita linkando-o: `links.docs` é a
+documentação do projeto, e o repositório vem da imagem (ou de `links.repo`); o painel mostra os
+dois. Um fork diz isso nas `notes` dele.
 
 ### 12. `Label=`/valores com espaço precisam de aspas
 

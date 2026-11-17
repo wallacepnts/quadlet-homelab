@@ -1,19 +1,12 @@
 {
   "spec": 2,
   "title": "VaultZap",
-  "tagline": {
-    "en": "A local, browsable archive of exported WhatsApp conversations — search, gallery and calendar, fully offline",
-    "pt": "Arquivo local e navegável de conversas exportadas do WhatsApp — busca, galeria e calendário, 100% offline"
-  },
+  "tagline": "A local, browsable archive of exported WhatsApp conversations — search, gallery and calendar, fully offline",
   "category": "Personal",
-  "license": "AGPL-3.0",
   "links": {
     "docs": "https://github.com/wallacepnts/vaultzap#readme"
   },
-  "notes": {
-    "en": "### Update\n\n`AutoUpdate=registry` is on: the image updates on its own.",
-    "pt": "### Atualizar\n\n`AutoUpdate=registry` ligado: a imagem é atualizada sozinha."
-  },
+  "notes": "### Update\n\n`AutoUpdate=registry` is on: the image updates on its own.",
   "units": {
     "vaultzap": {
       "upstream": "registry:^v[0-9]+\\.[0-9]+\\.[0-9]+$"

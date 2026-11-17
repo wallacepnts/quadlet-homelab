@@ -1,20 +1,13 @@
 {
   "spec": 2,
   "title": "netboot.xyz",
-  "tagline": {
-    "en": "A network boot (PXE) menu for installing or trying distros and tools without writing a USB stick",
-    "pt": "Menu de boot pela rede (PXE) pra instalar ou testar distros e ferramentas sem gravar pendrive"
-  },
+  "tagline": "A network boot (PXE) menu for installing or trying distros and tools without writing a USB stick",
   "category": "Network & Security",
-  "license": "MIT",
   "links": {
     "docs": "https://netboot.xyz/docs/docker",
     "repo": "netbootxyz/netboot.xyz"
   },
-  "notes": {
-    "en": "Port\n69 is published too, but it is TFTP over UDP — what the machines booting from it\nspeak, not a page a browser can open.",
-    "pt": "A\n69 também é publicada, mas é TFTP sobre UDP — o que as máquinas que dão boot por\nele falam, não uma página que o navegador abra."
-  },
+  "notes": "Port\n69 is published too, but it is TFTP over UDP — what the machines booting from it\nspeak, not a page a browser can open.",
   "units": {
     "netbootxyz": {
       "upstream": "registry"

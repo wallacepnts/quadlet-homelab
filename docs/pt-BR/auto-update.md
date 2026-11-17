@@ -69,3 +69,19 @@ O repositório não traz isso. Um host que queira para um serviço edita a próp
 cópia da unit — tag flutuante mais `AutoUpdate=registry`, e
 `systemctl --user enable --now podman-auto-update.timer` uma vez — e o
 `qh <app> --update` mostra essa edição antes de sobrescrevê-la.
+
+## Seguido de propósito
+
+Algumas imagens não estão na última release, e não por acaso:
+
+- **karakeep-meilisearch** está fixado na versão que o `docker-compose` do próprio karakeep valida, não na do
+  upstream do Meilisearch. Um Meilisearch mais novo pode pedir uma reindexação que o app não conhece.
+- **zabbix-postgres** fica na major que o compose oficial valida, não no Postgres mais novo: uma major do banco é
+  uma migração à parte.
+- **postiz-redis** segue o Valkey, não o Redis 7.2 do compose do Postiz, então não há compose para comparar; o
+  registry é a referência, pegando o Valkey mais novo na mesma tag com sufixo Alpine.
+- **anki** não tem imagem oficial. A usada é construída do Dockerfile do repositório do Anki por um terceiro, no
+  calendário dele, então fica atrás das releases do Anki; a lista de tags do registry é a referência.
+- **toolbx-arch** só tem `latest`, então é fixado por digest e movido na mão; o **toolbx-fedora** usa
+  `registry:latest`, porque o Fedora numera também os prereleases e publica a release estável, a ramificada e o
+  rawhide lado a lado, então o maior número não é o estável.

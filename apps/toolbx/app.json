@@ -1,24 +1,14 @@
 {
   "spec": 2,
   "title": "Toolbx",
-  "tagline": {
-    "en": "Disposable Arch, Fedora, RHEL and Ubuntu shells, on the official Toolbx images — somewhere to install a one-off tool that is not the host",
-    "pt": "Shells descartáveis de Arch, Fedora, RHEL e Ubuntu, nas imagens oficiais do Toolbx — um lugar pra instalar ferramenta avulsa que não é o host"
-  },
-  "license": "Apache-2.0",
+  "tagline": "Disposable Arch, Fedora, RHEL and Ubuntu shells, on the official Toolbx images — somewhere to install a one-off tool that is not the host",
   "links": {
     "docs": "https://containertoolbx.org/"
   },
-  "notes": {
-    "en": "### Update\n\nEach shell carries its own tag — the table above lists them. Arch is the\nexception, pinned by digest because its only tag is `latest`.\n\n### Backup\n\nIt stops the four, packs the four `/work` directories and starts them again.\nThere is no `.env` and no secret here to pack. A single shell can be backed up\non its own — `qh toolbx-fedora --backup --apply` — because none of them shares\na directory with the others.\n\n### Remove\n\n`--purge` asks for the typed name too, and deletes the `/work` of all four.\nThere is no tailnet node to deregister: none of these is published.",
-    "pt": "### Atualizar\n\nCada shell tem a própria tag — a tabela acima lista todas. O Arch é a exceção,\npinado por digest porque a única tag dele é `latest`.\n\n### Backup\n\nEle para as quatro, empacota os quatro `/work` e religa. Não há `.env` nem\nsegredo aqui para empacotar. Dá para fazer backup de um shell só — `qh\ntoolbx-fedora --backup --apply` — porque nenhum compartilha diretório com os\noutros.\nA frio de propósito: copiar banco vivo dá um arquivo que só falha na hora de\nrestaurar.\n\n### Remover\n\nO `--purge` também pede o nome digitado, e apaga o `/work` das quatro. Não há\nnó de tailnet a desregistrar: nenhuma delas é publicada."
-  },
+  "notes": "### Update\n\nEach shell carries its own tag — the table above lists them. Arch is the\nexception, pinned by digest because its only tag is `latest`.\n\n### Backup\n\nIt stops the four, packs the four `/work` directories and starts them again.\nThere is no `.env` and no secret here to pack. A single shell can be backed up\non its own — `qh toolbx-fedora --backup --apply` — because none of them shares\na directory with the others.\n\n### Remove\n\n`--purge` asks for the typed name too, and deletes the `/work` of all four.\nThere is no tailnet node to deregister: none of these is published.",
   "units": {
     "toolbx-arch": {
-      "upstream": {
-        "value": "-",
-        "note": "The official Toolbx images. None of them come from a GitHub release, so the registry's tag list is the reference. Arch has only `latest`, so it is pinned by digest and there is nothing to compare."
-      }
+      "upstream": "-"
     },
     "toolbx-rhel": {
       "upstream": "registry"
@@ -27,10 +17,7 @@
       "upstream": "registry"
     },
     "toolbx-fedora": {
-      "upstream": {
-        "value": "registry:latest",
-        "note": "`registry:latest`, not `registry`: Fedora numbers its prereleases too, and publishes the stable release, the branched one and rawhide side by side — `46` is byte-identical to `rawhide` and `45` says `Prerelease` inside. The highest number is therefore always the wrong answer; asking which tag `latest` resolves to is what names the released one."
-      }
+      "upstream": "registry:latest"
     }
   }
 }

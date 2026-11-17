@@ -407,12 +407,9 @@ def env_type_problemas(texto):
     return saida
 
 
-def license_docs_problemas(chave, valor):
-    """What is wrong with `[store] license` (a short line) or `[store] docs` (an https URL), as a list."""
-    v = valor.strip()
-    if chave == "docs":
-        return [] if re.fullmatch(r"https://[A-Za-z0-9.-]+(/\S*)?", v) else ["is not a plain https:// URL"]
-    return [] if v and "\n" not in v and len(v) <= 80 and "<" not in v else ["must be one short line (a licence name, up to 80 characters)"]
+def docs_problemas(valor):
+    """What is wrong with `links.docs` (an https URL), as a list."""
+    return [] if re.fullmatch(r"https://[A-Za-z0-9.-]+(/\S*)?", valor.strip()) else ["is not a plain https:// URL"]
 
 
 def backup_problemas(ini):
@@ -427,22 +424,6 @@ def backup_problemas(ini):
             for p in (l.strip() for l in valor.splitlines() if l.strip()):
                 if p.startswith("/") or ".." in Path(p).parts:
                     saida.append(f"exclude {p!r}: a pattern relative to the volumes, no leading / and no ..")
-    return saida
-
-
-def works_with_problemas(valor, proprio, existentes):
-    """What is wrong with `[store] works_with`, as a list: names of other service folders, comma-separated."""
-    nomes = [x.strip() for x in valor.split(",")]
-    saida = []
-    if "" in nomes:
-        saida.append("has an empty name (a stray comma?)")
-    for n in nomes:
-        if n == proprio:
-            saida.append("lists the service itself")
-        elif n and n not in existentes:
-            saida.append(f"names {n!r}, which is not a folder in apps/")
-    if len(set(nomes)) != len(nomes):
-        saida.append("repeats a name")
     return saida
 
 
@@ -626,26 +607,18 @@ def check_manifest(folders):
         if ini.has_section("backup"):
             for problema in backup_problemas(ini):
                 error("manifest", f"apps/{folder.name}: app.json [backup] {problema}")
-        # [store] is what the app store shows about the service. Only
-        # `screenshots` exists; any other key is a typo that would be ignored.
+        # What the app store shows about the service: category, links, the discontinued reason, the
+        # Podman floor. The view builds this section from app.json, so a key here is always a known one.
         if ini.has_section("store"):
             for key, valor in ini.items("store"):
-                if key not in ("deprecated", "deprecated_pt", "repo", "works_with", "min_podman", "group", "license", "docs"):
-                    error("manifest", f"apps/{folder.name}: app.json [store] has no key {key!r} "
-                                      f"(only `deprecated`, `deprecated_pt`, `repo`, `works_with`, `min_podman`, `group`, `license` and `docs`)")
-                    continue
                 for problema in (repo_problemas(valor) if key == "repo"
-                                 else license_docs_problemas(key, valor) if key in ("license", "docs")
+                                 else docs_problemas(valor) if key == "docs"
                                  else [] if key == "group" and valor.strip() in GRUPOS
                                  else [f"is not one of: {', '.join(GRUPOS)}"] if key == "group"
                                  else [] if key == "min_podman" and re.fullmatch(r"\d+\.\d+(\.\d+)?", valor.strip())
                                  else ["is not a version like 5.4"] if key == "min_podman"
-                                 else works_with_problemas(valor, folder.name, {p.name for p in APPS.iterdir()}) if key == "works_with"
                                  else deprecated_problemas(valor)):
                     error("manifest", f"apps/{folder.name}: app.json [store] {key} {problema}")
-            if ini.has_option("store", "deprecated_pt") and not ini.get("store", "deprecated", fallback="").strip():
-                error("manifest", f"apps/{folder.name}: app.json [store] deprecated_pt without `deprecated`: "
-                                  f"the English reason is the one that counts")
         # [vars]: every ${VAR} a Volume= of this folder names needs a default
         # here, because it is what the install offers when it asks — and a
         # variable left unset turns `${MEDIA_DATA_DIR}/downloads` into
@@ -939,11 +912,6 @@ def selftest():
             del errors[antes:]
             assert any("app.container" in x and "unsupported key 'Foo'" in x for x in novos), novos
             assert any("app2.container" in x and "missing.network" in x for x in novos), novos
-
-    # [store] works_with: other folders, no self, no repeats
-    ex = {"a", "b", "c"}
-    assert works_with_problemas("b, c", "a", ex) == []
-    assert works_with_problemas("a", "a", ex) and works_with_problemas("z", "a", ex) and works_with_problemas("b,b", "a", ex) and works_with_problemas("b,", "a", ex)
 
     # [store] deprecated: one plain line that says why
     assert deprecated_problemas("Archived upstream on 2026-03-01; no release since 1.4.2.") == []

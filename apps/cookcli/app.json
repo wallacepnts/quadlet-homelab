@@ -1,20 +1,13 @@
 {
   "spec": 2,
   "title": "CookCLI",
-  "tagline": {
-    "en": "Plain-text recipes in the CookLang format — versionable in git, with no database and no forms",
-    "pt": "Receitas em texto puro no formato CookLang — versionáveis em git, sem banco e sem formulário"
-  },
+  "tagline": "Plain-text recipes in the CookLang format — versionable in git, with no database and no forms",
   "category": "Productivity",
-  "license": "MIT",
   "links": {
     "docs": "https://demo.cooklang.org"
   },
   "config": {
-    "aisle.conf.example": {
-      "value": "%h/.config/containers/volumes/cookcli/recipes/config/aisle.conf",
-      "note": "Both live in config/ INSIDE the recipes folder — cookcli looks there first and then in ~/.config/cook/. Since the volume is the /recipes directory, the destination cannot be derived from the unit."
-    },
+    "aisle.conf.example": "%h/.config/containers/volumes/cookcli/recipes/config/aisle.conf",
     "pantry.conf.example": "%h/.config/containers/volumes/cookcli/recipes/config/pantry.conf",
     "bolo-de-cenoura.cook.example": "%h/.config/containers/volumes/cookcli/recipes/bolo-de-cenoura.cook",
     "calda-de-chocolate.cook.example": "%h/.config/containers/volumes/cookcli/recipes/molhos/calda-de-chocolate.cook",

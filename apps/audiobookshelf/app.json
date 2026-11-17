@@ -1,12 +1,8 @@
 {
   "spec": 2,
   "title": "Audiobookshelf",
-  "tagline": {
-    "en": "An audiobook and podcast server, with progress synced across devices",
-    "pt": "Servidor de audiolivros e podcasts, com progresso sincronizado entre dispositivos"
-  },
+  "tagline": "An audiobook and podcast server, with progress synced across devices",
   "category": "Media",
-  "license": "GPL-3.0",
   "links": {
     "docs": "https://audiobookshelf.org"
   }
