@@ -87,6 +87,28 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
     return fim();
   }
 
+  if (MODO === "abas-loja") {
+    await tab("tab-store");
+    await abrir("Immich"); await esperar(1500);
+    await botao("Personalizar"); await ate("document.querySelectorAll('#c-body .cust').length > 0", 15000); await esperar(400);
+    console.log("abas:", await ev("[...document.querySelectorAll('#c-tabs button')].map((b) => b.textContent).join(' | ')"), "| visíveis:", await ev("!document.getElementById('c-tabs').hidden"));
+    await foto("23-abas-loja");
+    await ev("[...document.querySelectorAll('#c-tabs button')][1].click()"); await esperar(300);
+    console.log("aba:", await ev("document.querySelector('#c-tabs [aria-selected=true]').textContent"), "| imagem:", await ev("document.querySelector('#c-body .cust-two .field.ro input').value"));
+    return fim();
+  }
+  if (MODO === "abas") {
+    // reads only: a stack opens Customize with a tab per container
+    await abrir("Media Stack"); await esperar(1500);
+    await botao("Personalizar"); await ate("document.querySelectorAll('#c-body .cust').length > 0", 15000); await esperar(400);
+    console.log("abas:", await ev("[...document.querySelectorAll('#c-tabs button')].map((b) => b.textContent).join(' | ')"));
+    await ev("[...document.querySelectorAll('#c-tabs button')][2].click()"); await esperar(300);
+    console.log("aba ativa:", await ev("document.querySelector('#c-tabs [aria-selected=true]').textContent"), "| contêiner:", await ev("document.querySelector('#c-body .field.ro:nth-of-type(2) input, #c-body .cust > .field.ro input').value"));
+    await ev("document.querySelector('#c-body details.adv').scrollIntoView()"); await ev("document.querySelector('#c-body details.adv > summary').click()"); await esperar(300);
+    await foto("22-abas");
+    return fim();
+  }
+
   if (MODO === "portas") {
     // reads only: opens Customize and adds empty rows to look at the layout; never saves
     await abrir("Actual Budget"); await esperar(1500);

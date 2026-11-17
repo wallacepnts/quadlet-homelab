@@ -362,3 +362,10 @@ dialog.sheet[open] { display: flex; flex-direction: column; }
   .cust-row[data-kind=volumes] { padding-bottom: .6rem; border-bottom: 1px solid var(--line); }
   .cust-row[data-kind=env] { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 36px; }
 }
+
+.caps { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: .5rem 1rem; margin-top: .6rem; }
+.check.cap { align-items: flex-start; white-space: normal; }
+.check.cap span { display: grid; font-weight: 600; font-size: .85rem; }
+.check.cap small { color: var(--muted); font-weight: 400; font-size: .78rem; }
+.check.cap input { margin-top: .2rem; }
+details.cust-group > summary { cursor: pointer; font-weight: 700; font-size: .9rem; }

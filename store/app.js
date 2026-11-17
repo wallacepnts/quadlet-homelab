@@ -72,7 +72,7 @@ const T = {
     trialIn: (s) => `termina em ${s}`, trialAtReboot: "termina no próximo reinício",
     trialUnits: { h: "h", d: "dias" },
     customize: "Personalizar", customizedBadge: "personalizado", cPorts: "Portas", cVolumes: "Volumes",
-    cEnv: "Variáveis de ambiente", cDevices: "Dispositivos", cCaps: "Capabilities extras",
+    cEnv: "Variáveis de ambiente", cDevices: "Dispositivos", cCaps: "Permissões extras do container",
     cRestart: "Política de reinício", add: "Adicionar", fromUnit: "(vem da unit)", removeRow: "Remover",
     ipOpt: "IP (opcional)", hostPort: "Porta no host", contPort: "Porta no container",
     hostPath: "Pasta no host", contPath: "Caminho no container", labelZ: "rótulo privado (Z)",
@@ -87,7 +87,11 @@ const T = {
     volumesHint: (r) => `Pastas permitidas para volumes novos: ${r.join(", ")}. Para liberar outra, escreva o ` +
       "caminho em ~/.config/quadlet-homelab/store-roots.",
     custEnvHint: "As variáveis do arquivo .env ficam em Configurar; aqui entram as extras.",
-    capsHint: "Só as da lista. Para outra, edite a unit à mão.",
+    capsHint: "Por padrão o container começa sem nenhuma permissão especial do sistema. Cada caixa devolve uma, só para este app. Em geral não precisa mexer: marque só se o log do app reclamar de uma operação negada. Para uma que não esteja na lista, edite a unit à mão.",
+    capInfo: { CHOWN: "trocar o dono de arquivos", DAC_OVERRIDE: "ignorar as permissões dos arquivos", FOWNER: "agir como dono dos arquivos", FSETID: "manter os bits setuid/setgid",
+      KILL: "mandar sinais a processos de outro usuário", NET_BIND_SERVICE: "escutar em portas abaixo de 1024", NET_RAW: "sockets crus (ping e ferramentas de rede)",
+      SETFCAP: "definir permissões em arquivos", SETGID: "trocar o grupo do processo", SETPCAP: "mexer nas permissões de processos", SETUID: "trocar o usuário do processo",
+      SYS_CHROOT: "usar chroot", SYS_NICE: "mudar a prioridade de processos", MKNOD: "criar arquivos de dispositivo", AUDIT_WRITE: "escrever no log de auditoria" },
     limitsOff: "O systemd do seu usuário não delega os controladores memory e cpu, e com um limite o container não " +
       "sobe. Ligar é uma mudança de root (Delegate= no user@.service): veja docs/tools.md.",
     cLimits: "Limites", limMemory: "Memória máxima", limCpus: "CPUs", limMemoryHint: "ex.: 512m, 2g",
@@ -207,7 +211,7 @@ const T = {
     trialIn: (s) => `ends in ${s}`, trialAtReboot: "ends at the next reboot",
     trialUnits: { h: "h", d: "days" },
     customize: "Customize", customizedBadge: "customized", cPorts: "Ports", cVolumes: "Volumes",
-    cEnv: "Environment variables", cDevices: "Devices", cCaps: "Extra capabilities",
+    cEnv: "Environment variables", cDevices: "Devices", cCaps: "Extra container permissions",
     cRestart: "Restart policy", add: "Add", fromUnit: "(from the unit)", removeRow: "Remove",
     ipOpt: "IP (optional)", hostPort: "Host port", contPort: "Container port",
     hostPath: "Host folder", contPath: "Path in the container", labelZ: "private label (Z)",
@@ -222,7 +226,11 @@ const T = {
     volumesHint: (r) => `Folders allowed for new volumes: ${r.join(", ")}. To allow another, write its path ` +
       "in ~/.config/quadlet-homelab/store-roots.",
     custEnvHint: "Variables of the .env file are under Configure; extras go here.",
-    capsHint: "Only the ones on the list. For another, edit the unit by hand.",
+    capsHint: "By default the container starts with no special system permission. Each box gives one back, for this app only. You rarely need to touch it: tick one only if the app's log complains about a denied operation. For one that is not on the list, edit the unit by hand.",
+    capInfo: { CHOWN: "change file owners", DAC_OVERRIDE: "ignore file permissions", FOWNER: "act as the files' owner", FSETID: "keep setuid/setgid bits",
+      KILL: "send signals to another user's processes", NET_BIND_SERVICE: "listen on ports below 1024", NET_RAW: "raw sockets (ping and network tools)",
+      SETFCAP: "set permissions on files", SETGID: "change the process's group", SETPCAP: "change process permissions", SETUID: "change the process's user",
+      SYS_CHROOT: "use chroot", SYS_NICE: "change process priority", MKNOD: "create device files", AUDIT_WRITE: "write to the audit log" },
     limitsOff: "Your user's systemd does not delegate the memory and cpu controllers, and with a limit the container " +
       "does not start. Turning that on is a root change (Delegate= in user@.service): see docs/tools.md.",
     cLimits: "Limits", limMemory: "Memory limit", limCpus: "CPUs", limMemoryHint: "e.g. 512m, 2g",
@@ -1170,8 +1178,11 @@ async function formDaUnidade(a, u, pre) {
       limiteDeslizante(PARADAS_MEM, { nome: t("limMemory") }, lv.memory, (v) => { mem = v; }, d.limits.memory),
       limiteDeslizante(PARADAS_CPU, { nome: t("limCpus") }, lv.cpus, (v) => { cpus = v; }, d.limits.cpu)),
     h("div", { class: "cust-group" }, h("h4", {}, t("cRestart")), reinicio),
-    h("div", { class: "cust-group" }, h("h4", {}, t("cCaps")), h("p", { class: "cust-note" }, t("capsHint")),
-      h("div", { class: "caps" }, ...caps.map((c) => h("label", { class: "check", for: `cap-${unit}-${c.n}` }, c.box, ` ${c.n}`)))),
+    // Advanced: tucked away, with each permission said in words, since the names mean nothing to most people.
+    h("details", { class: "cust-group tech adv", open: caps.some((c) => c.box.checked) },
+      h("summary", {}, t("cCaps")), h("p", { class: "cust-note" }, t("capsHint")),
+      h("div", { class: "caps" }, ...caps.map((c) => h("label", { class: "check cap", for: `cap-${unit}-${c.n}`, title: t("capInfo")[c.n] || c.n },
+        c.box, h("span", {}, c.n, t("capInfo")[c.n] ? h("small", {}, t("capInfo")[c.n]) : null))))),
     saida);
 
   async function previa() {
@@ -1192,8 +1203,11 @@ async function formDaUnidade(a, u, pre) {
 // What the person sees: a sheet over the page, a tab per container, the fields of the chosen one, and the
 // one thing to do at the bottom — Install (before the install) or Save and apply.
 async function showCustom(a, unit, pre = false) {
-  const unidades = pre ? a.units : a.units.filter((u) => u.installed);
-  unit = unit || (mainUnit(a) || unidades[0]).unit;
+  const todas = pre ? a.units : a.units.filter((u) => u.installed);
+  const principal = a.units.find((u) => u.unit === a.main_unit) || mainUnit(a);
+  // The app itself first, then its helpers (database, cache, workers) in their own tabs.
+  const unidades = [...todas].sort((x, y) => (y === principal) - (x === principal));
+  unit = unit || (principal && unidades.includes(principal) ? principal : unidades[0]).unit;
   const formas = [];
   try { for (const u of unidades) formas.push(await formDaUnidade(a, u, pre)); }
   catch (e) { return section(h("p", { class: "note" }, String(e.message))); }
@@ -1204,7 +1218,7 @@ async function showCustom(a, unit, pre = false) {
   const mostrar = (f) => {
     ativa = f;
     fill(abas, ...formas.map((x) => h("button", { type: "button", role: "tab", "aria-selected": String(x === f),
-      onclick: () => mostrar(x) }, x.unit)));
+      onclick: () => mostrar(x) }, x.unit.startsWith(`${a.id}-`) ? x.unit.slice(a.id.length + 1) : x.unit)));
     abas.hidden = formas.length < 2;
     fill(corpo, pre ? h("p", { class: "cust-note" }, t("preIntro")) : h("p", { class: "cust-note" }, t("custIntro")), f.el);
   };
