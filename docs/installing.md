@@ -390,3 +390,23 @@ stop them all together, or the dependencies keep writing.
 
 Removing the unit does not deregister the tailnet node; that is done in the
 Tailscale admin.
+
+## Instances
+
+The same app can be installed more than once: **New instance** in the app's panel, or
+
+```bash
+qh memos --instance casa --apply        # installs memos-casa
+```
+
+An instance is its own app, `<app>-<name>`: its units, containers, network, volumes, `.env`, secrets and
+tsdproxy name carry the suffix, and a published host port moves to the next free one (kept in the record).
+What is shared stays shared (`tsdproxy-net`, the image, other apps' folders). From then on you name it like any
+app: `qh memos-casa --update`, `--backup`, `--remove`, and the panel lists it as a card of its own, with
+backup, update, customize and remove.
+
+How it works: `qh` writes a derived copy of the app's folder beside it, `apps/<app>-<name>/` (git ignores it,
+`check.py` skips it), and rebuilds it from the base app on every run, so a change to the app reaches its
+instances. The record is `~/.config/quadlet-homelab/instances.json`. An app that uses the host network or a range
+of ports cannot be instanced, and an app with several containers is best left to one instance unless you need
+both: container-internal names are not rewritten. Install options (`--option`) work per instance.

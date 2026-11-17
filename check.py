@@ -21,6 +21,7 @@ from collections import defaultdict
 from pathlib import Path
 
 import manifest
+import instances
 from qhui import (translator, directives, directives_of, published_port, format_unit,
                   red, yellow, green, dim, GRUPOS, valid_template, ENV_TYPES, ENV_TYPE_LINE, env_value_problem)
 
@@ -725,7 +726,7 @@ def check_socket_label():
     check, and sees no containers — the worst shape a failure can take, and one
     that only appears on some distributions.
     """
-    for f in sorted(APPS.glob("*/*.container")):
+    for f in sorted(f for f in APPS.glob("*/*.container") if not instances.is_instance(f.parent)):
         text = f.read_text()
         monta = any(k == "Volume" and "podman.sock" in v for k, v in directives(text))
         if not monta:
@@ -742,7 +743,7 @@ def check_config_sources():
     install.py skips it without a word, and the service starts with no
     configuration — caddy did, and only the container's own error said so.
     """
-    for pasta in sorted(p for p in APPS.iterdir() if p.is_dir()):
+    for pasta in sorted(p for p in APPS.iterdir() if p.is_dir() and not instances.is_instance(p)):
         cp = manifest.view(pasta)
         if not cp.has_section("config"):
             continue
@@ -1100,7 +1101,7 @@ def main():
         print(loc(f"could not find {APPS}"), file=sys.stderr)
         return 2
 
-    folders = sorted(p for p in APPS.iterdir() if p.is_dir())
+    folders = sorted(p for p in APPS.iterdir() if p.is_dir() and not instances.is_instance(p))
     if "--readme" in sys.argv:
         feitos = regenerated_readmes(folders)
         for path, texto in feitos.items():

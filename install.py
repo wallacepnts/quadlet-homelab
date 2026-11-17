@@ -36,6 +36,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import imagepin
+import instances
 import manifest
 import overrides
 import qhui
@@ -2244,6 +2245,9 @@ def plan_remove(s, purge):
             warnings.append("data kept: " + ", ".join(f"{r} ({size(r)})" for r in kept))
         warnings.append("tsdproxy does NOT deregister the tailnet node — "
                         "remove it in the Tailscale admin")
+    if instances.is_instance(s.dir) and not s.only:
+        # An instance is gone with its units: the record and the generated folder go too (the base app stays).
+        steps.append((f"forget the instance {s.name}", lambda: forget_instance(s.home, s.name)))
     return steps, warnings
 
 
@@ -4499,6 +4503,7 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude, falhas=None):
         "options": [{"key": k, "question": o["question"], "default": o["default"], "chosen": s.options[k],
                      "values": [{"value": n, "label": v["label"]} for n, v in o["values"].items()]}
                     for k, o in (s.manifest.get("options") or {}).items()],
+        "instance_of": (s.manifest.get("instance") or {}).get("of"),
         "options_locked": bool(instaladas) and bool(saved_options(s.home, d)),
         "permissions": permissions(s.ds),
         "main_unit": principal.stem if principal else None,
@@ -4970,6 +4975,72 @@ def zerobyte_jobs(called):
     return mod.main()
 
 
+# -- instances ---------------------------------------------------------------------
+
+def all_host_ports():
+    """Every host port any unit in apps/ (instances included) publishes."""
+    return instances.host_ports(u.read_text() for u in APPS.glob("*/*.container"))
+
+
+def sync_instances(home, prune=True):
+    """Builds, or refreshes, the folder of every recorded instance, and drops the ones nobody recorded.
+
+    The folder is rebuilt only when the base app (or the record) changed, so a run that changes nothing writes
+    nothing and two runs at once do not trip over each other."""
+    reg = instances.load(home)
+    mudou = False
+    for nome, rec in reg.items():
+        base, dest = APPS / rec["app"], APPS / nome
+        if not base.is_dir():
+            continue
+        fp = instances.fingerprint(base, rec["name"], rec.get("ports", {}))
+        if dest.is_dir() and instances.current(dest, fp):
+            continue
+        ports = instances.make(base, dest, rec["name"], all_host_ports() - {int(p) for u in rec.get("ports", {}).values()
+                                                                             for p in u.values()},
+                               manifest, rec.get("ports"))
+        if ports != rec.get("ports"):
+            rec["ports"], mudou = ports, True
+    if mudou:
+        instances.save(home, reg)
+    for d in list(APPS.iterdir()) if prune else []:
+        if d.is_dir() and instances.is_instance(d) and d.name not in reg:
+            shutil.rmtree(d)
+
+
+def taken_names(home):
+    """App folder names that are real apps, plus the instances recorded for this home (an unrecorded
+    instance folder is a leftover of a dry run and can be rebuilt)."""
+    return ({d.name for d in APPS.iterdir() if d.is_dir() and not instances.is_instance(d)}
+            | set(instances.load(home)))
+
+
+def create_instance(app, inst, home, record):
+    """Makes `<app>-<inst>`: returns its name, or raises SystemExit with the reason. `record` saves it (an apply)."""
+    base = APPS / app
+    if not base.is_dir() or instances.is_instance(base):
+        raise SystemExit(f"{app}: --instance needs one of the apps in apps/ (not an instance, not a single unit)")
+    motivo = instances.refusal(base) or instances.name_problem(app, inst, taken_names(home))
+    if motivo:
+        raise SystemExit(f"{app}: {motivo}")
+    nome = f"{app}-{inst}"
+    ports = instances.make(base, APPS / nome, inst, all_host_ports(), manifest)
+    if record:
+        reg = instances.load(home)
+        reg[nome] = {"app": app, "name": inst, "ports": ports}
+        instances.save(home, reg)
+    return nome
+
+
+def forget_instance(home, nome):
+    reg = instances.load(home)
+    if reg.pop(nome, None) is not None:
+        instances.save(home, reg)
+    d = APPS / nome
+    if d.is_dir() and instances.is_instance(d):
+        shutil.rmtree(d)
+
+
 def main():
     # The examples in the docstring have to match how you actually invoked it:
     # installed as a `qh` symlink, telling you to type `python3 install.py`
@@ -5024,6 +5095,8 @@ def main():
     action.add_argument("--verify", action="store_true",
                         help=loc("checks that the service exists and answers, and exits != 0 "
                                  "if not (runs on its own after every --apply)"))
+    ap.add_argument("--instance", metavar="NAME",
+                    help=loc("install the app once more, as <app>-NAME: its own units, volumes, secrets and port"))
     ap.add_argument("--option", action="append", default=[], metavar="KEY=VALUE",
                     help=loc("an install option of the app (app.json options), e.g. database=postgres; asked for in a terminal when left out"))
     ap.add_argument("--ask-secrets", action="store_true",
@@ -5056,6 +5129,15 @@ def main():
 
     global SANDBOX
     SANDBOX = bool(a.prefix)
+    casa_inst = Path(a.prefix) if a.prefix else Path.home()
+    # A sandbox run has its own record: it must not delete the folders of the real one.
+    sync_instances(casa_inst, prune=not a.prefix)
+    if a.instance:
+        if len(a.app) != 1 or a.all:
+            ap.error(loc("--instance takes exactly one app"))
+        if a.update or a.backup or a.restore or a.remove:
+            ap.error(loc("--instance creates an instance; to act on one, name it: <app>-NAME"))
+        a.app = [create_instance(find_app(a.app[0])[0], a.instance, casa_inst, a.apply)]
 
     if a.status:
         return show_status(a.app or None, a.prefix)

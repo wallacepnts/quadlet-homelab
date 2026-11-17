@@ -70,7 +70,7 @@ def dump(data):
 
 KEY_ORDER = ["title", "short_desc", "description", "author", "website", "source", "docs", "architectures", "category",
              "min_podman", "requires_https", "deprecated", "notes", "secrets", "validate", "config", "vars",
-             "login", "choices", "options", "backup", "units"]
+             "login", "choices", "options", "backup", "units", "instance"]
 
 
 def ordered(data):
@@ -394,6 +394,8 @@ def problems(data, grupos, folder=None):
             erros.append(f'"{k}" must be an object')
     if "units" in data and not isinstance(data["units"], dict):
         erros.append('"units" must be an object')
+    if "instance" in data:
+        erros.append('"instance" is written by qh into the folder of an instance, never by hand')
     erros += option_problems(data, folder)
     desconhecidas = set(data) - set(KEY_ORDER)
     if desconhecidas:

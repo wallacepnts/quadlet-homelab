@@ -183,7 +183,7 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   rotas["/api/host"] = { cpus: 4, load: 1, mem: { total: 8 * 2 ** 30, used: 2 * 2 ** 30 }, temp: 50, uptime: 90000 };
   rotas["/api/arch"] = { host: "amd64", runs: ["amd64", "arm64"], units: [{ unit: "homebox", ok: true }] };
   api.openPanel("gitea"); await esperar(100);
-  confere($("p-actions").textContent === "InstalarPersonalizarHistórico", `app não instalado: Instalar, Personalizar e Histórico (${$("p-actions").textContent})`);
+  confere($("p-actions").textContent === "InstalarPersonalizarNova instânciaHistórico", `app não instalado: Instalar, Personalizar, Nova instância e Histórico (${$("p-actions").textContent})`);
   confere(!/null|undefined/.test($("p-info").textContent) && /Roda em amd64, arm64$/.test($("p-info").textContent), "app não instalado: info sem 'null'");
   $("panel").open = false;
 
@@ -437,6 +437,21 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   const instalou = posts.slice(antesRun).find((x) => x.rota === "/api/run");
   confere(instalou && instalou.corpo.action === "install" && instalou.corpo.custom && instalou.corpo.custom.gitea, `a instalação leva a personalização (${JSON.stringify(instalou && Object.keys(instalou.corpo))})`);
   confere(!api.S.preCustom.gitea, "depois de instalar, o que estava guardado é descartado");
+  $("panel").open = false;
+
+  // instances: a base app offers "New instance", and the install carries the name; an instance does not offer it
+  api.openPanel("gitea"); await esperar(30);
+  porTexto($("p-actions"), "Nova instância")[0].listeners.click(); await esperar(30);
+  const nomeInst = [...$("p-section").walk()].find((e) => e.tag === "input" && e.attrs.type === "text");
+  nomeInst.value = "casa";
+  const antesInst = posts.length;
+  porTexto($("p-section"), "Criar instância")[0].listeners.click(); await esperar(1200);
+  const inst = posts.slice(antesInst).find((x) => x.rota === "/api/run");
+  confere(inst && inst.corpo.action === "install" && inst.corpo.instance === "casa" && inst.corpo.app === "gitea", `a instância é criada pelo install com o nome (${JSON.stringify(inst && inst.corpo)})`);
+  api.S.apps.find((x) => x.id === "gitea").instance_of = "outro";
+  api.openPanel("gitea"); await esperar(30);
+  confere(porTexto($("p-actions"), "Nova instância").length === 0 && /instância de outro/.test($("p-desc").textContent), "uma instância não gera outra, e diz de quem é");
+  delete api.S.apps.find((x) => x.id === "gitea").instance_of;
   $("panel").open = false;
 
   // install options: asked in the install form, sent with the install, read-only in the panel once installed

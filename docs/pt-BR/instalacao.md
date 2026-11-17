@@ -389,3 +389,23 @@ sozinho — o `Requires=` puxa a cadeia. Pra derrubar antes de um backup, parar
 todos juntos, senão as dependências seguem gravando.
 
 Remover a unit não desregistra o nó da tailnet; isso é no admin do Tailscale.
+
+## Instâncias
+
+O mesmo app pode ser instalado mais de uma vez: **Nova instância** no painel do app, ou
+
+```bash
+qh memos --instance casa --apply        # instala memos-casa
+```
+
+Uma instância é um app com nome próprio, `<app>-<nome>`: units, containers, rede, volumes, `.env`, secrets e o
+nome no tsdproxy ganham o sufixo, e a porta publicada vai para a próxima livre (guardada no registro). O que é
+compartilhado continua (`tsdproxy-net`, a imagem, a pasta de outros apps). Daí em diante você a chama como qualquer
+app: `qh memos-casa --update`, `--backup`, `--remove`, e o painel a lista como um cartão próprio, com backup,
+atualização, personalizar e remover.
+
+Como funciona: o `qh` escreve uma cópia derivada da pasta do app ao lado dela, `apps/<app>-<nome>/` (o git a
+ignora e o `check.py` a pula), e a refaz a partir do app base a cada execução, então uma mudança no app chega às
+instâncias. O registro é `~/.config/quadlet-homelab/instances.json`. Um app que usa a rede do host ou uma faixa de
+portas não pode ter instância, e nomes internos de container não são reescritos. As opções de instalação
+(`--option`) valem por instância.

@@ -2094,6 +2094,13 @@ class Handler(BaseHTTPRequestHandler):
                 if not isinstance(entrada, str) or entrada.strip() != app:
                     return self._json(400, {"error": loc("a restore overwrites the data: "
                                                          "type the service name to confirm")})
+            nova = d.get("instance")
+            if nova:
+                base = I.APPS / app
+                if (action != "install" or not isinstance(nova, str) or not base.is_dir() or I.instances.is_instance(base)
+                        or I.instances.name_problem(app, nova, I.taken_names(Path(PREFIX) if PREFIX else Path.home()))):
+                    return self._json(400, {"error": loc("unknown action")})
+                extra = [*extra, f"--instance={nova}"]
             escolhas = d.get("options") or {}
             if escolhas:
                 ops = (manifest.load(I.APPS / app).get("options") or {})

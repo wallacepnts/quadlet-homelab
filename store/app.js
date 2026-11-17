@@ -52,6 +52,8 @@ const T = {
                   update: "Versão nova do projeto", disk: "Disco cheio" },
     alertSave: "Salvar alertas", alertTest: "Enviar teste", alertSaved: "Alertas salvos.", alertTested: "Teste enviado.",
     optionsTitle: "Opções de instalação", optionLocked: "escolhido na instalação; mudar move os dados (remova o app com os dados e instale de novo)",
+    newInstance: "Nova instância", instanceName: "Nome da instância (letras minúsculas, números e -)", instanceCreate: "Criar instância",
+    instanceOf: (b) => `instância de ${b}`,
     httpsNeeded: "precisa de HTTPS",
     httpsWarn: "Este app precisa de HTTPS: pela rede local (HTTP) o cofre e o service worker falham sem avisar. Use o acesso pela tailnet.",
     podmanOld: (need, host) => `Este app precisa do Podman ${need}+; o host tem ${host}. Atualize o Podman antes de instalar.`,
@@ -179,6 +181,8 @@ const T = {
                   update: "New upstream release", disk: "Disk almost full" },
     alertSave: "Save alerts", alertTest: "Send a test", alertSaved: "Alerts saved.", alertTested: "Test sent.",
     optionsTitle: "Install options", optionLocked: "chosen at the install; changing it moves the data (remove the app with its data and install again)",
+    newInstance: "New instance", instanceName: "Instance name (lowercase letters, digits and -)", instanceCreate: "Create instance",
+    instanceOf: (b) => `instance of ${b}`,
     httpsNeeded: "needs HTTPS",
     httpsWarn: "This app needs HTTPS: over the local network (HTTP) the vault and the service worker fail without saying why. Use tailnet access.",
     podmanOld: (need, host) => `This app needs Podman ${need}+; the host has ${host}. Update Podman before installing.`,
@@ -736,8 +740,9 @@ function renderPanel() {
   $("p-name").textContent = a.name;
   $("p-meta").textContent = (a.group && a.group[S.lang]) || "";
   const sobre = a.about && (a.about[S.lang] || a.about.en);
+  const deInst = a.instance_of ? ` — ${t("instanceOf")(a.instance_of)}` : "";
   $("p-desc").textContent = plain(sobre || a.description[S.lang] || a.description.en)
-    + (a.author ? ` — ${a.author}` : "") + (a.architectures ? ` (${a.architectures.join(", ")})` : "");
+    + deInst + (a.author ? ` — ${a.author}` : "") + (a.architectures ? ` (${a.architectures.join(", ")})` : "");
 
   // Images the project hosts (app.json, screenshots); each opens full size in a new tab.
   fill($("p-shots"), ...(a.screenshots || []).map((u) =>
@@ -842,6 +847,10 @@ function renderPanel() {
     acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showBackups(a) }, t("backups")));
     acoes.push(h("button", { type: "button", class: "danger", onclick: () => plan("remove") }, t("remove")));
   }
+  // The same app once more, under its own name: units, volumes, secrets and port of its own (an instance is not
+  // itself instanced).
+  if (!a.instance_of && !a.deprecated && !a.units.some((u) => u.only_unit))
+    acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showInstance(a) }, t("newInstance")));
   // After the others: an app that was removed, or never came up, still has a past worth reading.
   acoes.push(h("button", { type: "button", class: "ghost", onclick: () => openHistory(a.id) }, t("history")));
   fill($("p-actions"), ...acoes, a.installed && a.web.length ? accessPicker(a) : null);
@@ -1624,6 +1633,17 @@ async function pruneRun(kind, confirm) {
 async function unitVerb(unit, verb) {
   $("p-form").hidden = true;
   await follow(() => api("/api/unit", { unit, verb }));
+}
+
+function showInstance(a) {
+  const nome = h("input", { type: "text", placeholder: t("instanceName"), autocomplete: "off", "aria-label": t("instanceName") });
+  const criar = async () => {
+    const v = nome.value.trim();
+    if (!v) return;
+    await follow(() => api("/api/run", { app: a.id, action: "install", instance: v }));
+  };
+  section(h("h3", {}, t("newInstance")), h("div", { class: "row" }, nome,
+    h("button", { type: "button", onclick: criar }, t("instanceCreate"))));
 }
 
 async function follow(start) {

@@ -35,6 +35,7 @@ from pathlib import Path
 
 import imagepin
 import manifest
+import instances
 import qhui
 from qhui import (translator, directives, directives_of, ref_parts, FLOATING,
                   red, yellow, green, dim)
@@ -989,6 +990,8 @@ def bump(behind, items, apply, com_major):
     """
     por_unit = {unit: (app, image) for (app, unit, image, _o, _r) in items}
     fazer, segurar = [], []
+    # An instance's folder is generated from its base app: the bump is made there, once, for every copy.
+    behind = [b for b in behind if not instances.is_instance(APPS / por_unit.get(b[0], ("",))[0])]
     for unit, imagem, _mostrado, la, _status in sorted(behind):
         # From the unit's real `Image=`, not from the column the table printed:
         # the digest case renders as `9@8e8d64b4…`, an ellipsis and all, which

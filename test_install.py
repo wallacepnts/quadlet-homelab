@@ -607,7 +607,7 @@ def scenario_deprecated(tmp):
     import json
     raiz = Path(tmp, "dep-repo")
     raiz.mkdir()
-    for f in ("install.py", "qhui.py", "overrides.py", "trials.py", "imagepin.py", "manifest.py"):
+    for f in ("install.py", "qhui.py", "overrides.py", "trials.py", "imagepin.py", "manifest.py", "instances.py"):
         shutil.copy(ROOT / f, raiz / f)
     shutil.copytree(ROOT / "apps", raiz / "apps", ignore_dangling_symlinks=True)   # apps/durockrj may point nowhere
     import manifest as MF
@@ -677,7 +677,7 @@ def scenario_backup_exclude(tmp):
     """`[backup] exclude` leaves rebuildable folders out of the archive, says how much, and the restore brings the folders back."""
     raiz = Path(tmp, "bx-repo")
     raiz.mkdir()
-    for f in ("install.py", "qhui.py", "overrides.py", "trials.py", "imagepin.py", "manifest.py"):
+    for f in ("install.py", "qhui.py", "overrides.py", "trials.py", "imagepin.py", "manifest.py", "instances.py"):
         shutil.copy(ROOT / f, raiz / f)
     shutil.copytree(ROOT / "apps", raiz / "apps", ignore_dangling_symlinks=True)
     import manifest as MF
@@ -809,6 +809,42 @@ def scenario_options(tmp):
     check("paperless-ngx" not in Path(pgh, ".config/quadlet-homelab/options.json").read_text(), "options: removing forgets the choice")
 
 
+def scenario_instances(tmp):
+    """`--instance`: the app a second time, under its own names, volumes, secrets and port."""
+    home = str(Path(tmp) / "inst")
+    r = run(APP, "--instance", "casa", "--prefix", home)
+    check("homebox-casa" in r.stdout and not Path(home, ".config/quadlet-homelab/instances.json").exists(), "instances: a dry run records nothing")
+    run(APP, "--instance", "casa", "--apply", "--prefix", home)
+    u = path(home, "systemd", f"{APP}-casa.container")
+    texto = u.read_text() if u.is_file() else ""
+    check(u.is_file() and f"ContainerName={APP}-casa" in texto, "instances: the unit and its container carry the suffix")
+    check(path(home, "volumes", f"{APP}-casa", "data").is_dir() and path(home, "env", f"{APP}-casa.env").is_file(), "instances: its own volume and .env")
+    check(f"volumes/{APP}-casa/" in texto and f"volumes/{APP}/" not in texto, "instances: the unit points at its own volume")
+    check("homebox-casa" in "".join(p.name for p in path(home, "secrets").iterdir()) if path(home, "secrets").is_dir() else True, "instances: its own secrets")
+    reg = Path(home, ".config/quadlet-homelab/instances.json").read_text()
+    check('"homebox-casa"' in reg and '"app": "homebox"' in reg, "instances: the record names the base app")
+    r = run(APP, "--instance", "casa", "--apply", "--prefix", home, expected=1)
+    check("already exists" in r.stdout + r.stderr, "instances: the same name twice is refused")
+    r = run(APP, "--instance", "Bad Name", "--prefix", home, expected=1)
+    check("lowercase" in r.stdout + r.stderr, "instances: a bad name is refused")
+    run(APP, "--instance", "sala", "--apply", "--prefix", home)
+    p1 = [l for l in texto.splitlines() if l.startswith(("PublishPort=", "# reached over"))]
+    p2 = [l for l in path(home, "systemd", f"{APP}-sala.container").read_text().splitlines() if l.startswith(("PublishPort=", "# reached over"))]
+    check(p1 != p2 or not p1, "instances: each one gets a port of its own")
+    r = run("--catalog", f"{APP}-casa", "--prefix", home)
+    check('"instance_of": "homebox"' in r.stdout, "instances: --catalog says whose instance it is")
+    run(f"{APP}-casa", "--update", "--apply", "--prefix", home)
+    check(u.is_file(), "instances: an update works on the instance")
+    r = run(f"{APP}-casa", "--instance", "x", "--prefix", home, expected=1)
+    check("not an instance" in r.stdout + r.stderr, "instances: an instance is not instanced again")
+    run(f"{APP}-casa", "--remove", "--purge", "--apply", "--prefix", home, stdin=f"{APP}-casa\n")
+    reg_f = Path(home, ".config/quadlet-homelab/instances.json")
+    check(not u.exists() and (not reg_f.exists() or "homebox-casa" not in reg_f.read_text()), "instances: removing forgets the record")
+    check(not (ROOT / "apps" / f"{APP}-casa").exists(), "instances: and the generated folder")
+    run(f"{APP}-sala", "--remove", "--purge", "--apply", "--prefix", home, stdin=f"{APP}-sala\n")
+    check(not any(p.name.startswith(f"{APP}-") for p in (ROOT / "apps").iterdir()), "instances: no generated folder is left in apps/")
+
+
 def main():
     with tempfile.TemporaryDirectory() as tmp:
         home, out = str(Path(tmp) / "home"), str(Path(tmp) / "backups")
@@ -819,6 +855,7 @@ def main():
         print("catalog:");            scenario_catalog(home)
         print("customization:");      scenario_override(tmp)
         print("install options:");    scenario_options(tmp)
+        print("instances:");          scenario_instances(tmp)
         print("deprecated:");         scenario_deprecated(tmp)
         print("drift:");              scenario_drift(home)
         print("failure:");            scenario_failure(home, tmp)
