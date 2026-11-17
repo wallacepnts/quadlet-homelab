@@ -632,10 +632,11 @@ function tile(a) {
   const corpo = [
     h("span", { class: "ico" }, h("img", { src: a.icon, alt: "", loading: "lazy", referrerpolicy: "no-referrer" }),
       sobe && h("span", { class: "upd", title: t("updateAvailable"), role: "img", "aria-label": t("updateAvailable") }, "↑")),
-    h("h3", {}, h("span", { class: `dot ${dotCls}`, title: dotTxt, role: "img", "aria-label": dotTxt }), a.name),
+    h("h3", {}, a.name),
     !silencioso && h("span", { class: `badge ${st[0]}`, title: st[2] || null }, st[1]),
   ];
   return h("div", { class: "card tile" },
+    h("span", { class: `dot ${dotCls}`, title: dotTxt, role: "img", "aria-label": dotTxt }),
     url
       ? h("a", { class: "tile-open", href: url, target: "_blank", rel: "noopener noreferrer",
                  "aria-label": `${t("open")} ${a.name}` }, ...corpo)
