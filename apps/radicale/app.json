@@ -1,10 +1,6 @@
 {
   "title": "Radicale",
-  "tagline": "A calendar and contacts server.",
   "category": "Productivity",
-  "links": {
-    "docs": "https://radicale.org/v3.html"
-  },
   "notes": "### Birthday calendar\n\nA timer reads the birthdays out of your contacts and keeps a calendar named\n`birthdays` in sync with them, so a new contact shows up as a yearly event\nwithout you entering it twice.\n\nThe script that does it comes inside the image — this is a rebuild of\n`tomsquest/docker-radicale` carrying it, because the script imports `vobject`\nand `dateutil` and the official image has neither. Installing them at run time\nis not possible either: this container is `ReadOnly=true`.\n\nThe install puts the timer in place; enabling it is one command, once:\n\n```bash\nsystemctl --user enable --now radicale-birthday-sync.timer\n```\n\nIt runs 5 minutes after boot and every 30 minutes after that. Check it with:\n\n```bash\nsystemctl --user list-timers radicale-birthday-sync.timer\njournalctl --user -u radicale-birthday-sync.service -n 20\n```\n\nThe `birthdays` calendar is created on the first run, in each user's own\ncollection. Delete a contact and its entry goes away on the next pass.\n\n### Holiday calendar\n\nRadicale can hold a subscription instead of a copy. In the web interface,\ncreate a collection, pick **Webcal** as the type and paste the feed in\n**Source**:\n\n```\nhttps://calendar.google.com/calendar/ical/pt.brazilian%23holiday%40group.v.calendar.google.com/public/basic.ics\n```\n\nThat feed carries 2021 to 2031 in Portuguese, and it is the moving dates that\nmake it worth subscribing to rather than typing: Carnaval 2026 comes out as 13\nto 18 February, Sexta-feira through the Cinzas, computed from Easter. Any\nstatic list gets that wrong two years later.\n\nTwo things to know before relying on it:\n\n**The client downloads the feed, not the server.** Radicale stores and\nadvertises the `source` property; it makes no HTTP request of its own. Apple\nCalendar, Thunderbird and DAVx5 (through ICSx5) understand subscribed\ncalendars and fetch it. A client that does not will show the collection empty.\n\n**National holidays only.** State and municipal ones — often the days that\nactually change your week in Brazil — are not in it.\n\nNothing to install: this is upstream Radicale's own feature, and there is no\nscript or timer behind it.",
   "config": {
     "config/config": "%h/.config/containers/volumes/radicale/config/config",
@@ -15,5 +11,16 @@
     "radicale": {
       "upstream": "registry:^v[0-9]+\\.[0-9]+\\.[0-9]+$"
     }
-  }
+  },
+  "short_desc": {
+    "en": "A calendar and contacts server.",
+    "pt": "Um servidor de calendários e contatos."
+  },
+  "description": {
+    "en": "A light, minimal CalDAV/CardDAV server, on the rebuild that carries the birthday-calendar script (Radicale 3.7.6.0 inside)",
+    "pt": "Servidor CalDAV/CardDAV leve e minimalista, no rebuild que traz o script do calendário de aniversários (Radicale 3.7.6.0 dentro)"
+  },
+  "docs": "https://radicale.org/v3.html",
+  "source": "https://github.com/Kozea/Radicale",
+  "author": "Kozea"
 }

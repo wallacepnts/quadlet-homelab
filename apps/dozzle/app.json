@@ -1,14 +1,21 @@
 {
   "title": "Dozzle",
-  "tagline": "Read your containers' logs in the browser.",
   "category": "Monitoring",
-  "links": {
-    "docs": "https://dozzle.dev/"
-  },
   "notes": "Open `https://dozzle.<your-tailnet>.ts.net`.\n\n### The socket is the whole story\n\n```ini\nVolume=%t/podman/podman.sock:/var/run/docker.sock:ro\n```\n\nThat line is what makes Dozzle work, and it is the only thing worth thinking\nabout before installing it. The socket is Podman's whole API: read-only stops\nthis container from creating or killing anything, but it still **reads\neverything** — every container's logs, environment and configuration, including\nthe ones carrying secrets in their environment.\n\nSo whoever opens the page reads all of it. Two settings narrow that, both in\nthe `.env`:\n\n- `DOZZLE_AUTH_PROVIDER=simple` puts a login in front. Off by default, which is\n  fine behind a tailnet you are the only one on, and not fine otherwise.\n- `DOZZLE_FILTER=name=media-stack` limits it to the containers you name.\n\n`DOZZLE_NO_ACTIONS=true` ships on: the buttons that stop and restart containers\nwould fail against a read-only socket anyway, and offering a button that cannot\nwork is worse than not offering it.\n\n### Backup\n\nNothing to back up. Removing it loses no data — the logs belong to Podman.",
   "units": {
     "dozzle": {
       "image": "v{version}"
     }
-  }
+  },
+  "short_desc": {
+    "en": "Read your containers' logs in the browser.",
+    "pt": "Leia os logs dos seus containers no navegador."
+  },
+  "description": {
+    "en": "Live logs of every container in the browser, without opening a terminal",
+    "pt": "Log ao vivo de cada container no navegador, sem abrir terminal"
+  },
+  "docs": "https://dozzle.dev/",
+  "source": "https://github.com/amir20/dozzle",
+  "author": "amir20"
 }

@@ -1,10 +1,6 @@
 {
   "title": "Anki",
-  "tagline": "A sync server for your Anki flashcards.",
   "category": "Productivity",
-  "links": {
-    "docs": "https://docs.ankiweb.net/sync-server.html"
-  },
   "notes": "The install ends by printing the user and password. Then, in each client, point\nsync at `https://anki.<your-tailnet>.ts.net/` and log in with them:\n\n- **Anki (desktop)**: Preferences → Syncing → *Self-hosted sync server*.\n- **AnkiDroid**: Settings → Sync → *Custom sync server*.\n- **AnkiMobile**: Settings → Syncing → *Custom server*.\n\nThe first sync after switching servers is a full one: upload from the device\nthat has the collection you want to keep, download on the others.\n\n### Reaching it\n\n**There is no web page.** Opened in a browser, the address shows an empty\n`404 Not Found` — that is the server running; it only answers the Anki apps,\nunder `/sync/`. To see it work, sync from a client.\n\nThe server speaks **plain HTTP** only. On the tailnet, tsdproxy puts HTTPS in\nfront of it, and that is the address to give the clients: **AnkiMobile refuses\na server without TLS**, and a password sent over plain HTTP crosses the network\nreadable. Port `8125` on the LAN is for a desktop client on the same network,\nif you want one.\n\nThe phone reaches `anki.<your-tailnet>.ts.net` only while Tailscale is running\non it. On iOS, AnkiMobile also needs *Local Network* permission to reach a\nserver on your own network.\n\n`SYNC_HOST=0.0.0.0` is set because the server listens on `localhost` by\ndefault, which inside a container is unreachable from outside it.\n\n### Your own password\n\nThe install generates one. To choose it, at install time or any time after:\n\n```bash\nqh anki --reinstall --ask-secrets --apply\n```\n\nand type **user and password together**, the way the server reads them:\n\n```\nanki:your-password\n```\n\nOnly the password alone, with no `anki:` in front, and the server does not come\nup — measured: the container exits at once, with code 0 and not one line in the\nlog, so nothing points at the secret. Retype it with the command above.\n\nEnter with nothing typed generates a random one again. The password may hold\n`:` — the server splits at the first one. `--reinstall` recreates the secret and\nrestarts the service, and leaves the collections alone; each client then logs in\nagain with the new password.\n\nKeep the user name. Collections are stored in a folder named after it, so\n`maria:…` in place of `anki:…` starts from an empty collection — the old one\nstays on disk, unseen, and the next sync offers to upload a client's copy.\n`qh anki` prints the user and password in use.\n\n### More than one user\n\nEach account is a `SYNC_USERn` variable (`SYNC_USER1`, `SYNC_USER2`, …), each\nwith its own collection. The install creates one. For a second person:\n\n```bash\nprintf 'maria:%s' \"$(openssl rand -hex 16)\" | podman secret create anki-user2 -\n```\n\nand add `Secret=anki-user2,type=env,target=SYNC_USER2` to the unit. Local\nedits to the unit are shown by `qh anki --update` before they are overwritten.\n\n### Update\n\n**There is no official image.** Anki's repository carries the Dockerfile but\npublishes no image; this one is built from that Dockerfile by its author, on\nhis own schedule — 25.07 to 26.05 took ten months, and the image lags Anki's\nreleases. That is harmless: the sync protocol is stable across versions, and a\n26.09 client was measured syncing against this 26.08 server.\n`install.ini` compares against the registry, not Anki's release page.\n\nThe distroless variant, not the Alpine one, because the Alpine entrypoint\n`chown`s the data and drops to a user with `su-exec` — which needs root and\ncapabilities. The distroless one has no entrypoint, so it runs unprivileged\nfrom the start.\n\n### Backup\n\nThe volume holds each user's collection and media as SQLite files and a\nfolder. The clients keep their own copy too, so a lost server is recovered by\na full upload from any of them.",
   "secrets": {
     "anki-user": "shell printf 'anki:%s' \"$(openssl rand -hex 16)\""
@@ -16,5 +12,16 @@
     "anki": {
       "upstream": "registry:^[0-9]+\\.[0-9]+-distroless$"
     }
-  }
+  },
+  "short_desc": {
+    "en": "A sync server for your Anki flashcards.",
+    "pt": "Um servidor de sincronização para os seus cartões do Anki."
+  },
+  "description": {
+    "en": "The sync server from Anki itself, so flashcards, reviews and media sync without AnkiWeb",
+    "pt": "O servidor de sincronização do próprio Anki, para cartões, revisões e mídia sincronizarem sem o AnkiWeb"
+  },
+  "docs": "https://docs.ankiweb.net/sync-server.html",
+  "source": "https://github.com/ankitects/anki",
+  "author": "ankitects"
 }

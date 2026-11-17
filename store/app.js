@@ -664,7 +664,8 @@ async function loadInfo(id) {
   pedidos.push(api(`/api/arch?app=${encodeURIComponent(id)}`).then((d) => { S.info.arch = d; }));
   api(`/api/links?app=${encodeURIComponent(id)}`).then(({ links }) => {
     if (S.current !== id) return;
-    fill($("p-project"), ...links.map((l) =>
+    const site = a.website && !links.some((l) => l.url === a.website) ? [{ kind: "project", url: a.website }] : [];
+    fill($("p-project"), ...site.concat(links).map((l) =>
       h("a", { href: l.url, target: "_blank", rel: "noopener noreferrer" }, `${t("link")[l.kind]} ↗`)));
   }).catch(() => {});
   fill($("p-project"));
@@ -702,7 +703,9 @@ function renderPanel() {
   $("p-icon").src = a.icon || "";
   $("p-name").textContent = a.name;
   $("p-meta").textContent = (a.group && a.group[S.lang]) || "";
-  $("p-desc").textContent = plain(a.description[S.lang] || a.description.en);
+  const sobre = a.about && (a.about[S.lang] || a.about.en);
+  $("p-desc").textContent = plain(sobre || a.description[S.lang] || a.description.en)
+    + (a.author ? ` — ${a.author}` : "") + (a.architectures ? ` (${a.architectures.join(", ")})` : "");
 
   // Images the project hosts (app.json, screenshots); each opens full size in a new tab.
   fill($("p-shots"), ...(a.screenshots || []).map((u) =>

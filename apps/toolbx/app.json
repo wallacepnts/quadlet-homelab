@@ -1,9 +1,5 @@
 {
   "title": "Toolbx",
-  "tagline": "Throwaway Linux shells for trying things.",
-  "links": {
-    "docs": "https://containertoolbx.org/"
-  },
   "notes": "### Update\n\nEach shell carries its own tag — the table above lists them. Arch is the\nexception, pinned by digest because its only tag is `latest`.\n\n### Backup\n\nIt stops the four, packs the four `/work` directories and starts them again.\nThere is no `.env` and no secret here to pack. A single shell can be backed up\non its own — `qh toolbx-fedora --backup --apply` — because none of them shares\na directory with the others.\n\n### Remove\n\n`--purge` asks for the typed name too, and deletes the `/work` of all four.\nThere is no tailnet node to deregister: none of these is published.",
   "units": {
     "toolbx-arch": {
@@ -18,5 +14,16 @@
     "toolbx-fedora": {
       "upstream": "registry:latest"
     }
-  }
+  },
+  "short_desc": {
+    "en": "Throwaway Linux shells for trying things.",
+    "pt": "Shells Linux descartáveis para experimentar coisas."
+  },
+  "description": {
+    "en": "Disposable Arch, Fedora, RHEL and Ubuntu shells, on the official Toolbx images — somewhere to install a one-off tool that is not the host",
+    "pt": "Shells descartáveis de Arch, Fedora, RHEL e Ubuntu, nas imagens oficiais do Toolbx — um lugar pra instalar ferramenta avulsa que não é o host"
+  },
+  "docs": "https://containertoolbx.org/",
+  "source": "https://github.com/containers/toolbox",
+  "author": "containers"
 }

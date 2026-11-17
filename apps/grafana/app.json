@@ -1,10 +1,6 @@
 {
   "title": "Grafana",
-  "tagline": "Charts and dashboards for your data.",
   "category": "Monitoring",
-  "links": {
-    "docs": "https://grafana.com/docs/grafana/latest/"
-  },
   "notes": "The install prints the user and password at the end. Open\n`http://<host-ip>:3004` or `https://grafana.<your-tailnet>.ts.net`.\n\n### What to point it at\n\nGrafana on its own shows nothing — it stores no metrics, so the first thing to\ndo after signing in is add a source under Connections → Data sources.\n\n**[Prometheus](../prometheus)** is in this repository and is the one to reach\nfor. Its URL is the container name, because both join `tsdproxy-net`:\n\n```\nhttp://prometheus:9090\n```\n\nNote that it scrapes only itself out of the box, so a fresh Grafana on a fresh\nPrometheus draws one line about Prometheus. Adding targets is a Prometheus\njob, not a Grafana one.\n\nOther sources that make sense here:\n\n- **[Beszel](../beszel)** already collects CPU, RAM, disk and container metrics\n  for this host and draws them itself. If that is all you want, Grafana and\n  Prometheus add two services rather than removing one.\n- An **InfluxDB** elsewhere on the network.\n- **SQLite or Postgres** from another service, through the respective plugin,\n  when the question is about the app's own data rather than the machine's.\n\n### Update\n\nNote the image: `grafana/grafana` is the OSS build and the one that tracks the\nreleases. `grafana/grafana-oss` is a mirror that lags behind it, and\n`grafana-enterprise` is a different product.\n\n### Backup\n\nIt stops the service, packs the data, the `.env` and the secret, and starts it\nagain. The database holds the dashboards you built, which is the part that\nwould take real time to recreate.",
   "secrets": {
     "grafana-admin-password": "rand-alnum 20"
@@ -12,5 +8,16 @@
   "login": {
     "user": "admin",
     "password": "grafana-admin-password"
-  }
+  },
+  "short_desc": {
+    "en": "Charts and dashboards for your data.",
+    "pt": "Gráficos e painéis para os seus dados."
+  },
+  "description": {
+    "en": "Dashboards over whatever you point it at — it brings no data of its own",
+    "pt": "Painéis sobre o que você apontar — ele não traz dado nenhum próprio"
+  },
+  "docs": "https://grafana.com/docs/grafana/latest/",
+  "source": "https://github.com/grafana/grafana",
+  "author": "grafana"
 }

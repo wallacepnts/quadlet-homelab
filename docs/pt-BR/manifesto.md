@@ -7,14 +7,17 @@ delas.
 
 Uma pasta é, portanto, as units, o `.env.example` se houver, este arquivo e o logo. Não há README por app, nem
 `install.ini`, nem `notes.md`: a tabela de serviços dos READMEs raiz é gerada a partir dos manifestos, e o painel
-mostra as notas. Tudo é escrito em inglês, uma vez: não há cópia por idioma para manter.
+mostra as notas. As descrições são escritas em inglês e português; as notas, uma vez, em inglês.
 
 ```json
 {
   "title": "Memos",
-  "tagline": "Quick notes, self-hosted and markdown-native",
+  "short_desc": { "en": "Quick notes.", "pt": "Notas rápidas." },
+  "description": { "en": "…", "pt": "…" },
+  "author": "usememos",
+  "source": "https://github.com/usememos/memos",
+  "docs": "https://www.usememos.com/docs",
   "category": "Productivity",
-  "links": { "docs": "https://www.usememos.com/docs" },
   "notes": "The first user to sign up becomes admin…",
   "units": { "memos": { "upstream": "usememos/memos" } }
 }
@@ -35,9 +38,14 @@ apps/memos/
 | Campo | Obrigatório | Significado |
 | --- | --- | --- |
 | `title` | sim | O nome mostrado na loja e na tabela de serviços. |
-| `tagline` | sim | Uma frase curta e simples, até 70 caracteres, sem travessão nem parênteses: o que o app é, como você contaria a um amigo (*A media server for your home collection.*). É a descrição na tabela e no cartão. Ressalvas vão em `notes`. |
+| `short_desc` | sim | `{en, pt}`: uma frase curta e simples em cada idioma, até 70 caracteres, sem travessão nem parênteses (*Um servidor de mídia para a sua coleção.*). É a descrição na tabela e no cartão. Ressalvas vão em `notes`. |
+| `description` | sim | `{en, pt}`: o que o app é, em poucas linhas. O painel mostra ao abrir o app. |
+| `author` | não | Quem faz o projeto (o dono de `source`). |
+| `source` | não | O repositório do projeto, uma URL https. O painel o liga, e as issues e releases vêm dele. |
+| `website` | não | A página do projeto, uma URL https. |
+| `docs` | não | A documentação do projeto, uma URL https. |
+| `architectures` | não | `["amd64", "arm64"]`: onde a imagem roda, quando se sabe (o painel também pergunta ao registry). |
 | `category` | não | Um dos grupos de `qhui.GRUPOS` (as categorias da loja). Infraestrutura sem lugar entre elas (homepage, postfix, toolbx) não tem. |
-| `links` | não | `docs` (a documentação do projeto, https), `repo` (`owner/repo` ou URL, só onde o caminho da imagem aponta pro lugar errado). |
 | `min_podman` | não | `"5.4"`: um piso acima do 5.0 que o `Notify=healthy` já exige. |
 | `deprecated` | não | Texto: por que foi descontinuado. A loja não oferece instalar. |
 | `notes` | não | Markdown: o que fazer no primeiro acesso e o que o app tem de estranho. O painel mostra. |
@@ -63,15 +71,15 @@ Uma entrada por `.container` que precise, com a chave sendo o basename da unit:
 ## Gerado, não escrito
 
 A tabela de serviços do `README.md` e do `docs/pt-BR/README.md`, entre os marcadores `services:begin` e
-`services:end`, vem de `title`, do arquivo do logo e de `tagline`. O `python3 check.py --readme` a reescreve, e o
+`services:end`, vem de `title`, do arquivo do logo e de `short_desc` (a tabela em português usa o `pt`). O `python3 check.py --readme` a reescreve, e o
 `check.py` reprova quando ela está desatualizada.
 
 ## O que o formato do CasaOS tem e este não
 
-O CasaOS traz `developer`, `author`, `architectures`, `tips.before_install`, `port_map`, `index`, `scheme`,
-`thumbnail`, `release_notes`, uma `description` à parte do `tagline`, traduções, e uma descrição para cada porta,
+O CasaOS traz `developer`, `tips.before_install`, `port_map`, `index`, `scheme`,
+`thumbnail`, `release_notes`, e uma descrição para cada porta,
 volume e variável de ambiente. Aqui as arquiteturas vêm do registry, a porta e o endereço das units, as notas de
-versão do GitHub, e as notas cobrem as `tips`. Traduções e a licença ficaram de fora de propósito, e os comentários
+versão do GitHub, e as notas cobrem as `tips`. A licença ficou de fora de propósito, e os comentários
 também: o porquê de uma receita ter a forma que tem pertence a `docs/`, não ao manifesto.
 
 ## Conferir

@@ -1,10 +1,6 @@
 {
   "title": "Retrom",
-  "tagline": "A library for your retro games.",
   "category": "Media",
-  "links": {
-    "docs": "https://github.com/JMBeresford/retrom/wiki"
-  },
   "notes": "Put the games under `~/.config/containers/volumes/retrom/library`, in the\n[folder structure Retrom\nexpects](https://github.com/JMBeresford/retrom/wiki/Library-Structure), then\nopen `http://<host-ip>:5101` or `https://retrom.<your-tailnet>.ts.net`.\n\n**The first start takes about 90 seconds** — it downloads EmulatorJS and runs\nthe database migrations. `TimeoutStartSec=300` and a 180 second health start\nperiod are there for that; a restart afterwards is quick.\n\n### Metadata\n\nCover art and descriptions come from IGDB or SteamGridDB, and both want an API\nkey. Without one the library still works, listed by filename. The keys are set\nfrom the client, not here — see [Metadata\nProviders](https://github.com/JMBeresford/retrom/wiki/Metadata-Providers).\n\n### Backup\n\nIt stops the service, packs the three volumes and the `.env`, and starts it\nagain. Cold on purpose: Retrom carries an embedded PostgreSQL, and copying it\nlive gives an archive that only fails when you restore it. That is also why\n`stop` is the mode to use if you add it to\n[Zerobyte's backup hook](../zerobyte).\n\n### Remove\n\n`--purge` deletes the library too — the games are in a volume like everything\nelse.",
   "backup": {
     "mode": "stop"
@@ -13,5 +9,16 @@
     "retrom": {
       "upstream": "JMBeresford/retrom"
     }
-  }
+  },
+  "short_desc": {
+    "en": "A library for your retro games.",
+    "pt": "Uma biblioteca para os seus jogos retrô."
+  },
+  "description": {
+    "en": "A game library for emulation — one collection, played in the browser or through the desktop client",
+    "pt": "Biblioteca de jogos para emulação — uma coleção só, jogada no navegador ou pelo cliente de desktop"
+  },
+  "docs": "https://github.com/JMBeresford/retrom/wiki",
+  "source": "https://github.com/JMBeresford/retrom",
+  "author": "JMBeresford"
 }

@@ -1,10 +1,6 @@
 {
   "title": "Paperless-ngx",
-  "tagline": "Scan and search your paper documents.",
   "category": "Files",
-  "links": {
-    "docs": "https://docs.paperless-ngx.com/"
-  },
   "secrets": {
     "paperless-ngx-secret-key": "rand-base64 64"
   },
@@ -18,5 +14,16 @@
     "paperless-ngx-gotenberg": {
       "upstream": "compose:paperless-ngx/paperless-ngx:docker/compose/docker-compose.sqlite-tika.yml"
     }
-  }
+  },
+  "short_desc": {
+    "en": "Scan and search your paper documents.",
+    "pt": "Digitalize e pesquise os seus documentos de papel."
+  },
+  "description": {
+    "en": "Scans, OCRs and indexes documents automatically, with full-text search so you never hunt for paper again",
+    "pt": "Digitaliza, faz OCR e indexa documentos automaticamente, com busca full-text pra nunca mais procurar papel"
+  },
+  "docs": "https://docs.paperless-ngx.com/",
+  "source": "https://github.com/paperless-ngx/paperless-ngx",
+  "author": "paperless-ngx"
 }

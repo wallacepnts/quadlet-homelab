@@ -1,10 +1,6 @@
 {
   "title": "nginx",
-  "tagline": "A web server for static files.",
   "category": "Network & Security",
-  "links": {
-    "docs": "https://nginx.org/en/docs/"
-  },
   "config": {
     "conf.d/default.conf": "%h/.config/containers/volumes/nginx/conf.d/default.conf"
   },
@@ -12,5 +8,16 @@
     "nginx": {
       "upstream": "registry:^1\\.\\d*[02468]\\.\\d+-alpine$"
     }
-  }
+  },
+  "short_desc": {
+    "en": "A web server for static files.",
+    "pt": "Um servidor web para arquivos estáticos."
+  },
+  "description": {
+    "en": "A static file server",
+    "pt": "Servidor de arquivos estáticos"
+  },
+  "docs": "https://nginx.org/en/docs/",
+  "source": "https://github.com/nginx/nginx",
+  "author": "nginx"
 }

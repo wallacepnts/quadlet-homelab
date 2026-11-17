@@ -1,10 +1,6 @@
 {
   "title": "Zabbix",
-  "tagline": "Monitors your servers and network.",
   "category": "Monitoring",
-  "links": {
-    "docs": "https://www.zabbix.com/documentation/current/en/manual/installation/containers"
-  },
   "notes": "The first start takes a minute or two: the server creates the database schema\n(about 30 s measured), and only then does the web interface come up. Then open\n`https://zabbix.<your-tailnet>.ts.net`.\n\n**The first login is Zabbix's own default, `Admin` / `zabbix`.** The image has\nno setting for it, so the install cannot generate one. Change it at once:\n*Users → Users → Admin → Change password*.\n\n### PostgreSQL, not SQLite\n\nThe repository prefers SQLite, but Zabbix's server has no SQLite mode: it runs\non PostgreSQL or MySQL, and SQLite exists only for the *proxy*. PostgreSQL is the\none the project's own compose uses, and the major (17) is the one it validates.\n\n### The \"Zabbix server\" host starts with a broken agent\n\nA fresh install ships a host called *Zabbix server* whose agent is expected at\n`127.0.0.1:10050`. There is no agent in this stack, so its items fail with\n\"network error\" and the host turns red. Disable that host, or install an agent\nsomewhere and point the host at it.\n\nTo monitor a machine, install the Zabbix agent there and have it reach this\nhost on port **10051** (active checks) or let the server reach the agent on\n**10050** (passive). Both are plain TCP on the tailnet or LAN.\n\n### Update\n\nThe server and the web interface share one tag and must move together. The server upgrades its own schema on start, so take a backup before a minor jump. Postgres stays on 17.\n\n### Backup\n\nCold, like the other stacks with a database: it stops the three units, packs the\nvolume and the secret, and starts them again.",
   "secrets": {
     "zabbix-postgres-password": "rand-hex 24"
@@ -21,5 +17,16 @@
     "zabbix-postgres": {
       "upstream": "registry:^17\\.[0-9]+-alpine$"
     }
-  }
+  },
+  "short_desc": {
+    "en": "Monitors your servers and network.",
+    "pt": "Monitora os seus servidores e a sua rede."
+  },
+  "description": {
+    "en": "Monitoring of servers, networks and services with agents, SNMP, triggers and alerts — server, web interface and PostgreSQL",
+    "pt": "Monitoramento de servidores, redes e serviços com agentes, SNMP, triggers e alertas — server, interface web e PostgreSQL"
+  },
+  "docs": "https://www.zabbix.com/documentation/current/en/manual/installation/containers",
+  "source": "https://github.com/zabbix/zabbix",
+  "author": "zabbix"
 }

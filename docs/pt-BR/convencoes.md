@@ -100,8 +100,8 @@ separado.
 
 ### 11. Créditos ao projeto original
 
-Toda pasta de serviço baseado em outro projeto o credita linkando-o: `links.docs` é a
-documentação do projeto, e o repositório vem da imagem (ou de `links.repo`); o painel mostra os
+Toda pasta de serviço baseado em outro projeto o credita linkando-o: `docs` é a
+documentação do projeto, e o repositório vem da imagem (ou de `source`); o painel mostra os
 dois. Um fork diz isso nas `notes` dele.
 
 ### 12. `Label=`/valores com espaço precisam de aspas

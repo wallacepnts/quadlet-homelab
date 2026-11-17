@@ -1,10 +1,6 @@
 {
   "title": "FMD Server",
-  "tagline": "Find your Android phone from the browser.",
   "category": "Home",
-  "links": {
-    "docs": "https://fmd-foss.org/docs/fmd-server/overview"
-  },
   "notes": "The install ends by printing the **registration token**. Enter it in the FMD app\nwhen you point it at `https://fmd.<your-tailnet>.ts.net`.\n\n### Reaching it — and the phone reaching it\n\n**FMD Server has to be served over HTTPS**: its web interface does not work over\nplain HTTP. On the tailnet, tsdproxy provides that. Port `8124` on the LAN is\nplain HTTP, so choosing LAN-only access at install time leaves the web\ninterface unusable.\n\nThe part that is easy to miss: the **phone** reports to\n`fmd.<your-tailnet>.ts.net`, which only resolves while the Tailscale app is\nrunning on the phone. Keep Tailscale always-on there — a lost phone with\nTailscale off reports nothing, however well this side is set up. The FMD app\ncan also be commanded by SMS, which does not depend on this server at all.\n\n### The registration token\n\nFMD Server only checks the token when one is set, and this unit always sets one.\nMeasured on 0.17.0: with `FMD_REGISTRATIONTOKEN` unset, a registration\ncarrying a wrong token is accepted; with it set, the same request answers\n`401 Registration Token not valid`. The token matters only for **creating**\naccounts — an existing account logs in with its own password.\n\n### Update\n\nThe project is **pre-1.0, and says minor versions can introduce breaking\nchanges** — read the release notes before moving from 0.17 to 0.18, and back up\nfirst. It lives on GitLab, so `install.ini` compares against the registry\nthere rather than a GitHub release page.\n\nThe `-alpine` variant, not the default Debian one or the smaller distroless,\nbecause it is the one that carries `wget` — which `HealthCmd` needs, and\n`Notify=healthy` needs `HealthCmd` (rule 14 of the conventions).\n\n### Backup\n\nThe volume holds one SQLite database. It is ciphertext, so the backup is only\nuseful together with the account passwords.",
   "secrets": {
     "fmd-server-registration-token": "rand-urlsafe 32"
@@ -16,5 +12,16 @@
     "fmd-server": {
       "upstream": "registry:^[0-9]+\\.[0-9]+\\.[0-9]+-alpine$"
     }
-  }
+  },
+  "short_desc": {
+    "en": "Find your Android phone from the browser.",
+    "pt": "Encontre o seu celular Android pelo navegador."
+  },
+  "description": {
+    "en": "Find, ring and lock your Android phone from the browser, end-to-end encrypted, without Google",
+    "pt": "Localizar, tocar e bloquear seu celular Android pelo navegador, com criptografia ponta a ponta, sem o Google"
+  },
+  "docs": "https://fmd-foss.org/docs/fmd-server/overview",
+  "source": "https://gitlab.com/Nulide/findmydeviceserver",
+  "author": "Nulide"
 }

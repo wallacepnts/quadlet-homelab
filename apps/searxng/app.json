@@ -1,10 +1,6 @@
 {
   "title": "SearXNG",
-  "tagline": "Search the web without being tracked.",
   "category": "Tools",
-  "links": {
-    "docs": "https://docs.searxng.org/"
-  },
   "notes": "Open `https://searxng.<your-tailnet>.ts.net`.\n\n### Open WebUI\n\nSearXNG answers `/search?q=...&format=json`, and that is the interface Open\nWebUI's web search uses. With it, the model answers from pages fetched at the\ntime of the question instead of only from what it was trained on.\n\nIn `~/.config/containers/env/openwebui.env`:\n\n```ini\nENABLE_RAG_WEB_SEARCH=True\nRAG_WEB_SEARCH_ENGINE=searxng\nSEARXNG_QUERY_URL=http://searxng:8080/search?q=<query>\n```\n\nThen `qh openwebui --update --apply`. The two containers share\n`tsdproxy-net`, so `searxng` resolves by name — no host IP and no published\nport involved.\n\n`format=json` is not a SearXNG default; without the `formats` block in\n`settings.yml` it answers **403** to anything that is not a browser, and Open\nWebUI's search silently returns nothing.\n\n### Update\n\nSearXNG publishes no GitHub releases and tags by date plus commit, so `qh-updates` compares against the registry's tag list instead of the usual release redirect.\n\n### Backup\n\nThere is little to lose: the settings file is in this repository and the search\nhistory is nobody's, not even the server's. The backup exists for the\npreferences you may have set.",
   "secrets": {
     "searxng-secret": "rand-hex 32"
@@ -16,5 +12,16 @@
     "searxng": {
       "upstream": "registry:^20[0-9]{2}\\.[0-9]+\\.[0-9]+-[0-9a-f]+$"
     }
-  }
+  },
+  "short_desc": {
+    "en": "Search the web without being tracked.",
+    "pt": "Pesquise na web sem ser rastreado."
+  },
+  "description": {
+    "en": "Metasearch that queries dozens of engines at once, keeping no profile of you",
+    "pt": "Metabusca que consulta dezenas de motores de uma vez, sem guardar perfil seu"
+  },
+  "docs": "https://docs.searxng.org/",
+  "source": "https://github.com/searxng/searxng",
+  "author": "searxng"
 }

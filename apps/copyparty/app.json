@@ -1,10 +1,6 @@
 {
   "title": "Copyparty",
-  "tagline": "A file server you can upload to from any device.",
   "category": "Files",
-  "links": {
-    "docs": "https://github.com/9001/copyparty#readme"
-  },
   "config": {
     "copyparty.conf.example": "%h/.config/containers/volumes/copyparty/cfg/copyparty.conf"
   },
@@ -12,5 +8,16 @@
     "copyparty": {
       "upstream": "9001/copyparty"
     }
-  }
+  },
+  "short_desc": {
+    "en": "A file server you can upload to from any device.",
+    "pt": "Um servidor de arquivos que aceita envios de qualquer aparelho."
+  },
+  "description": {
+    "en": "A file server with browser or phone uploads, resumable transfers and WebDAV",
+    "pt": "Servidor de arquivos com upload pelo navegador ou celular, retomada de transferência e WebDAV"
+  },
+  "docs": "https://github.com/9001/copyparty#readme",
+  "source": "https://github.com/9001/copyparty",
+  "author": "9001"
 }

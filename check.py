@@ -408,7 +408,7 @@ def env_type_problemas(texto):
 
 
 def docs_problemas(valor):
-    """What is wrong with `links.docs` (an https URL), as a list."""
+    """What is wrong with `docs` (an https URL), as a list."""
     return [] if re.fullmatch(r"https://[A-Za-z0-9.-]+(/\S*)?", valor.strip()) else ["is not a plain https:// URL"]
 
 
@@ -792,10 +792,10 @@ def regenerated_readmes(folders):
     for pasta in folders:
         m = manifest.load(pasta)
         logo = manifest.icon_file(pasta)
-        if m.get("title") and logo and isinstance(m.get("tagline"), str):
+        if m.get("title") and logo and isinstance(m.get("short_desc"), dict):
             apps.append((pasta.name, m, logo))
     if len(apps) != len(folders):
-        error("table", f"only {len(apps)} of {len(folders)} apps have a title, a tagline and a logo: "
+        error("table", f"only {len(apps)} of {len(folders)} apps have a title, a short_desc and a logo: "
                        f"the services table would lose the rest")
         return {}
     saida = {}

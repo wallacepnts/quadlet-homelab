@@ -1,10 +1,6 @@
 {
   "title": "wger",
-  "tagline": "Plan and track your workouts.",
   "category": "Personal",
-  "links": {
-    "docs": "https://wger.de"
-  },
   "secrets": {
     "wger-secret-key": "rand-hex 32"
   },
@@ -13,5 +9,16 @@
       "upstream": "wger-project/wger",
       "image": "{version:2}"
     }
-  }
+  },
+  "short_desc": {
+    "en": "Plan and track your workouts.",
+    "pt": "Planeje e acompanhe os seus treinos."
+  },
+  "description": {
+    "en": "Workout planning and tracking, with an exercise database and body measurements",
+    "pt": "Planejamento e acompanhamento de treinos, com banco de exercícios e medidas corporais"
+  },
+  "docs": "https://wger.de",
+  "source": "https://github.com/wger-project/wger",
+  "author": "wger-project"
 }

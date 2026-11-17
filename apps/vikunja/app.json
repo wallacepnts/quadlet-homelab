@@ -1,14 +1,21 @@
 {
   "title": "Vikunja",
-  "tagline": "A to-do list for tasks and projects.",
   "category": "Productivity",
-  "links": {
-    "docs": "https://vikunja.io/docs/"
-  },
   "notes": "Open `https://vikunja.<your-tailnet>.ts.net` and register. Then set\n`VIKUNJA_SERVICE_ENABLEREGISTRATION=false` in the `.env` and restart, or anyone\nwho reaches your tailnet can create an account.\n\n### PUBLICURL is not decoration\n\n`VIKUNJA_SERVICE_PUBLICURL` is the address the frontend calls the API on.\nWrong, and the symptom misleads: the interface loads, looks right, and every\nrequest fails. It is also what invitation and reminder links carry.\n\n### Update\n\nIt migrates the database on start, which is why the release notes are worth a look before a major bump.\n\n### Backup\n\nStops it, packs both volumes and the `.env`, starts it again.",
   "units": {
     "vikunja": {
       "upstream": "go-vikunja/vikunja"
     }
-  }
+  },
+  "short_desc": {
+    "en": "A to-do list for tasks and projects.",
+    "pt": "Uma lista de afazeres para tarefas e projetos."
+  },
+  "description": {
+    "en": "Tasks with a deadline and a project behind them, in list, kanban or gantt",
+    "pt": "Tarefas com prazo e projeto por trás, em lista, kanban ou gantt"
+  },
+  "docs": "https://vikunja.io/docs/",
+  "source": "https://github.com/go-vikunja/vikunja",
+  "author": "go-vikunja"
 }

@@ -1,10 +1,6 @@
 {
   "title": "tsdproxy",
-  "tagline": "Puts your apps on your tailnet automatically.",
   "category": "Network & Security",
-  "links": {
-    "docs": "https://almeidapaulopt.github.io/tsdproxy/"
-  },
   "notes": "### Publishing something that is not a container\n\nA container is discovered by its labels. The host's own daemons have none, so\nthey go in `config/lists.yaml` instead — one entry per name, and tsdproxy\nrereads that file without a restart.\n\nThe file carries **Cockpit**, the web console openSUSE already carries\n(`cockpit.socket` on 9090, plus `cockpit-podman` if you want the containers\nlisted there too), commented out. Uncomment it, replace `<host-ip>` with this\nmachine's address, and it answers on `https://cockpit.<your-tailnet>.ts.net`:\n\n```yaml\ncockpit:\n  ports:\n    443/https:\n      targets:\n        - https://<host-ip>:9090\n```\n\nTwo details that are not obvious:\n\n- The address has to be a **real** one. `host.containers.internal` only\n  answers on Podman's default network, and tsdproxy lives on `tsdproxy-net` —\n  from there it times out. The tailscale address is the steadier choice, since\n  it does not move with DHCP.\n- The target is `https://`, not `http://` — Cockpit serves TLS itself on 9090.\n  With the scheme right, its origin check passes as-is and no\n  `/etc/cockpit/cockpit.conf` is needed; get it wrong and the login page loads\n  but the session never opens.\n\nCockpit is the one host service worth this: disks, network, journal and the\nsystem's own updates, none of which a container can show you. Creating\ncontainers *through* it is another matter — a unit that is `--replace --rm`\ncomes back as soon as Cockpit stops it, and anything created by hand is\ninvisible to this repository. Read, do not write.\n\nThat is why the entry ships commented out: pointing at a closed port, it\npublishes a name that answers 502 — and most hosts do not run Cockpit.",
   "secrets": {
     "authkey": "manual a REUSABLE auth key from https://login.tailscale.com/admin/settings/keys (one-off does not work: tsdproxy registers a node per proxy, and the check below spends one use)"
@@ -15,5 +11,16 @@
   "config": {
     "config/tsdproxy.yaml": "%h/.config/containers/volumes/tsdproxy/config/tsdproxy.yaml",
     "config/lists.yaml": "%h/.config/containers/volumes/tsdproxy/config/lists.yaml"
-  }
+  },
+  "short_desc": {
+    "en": "Puts your apps on your tailnet automatically.",
+    "pt": "Coloca os seus apps na sua tailnet automaticamente."
+  },
+  "description": {
+    "en": "Publishes containers on the tailnet automatically, from labels alone — no per-service proxy configuration",
+    "pt": "Publica containers na tailnet automaticamente, só com labels — sem configurar proxy manualmente por serviço"
+  },
+  "docs": "https://almeidapaulopt.github.io/tsdproxy/",
+  "source": "https://github.com/almeidapaulopt/tsdproxy",
+  "author": "almeidapaulopt"
 }

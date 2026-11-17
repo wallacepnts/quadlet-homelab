@@ -1,10 +1,6 @@
 {
   "title": "VM",
-  "tagline": "Run Windows, macOS and Linux in a container.",
   "category": "Virtual Machines",
-  "links": {
-    "docs": "https://github.com/dockur/windows#readme"
-  },
   "notes": "It needs KVM on the host.",
   "secrets": {
     "vm-windows-password": "rand-alnum 20",
@@ -356,5 +352,16 @@
     "vm-zima": {
       "upstream": "dockur/zima"
     }
-  }
+  },
+  "short_desc": {
+    "en": "Run Windows, macOS and Linux in a container.",
+    "pt": "Rode Windows, macOS e Linux num container."
+  },
+  "description": {
+    "en": "Windows, macOS, ChromeOS Flex, ZimaOS and 23 Linux distros as VMs in containers, viewed in the browser — needs KVM on the host",
+    "pt": "Windows, macOS, ChromeOS Flex, ZimaOS e 23 distros Linux como VMs em containers, vistas pelo navegador — exige KVM no host"
+  },
+  "docs": "https://github.com/dockur/windows#readme",
+  "source": "https://github.com/dockur/windows",
+  "author": "dockur"
 }

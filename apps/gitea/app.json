@@ -1,10 +1,6 @@
 {
   "title": "Gitea",
-  "tagline": "A simple Git server for your code.",
   "category": "Tools",
-  "links": {
-    "docs": "https://gitea.com"
-  },
   "secrets": {
     "gitea-secret-key": "rand-base64 32",
     "gitea-internal-token": "rand-base64 48"
@@ -13,5 +9,16 @@
     "gitea": {
       "upstream": "go-gitea/gitea"
     }
-  }
+  },
+  "short_desc": {
+    "en": "A simple Git server for your code.",
+    "pt": "Um servidor Git simples para o seu código."
+  },
+  "description": {
+    "en": "A light but complete Git server — repositories, issues, pull requests and CI in a single interface",
+    "pt": "Servidor Git leve e completo — repositórios, issues, pull requests e CI numa interface só"
+  },
+  "docs": "https://gitea.com",
+  "source": "https://github.com/go-gitea/gitea",
+  "author": "go-gitea"
 }

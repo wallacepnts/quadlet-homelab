@@ -1,15 +1,22 @@
 {
   "title": "WUD (What's Up Docker)",
-  "tagline": "Tells you when your containers have updates.",
   "category": "Monitoring",
-  "links": {
-    "docs": "https://getwud.github.io/wud/"
-  },
   "secrets": {
     "wud-admin-password": "rand-alnum 20"
   },
   "login": {
     "user": "admin",
     "password": "wud-admin-password"
-  }
+  },
+  "short_desc": {
+    "en": "Tells you when your containers have updates.",
+    "pt": "Avisa quando os seus containers têm atualizações."
+  },
+  "description": {
+    "en": "Watches for available image updates for the containers, applying nothing itself — it only reports",
+    "pt": "Monitora as atualizações de imagem disponíveis pros containers, sem aplicar nada sozinho — só avisa"
+  },
+  "docs": "https://getwud.github.io/wud/",
+  "source": "https://github.com/getwud/wud",
+  "author": "getwud"
 }

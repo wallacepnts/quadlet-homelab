@@ -1,10 +1,6 @@
 {
   "title": "n8n",
-  "tagline": "Automate tasks between your apps.",
   "category": "Automation",
-  "links": {
-    "docs": "https://n8n.io"
-  },
   "secrets": {
     "n8n-encryption-key": "rand-hex 32"
   },
@@ -12,5 +8,16 @@
     "n8n": {
       "upstream": "n8n-io/n8n"
     }
-  }
+  },
+  "short_desc": {
+    "en": "Automate tasks between your apps.",
+    "pt": "Automatize tarefas entre os seus apps."
+  },
+  "description": {
+    "en": "Workflow automation through a visual node editor",
+    "pt": "Automação de workflows via editor visual de nós"
+  },
+  "docs": "https://n8n.io",
+  "source": "https://github.com/n8n-io/n8n",
+  "author": "n8n-io"
 }

@@ -560,8 +560,8 @@ def issues_url(repo):
 
 
 def docs_url(app):
-    """The documentation link the service's `app.json` names (`links.docs`), or None."""
-    v = ((manifest.load(I.APPS / app).get("links") or {}).get("docs") or "").strip()
+    """The documentation link the service's `app.json` names (`docs`), or None."""
+    v = (manifest.load(I.APPS / app).get("docs") or "").strip()
     return v if v.startswith("https://") else None
 
 
@@ -2893,7 +2893,7 @@ esac
         antes, I.APPS = I.APPS, Path(dd)
         try:
             (I.APPS / "demo").mkdir()
-            manifest.path_of(I.APPS / "demo").write_text(manifest.dump({"links": {"docs": "https://docs.example.org/demo"}}))
+            manifest.path_of(I.APPS / "demo").write_text(manifest.dump({"docs": "https://docs.example.org/demo"}))
             assert docs_url("demo") == "https://docs.example.org/demo", "read from [store] docs"
             manifest.path_of(I.APPS / "demo").write_text(manifest.dump({"category": "Tools"}))
             assert docs_url("demo") is None and docs_url("nao-existe") is None

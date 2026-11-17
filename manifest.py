@@ -6,9 +6,12 @@ carries its metadata, but in JSON of our own, beside the unit files instead of i
 
     {
       "title": "Memos",
-      "tagline": "Self-hosted quick notes",
+      "short_desc": {"en": "Quick notes.", "pt": "Notas rápidas."},   # one plain sentence, both languages
+      "description": {"en": "...", "pt": "..."},      # what it is, a little longer
+      "author": "usememos", "source": "https://github.com/usememos/memos",
+      "website": "https://usememos.com", "docs": "https://www.usememos.com/docs",
+      "architectures": ["amd64", "arm64"],            # optional: website, architectures
       "category": "Productivity",                     # one of qhui.GRUPOS
-      "links": {"docs": "https://www.usememos.com/docs", "repo": "usememos/memos"},
       "min_podman": "5.4",
       "deprecated": "why it is discontinued",         # no install is offered
       "notes": "markdown: first run, what is odd about it",
@@ -64,7 +67,7 @@ def dump(data):
     return json.dumps(ordered(data), ensure_ascii=False, indent=2) + "\n"
 
 
-KEY_ORDER = ["title", "tagline", "category", "links",
+KEY_ORDER = ["title", "short_desc", "description", "author", "website", "source", "docs", "architectures", "category",
              "min_podman", "deprecated", "notes", "secrets", "validate", "config", "vars",
              "login", "choices", "backup", "units"]
 
@@ -139,10 +142,9 @@ class View:
         loja = {}
         if d.get("category"):
             loja["group"] = d["category"]
-        links = d.get("links") or {}
-        for chave in ("docs", "repo"):
-            if links.get(chave):
-                loja[chave] = links[chave]
+        for chave, campo in (("docs", "docs"), ("repo", "source")):
+            if d.get(campo):
+                loja[chave] = d[campo]
         if d.get("min_podman"):
             loja["min_podman"] = d["min_podman"]
         if d.get("deprecated"):
@@ -258,11 +260,21 @@ def problems(data, grupos, folder=None):
         erros.append('"title" is required')
     if data.get("category") and data["category"] not in grupos:     # optional: infrastructure has none
         erros.append(f'"category" {data["category"]!r} is not one of: {", ".join(grupos)}')
-    tag = data.get("tagline")
-    if not isinstance(tag, str) or not tag.strip():
-        erros.append('"tagline" is required: one short, plain sentence')
-    elif len(tag) > TAGLINE_MAX or "\n" in tag or " — " in tag or "(" in tag:
-        erros.append(f'"tagline" must be one short, plain sentence: up to {TAGLINE_MAX} characters, no dash or parenthesis')
+    for k in ("short_desc", "description"):
+        v = data.get(k)
+        if not isinstance(v, dict) or set(v) != {"en", "pt"} or not all(isinstance(x, str) and x.strip() for x in v.values()):
+            erros.append(f'"{k}" is required: an object with a non-empty "en" and "pt"')
+    for lang, tag in (data.get("short_desc") or {}).items() if isinstance(data.get("short_desc"), dict) else ():
+        if isinstance(tag, str) and (len(tag) > TAGLINE_MAX or "\n" in tag or " — " in tag or "(" in tag):
+            erros.append(f'"short_desc.{lang}" must be one short, plain sentence: up to {TAGLINE_MAX} characters, no dash or parenthesis')
+    for k in ("author", "website", "source", "docs"):
+        if k in data and not isinstance(data[k], str):
+            erros.append(f'"{k}" must be a string')
+        elif k in ("website", "source", "docs") and data.get(k) and not re.fullmatch(r"https://[A-Za-z0-9.-]+(/\S*)?", data[k]):
+            erros.append(f'"{k}" must be a plain https:// URL')
+    arq = data.get("architectures")
+    if arq is not None and (not isinstance(arq, list) or not arq or not set(arq) <= {"amd64", "arm64", "arm", "riscv64", "386", "ppc64le", "s390x"}):
+        erros.append('"architectures" must be a list of: amd64, arm64, arm, riscv64, 386, ppc64le, s390x')
     for k in ("notes", "deprecated"):
         if k in data and not isinstance(data[k], str):
             erros.append(f'"{k}" must be a string')
@@ -295,7 +307,7 @@ def services_table(entries, lang):
     linhas = [f"| {cab[0]} | {cab[1]} | {cab[2]} |", "| --- | --- | --- |"]
     for nome, d, icon in sorted(entries, key=lambda x: x[1]["title"].casefold()):
         linhas.append(f'| <img src="{prefixo}{nome}/{icon}" width="48" height="48" alt=""> | '
-                      f'[{d["title"]}]({prefixo}{nome}) | {d["tagline"]} |')
+                      f'[{d["title"]}]({prefixo}{nome}) | {d["short_desc"][lang]} |')
     return "\n".join(linhas)
 
 
@@ -309,8 +321,9 @@ def splice(readme_text, tabela):
 
 
 def selftest():
-    d = {"title": "X", "category": "Tools", "tagline": "a one-liner",
-         "links": {"docs": "https://d", "repo": "o/r"}, "min_podman": "5.4", "deprecated": "gone",
+    d = {"title": "X", "category": "Tools", "short_desc": {"en": "a one-liner", "pt": "uma linha"},
+         "description": {"en": "long", "pt": "longa"}, "author": "o", "source": "https://github.com/o/r",
+         "docs": "https://d.example", "architectures": ["amd64"], "min_podman": "5.4", "deprecated": "gone",
          "secrets": {"s1": "rand-hex 8", "s2": "shell x"},
          "config": {"c.conf": "%h/c"}, "vars": {"V": "~/v"}, "validate": {"s1": "shell y"},
          "login": {"user": "u", "password": "s1"},
@@ -322,7 +335,7 @@ def selftest():
     v = View(d)
     assert v.get("secrets", "s2") == "shell x" and v.get("secrets", "s1") == "rand-hex 8"
     assert v.items("upstream") == [("x", "o/r"), ("y", "-")] and v.items("image") == [("x", "v{version}")]
-    assert v.get("store", "group") == "Tools" and v.get("store", "docs") == "https://d" and v.get("store", "deprecated") == "gone"
+    assert v.get("store", "group") == "Tools" and v.get("store", "docs") == "https://d.example" and v.get("store", "repo") == "https://github.com/o/r" and v.get("store", "deprecated") == "gone"
     assert not v.has_option("store", "screenshots") and not v.has_option("store", "works_with")
     assert v.get("backup", "exclude") == "\na/b\nc" and v.get("backup", "mode") == "stop"
     assert v.get("choices", "VERSION") == "Which?\n1: One\n2", "an option may be just its value"
@@ -333,15 +346,18 @@ def selftest():
                                  "login", "login.y", "choices", "choices.y"}
     assert dump(d).startswith('{\n  "title": "X"')
     assert problems(d, ("Tools",)) == [] and problems({**d, "spec": 2}, ("Tools",)), "no version field: `spec` is a typo now"
-    assert problems({**d, "tagline": "x" * 71}, ("Tools",)) and problems({**d, "tagline": "A tool (with a caveat)"}, ("Tools",))
-    assert problems({**d, "tagline": ""}, ("Tools",)) and problems({**d, "tagline": {"en": "a", "pt": "b"}}, ("Tools",))
+    sd = lambda en, pt="x": {**d, "short_desc": {"en": en, "pt": pt}}
+    assert problems(sd("x" * 71), ("Tools",)) and problems(sd("A tool (with a caveat)"), ("Tools",)) and problems(sd("a", "p (q)"), ("Tools",))
+    assert problems(sd(""), ("Tools",)) and problems({**d, "short_desc": "plain"}, ("Tools",)) and problems({**d, "description": {"en": "a"}}, ("Tools",))
+    assert problems({**d, "architectures": ["x86"]}, ("Tools",)) and problems({**d, "source": "http://x"}, ("Tools",))
+    assert problems({**d, "tagline": "old"}, ("Tools",)), "tagline became short_desc"
     assert problems({**d, "category": "Nope"}, ("Tools",)) and problems({**d, "notes": {"en": "x"}}, ("Tools",))
     assert problems({**d, "wat": 1}, ("Tools",)), "an unknown key is a typo"
     assert problems({**d, "icon": "https://x/y.svg"}, ("Tools",)), "the logo is a file now, not a field"
     assert problems({**d, "license": "MIT"}, ("Tools",)), "no licence field: the project's own repository says"
-    tab = services_table([("x", d, "icon.svg"), ("a", {**d, "title": "a-first", "tagline": "p"}, "icon.png")], "pt")
+    tab = services_table([("x", d, "icon.svg"), ("a", {**d, "title": "a-first", "short_desc": {"en": "p", "pt": "q"}}, "icon.png")], "pt")
     assert tab.splitlines()[0] == "| Logo | Aplicativo | Descrição |", tab
-    assert '<img src="../../apps/a/icon.png"' in tab.splitlines()[2] and "[a-first](../../apps/a) | p |" in tab.splitlines()[2], tab
+    assert '<img src="../../apps/a/icon.png"' in tab.splitlines()[2] and "[a-first](../../apps/a) | q |" in tab.splitlines()[2], tab
     import tempfile
     with tempfile.TemporaryDirectory() as tmp:
         pasta = Path(tmp)

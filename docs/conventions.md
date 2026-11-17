@@ -99,8 +99,8 @@ separate step.
 
 ### 11. Credit the original project
 
-Every service folder based on another project credits it by linking it: `links.docs` is the
-project's documentation, and the repository comes from the image (or `links.repo`); the panel shows
+Every service folder based on another project credits it by linking it: `docs` is the
+project's documentation, and the repository comes from the image (or `source`); the panel shows
 both. A fork says so in its `notes`.
 
 ### 12. `Label=` values with a space need quotes

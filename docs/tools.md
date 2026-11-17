@@ -304,7 +304,7 @@ project's repository is shown only where something says which it is —
 `app.json `upstream``, or an image on `ghcr.io`/`lscr.io` — and never guessed
 from a Docker Hub name, which would give a link to a 404. Where the image's path
 is not the repository's (netbootxyz's image is built from another repository),
-``links.repo` = owner/repo` (or a full https URL) says which it is; **Issues** and
+`source` (an https URL) (or a full https URL) says which it is; **Issues** and
 **Releases** follow from it, for GitHub, GitLab and Codeberg. **Documentation** is
 read from the `[Official documentation](...)` link in each service README's
 Credits, so it is written down once, by a person, and a link that only points back

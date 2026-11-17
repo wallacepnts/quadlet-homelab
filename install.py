@@ -4253,10 +4253,11 @@ def app_cards(pastas):
         if not m:
             continue
         logo = manifest.icon_file(APPS / d)
-        # One line of English: there is no translation to keep, so the Portuguese page shows it too.
         en[d] = {"icon": f"/assets/{d}/{logo}" if logo else None, "name": m.get("title", d),
-                 "description": m.get("tagline") or ""}
-        pt[d] = {"description": m.get("tagline") or ""}
+                 "description": (m.get("short_desc") or {}).get("en", ""),
+                 "long": (m.get("description") or {}).get("en", ""), "author": m.get("author"),
+                 "website": m.get("website"), "source": m.get("source"), "architectures": m.get("architectures")}
+        pt[d] = {"description": (m.get("short_desc") or {}).get("pt", ""), "long": (m.get("description") or {}).get("pt", "")}
     return en, pt
 
 
@@ -4350,6 +4351,9 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude, falhas=None):
         "icon": vitrine.get("icon"),
         "description": {"en": vitrine.get("description", ""),
                         "pt": pt.get(d, {}).get("description", "")},
+        "about": {"en": vitrine.get("long", ""), "pt": pt.get(d, {}).get("long", "")},
+        "author": vitrine.get("author"), "website": vitrine.get("website"),
+        "architectures": vitrine.get("architectures"),
         "main_unit": principal.stem if principal else None,
         # Images the project hosts, named in app.json (store): https only,
         # the same rule check.py holds the file to.

@@ -1,14 +1,21 @@
 {
   "title": "Kiwix",
-  "tagline": "Read Wikipedia and other libraries offline.",
   "category": "Personal",
-  "links": {
-    "docs": "https://wiki.kiwix.org/"
-  },
   "notes": "**It does not start empty.** With no `.zim` in the volume, `kiwix-serve` says\n`Unable to add the ZIM file '*.zim' to the internal library` and exits — so the\ninstall leaves the service in place and stopped. Put a library in\n`~/.config/containers/volumes/kiwix/data` and start it:\n\n```bash\ncd ~/.config/containers/volumes/kiwix/data\nwget https://download.kiwix.org/zim/wikipedia/wikipedia_pt_all_nopic_2026-07.zim\npodman unshare chown 1001:1001 *.zim\nsystemctl --user start kiwix\n```\n\nThe catalogue is at [library.kiwix.org](https://library.kiwix.org).\n\n### How it knows which files to serve\n\n```ini\nExec=*.zim\n```\n\nNot a shell trick that happens to work: the image's own `start.sh` builds\n`kiwix-serve --port=$PORT $@` and runs it **unquoted**, from `/data`. The glob\nis expanded there, so every `.zim` in the volume is served and a new one only\nneeds a restart.\n\n### Downloading on start\n\n`DOWNLOAD=<url>` in the `.env` fetches a file into the volume before serving.\nUseful for the first one, and a bad habit after that: it runs on every start,\nand a full Wikipedia is 100 GB. Once a library is in place, put new ones in the\nfolder by hand.\n\n### Update\n\nThe libraries update on their own schedule, which is yours: download the newer `.zim`, delete the old one, restart.\n\n### Backup\n\nDeliberately not covered by the backup jobs: a `.zim` is a public file you can\ndownload again, and copying tens of gigabytes of Wikipedia into a Restic\nrepository would cost far more than fetching it a second time.",
   "units": {
     "kiwix": {
       "upstream": "kiwix/kiwix-tools"
     }
-  }
+  },
+  "short_desc": {
+    "en": "Read Wikipedia and other libraries offline.",
+    "pt": "Leia a Wikipédia e outras bibliotecas sem internet."
+  },
+  "description": {
+    "en": "Wikipedia and other libraries served from disk, read with the internet off",
+    "pt": "Wikipedia e outras bibliotecas servidas do disco, para ler com a internet desligada"
+  },
+  "docs": "https://wiki.kiwix.org/",
+  "source": "https://github.com/kiwix/kiwix-tools",
+  "author": "kiwix"
 }

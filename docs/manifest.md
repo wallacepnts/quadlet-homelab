@@ -7,14 +7,17 @@ inside them.
 
 A folder is therefore the units, the `.env.example` if there is one, this file, and the logo. There is no README
 per app, no `install.ini`, no `notes.md`: the services table in the root READMEs is generated from the manifests,
-and the panel shows the notes. Everything is written in English, once: there is no per-language copy to keep.
+and the panel shows the notes. The descriptions are written in English and Portuguese; the notes, once, in English.
 
 ```json
 {
   "title": "Memos",
-  "tagline": "Quick notes, self-hosted and markdown-native",
+  "short_desc": { "en": "Quick notes.", "pt": "Notas rápidas." },
+  "description": { "en": "…", "pt": "…" },
+  "author": "usememos",
+  "source": "https://github.com/usememos/memos",
+  "docs": "https://www.usememos.com/docs",
   "category": "Productivity",
-  "links": { "docs": "https://www.usememos.com/docs" },
   "notes": "The first user to sign up becomes admin…",
   "units": { "memos": { "upstream": "usememos/memos" } }
 }
@@ -35,9 +38,14 @@ apps/memos/
 | Field | Required | Meaning |
 | --- | --- | --- |
 | `title` | yes | The name shown in the store and in the services table. |
-| `tagline` | yes | One short, plain sentence, up to 70 characters, with no dash or parenthesis: what the app is, as you would tell a friend (*A media server for your home collection.*). It is the description in the table and on the card. Caveats go in `notes`. |
+| `short_desc` | yes | `{en, pt}`: one short, plain sentence each, up to 70 characters, no dash or parenthesis (*A media server for your home collection.*). It is the description in the table and on the card. Caveats go in `notes`. |
+| `description` | yes | `{en, pt}`: what the app is, in a few lines. The panel shows it when the app is opened. |
+| `author` | no | Who makes the project (the owner of `source`). |
+| `source` | no | The project's repository, an https URL. The panel links it, and the issues and releases come from it. |
+| `website` | no | The project's home page, an https URL. |
+| `docs` | no | The project's documentation, an https URL. |
+| `architectures` | no | `["amd64", "arm64"]`: what the image runs on, when known (the panel asks the registry too). |
 | `category` | no | One of the groups in `qhui.GRUPOS` (the store's categories). Infrastructure with no place among them (homepage, postfix, toolbx) has none. |
-| `links` | no | `docs` (the project's documentation, https), `repo` (`owner/repo` or a URL, only where the image's own path points at the wrong place). |
 | `min_podman` | no | `"5.4"`: a floor above the 5.0 that `Notify=healthy` already needs. |
 | `deprecated` | no | Text: why it is discontinued. The store offers no install. |
 | `notes` | no | Markdown: what to do at the first run and what is odd about the app. The panel shows it. |
@@ -63,15 +71,15 @@ One entry per `.container` that needs one, keyed by the unit's basename:
 ## Generated, not written
 
 The services table in `README.md` and `docs/pt-BR/README.md`, between the `services:begin` and
-`services:end` markers, comes from `title`, the logo file and `tagline`. `python3 check.py --readme` rewrites it, and
+`services:end` markers, comes from `title`, the logo file and `short_desc`. `python3 check.py --readme` rewrites it, and
 `check.py` fails when it is out of date.
 
 ## What the CasaOS format has that this does not
 
-CasaOS carries `developer`, `author`, `architectures`, `tips.before_install`, `port_map`, `index`, `scheme`,
-`thumbnail`, `release_notes`, a `description` apart from the `tagline`, translations, and a description for every
+CasaOS carries `developer`, `tips.before_install`, `port_map`, `index`, `scheme`,
+`thumbnail`, `release_notes`, and a description for every
 port, volume and environment variable. Here the architectures come from the registry, the port and the address from
-the units, the release notes from GitHub, and the notes cover `tips`. Translations and the licence were left out on
+the units, the release notes from GitHub, and the notes cover `tips`. The licence was left out on
 purpose, and so were comments: why a recipe is shaped the way it is belongs in `docs/`, not in the manifest.
 
 ## Checking

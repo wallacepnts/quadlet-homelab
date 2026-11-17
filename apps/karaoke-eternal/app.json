@@ -1,14 +1,21 @@
 {
   "title": "Karaoke Eternal",
-  "tagline": "Run karaoke parties from your own songs.",
   "category": "Media",
-  "links": {
-    "docs": "https://www.karaoke-eternal.com/docs/"
-  },
   "notes": "Put the karaoke files in\n`~/.config/containers/volumes/karaoke-eternal/media`, then open\n`http://<host-ip>:8017` or `https://karaoke.<your-tailnet>.ts.net`. **The first\naccount you create is the admin.** In the app, add `/mnt/karaoke` under Media\nFolders and scan.\n\nIt reads CDG+MP3 and MP4; the filename is what it parses for artist and title,\nso `Artist - Title.mp4` is the shape to aim for.\n\n### Rooms\n\nA room is what a player joins; the queue belongs to the room, not to the\nserver. That is how two parties in the same house do not share a queue, and it\nis also why the player asks which room before it starts.\n\n### Backup\n\nIt stops the service, packs the database, the media and the `.env`, and starts\nit again.\n\n### Remove\n\n`--purge` deletes the media too — it lives in a volume like everything else.",
   "units": {
     "karaoke-eternal": {
       "upstream": "bhj/KaraokeEternal"
     }
-  }
+  },
+  "short_desc": {
+    "en": "Run karaoke parties from your own songs.",
+    "pt": "Faça festas de karaokê com as suas próprias músicas."
+  },
+  "description": {
+    "en": "A karaoke party from your own library — everyone queues songs from their phone, one screen plays",
+    "pt": "Karaokê com a sua própria biblioteca — cada um enfileira do celular, uma tela reproduz"
+  },
+  "docs": "https://www.karaoke-eternal.com/docs/",
+  "source": "https://github.com/bhj/KaraokeEternal",
+  "author": "bhj"
 }

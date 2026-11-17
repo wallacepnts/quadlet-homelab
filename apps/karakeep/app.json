@@ -1,10 +1,6 @@
 {
   "title": "Karakeep",
-  "tagline": "Save and search your bookmarks.",
   "category": "Productivity",
-  "links": {
-    "docs": "https://karakeep.app"
-  },
   "secrets": {
     "karakeep-meili-key": "rand-alnum 48",
     "karakeep-nextauth-secret": "rand-base64 36"
@@ -16,5 +12,16 @@
     "karakeep-meilisearch": {
       "upstream": "compose:karakeep-app/karakeep:docker/docker-compose.yml"
     }
-  }
+  },
+  "short_desc": {
+    "en": "Save and search your bookmarks.",
+    "pt": "Guarde e pesquise seus favoritos."
+  },
+  "description": {
+    "en": "A bookmark manager with full-text search and automatic archiving of every saved page's content",
+    "pt": "Gerenciador de bookmarks com busca full-text e arquivamento automático do conteúdo de cada página salva"
+  },
+  "docs": "https://karakeep.app",
+  "source": "https://github.com/karakeep-app/karakeep",
+  "author": "karakeep-app"
 }

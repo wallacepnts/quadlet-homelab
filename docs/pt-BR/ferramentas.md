@@ -306,7 +306,7 @@ repositório do projeto só aparece onde algo diz qual é — o `upstream` do
 `app.json`, ou uma imagem no `ghcr.io`/`lscr.io` — e nunca é adivinhado a
 partir de um nome do Docker Hub, o que daria um link para um 404. Onde o caminho
 da imagem não é o do repositório (a imagem do netbootxyz sai de outro
-repositório), o ``links.repo` = dono/repo` (ou uma URL https completa) diz qual
+repositório), o ``source` = dono/repo` (ou uma URL https completa) diz qual
 é; **Problemas** e **Releases** saem dele, para GitHub, GitLab e Codeberg. A
 **Documentação** é lida do link `[Documentação oficial](...)` da seção Créditos
 do README de cada serviço, então é escrita uma vez, por uma pessoa, e um link

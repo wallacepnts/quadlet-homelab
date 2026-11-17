@@ -1,10 +1,6 @@
 {
   "title": "rclone",
-  "tagline": "Move files between your cloud accounts.",
   "category": "Files",
-  "links": {
-    "docs": "https://rclone.org/rc/"
-  },
   "notes": "The install ends by printing the login (`admin` and a generated password). Open\n`https://rclone.<your-tailnet>.ts.net`: the browser asks for them once.\n\n### What it sees\n\n- **Remotes only.** No local folder is mounted, so the GUI browses and moves\n  files between the accounts in the config, not the host's disk. To use a local\n  folder as a remote end, add a `Volume=` for it and an `alias` or `local`\n  remote that points at the container path.\n- **The host's config, writable.** `~/.config/rclone` is mounted read-write on\n  purpose: OAuth providers rotate the refresh token, and a read-only config would\n  keep the old one on disk until it stops working. Zerobyte mounts the same\n  folder read-only, and the Air Explorer RS on the host uses the same file, so\n  there is one copy of every token. The mount is `:z` (shared label) because\n  more than one thing opens it.\n- **Whoever has the password has every account.** The GUI can read, copy and\n  delete in all remotes. It is behind the tailnet and basic auth, nothing else.\n\n### Your own password\n\n```bash\nqh rclone --reinstall --ask-secrets --apply\n```\n\n### Update\n\n**The web GUI is a separate project and is pinned too.** By default `rcd` asks\nGitHub for the newest GUI release at every start. `--rc-web-fetch-url` points it\nat one release (`v2.0.5`, the current one), so a start fetches that and later\nstarts reuse the cache. To move to another GUI release, change the tag in that\nURL in `Exec=` and delete `~/.config/containers/volumes/rclone/cache/rclone/webgui`.\n\n### Remove\n\n`~/.config/rclone` is never touched by `--purge`: it is the host's own config.",
   "secrets": {
     "rclone-password": "rand-alnum 24"
@@ -12,5 +8,16 @@
   "login": {
     "user": "admin",
     "password": "rclone-password"
-  }
+  },
+  "short_desc": {
+    "en": "Move files between your cloud accounts.",
+    "pt": "Mova arquivos entre as suas contas na nuvem."
+  },
+  "description": {
+    "en": "Web GUI for the cloud accounts in your rclone config: browse, copy and sync files between them",
+    "pt": "Interface web para as contas de nuvem do seu config do rclone: navegar, copiar e sincronizar arquivos entre elas"
+  },
+  "docs": "https://rclone.org/rc/",
+  "source": "https://github.com/rclone/rclone",
+  "author": "rclone"
 }

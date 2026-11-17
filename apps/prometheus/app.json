@@ -1,10 +1,6 @@
 {
   "title": "Prometheus",
-  "tagline": "Collects numbers about how your services run.",
   "category": "Monitoring",
-  "links": {
-    "docs": "https://prometheus.io/docs/introduction/overview/"
-  },
   "notes": "Status → Targets shows what it is scraping and whether each one answered.\n\n### Adding targets\n\nThe shipped config scrapes one thing: Prometheus itself. That proves the file\nis being read and gives you a working query on day one. Anything else you add\nby hand:\n\n```yaml\n  - job_name: node\n    static_configs:\n      - targets: [\"node-exporter:9100\"]\n```\n\nTargets are reachable by **container name**, because every service here joins\n`tsdproxy-net`. No IP, no host port.\n\nA service only appears here if it already speaks the exposition format — most\nin this repository do not. What you usually want first is a `node-exporter`\nfor the machine itself, and it is not shipped here.\n\nAfter editing:\n\n```bash\nqh prometheus --update --apply\n```\n\n### Backup\n\nIt stops the service, packs the config and the history, and starts it again.\nCold on purpose: the TSDB is a database like any other, and copying it live\ngives an archive that only fails when you restore it.",
   "config": {
     "config/prometheus.yml": "%h/.config/containers/volumes/prometheus/config/prometheus.yml"
@@ -14,5 +10,16 @@
       "upstream": "prometheus/prometheus",
       "image": "v{version}"
     }
-  }
+  },
+  "short_desc": {
+    "en": "Collects numbers about how your services run.",
+    "pt": "Coleta números sobre como os seus serviços funcionam."
+  },
+  "description": {
+    "en": "Scrapes metrics on a schedule and keeps the history — the data source Grafana draws from",
+    "pt": "Coleta métricas em intervalo e guarda o histórico — a fonte de dados que o Grafana desenha"
+  },
+  "docs": "https://prometheus.io/docs/introduction/overview/",
+  "source": "https://github.com/prometheus/prometheus",
+  "author": "prometheus"
 }

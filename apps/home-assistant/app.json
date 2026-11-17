@@ -1,13 +1,20 @@
 {
   "title": "Home Assistant",
-  "tagline": "Control all your smart home devices in one place.",
   "category": "Home",
-  "links": {
-    "docs": "https://www.home-assistant.io"
-  },
   "units": {
     "home-assistant": {
       "upstream": "home-assistant/core"
     }
-  }
+  },
+  "short_desc": {
+    "en": "Control all your smart home devices in one place.",
+    "pt": "Controle todos os seus dispositivos de casa inteligente num só lugar."
+  },
+  "description": {
+    "en": "The central home automation hub; it brings devices from any manufacturer into a single panel",
+    "pt": "Hub central de automação residencial, integra dispositivos de qualquer fabricante num painel só"
+  },
+  "docs": "https://www.home-assistant.io",
+  "source": "https://github.com/home-assistant/core",
+  "author": "home-assistant"
 }

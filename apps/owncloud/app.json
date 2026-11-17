@@ -1,10 +1,6 @@
 {
   "title": "ownCloud",
-  "tagline": "Your own cloud for files.",
   "category": "Files",
-  "links": {
-    "docs": "https://owncloud.com"
-  },
   "notes": "### Editing documents\n\nWith [Collabora](../collabora) running, `.docx`, `.xlsx` and `.odt` open in the\nbrowser instead of only downloading. Enable the app once:\n\n```bash\npodman exec owncloud occ app:enable richdocuments\npodman exec owncloud occ config:app:set richdocuments wopi_url \\\n  --value=\"https://collabora.<your-tailnet>.ts.net\"\n```\n\nThe `wopi_url` is where your browser loads the editor from, so it is the\ntailnet address and not a container name.",
   "secrets": {
     "owncloud-admin-password": "rand-base64 18"
@@ -17,5 +13,16 @@
     "owncloud": {
       "upstream": "owncloud/ocis"
     }
-  }
+  },
+  "short_desc": {
+    "en": "Your own cloud for files.",
+    "pt": "A sua própria nuvem de arquivos."
+  },
+  "description": {
+    "en": "File sync and sharing on a cloud of your own",
+    "pt": "Sincronização e compartilhamento de arquivos em nuvem própria"
+  },
+  "docs": "https://owncloud.com",
+  "source": "https://github.com/owncloud/ocis",
+  "author": "owncloud"
 }
