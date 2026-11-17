@@ -4414,6 +4414,7 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude, falhas=None):
         "deprecated": deprecation(s.ini),
         "notes": {"en": notes_of(s.manifest), "pt": notes_of(s.manifest)},
         "min_podman": min_podman(s),
+        "requires_https": s.ini.get("store", "requires_https", fallback="") == "true" if s.ini.has_section("store") else False,
         "podman_too_old": bool(podman_too_old(s)),
         # Armed with `--trial`: the store shows when it ends, and offers to keep it.
         "trial": trial_info(s),

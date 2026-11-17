@@ -507,6 +507,16 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   api.S.apps.find((x) => x.id === "homebox").podman_too_old = false;
   $("panel").open = false;
 
+  // HTTPS: warned only where the rule in force is plain HTTP (local)
+  hn.requires_https = true; api.S.rule = "local";
+  api.openPanel("homebox"); await esperar(30);
+  confere(/precisa de HTTPS/.test($("p-notice").textContent) && !$("p-notice").hidden, `painel: aviso de HTTPS (${$("p-notice").textContent})`);
+  api.S.rule = "tailnet";
+  api.openPanel("homebox"); await esperar(30);
+  confere($("p-notice").hidden === true, "pela tailnet: sem aviso de HTTPS");
+  hn.requires_https = false;
+  $("panel").open = false;
+
   // trial: the notice says when it ends, there is a Keep button, and the install form offers the choice
   api.S.apps.find((x) => x.id === "homebox").trial = { mode: "time", expires: Date.now() / 1000 + 5 * 3600 + 60, purge: false };
   api.openPanel("homebox"); await esperar(50);

@@ -13,6 +13,7 @@ carries its metadata, but in JSON of our own, beside the unit files instead of i
       "architectures": ["amd64", "arm64"],            # optional: website, architectures
       "category": "Productivity",                     # one of qhui.GRUPOS
       "min_podman": "5.4",
+      "requires_https": true,                         # the app breaks over plain HTTP (a vault, a service worker)
       "deprecated": "why it is discontinued",         # no install is offered
       "notes": "markdown: first run, what is odd about it",
       "secrets": {"memos-token": "rand-hex 32"},      # how each Secret= is made
@@ -68,7 +69,7 @@ def dump(data):
 
 
 KEY_ORDER = ["title", "short_desc", "description", "author", "website", "source", "docs", "architectures", "category",
-             "min_podman", "deprecated", "notes", "secrets", "validate", "config", "vars",
+             "min_podman", "requires_https", "deprecated", "notes", "secrets", "validate", "config", "vars",
              "login", "choices", "backup", "units"]
 
 
@@ -147,6 +148,8 @@ class View:
                 loja[chave] = d[campo]
         if d.get("min_podman"):
             loja["min_podman"] = d["min_podman"]
+        if d.get("requires_https"):
+            loja["requires_https"] = "true"
         if d.get("deprecated"):
             loja["deprecated"] = d["deprecated"]
         if loja:
@@ -275,6 +278,8 @@ def problems(data, grupos, folder=None):
     arq = data.get("architectures")
     if arq is not None and (not isinstance(arq, list) or not arq or not set(arq) <= {"amd64", "arm64", "arm", "riscv64", "386", "ppc64le", "s390x"}):
         erros.append('"architectures" must be a list of: amd64, arm64, arm, riscv64, 386, ppc64le, s390x')
+    if "requires_https" in data and data["requires_https"] is not True:
+        erros.append('"requires_https" is `true` or left out')
     for k in ("notes", "deprecated"):
         if k in data and not isinstance(data[k], str):
             erros.append(f'"{k}" must be a string')
@@ -323,7 +328,7 @@ def splice(readme_text, tabela):
 def selftest():
     d = {"title": "X", "category": "Tools", "short_desc": {"en": "a one-liner", "pt": "uma linha"},
          "description": {"en": "long", "pt": "longa"}, "author": "o", "source": "https://github.com/o/r",
-         "docs": "https://d.example", "architectures": ["amd64"], "min_podman": "5.4", "deprecated": "gone",
+         "docs": "https://d.example", "architectures": ["amd64"], "min_podman": "5.4", "requires_https": True, "deprecated": "gone",
          "secrets": {"s1": "rand-hex 8", "s2": "shell x"},
          "config": {"c.conf": "%h/c"}, "vars": {"V": "~/v"}, "validate": {"s1": "shell y"},
          "login": {"user": "u", "password": "s1"},
@@ -351,6 +356,7 @@ def selftest():
     assert problems(sd(""), ("Tools",)) and problems({**d, "short_desc": "plain"}, ("Tools",)) and problems({**d, "description": {"en": "a"}}, ("Tools",))
     assert problems({**d, "architectures": ["x86"]}, ("Tools",)) and problems({**d, "source": "http://x"}, ("Tools",))
     assert problems({**d, "tagline": "old"}, ("Tools",)), "tagline became short_desc"
+    assert v.get("store", "requires_https") == "true" and problems({**d, "requires_https": False}, ("Tools",))
     assert problems({**d, "category": "Nope"}, ("Tools",)) and problems({**d, "notes": {"en": "x"}}, ("Tools",))
     assert problems({**d, "wat": 1}, ("Tools",)), "an unknown key is a typo"
     assert problems({**d, "icon": "https://x/y.svg"}, ("Tools",)), "the logo is a file now, not a field"

@@ -45,6 +45,8 @@ const T = {
       cgroupns_host: "Enxerga os cgroups do host",
       selinux_off: "Sem o rótulo SELinux: pode ler volumes de outros apps",
       devices: "Acessa dispositivos do host", capabilities: "Capabilities extras do kernel" },
+    httpsNeeded: "precisa de HTTPS",
+    httpsWarn: "Este app precisa de HTTPS: pela rede local (HTTP) o cofre e o service worker falham sem avisar. Use o acesso pela tailnet.",
     podmanOld: (need, host) => `Este app precisa do Podman ${need}+; o host tem ${host}. Atualize o Podman antes de instalar.`,
     hostCpu: "carga", hostMem: "RAM", hostUp: "ligado há",
     trialLabel: "Experimentar", trialKeep: "Manter", trialBadge: "experimento",
@@ -163,6 +165,8 @@ const T = {
       cgroupns_host: "Sees the host's cgroups",
       selinux_off: "No SELinux label: can read other apps' volumes",
       devices: "Accesses host devices", capabilities: "Extra kernel capabilities" },
+    httpsNeeded: "needs HTTPS",
+    httpsWarn: "This app needs HTTPS: over the local network (HTTP) the vault and the service worker fail without saying why. Use tailnet access.",
     podmanOld: (need, host) => `This app needs Podman ${need}+; the host has ${host}. Update Podman before installing.`,
     hostCpu: "load", hostMem: "RAM", hostUp: "up",
     trialLabel: "Try it", trialKeep: "Keep", trialBadge: "trial",
@@ -770,9 +774,12 @@ function renderPanel() {
   fill($("p-perms"), ...(perms.length ? [h("strong", {}, t("permsTitle"))] : []),
     ...perms.map((p) => h("div", { class: `perm perm-${p.kind}` },
       t("perm")[p.kind] + (p.kind === "devices" || p.kind === "capabilities" ? `: ${p.items.join(", ")}` : ""))));
-  $("p-notice").hidden = !motivo && !trial && !velho;
+  // Over plain HTTP (the local-only rule or exception) an app that needs HTTPS breaks silently.
+  const httpsRisco = a.requires_https && (a.access.exception || S.rule) === "local";
+  $("p-notice").hidden = !motivo && !trial && !velho && !httpsRisco;
   if (motivo) $("p-notice").textContent = `${t("deprecatedNote")} ${motivo}${a.installed ? "" : ` ${t("noInstall")}`}`;
   else if (velho) $("p-notice").textContent = velho;
+  else if (httpsRisco) $("p-notice").textContent = t("httpsWarn");
   else if (trial) $("p-notice").textContent = trial;
   const acoes = a.installed ? [controls(a)] : [];
   if (!a.installed) {
@@ -1389,7 +1396,8 @@ function accessPicker(a) {
   const atual = a.access.exception || "default";
   const sel = h("select", { "aria-label": t("access") },
     h("option", { value: "default", selected: atual === "default" }, t("followRule")(t("modes")[S.rule] || S.rule)),
-    ...["local", "tailnet", "both"].map((m) => h("option", { value: m, selected: atual === m }, t("modes")[m])));
+    ...["local", "tailnet", "both"].map((m) => h("option", { value: m, selected: atual === m },
+      t("modes")[m] + (m === "local" && a.requires_https ? ` ⚠ ${t("httpsNeeded")}` : ""))));
   sel.onchange = () => follow(() => api("/api/run", { app: a.id, action: "access", mode: sel.value }));
   return h("label", { class: "access" }, `${t("access")}: `, sel);
 }

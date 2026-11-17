@@ -1,6 +1,18 @@
 {
   "title": "Vaultwarden",
+  "short_desc": {
+    "en": "A password manager you host yourself.",
+    "pt": "Um gerenciador de senhas que você hospeda."
+  },
+  "description": {
+    "en": "A password vault compatible with Bitwarden's protocol, light enough to run anywhere",
+    "pt": "Cofre de senhas compatível com o protocolo do Bitwarden, leve o bastante pra rodar em qualquer lugar"
+  },
+  "author": "dani-garcia",
+  "source": "https://github.com/dani-garcia/vaultwarden",
+  "docs": "https://github.com/dani-garcia/vaultwarden/wiki",
   "category": "Network & Security",
+  "requires_https": true,
   "notes": "Open `https://vaultwarden.<your-tailnet>.ts.net`.\n\nThe vault is reachable over the tailnet only. `PublishPort=8082:80` ships\ncommented out in the unit: publishing it would also answer to anyone on the\nLAN, which is a wider door than a password vault needs. Uncomment it if you\nwant `http://<host-ip>:8082` too.",
   "secrets": {
     "vaultwarden-admin-token": "manual generate it with `podman run --rm vaultwarden/server:alpine /vaultwarden hash` and paste the hash"
@@ -10,16 +22,5 @@
       "upstream": "dani-garcia/vaultwarden",
       "image": "{version}-alpine"
     }
-  },
-  "short_desc": {
-    "en": "A password manager you host yourself.",
-    "pt": "Um gerenciador de senhas que você hospeda."
-  },
-  "description": {
-    "en": "A password vault compatible with Bitwarden's protocol, light enough to run anywhere",
-    "pt": "Cofre de senhas compatível com o protocolo do Bitwarden, leve o bastante pra rodar em qualquer lugar"
-  },
-  "docs": "https://github.com/dani-garcia/vaultwarden/wiki",
-  "source": "https://github.com/dani-garcia/vaultwarden",
-  "author": "dani-garcia"
+  }
 }

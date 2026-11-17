@@ -617,6 +617,7 @@ def check_manifest(folders):
                                  else [f"is not one of: {', '.join(GRUPOS)}"] if key == "group"
                                  else [] if key == "min_podman" and re.fullmatch(r"\d+\.\d+(\.\d+)?", valor.strip())
                                  else ["is not a version like 5.4"] if key == "min_podman"
+                                 else [] if key == "requires_https"
                                  else deprecated_problemas(valor)):
                     error("manifest", f"apps/{folder.name}: app.json [store] {key} {problema}")
         # [vars]: every ${VAR} a Volume= of this folder names needs a default

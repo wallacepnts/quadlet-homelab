@@ -47,6 +47,7 @@ apps/memos/
 | `architectures` | no | `["amd64", "arm64"]`: what the image runs on, when known (the panel asks the registry too). |
 | `category` | no | One of the groups in `qhui.GRUPOS` (the store's categories). Infrastructure with no place among them (homepage, postfix, toolbx) has none. |
 | `min_podman` | no | `"5.4"`: a floor above the 5.0 that `Notify=healthy` already needs. |
+| `requires_https` | no | `true`: the app breaks over plain HTTP (a vault, a service worker). The panel warns when it is reached by the local network only. |
 | `deprecated` | no | Text: why it is discontinued. The store offers no install. |
 | `notes` | no | Markdown: what to do at the first run and what is odd about the app. The panel shows it. |
 | `secrets` | per `Secret=` | `{"<secret>": "rand-hex 32"}`: how each secret is made (`rand-hex N`, `rand-base64 N`, `rand-urlsafe N`, `rand-alnum N`, `shell <cmd>`, `manual <text>`). |

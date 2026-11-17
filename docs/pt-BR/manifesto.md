@@ -47,6 +47,7 @@ apps/memos/
 | `architectures` | não | `["amd64", "arm64"]`: onde a imagem roda, quando se sabe (o painel também pergunta ao registry). |
 | `category` | não | Um dos grupos de `qhui.GRUPOS` (as categorias da loja). Infraestrutura sem lugar entre elas (homepage, postfix, toolbx) não tem. |
 | `min_podman` | não | `"5.4"`: um piso acima do 5.0 que o `Notify=healthy` já exige. |
+| `requires_https` | não | `true`: o app quebra em HTTP puro (um cofre, um service worker). O painel avisa quando ele é acessado só pela rede local. |
 | `deprecated` | não | Texto: por que foi descontinuado. A loja não oferece instalar. |
 | `notes` | não | Markdown: o que fazer no primeiro acesso e o que o app tem de estranho. O painel mostra. |
 | `secrets` | por `Secret=` | `{"<secret>": "rand-hex 32"}`: como cada secret é feito (`rand-hex N`, `rand-base64 N`, `rand-urlsafe N`, `rand-alnum N`, `shell <cmd>`, `manual <texto>`). |
