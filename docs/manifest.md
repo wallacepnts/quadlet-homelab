@@ -56,6 +56,7 @@ apps/memos/
 | `vars` | per `${VAR}` in a `Volume=` | `{"MEDIA_DATA_DIR": "~/data"}`: the systemd variables a unit uses, and the default the install offers. |
 | `login` | no | `{"user": "admin", "password": "<secret>"}`, or `{"credentials": "<secret>"}` when one secret holds `user:password`: what the install prints. |
 | `choices` | no | `{"VERSION": {"question": "…", "options": [{"value": "11", "label": "Windows 11"}, "10"]}}`: a pick from a fixed list that only matters on the first install. An option is `{value, label}` or just the value. The first is the default. |
+| `options` | no | `{"database": {"question": "…", "default": "sqlite", "values": {"sqlite": {"label": "SQLite"}, "postgres": {"label": "PostgreSQL", "units": ["app-postgres"], "env": {"DB_HOST": "…"}, "secrets": ["app-db-password"]}}}}`: a choice the developer offers at the first install. A value names the optional `units` it switches on, the `env` variables it adds to the `.env` and the `secrets` it needs (each with a recipe in `secrets`). A unit no value names is always on. At least two values; `default` is one of them. |
 | `backup` | no | `{"mode": "stop", "exclude": ["upload/thumbs"]}`: stop the service for the copy, and the folders that rebuild themselves. |
 | `units` | no | Per unit, below. |
 

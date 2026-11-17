@@ -56,6 +56,7 @@ apps/memos/
 | `vars` | por `${VAR}` em `Volume=` | `{"MEDIA_DATA_DIR": "~/data"}`: as variáveis do systemd que uma unit usa, e o padrão que a instalação oferece. |
 | `login` | não | `{"user": "admin", "password": "<secret>"}`, ou `{"credentials": "<secret>"}` quando um secret guarda `usuário:senha`: o que a instalação imprime. |
 | `choices` | não | `{"VERSION": {"question": "…", "options": [{"value": "11", "label": "Windows 11"}, "10"]}}`: uma escolha numa lista fechada que só importa na primeira instalação. Uma opção é `{value, label}` ou só o valor. A primeira é o padrão. |
+| `options` | não | `{"database": {"question": "…", "default": "sqlite", "values": {"sqlite": {"label": "SQLite"}, "postgres": {"label": "PostgreSQL", "units": ["app-postgres"], "env": {"DB_HOST": "…"}, "secrets": ["app-db-password"]}}}}`: uma escolha que o desenvolvedor oferece na primeira instalação. Um valor cita as `units` opcionais que liga, as variáveis `env` que acrescenta ao `.env` e os `secrets` de que precisa (cada um com receita em `secrets`). Uma unit que nenhum valor cita fica sempre ligada. No mínimo dois valores; `default` é um deles. |
 | `backup` | não | `{"mode": "stop", "exclude": ["upload/thumbs"]}`: parar o serviço durante a cópia, e as pastas que se refazem sozinhas. |
 | `units` | não | Por unit, abaixo. |
 

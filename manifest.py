@@ -70,7 +70,7 @@ def dump(data):
 
 KEY_ORDER = ["title", "short_desc", "description", "author", "website", "source", "docs", "architectures", "category",
              "min_podman", "requires_https", "deprecated", "notes", "secrets", "validate", "config", "vars",
-             "login", "choices", "backup", "units"]
+             "login", "choices", "options", "backup", "units"]
 
 
 def ordered(data):
@@ -252,6 +252,105 @@ def assets_problems(folder):
     return erros
 
 
+# -- install options ----------------------------------------------------------------------------
+
+OPTION_KEY = re.compile(r"[a-z][a-z0-9_]{0,30}")
+VALUE_KEY = re.compile(r"[a-z0-9][a-z0-9._-]{0,30}")
+
+
+def option_problems(data, folder=None):
+    """What is wrong with `options`, as a list.
+
+    `options.<key>` is a choice the developer offers at the first install (a database, say):
+    `{"question": "...", "default": "<value>", "values": {"<value>": {"label": "...", "units": [...],
+    "env": {"VAR": "x"}, "secrets": ["name"]}}}`. A value switches on the optional units it names, adds
+    the variables to the `.env` and brings the secrets it needs. With `folder`, a named unit has to be a
+    `.container` there; a named secret has to be one `secrets` makes."""
+    ops = data.get("options")
+    if ops is None:
+        return []
+    if not isinstance(ops, dict):
+        return ['"options" must be an object']
+    erros = []
+    feitos = set(data.get("secrets") or {}) if isinstance(data.get("secrets"), dict) else set()
+    for chave, o in ops.items():
+        onde = f'options.{chave}'
+        if not OPTION_KEY.fullmatch(str(chave)):
+            erros.append(f'{onde}: the key is lowercase letters, digits and _')
+        if not isinstance(o, dict):
+            erros.append(f"{onde} must be an object")
+            continue
+        for k in set(o) - {"question", "default", "values"}:
+            erros.append(f"{onde}: unknown key {k!r}")
+        if not isinstance(o.get("question"), str) or not o["question"].strip():
+            erros.append(f'{onde}: "question" is required')
+        vals = o.get("values")
+        if not isinstance(vals, dict) or len(vals) < 2:
+            erros.append(f'{onde}: "values" needs at least two values (one is no choice)')
+            continue
+        if o.get("default") not in vals:
+            erros.append(f'{onde}: "default" must be one of the values: {", ".join(vals)}')
+        for nome, v in vals.items():
+            ov = f"{onde}.{nome}"
+            if not VALUE_KEY.fullmatch(str(nome)):
+                erros.append(f"{ov}: the value is lowercase letters, digits, . _ -")
+            if not isinstance(v, dict):
+                erros.append(f"{ov} must be an object")
+                continue
+            for k in set(v) - {"label", "units", "env", "secrets"}:
+                erros.append(f"{ov}: unknown key {k!r}")
+            if not isinstance(v.get("label"), str) or not v["label"].strip():
+                erros.append(f'{ov}: "label" is required')
+            for k in ("units", "secrets"):
+                if k in v and not (isinstance(v[k], list) and all(isinstance(x, str) and x for x in v[k])):
+                    erros.append(f'{ov}: "{k}" is a list of names')
+            if "env" in v and not (isinstance(v["env"], dict) and all(isinstance(a, str) and isinstance(b, str)
+                                                                      and re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", a)
+                                                                      for a, b in v["env"].items())):
+                erros.append(f'{ov}: "env" is {{"VARIABLE": "value"}}')
+            if folder is not None:
+                for u in v.get("units", []) if isinstance(v.get("units"), list) else []:
+                    if not (Path(folder) / f"{u}.container").is_file():
+                        erros.append(f"{ov}: unit {u!r} is not a .container in the folder")
+            for sec in v.get("secrets", []) if isinstance(v.get("secrets"), list) else []:
+                if sec not in feitos:
+                    erros.append(f'{ov}: secret {sec!r} has no recipe in "secrets"')
+    return erros
+
+
+def option_units(data):
+    """The units some value of some option names: optional, so they are only on when a chosen value says so."""
+    return {u for o in (data.get("options") or {}).values() for v in o.get("values", {}).values() for u in v.get("units", [])}
+
+
+def chosen_options(data, chosen=None):
+    """{option: value} with the default where nothing was chosen (an unknown choice is ignored)."""
+    saida = {}
+    for chave, o in (data.get("options") or {}).items():
+        v = (chosen or {}).get(chave)
+        saida[chave] = v if v in o["values"] else o["default"]
+    return saida
+
+
+def active_units(data, all_units, chosen=None):
+    """The units to install: every one no value names, plus those the chosen values name."""
+    ligadas = {u for chave, nome in chosen_options(data, chosen).items()
+               for u in data["options"][chave]["values"][nome].get("units", [])}
+    return [u for u in all_units if u not in option_units(data) or u in ligadas]
+
+
+def option_env(data, chosen=None):
+    """The variables the chosen values add to the `.env`."""
+    return {k: v for chave, nome in chosen_options(data, chosen).items()
+            for k, v in data["options"][chave]["values"][nome].get("env", {}).items()}
+
+
+def option_secrets(data, chosen=None):
+    """The extra secrets the chosen values need, in order, without repeats."""
+    return list(dict.fromkeys(s for chave, nome in chosen_options(data, chosen).items()
+                              for s in data["options"][chave]["values"][nome].get("secrets", [])))
+
+
 # -- validation -------------------------------------------------------------------------------
 
 def problems(data, grupos, folder=None):
@@ -288,6 +387,7 @@ def problems(data, grupos, folder=None):
             erros.append(f'"{k}" must be an object')
     if "units" in data and not isinstance(data["units"], dict):
         erros.append('"units" must be an object')
+    erros += option_problems(data, folder)
     desconhecidas = set(data) - set(KEY_ORDER)
     if desconhecidas:
         erros.append(f"unknown key(s): {', '.join(sorted(desconhecidas))}")
@@ -358,6 +458,22 @@ def selftest():
     assert problems({**d, "tagline": "old"}, ("Tools",)), "tagline became short_desc"
     assert v.get("store", "requires_https") == "true" and problems({**d, "requires_https": False}, ("Tools",))
     assert problems({**d, "category": "Nope"}, ("Tools",)) and problems({**d, "notes": {"en": "x"}}, ("Tools",))
+    opt = {"database": {"question": "Database?", "default": "sqlite", "values": {
+        "sqlite": {"label": "SQLite"},
+        "postgres": {"label": "PostgreSQL", "units": ["x-pg"], "env": {"DB": "pg"}, "secrets": ["s1"]}}}}
+    dd = {**d, "options": opt}
+    assert problems(dd, ("Tools",)) == [] and option_units(dd) == {"x-pg"}
+    assert chosen_options(dd) == {"database": "sqlite"} and chosen_options(dd, {"database": "nope"}) == {"database": "sqlite"}
+    assert active_units(dd, ["x", "x-pg"]) == ["x"] and active_units(dd, ["x", "x-pg"], {"database": "postgres"}) == ["x", "x-pg"]
+    assert option_env(dd) == {} and option_env(dd, {"database": "postgres"}) == {"DB": "pg"}
+    assert option_secrets(dd, {"database": "postgres"}) == ["s1"] and option_secrets(dd) == []
+    bad = lambda o: problems({**d, "options": o}, ("Tools",))
+    assert bad({"Database": opt["database"]}) and bad({"database": {**opt["database"], "default": "mysql"}})
+    assert bad({"database": {**opt["database"], "values": {"a": {"label": "A"}}}}), "one value is no choice"
+    assert bad({"database": {**opt["database"], "values": {"a": {"label": "A"}, "b": {}}}}), "a label is required"
+    assert bad({"database": {**opt["database"], "question": ""}}) and bad({"database": {**opt["database"], "x": 1}})
+    assert bad({"database": {**opt["database"], "values": {"a": {"label": "A"}, "b": {"label": "B", "secrets": ["nope"]}}}})
+    assert bad({"database": {**opt["database"], "values": {"a": {"label": "A"}, "b": {"label": "B", "env": {"1x": "y"}}}}})
     assert problems({**d, "wat": 1}, ("Tools",)), "an unknown key is a typo"
     assert problems({**d, "icon": "https://x/y.svg"}, ("Tools",)), "the logo is a file now, not a field"
     assert problems({**d, "license": "MIT"}, ("Tools",)), "no licence field: the project's own repository says"
@@ -367,6 +483,11 @@ def selftest():
     import tempfile
     with tempfile.TemporaryDirectory() as tmp:
         pasta = Path(tmp)
+        sub = pasta / "opt"
+        sub.mkdir()
+        assert any("x-pg" in e for e in option_problems(dd, sub)), "a named unit has to exist in the folder"
+        (sub / "x-pg.container").write_text("[Container]\nImage=x\n")
+        assert option_problems(dd, sub) == []
         # an Image= with no tag implies the `{version}` template; a different shape, a tag, a digest or a
         # source that is not a GitHub release does not
         (pasta / "app.container").write_text("[Container]\nImage=docker.io/o/app\n")
