@@ -455,3 +455,11 @@ an SSH key. To revoke it, delete the file and restart the service.
 `qh-store --prefix /tmp/test` points it at a sandbox, like `qh --prefix`.
 `qh-store --selftest` covers login, the request checks, and a full install
 against a sandbox.
+
+## `screenshots.py`
+
+Looks for screenshots in the README of each app's `source` and, only with `--apply`, saves them as
+`apps/<app>/screenshots/1.png…`. It takes only what the project hosts itself (its own repository, or GitHub's
+`user-attachments`), checks each image (200, `image/png|jpeg|webp|gif`, up to 1 MB, not an icon), and by default
+leaves alone an app that already has screenshots (`--app <name>` replaces them). Read the dry run before
+`--apply`: it prints every address.
