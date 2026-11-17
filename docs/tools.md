@@ -463,3 +463,13 @@ Looks for screenshots in the README of each app's `source` and, only with `--app
 `user-attachments`), checks each image (200, `image/png|jpeg|webp|gif`, up to 1 MB, not an icon), and by default
 leaves alone an app that already has screenshots (`--app <name>` replaces them). Read the dry run before
 `--apply`: it prints every address.
+
+## Alerts (`alerts.py`, in `qh-store`)
+
+Off by default. **Settings → Alerts** takes an ntfy server, a topic and an optional token, and the store checks
+every five minutes: a unit that failed, a container that is unhealthy, a unit restarting in a loop (three restarts,
+the last within the hour), a new upstream release, and a disk past the chosen percentage. A backup the store ran
+that failed is told at once. The same alert is not sent again within the cooldown (6 hours by default), and a
+release is told once per version. The settings are in `~/.config/quadlet-homelab/alerts.json` (mode 600, it may
+hold the token, which the page never receives back); what was sent and when is in
+`~/.cache/quadlet-homelab/alerts-state.json`. Backups scheduled by Zerobyte are not watched.

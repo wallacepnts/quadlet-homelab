@@ -52,6 +52,7 @@ sys.path.insert(0, str(ROOT))
 import overrides as O  # noqa: E402
 import qhui  # noqa: E402
 import resources  # noqa: E402
+import alerts as A  # noqa: E402
 import imagepin  # noqa: E402
 import manifest  # noqa: E402
 import trials  # noqa: E402
@@ -361,6 +362,52 @@ def apps_with_update(lang="en"):
         elif any(u.get("drift") for u in us):
             saida.append((a["id"], "update"))
     return saida
+
+
+# -- alerts ----------------------------------------------------------------------
+
+ALERT_LOCK, ALERT_EVERY = threading.Lock(), 300
+
+
+def alert_home():
+    return Path(PREFIX) if PREFIX else Path.home()
+
+
+def alerts_tick(**kw):
+    """One check of what is wrong, telling the ntfy topic (alerts.py); quiet when alerts are off."""
+    cfg = A.load(alert_home())
+    if not cfg["enabled"]:
+        return []
+    cat = catalog("en")["apps"]
+    with ALERT_LOCK:
+        return A.run(cat, updates()["rows"], alert_home(), cfg, **kw)
+
+
+def alerts_loop():
+    while True:
+        time.sleep(ALERT_EVERY)
+        try:
+            alerts_tick()
+        except Exception as e:        # a failed check must not end the watcher
+            print(f"alerts: {type(e).__name__}: {e}", file=sys.stderr, flush=True)
+
+
+def alert_backup_failed(job):
+    """A backup job ended with an error: told at once, not at the next check."""
+    cfg = A.load(alert_home())
+    if not cfg["enabled"] or not cfg["kinds"].get("backup"):
+        return
+    ev = {"key": f"backup:{job.app}", "kind": "backup", "title": f"Backup of {job.app} failed",
+          "message": f"The backup exited with code {job.rc}. See the history in the store."}
+    with ALERT_LOCK:
+        A.run([], [], alert_home(), cfg, extra=[ev])
+
+
+def alerts_state(home=None):
+    try:
+        return json.loads(A.state_file(home or alert_home()).read_text())
+    except (OSError, ValueError):
+        return {}
 
 
 def settings():
@@ -1472,6 +1519,11 @@ def start_job(app, action, cmd, lang, prepare=None, entrada=None, refrescar=None
                 for x in (refrescar or [app]):
                     refresh_updates(x)
             job.rc = rc
+            if action == "backup" and rc:
+                try:
+                    alert_backup_failed(job)
+                except Exception:
+                    pass
         except Exception as e:        # the page must learn the job ended
             job.write(f"\n{type(e).__name__}: {e}\n")
             job.rc = 1
@@ -1791,6 +1843,9 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, {"links": links(app)})
         if url.path == "/api/settings":
             return self._json(200, settings())
+        if url.path == "/api/alerts":
+            return self._json(200, {"config": A.public(A.load(alert_home())), "kinds": list(A.KINDS),
+                                    "sent": len(alerts_state())})
         if url.path == "/api/dirs":
             try:
                 return self._json(200, list_dirs(q.get("path", "")))
@@ -1940,6 +1995,24 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(409, {"error": loc("another job is running")})
             return self._json(202, {"job": job.id})
 
+        if url.path == "/api/alerts":
+            atual = A.load(alert_home())
+            if d.get("clear_token"):
+                atual["token"] = ""
+            novo = {**atual, **{k: v for k, v in d.items() if k in A.DEFAULTS and k != "token"}}
+            if d.get("token"):
+                novo["token"] = d["token"]
+            cfg, erros = A.clean(novo)
+            if erros:
+                return self._json(400, {"error": "; ".join(erros)})
+            A.save(cfg, alert_home())
+            return self._json(200, {"config": A.public(cfg)})
+        if url.path == "/api/alerts/test":
+            cfg = A.load(alert_home())
+            if not (cfg["server"] and cfg["topic"]):
+                return self._json(400, {"error": "set the server and the topic first"})
+            erro = A.push(cfg, {"kind": "test", "title": "Quadlet store: test", "message": "Alerts are working."})
+            return self._json(200 if not erro else 502, {"ok": not erro, **({"error": erro} if erro else {})})
         if url.path == "/api/settings":
             modo = d.get("access", "")
             if modo not in I.ACCESS_MODES:
@@ -2651,6 +2724,29 @@ def selftest():
             assert cfg1["access"] == "both" and cfg1["default"] is False, cfg1
             st, _, corpo = pedir("/api/settings", json.dumps({"access": "tailnet"}).encode(), api)
             assert espera_job(corpo)["rc"] == 0
+            # alerts: opt-in, validated, the token never comes back, a test message reaches the ntfy topic
+            recebido = []
+            class Ntfy(BaseHTTPRequestHandler):
+                def do_POST(self):
+                    recebido.append((self.path, self.headers.get("Authorization"), self.rfile.read(int(self.headers["Content-Length"]))))
+                    self.send_response(200); self.end_headers()
+                def log_message(self, *a): pass
+            ntfy = ThreadingHTTPServer(("127.0.0.1", 0), Ntfy)
+            threading.Thread(target=ntfy.serve_forever, daemon=True).start()
+            al0 = json.loads(pedir("/api/alerts", headers=ok)[2])
+            assert al0["config"]["enabled"] is False and "token" not in al0["config"], al0
+            assert pedir("/api/alerts", json.dumps({"enabled": True}).encode(), api)[0] == 400, "on needs a server and a topic"
+            assert pedir("/api/alerts/test", b"{}", api)[0] == 400
+            corpo_al = {"enabled": True, "server": f"http://127.0.0.1:{ntfy.server_address[1]}", "topic": "lab", "token": "tk_abc"}
+            st, _, c = pedir("/api/alerts", json.dumps(corpo_al).encode(), api)
+            assert st == 200 and json.loads(c)["config"]["has_token"] is True and b"tk_abc" not in c, c
+            assert b"tk_abc" not in pedir("/api/alerts", headers=ok)[2]
+            st, _, c = pedir("/api/alerts", json.dumps({"disk_percent": 80}).encode(), api)
+            assert st == 200 and A.load(Path(tmp))["token"] == "tk_abc" and A.load(Path(tmp))["disk_percent"] == 80, "the token stays when the form leaves it blank"
+            assert pedir("/api/alerts/test", b"{}", api)[0] == 200
+            assert recebido and recebido[0][0] == "/lab" and recebido[0][1] == "Bearer tk_abc", recebido
+            ntfy.shutdown()
+            pedir("/api/alerts", json.dumps({"enabled": False}).encode(), api)
             assert pedir("/api/update-all", b"{}", api)[0] == 400, "nothing to update in the sandbox"
             antes_apps, apps_with_update_orig = None, apps_with_update
             try:
@@ -2947,6 +3043,8 @@ def main():
     global PREFIX
     PREFIX = a.prefix
     I.SANDBOX = bool(a.prefix)
+    if not PREFIX:
+        threading.Thread(target=alerts_loop, daemon=True).start()
     *outros, ultimo = serve(a.listen)
     for srv in outros:
         threading.Thread(target=srv.serve_forever, daemon=True).start()

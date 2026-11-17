@@ -440,6 +440,21 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   const textoCfg = $("s-body").textContent;
   confere(/Como os apps são acessados/.test(textoCfg) && /Ainda não escolhida/.test(textoCfg) && /2 serviço\(s\) instalado\(s\) não seguem/.test(textoCfg) && /Tailnet não configurada/.test(textoCfg),
     `Configurações: a regra, quem não a segue e a tailnet (${textoCfg.slice(0, 60)})`);
+  // alerts: the form comes with the settings, nothing is on by default, the token is write-only
+  rotas["/api/alerts"] = { config: { enabled: false, server: "", topic: "", cooldown_hours: 6, disk_percent: 90, has_token: true,
+                           kinds: { failed: true, unhealthy: true, restart_loop: true, backup: true, update: true, disk: true } },
+                           kinds: ["failed", "unhealthy", "restart_loop", "backup", "update", "disk"], sent: 0 };
+  rotas["/api/alerts/test"] = { ok: true };
+  await api.openSettings(); await esperar(50);
+  confere(/Alertas/.test($("s-body").textContent) && /Disco cheio/.test($("s-body").textContent) && /Backup falhou/.test($("s-body").textContent), "Configurações: seção de alertas");
+  const entradas = [...$("s-body").walk()].filter((e) => e.tag === "input" && ["text", "password"].includes(e.attrs.type));
+  confere(entradas.length === 3 && entradas[2].attrs.placeholder && /já definido/.test(entradas[2].attrs.placeholder), "o token já definido não volta: só o aviso");
+  entradas[0].value = "https://ntfy.example.org"; entradas[1].value = "lab";
+  const antesAl = posts.length;
+  porTexto($("s-body"), "Enviar teste")[0].listeners.click(); await esperar(80);
+  const salvou = posts.slice(antesAl).find((x) => x.rota === "/api/alerts");
+  confere(salvou && salvou.corpo.server === "https://ntfy.example.org" && salvou.corpo.topic === "lab" && salvou.corpo.token === undefined && salvou.corpo.kinds.disk === true, `alertas: salva sem reenviar o token (${JSON.stringify(salvou && salvou.corpo)})`);
+  confere(posts.slice(antesAl).some((x) => x.rota === "/api/alerts/test"), "o teste só sai depois de salvar");
   const rBoth = [...$("s-body").walk()].find((e) => e.tag === "input" && e.attrs.value === "both");
   rBoth.listeners.change();
   rotas["/api/settings"] = { ...rotas["/api/settings"], access: "both", default: false, drift: [] };

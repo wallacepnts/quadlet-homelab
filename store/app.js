@@ -45,6 +45,12 @@ const T = {
       cgroupns_host: "Enxerga os cgroups do host",
       selinux_off: "Sem o rótulo SELinux: pode ler volumes de outros apps",
       devices: "Acessa dispositivos do host", capabilities: "Capabilities extras do kernel" },
+    alerts: "Alertas", alertsDesc: "Avisa um tópico do ntfy quando algo falha. Desligado por padrão; o mesmo aviso não se repete dentro do intervalo.",
+    alertsOn: "Ativar alertas", alertServer: "Servidor ntfy (ex.: https://ntfy.exemplo.org)", alertTopic: "Tópico", alertToken: "Token (opcional)",
+    alertTokenSet: "já definido; deixe em branco para manter", alertCooldown: "Não repetir antes de (horas)", alertDisk: "Disco acima de (%)",
+    alertKinds: { failed: "Unit falhou", unhealthy: "Container unhealthy", restart_loop: "Loop de reinício", backup: "Backup falhou",
+                  update: "Versão nova do projeto", disk: "Disco cheio" },
+    alertSave: "Salvar alertas", alertTest: "Enviar teste", alertSaved: "Alertas salvos.", alertTested: "Teste enviado.",
     httpsNeeded: "precisa de HTTPS",
     httpsWarn: "Este app precisa de HTTPS: pela rede local (HTTP) o cofre e o service worker falham sem avisar. Use o acesso pela tailnet.",
     podmanOld: (need, host) => `Este app precisa do Podman ${need}+; o host tem ${host}. Atualize o Podman antes de instalar.`,
@@ -165,6 +171,12 @@ const T = {
       cgroupns_host: "Sees the host's cgroups",
       selinux_off: "No SELinux label: can read other apps' volumes",
       devices: "Accesses host devices", capabilities: "Extra kernel capabilities" },
+    alerts: "Alerts", alertsDesc: "Tells an ntfy topic when something fails. Off by default; the same alert is not repeated within the interval.",
+    alertsOn: "Turn alerts on", alertServer: "ntfy server (e.g. https://ntfy.example.org)", alertTopic: "Topic", alertToken: "Token (optional)",
+    alertTokenSet: "already set; leave blank to keep it", alertCooldown: "Do not repeat within (hours)", alertDisk: "Disk above (%)",
+    alertKinds: { failed: "Unit failed", unhealthy: "Container unhealthy", restart_loop: "Restart loop", backup: "Backup failed",
+                  update: "New upstream release", disk: "Disk almost full" },
+    alertSave: "Save alerts", alertTest: "Send a test", alertSaved: "Alerts saved.", alertTested: "Test sent.",
     httpsNeeded: "needs HTTPS",
     httpsWarn: "This app needs HTTPS: over the local network (HTTP) the vault and the service worker fail without saying why. Use tailnet access.",
     podmanOld: (need, host) => `This app needs Podman ${need}+; the host has ${host}. Update Podman before installing.`,
@@ -1488,7 +1500,44 @@ async function renderSettings() {
       h("div", { class: "row" },
         h("button", { type: "button", onclick: () => rodar(false) }, t("saveRule")),
         h("button", { type: "button", class: "ghost", onclick: () => rodar(true) }, t("applyRule")))),
+    await alertsSection(),
     h("section", {}, h("p", { class: "muted" }, c.tailnet ? t("tailnetOn") : t("tailnetOff"))));
+}
+
+// Alerts to an ntfy topic: opt-in; the token is write-only (the server never sends it back).
+async function alertsSection() {
+  let r;
+  try { r = await api("/api/alerts"); } catch (e) { return null; }
+  const c = r.config, msg = h("p", { class: "muted" });
+  const caixa = (marcada) => h("input", { type: "checkbox", checked: marcada });
+  const entrada = (tipo, valor, extra = {}) => h("input", { type: tipo, value: valor ?? "", autocomplete: "off", ...extra });
+  const on = caixa(c.enabled), server = entrada("text", c.server), topic = entrada("text", c.topic);
+  const token = entrada("password", "", { placeholder: c.has_token ? t("alertTokenSet") : "" });
+  const cool = entrada("number", c.cooldown_hours, { min: 1, max: 168 }), disk = entrada("number", c.disk_percent, { min: 50, max: 99 });
+  const kinds = Object.fromEntries(r.kinds.map((k) => [k, caixa(c.kinds[k])]));
+  const campo = (rotulo, el) => h("label", { class: "field" }, `${rotulo} `, el);
+  const corpo = () => ({
+    enabled: on.checked, server: server.value.trim(), topic: topic.value.trim(),
+    cooldown_hours: Number(cool.value), disk_percent: Number(disk.value),
+    kinds: Object.fromEntries(r.kinds.map((k) => [k, kinds[k].checked])),
+    ...(token.value ? { token: token.value } : {}),
+  });
+  const guardar = async () => {
+    try { await api("/api/alerts", corpo()); msg.textContent = t("alertSaved"); msg.className = "muted"; return true; }
+    catch (e) { msg.textContent = String(e.message); msg.className = "bad"; return false; }
+  };
+  const testar = async () => {
+    if (!(await guardar())) return;
+    try { await api("/api/alerts/test", {}); msg.textContent = t("alertTested"); msg.className = "muted"; }
+    catch (e) { msg.textContent = String(e.message); msg.className = "bad"; }
+  };
+  return h("section", {}, h("h3", {}, t("alerts")), h("p", { class: "muted" }, t("alertsDesc")),
+    h("label", { class: "check" }, on, ` ${t("alertsOn")}`),
+    campo(t("alertServer"), server), campo(t("alertTopic"), topic), campo(t("alertToken"), token),
+    campo(t("alertCooldown"), cool), campo(t("alertDisk"), disk),
+    ...r.kinds.map((k) => h("label", { class: "check" }, kinds[k], ` ${t("alertKinds")[k]}`)),
+    h("div", { class: "row" }, h("button", { type: "button", onclick: guardar }, t("alertSave")),
+      h("button", { type: "button", class: "ghost", onclick: testar }, t("alertTest"))), msg);
 }
 
 async function openResources() {
