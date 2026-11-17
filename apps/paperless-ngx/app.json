@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "paperless-ngx",
   "title": "Paperless-ngx",
-  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/paperless-ngx.svg",
   "tagline": {
     "en": "Scans, OCRs and indexes documents automatically, with full-text search so you never hunt for paper again",
     "pt": "Digitaliza, faz OCR e indexa documentos automaticamente, com busca full-text pra nunca mais procurar papel"
@@ -11,10 +9,6 @@
   "license": "GPL-3.0.",
   "links": {
     "docs": "https://docs.paperless-ngx.com/"
-  },
-  "notes": {
-    "en": "Open `http://<host-ip>:8091` or `https://paperless.<your-tailnet>.ts.net`.",
-    "pt": "Abrir `http://<ip-do-host>:8091` ou `https://paperless.<your-tailnet>.ts.net`."
   },
   "secrets": {
     "paperless-ngx-secret-key": "rand-base64 64"
@@ -28,9 +22,6 @@
     },
     "paperless-ngx-gotenberg": {
       "upstream": "compose:paperless-ngx/paperless-ngx:docker/compose/docker-compose.sqlite-tika.yml"
-    },
-    "paperless-ngx": {
-      "image": "{version}"
     }
   }
 }

@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "metube",
   "title": "MeTube",
-  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/metube.svg",
   "tagline": {
     "en": "A web interface for yt-dlp — paste the URL and the video lands on disk",
     "pt": "Interface web do yt-dlp — cola a URL e o vídeo cai no disco"
@@ -11,14 +9,5 @@
   "license": "AGPL-3.0",
   "links": {
     "docs": "https://github.com/alexta69/metube#readme"
-  },
-  "notes": {
-    "en": "Open `http://<host-ip>:8100` or `https://metube.<your-tailnet>.ts.net`.",
-    "pt": "Abrir `http://<ip-do-host>:8100` ou `https://metube.<your-tailnet>.ts.net`."
-  },
-  "units": {
-    "metube": {
-      "image": "{version}"
-    }
   }
 }

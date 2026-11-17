@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "zigbee2mqtt",
   "title": "Zigbee2MQTT",
-  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/zigbee2mqtt.svg",
   "tagline": {
     "en": "A bridge between Zigbee devices and MQTT, with no proprietary hub — no coordinator plugged in yet (see its notes in the panel)",
     "pt": "Ponte entre dispositivos Zigbee e MQTT, sem hub proprietário — sem coordenador ligado ainda (veja as notas dele no painel)"
@@ -15,14 +13,10 @@
   "works_with": [
     "home-assistant"
   ],
-  "notes": {
-    "en": "Open `http://<host-ip>:1884` or `https://zigbee2mqtt.<your-tailnet>.ts.net`.",
-    "pt": "Abrir `http://<ip-do-host>:1884` ou `https://zigbee2mqtt.<your-tailnet>.ts.net`."
-  },
   "config": {
     "configuration.yaml": {
       "value": "%h/.config/containers/volumes/zigbee2mqtt/data/configuration.yaml",
-      "note": "Read by the app, never written by it: the destination is inside a volume, so it cannot be derived from the unit the way an .env can. The serial port, the MQTT address and the permit-join setting. The app refuses to start without it."
+      "note": "The serial port, the MQTT address and the permit-join setting. The app refuses to start without it."
     },
     "mosquitto.conf": {
       "value": "%h/.config/containers/volumes/zigbee2mqtt/mosquitto/config/mosquitto.conf",
@@ -32,9 +26,6 @@
   "units": {
     "zigbee2mqtt-mosquitto": {
       "upstream": "registry"
-    },
-    "zigbee2mqtt": {
-      "image": "{version}"
     }
   }
 }

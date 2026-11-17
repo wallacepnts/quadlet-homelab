@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "ntfy",
   "title": "ntfy",
-  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/ntfy.svg",
   "tagline": {
     "en": "A push notification server — where the uptime-kuma, wud and zerobyte alerts go, with a phone app",
     "pt": "Servidor de notificações push — destino dos alertas do uptime-kuma, wud e zerobyte, com app no celular"
@@ -11,10 +9,6 @@
   "license": "Apache-2.0",
   "links": {
     "docs": "https://ntfy.sh"
-  },
-  "notes": {
-    "en": "Open `http://<host-ip>:2586` or `https://ntfy.<your-tailnet>.ts.net`.",
-    "pt": "Abrir `http://<ip-do-host>:2586` ou `https://ntfy.<your-tailnet>.ts.net`."
   },
   "units": {
     "ntfy": {

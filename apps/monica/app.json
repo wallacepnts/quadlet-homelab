@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "monica",
   "title": "Monica",
-  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/monica.svg",
   "tagline": {
     "en": "A personal CRM — relationship history, contacts, reminders",
     "pt": "CRM pessoal — histórico de relacionamentos, contatos, lembretes"
@@ -14,8 +12,8 @@
     "repo": "monicahq/monica"
   },
   "notes": {
-    "en": "Open `http://<host-ip>:9092` or `https://monica.<your-tailnet>.ts.net`.\n\n### Update\n\nBy digest, because `monica-next` publishes no versioned image — only `main` and\n`main-fpm`, rebuilt as the branch moves. The digest freezes one build of it.",
-    "pt": "Abrir `http://<ip-do-host>:9092` ou `https://monica.<your-tailnet>.ts.net`.\n\n### Atualizar\n\nPor digest, porque o `monica-next` não publica imagem com versão — só `main` e\n`main-fpm`, reconstruídas conforme o branch anda. O digest congela um build dela."
+    "en": "### Update\n\nBy digest, because `monica-next` publishes no versioned image — only `main` and\n`main-fpm`, rebuilt as the branch moves. The digest freezes one build of it.",
+    "pt": "### Atualizar\n\nPor digest, porque o `monica-next` não publica imagem com versão — só `main` e\n`main-fpm`, reconstruídas conforme o branch anda. O digest congela um build dela."
   },
   "secrets": {
     "monica-app-key": {

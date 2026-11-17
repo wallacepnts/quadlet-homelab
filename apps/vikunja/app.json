@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "vikunja",
   "title": "Vikunja",
-  "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/svg/vikunja.svg",
   "tagline": {
     "en": "Tasks with a deadline and a project behind them, in list, kanban or gantt",
     "pt": "Tarefas com prazo e projeto por trás, em lista, kanban ou gantt"
@@ -18,11 +16,7 @@
   },
   "units": {
     "vikunja": {
-      "upstream": {
-        "value": "go-vikunja/vikunja",
-        "note": "Vikunja develops on its own Gitea; the GitHub repository that carries the releases is `go-vikunja/vikunja`, not the `vikunja/vikunja` the image implies."
-      },
-      "image": "{version}"
+      "upstream": "go-vikunja/vikunja"
     }
   }
 }

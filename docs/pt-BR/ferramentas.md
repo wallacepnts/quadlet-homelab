@@ -313,17 +313,11 @@ do README de cada serviço, então é escrita uma vez, por uma pessoa, e um link
 que só aponta de volta para o repositório fica de fora. Todos foram conferidos
 quando entraram; o `check.py` não os busca, então um link ainda pode envelhecer.
 
-As capturas de tela vêm do `app.json`, como imagens que o próprio projeto
-hospeda:
-
-```json
-"screenshots": ["https://example.org/captura-1.png", "https://example.org/captura-2.png"]
-```
-
-O `check.py` limita a lista a URLs https, no máximo seis e sem repetição. O
-navegador carrega as imagens de lá, então o host do projeto vê a requisição,
-como já vê nos ícones. Alguns serviços trazem capturas como exemplo; os demais
-ficam sem até alguém acrescentar uma imagem que valha a pena.
+O logo e as capturas de tela são arquivos na pasta do próprio app, `icon.svg` e `screenshots/1.png`,
+`2.png`…, e a loja os serve sozinha (`/assets/<app>/...`, atrás do login, então o navegador nunca pergunta
+a outro host e ninguém de fora vê quais apps você olha). O `check.py` exige um logo (`.svg`, `.png`, `.webp`
+ou `.jpg`, até 512 KB) e limita as capturas a no máximo seis imagens de até 1 MB. Alguns serviços trazem
+capturas; os demais ficam sem até alguém acrescentar uma imagem que valha a pena.
 
 Um serviço descontinuado — arquivado no upstream, ou com a imagem fixada que sumiu
 do registry — é marcado no mesmo arquivo:

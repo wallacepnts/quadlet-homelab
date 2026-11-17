@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "owncloud",
   "title": "ownCloud",
-  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/owncloud.svg",
   "tagline": {
     "en": "File sync and sharing on a cloud of your own",
     "pt": "Sincronização e compartilhamento de arquivos em nuvem própria"
@@ -13,8 +11,8 @@
     "docs": "https://owncloud.com"
   },
   "notes": {
-    "en": "Open `http://<host-ip>:8094` or `https://owncloud.<your-tailnet>.ts.net`.\n\n### Editing documents\n\nWith [Collabora](../collabora) running, `.docx`, `.xlsx` and `.odt` open in the\nbrowser instead of only downloading. Enable the app once:\n\n```bash\npodman exec owncloud occ app:enable richdocuments\npodman exec owncloud occ config:app:set richdocuments wopi_url \\\n  --value=\"https://collabora.<your-tailnet>.ts.net\"\n```\n\nThe `wopi_url` is where your browser loads the editor from, so it is the\ntailnet address and not a container name.",
-    "pt": "Abrir `http://<ip-do-host>:8094` ou `https://owncloud.<your-tailnet>.ts.net`.\n\n### Editando documentos\n\nCom o Collabora rodando, `.docx`, `.xlsx` e\n`.odt` abrem no navegador em vez de só baixar. Ligue o app uma vez:\n\n```bash\npodman exec owncloud occ app:enable richdocuments\npodman exec owncloud occ config:app:set richdocuments wopi_url \\\n  --value=\"https://collabora.<your-tailnet>.ts.net\"\n```\n\nO `wopi_url` é de onde o **seu navegador** carrega o editor, então é o endereço\nda tailnet e não um nome de container."
+    "en": "### Editing documents\n\nWith [Collabora](../collabora) running, `.docx`, `.xlsx` and `.odt` open in the\nbrowser instead of only downloading. Enable the app once:\n\n```bash\npodman exec owncloud occ app:enable richdocuments\npodman exec owncloud occ config:app:set richdocuments wopi_url \\\n  --value=\"https://collabora.<your-tailnet>.ts.net\"\n```\n\nThe `wopi_url` is where your browser loads the editor from, so it is the\ntailnet address and not a container name.",
+    "pt": "### Editando documentos\n\nCom o Collabora rodando, `.docx`, `.xlsx` e\n`.odt` abrem no navegador em vez de só baixar. Ligue o app uma vez:\n\n```bash\npodman exec owncloud occ app:enable richdocuments\npodman exec owncloud occ config:app:set richdocuments wopi_url \\\n  --value=\"https://collabora.<your-tailnet>.ts.net\"\n```\n\nO `wopi_url` é de onde o **seu navegador** carrega o editor, então é o endereço\nda tailnet e não um nome de container."
   },
   "secrets": {
     "owncloud-admin-password": "rand-base64 18"

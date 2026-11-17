@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "frigate",
   "title": "Frigate",
-  "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/svg/frigate.svg",
   "tagline": {
     "en": "An NVR with AI object detection — CPU-only by default, no camera configured yet (see its notes in the panel)",
     "pt": "NVR com detecção de objetos por IA — CPU-only por padrão, sem câmera configurada ainda (veja as notas dele no painel)"
@@ -12,19 +10,7 @@
   "links": {
     "docs": "https://frigate.video"
   },
-  "notes": {
-    "en": "Open `http://<host-ip>:8971` or `https://frigate.<your-tailnet>.ts.net`.",
-    "pt": "Abrir `http://<ip-do-host>:8971` ou `https://frigate.<your-tailnet>.ts.net`."
-  },
   "vars": {
-    "FRIGATE_MEDIA_DIR": {
-      "value": "~/frigate-media",
-      "note": "Where the recordings go. They grow fast, so this is worth pointing at the big disk rather than the home directory the default uses."
-    }
-  },
-  "units": {
-    "frigate": {
-      "image": "{version}"
-    }
+    "FRIGATE_MEDIA_DIR": "~/frigate-media"
   }
 }

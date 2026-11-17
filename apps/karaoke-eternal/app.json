@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "karaoke-eternal",
   "title": "Karaoke Eternal",
-  "icon": "https://api.iconify.design/mdi/microphone-variant.svg?color=%23888888",
   "tagline": {
     "en": "A karaoke party from your own library — everyone queues songs from their phone, one screen plays",
     "pt": "Karaokê com a sua própria biblioteca — cada um enfileira do celular, uma tela reproduz"
@@ -18,11 +16,7 @@
   },
   "units": {
     "karaoke-eternal": {
-      "upstream": {
-        "value": "bhj/KaraokeEternal",
-        "note": "The image is published by radrootllc, the project lives at bhj/KaraokeEternal — updates.py cannot derive one from the other."
-      },
-      "image": "{version}"
+      "upstream": "bhj/KaraokeEternal"
     }
   }
 }

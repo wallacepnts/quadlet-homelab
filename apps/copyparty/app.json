@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "copyparty",
   "title": "Copyparty",
-  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/copyparty.svg",
   "tagline": {
     "en": "A file server with browser or phone uploads, resumable transfers and WebDAV",
     "pt": "Servidor de arquivos com upload pelo navegador ou celular, retomada de transferência e WebDAV"
@@ -12,20 +10,12 @@
   "links": {
     "docs": "https://github.com/9001/copyparty#readme"
   },
-  "notes": {
-    "en": "Open `http://<host-ip>:3923` or `https://copyparty.<your-tailnet>.ts.net`.",
-    "pt": "Abrir `http://<ip-do-host>:3923` ou `https://copyparty.<your-tailnet>.ts.net`."
-  },
   "config": {
-    "copyparty.conf.example": {
-      "value": "%h/.config/containers/volumes/copyparty/cfg/copyparty.conf",
-      "note": "The same case as donetick: the volume is the /cfg directory."
-    }
+    "copyparty.conf.example": "%h/.config/containers/volumes/copyparty/cfg/copyparty.conf"
   },
   "units": {
     "copyparty": {
-      "upstream": "9001/copyparty",
-      "image": "{version}"
+      "upstream": "9001/copyparty"
     }
   }
 }

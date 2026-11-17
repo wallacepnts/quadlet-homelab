@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "pkvault",
   "title": "PKVault",
-  "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/svg/pkvault.svg",
   "tagline": {
     "en": "Pokémon storage and save editing across every generation, based on PKHeX, with a Pokédex built from all your saves",
     "pt": "Armazenamento de Pokémon e edição de saves de todas as gerações, baseado no PKHeX, com uma Pokédex montada a partir de todos os seus saves"
@@ -17,11 +15,7 @@
   },
   "units": {
     "pkvault": {
-      "upstream": {
-        "value": "Chnapy/PKVault",
-        "note": "The image is tagged `2.3.3`; the release is `v2.3.3`."
-      },
-      "image": "{version}"
+      "upstream": "Chnapy/PKVault"
     }
   }
 }

@@ -5,24 +5,31 @@ Everything an app says about itself lives in one file, next to its units. It is 
 with an `x-casaos` block holding its metadata — in JSON of our own, beside the Quadlet units instead of
 inside them. `"spec": 2` is the version of this format.
 
-A folder is therefore the units, the `.env.example` if there is one, and this file. There is no README per
+A folder is therefore the units, the `.env.example` if there is one, this file, and the logo. There is no README per
 app, no `install.ini`, no `notes.md`: the services table in the root READMEs is generated from the
 manifests, and the panel shows the notes.
 
 ```json
 {
   "spec": 2,
-  "id": "memos",
   "title": "Memos",
-  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/memos.svg",
   "tagline": { "en": "Quick notes, self-hosted and markdown-native", "pt": "Notas rápidas, self-hosted e markdown-nativo" },
   "category": "Productivity",
   "license": "MIT",
   "links": { "docs": "https://www.usememos.com/docs" },
-  "screenshots": ["https://..."],
-  "notes": { "en": "Open the page and create the account…", "pt": "Abra a página e crie a conta…" },
-  "units": { "memos": { "upstream": "usememos/memos", "image": "{version}" } }
+  "notes": { "en": "The first user to sign up becomes admin…", "pt": "O primeiro usuário vira admin…" },
+  "units": { "memos": { "upstream": "usememos/memos" } }
 }
+```
+
+and, beside it, the logo and the screenshots as plain files:
+
+```
+apps/memos/
+├── memos.container
+├── app.json
+├── icon.svg                 # the logo: icon.svg, .png, .webp or .jpg, up to 512 KB
+└── screenshots/             # optional: 1.png, 2.png ... up to six, up to 1 MB each
 ```
 
 ## The fields
@@ -30,14 +37,11 @@ manifests, and the panel shows the notes.
 | Field | Required | Meaning |
 | --- | --- | --- |
 | `spec` | yes | `2`. |
-| `id` | yes | The folder name. `check.py` fails a mismatch. |
 | `title` | yes | The name shown in the store and in the services table. |
-| `icon` | yes | An `https://` image. |
 | `tagline` | yes | One line, `{"en": …, "pt": …}`: the description in the table and on the card. |
 | `category` | no | One of the groups in `qhui.GRUPOS` (the store's categories). Infrastructure with no place among them (homepage, postfix, toolbx) has none. |
 | `license` | no | The project's licence, one short line. Shown beside the notes. |
 | `links` | no | `docs` (the project's documentation, https), `repo` (`owner/repo` or a URL, only where the image's own path points at the wrong place). |
-| `screenshots` | no | Up to six `https://` images the project itself hosts, no repeats. |
 | `works_with` | no | Other app folders worth running beside this one. A suggestion, never a requirement. |
 | `min_podman` | no | `"5.4"`: a floor above the 5.0 that `Notify=healthy` already needs. |
 | `deprecated` | no | `{"en": …, "pt": …}`: why it is discontinued. The store offers no install. |
@@ -57,8 +61,8 @@ One entry per `.container` that needs one, keyed by the unit's basename:
 
 | Field | Meaning |
 | --- | --- |
-| `upstream` | Where its version comes from: `owner/repo` (a GitHub release), `registry:<regex>`, `compose:<owner>/<repo>:<file>` (a sidecar pinned to what the app's compose validates), or `-` (nothing comparable). |
-| `image` | The shape of its tag, `v{version}`, `{version}-alpine`, `{version:2}`. Present, the unit's `Image=` has **no tag**, and `qh` pins the latest release on the host (see [auto-update](./auto-update.md)). |
+| `upstream` | Where its version comes from: `owner/repo` (a GitHub release), `registry:<regex>`, `compose:<owner>/<repo>:<file>` (a sidecar pinned to what the app's compose validates), or `-` (nothing comparable). Left out, it is derived from the image name where the convention holds (`ghcr.io/<org>/<repo>`, `docker.io/<org>/<repo>`). |
+| `image` | The shape of its tag when it is not just the version: `v{version}`, `{version}-alpine`, `{version:2}`. A unit whose `Image=` has **no tag** is a release-following image, `qh` pins the latest release on the host (see [auto-update](./auto-update.md)), and the shape is `{version}` unless this says otherwise. |
 | `login`, `choices` | As above, for a folder of independent services that do not share one. |
 
 ## Explaining an entry
@@ -70,7 +74,7 @@ of `secrets`, `config`, `vars`, `validate`, `login` or a unit's `upstream`/`imag
 ## Generated, not written
 
 The services table in `README.md` and `docs/pt-BR/README.md`, between the `services:begin` and
-`services:end` markers, comes from `title`, `icon` and `tagline`. `python3 check.py --readme` rewrites it, and
+`services:end` markers, comes from `title`, the logo file and `tagline`. `python3 check.py --readme` rewrites it, and
 `check.py` fails when it is out of date.
 
 ## What the CasaOS format has that this does not (yet)
@@ -83,7 +87,7 @@ can be added to the manifest without changing its spec number, as new optional f
 
 ## Checking
 
-`python3 check.py` validates every manifest: the spec number, `id`, the required fields, the category, the
+`python3 check.py` validates every manifest: the spec number, the required fields, the logo file, the category, the
 shape of each object, an unknown top-level key (a typo), and the rules of each part (a recipe for every
 `Secret=`, a `login` that names a real secret, a `vars` default for every `${VAR}` in a `Volume=`, the
-`image` template for every unit without a tag). `python3 manifest.py --selftest` tests the reader.
+shape for every unit without a tag). `python3 manifest.py --selftest` tests the reader.

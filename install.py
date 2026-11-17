@@ -606,7 +606,7 @@ class Service:
         # What the app says about itself: apps/<app>/app.json (manifest.py). `ini` is the view of it that
         # answers the questions app.json used to (sections, items, get), so the readers did not change.
         self.manifest = manifest.load(self.dir)
-        self.ini = manifest.View(self.manifest)
+        self.ini = manifest.view(self.dir)
 
         self.units = sorted(self.dir.glob("*.container")) + sorted(self.dir.glob("*.network"))
         # What the folder holds, before any filtering: `unit_dest` reads this,
@@ -4261,7 +4261,9 @@ def app_cards(pastas):
         m = manifest.load(APPS / d)
         if not m:
             continue
-        en[d] = {"icon": m.get("icon"), "name": m.get("title", d), "description": (m.get("tagline") or {}).get("en", "")}
+        logo = manifest.icon_file(APPS / d)
+        en[d] = {"icon": f"/assets/{d}/{logo}" if logo else None, "name": m.get("title", d),
+                 "description": (m.get("tagline") or {}).get("en", "")}
         pt[d] = {"description": (m.get("tagline") or {}).get("pt", "")}
     return en, pt
 
@@ -4360,8 +4362,8 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude, falhas=None):
         "main_unit": principal.stem if principal else None,
         # Images the project hosts, named in app.json (store): https only,
         # the same rule check.py holds the file to.
-        "screenshots": [u for u in re.split(r"[\s,]+", s.ini.get("store", "screenshots", fallback=""))
-                        if u.startswith("https://")],
+        # The images in the app's own folder, which the store serves (/assets/<app>/...).
+        "screenshots": [f"/assets/{d}/screenshots/{n}" for n in manifest.screenshot_files(s.dir)],
         "installed": bool(instaladas),
         # Whether there is a typed credential to show after the install
         # ([login] in app.json); the value itself is asked for apart.

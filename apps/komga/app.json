@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "komga",
   "title": "Komga",
-  "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/svg/komga.svg",
   "tagline": {
     "en": "Comics and manga, with reading progress that follows you between devices",
     "pt": "Quadrinhos e mangá, com o progresso de leitura acompanhando você entre aparelhos"
@@ -20,11 +18,6 @@
     "MEDIA_DATA_DIR": {
       "value": "~/data",
       "note": "The same media root media-stack uses: Komga reads the comics under it. Set once, by whichever of the two is installed first."
-    }
-  },
-  "units": {
-    "komga": {
-      "image": "{version}"
     }
   }
 }

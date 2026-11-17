@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "fmd-server",
   "title": "FMD Server",
-  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/fmd.svg",
   "tagline": {
     "en": "Find, ring and lock your Android phone from the browser, end-to-end encrypted, without Google",
     "pt": "Localizar, tocar e bloquear seu celular Android pelo navegador, com criptografia ponta a ponta, sem o Google"
@@ -27,10 +25,7 @@
   },
   "units": {
     "fmd-server": {
-      "upstream": {
-        "value": "registry:^[0-9]+\\.[0-9]+\\.[0-9]+-alpine$",
-        "note": "The project lives on GitLab, not GitHub, and so does its image. The registry is the source that knows; the pattern keeps the alpine variant this unit uses and drops `-debian`, `-distroless`, the bare version and the floating majors."
-      }
+      "upstream": "registry:^[0-9]+\\.[0-9]+\\.[0-9]+-alpine$"
     }
   }
 }

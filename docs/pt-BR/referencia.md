@@ -24,7 +24,9 @@ apps/<app>/
 ├── <app>.container
 ├── <app>-net.network       # só pra stack que conversa entre si
 ├── .env.example
-└── app.json                # tudo o que o app diz de si mesmo: veja manifesto.md
+├── app.json                # tudo o que o app diz de si mesmo: veja manifesto.md
+├── icon.svg                # o logo (ou .png, .webp, .jpg)
+└── screenshots/            # opcional: 1.png, 2.png ...
 ```
 
 Não há README por app: o `app.json` guarda o título, a descrição de uma linha nos dois idiomas, a categoria,

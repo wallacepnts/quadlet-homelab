@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "gitea-runner",
   "title": "Gitea Runner",
-  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/gitea.svg",
   "tagline": {
     "en": "Runs the Actions workflows of the Gitea next door — CI that never leaves the machine",
     "pt": "Executa os workflows do Actions do Gitea ao lado — CI que não sai da máquina"
@@ -27,15 +25,12 @@
   "config": {
     "config.yaml": {
       "value": "%h/.config/containers/volumes/gitea-runner/data/config.yaml",
-      "note": "Read by the app, never written by it: the destination is inside a volume, so it cannot be derived from the unit the way an .env can. Without it the runner exits at start with `open config file \"/data/config.yaml\": no such file or directory`, because the unit points CONFIG_FILE there."
+      "note": "Without it the runner exits at start with `open config file \"/data/config.yaml\": no such file or directory`, because the unit points CONFIG_FILE there."
     }
   },
   "units": {
     "gitea-runner": {
-      "upstream": {
-        "value": "registry:^[0-9]+\\.[0-9]+\\.[0-9]+$",
-        "note": "The project lives on gitea.com, not on GitHub: deriving `gitea/runner` from the image name points at a 404 and every run would answer \"no published release\". The registry is the only source that knows. The pattern keeps the plain releases and drops `-dind`, `-dind-rootless`, `latest` and `nightly` — this repository does not use the bundled-daemon flavours, which need --privileged."
-      }
+      "upstream": "registry:^[0-9]+\\.[0-9]+\\.[0-9]+$"
     }
   }
 }

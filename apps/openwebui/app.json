@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "openwebui",
   "title": "Open WebUI",
-  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/open-webui.svg",
   "tagline": {
     "en": "A web chat interface plus a local LLM server, CPU-only by default (NVIDIA/AMD GPU options are documented)",
     "pt": "Interface de chat web + servidor de LLMs locais, CPU-only por padrão (opções de GPU NVIDIA/AMD documentadas)"
@@ -13,16 +11,13 @@
     "docs": "https://ollama.com"
   },
   "notes": {
-    "en": "Open `http://<host-ip>:3003` or `https://ollama.<your-tailnet>.ts.net`.\n\n### Web search\n\nWith [SearXNG](../searxng) running, the model can answer from pages fetched at\nthe time of the question. Uncomment the three lines in\n`~/.config/containers/env/openwebui.env` and run `qh openwebui --update\n--apply`:\n\n```ini\nENABLE_RAG_WEB_SEARCH=True\nRAG_WEB_SEARCH_ENGINE=searxng\nSEARXNG_QUERY_URL=http://searxng:8080/search?q=<query>\n```\n\nBoth containers are on `tsdproxy-net`, so `searxng` resolves by name.",
-    "pt": "Abrir `http://<ip-do-host>:3003` ou `https://ollama.<your-tailnet>.ts.net`.\n\n### Busca web\n\nCom o SearXNG rodando, o modelo passa a responder\na partir de páginas buscadas na hora da pergunta. Descomente as três linhas do\n`~/.config/containers/env/openwebui.env` e rode `qh openwebui --update\n--apply`:\n\n```ini\nENABLE_RAG_WEB_SEARCH=True\nRAG_WEB_SEARCH_ENGINE=searxng\nSEARXNG_QUERY_URL=http://searxng:8080/search?q=<query>\n```\n\nOs dois containers estão na `tsdproxy-net`, então `searxng` resolve pelo nome."
+    "en": "### Web search\n\nWith [SearXNG](../searxng) running, the model can answer from pages fetched at\nthe time of the question. Uncomment the three lines in\n`~/.config/containers/env/openwebui.env` and run `qh openwebui --update\n--apply`:\n\n```ini\nENABLE_RAG_WEB_SEARCH=True\nRAG_WEB_SEARCH_ENGINE=searxng\nSEARXNG_QUERY_URL=http://searxng:8080/search?q=<query>\n```\n\nBoth containers are on `tsdproxy-net`, so `searxng` resolves by name.",
+    "pt": "### Busca web\n\nCom o SearXNG rodando, o modelo passa a responder\na partir de páginas buscadas na hora da pergunta. Descomente as três linhas do\n`~/.config/containers/env/openwebui.env` e rode `qh openwebui --update\n--apply`:\n\n```ini\nENABLE_RAG_WEB_SEARCH=True\nRAG_WEB_SEARCH_ENGINE=searxng\nSEARXNG_QUERY_URL=http://searxng:8080/search?q=<query>\n```\n\nOs dois containers estão na `tsdproxy-net`, então `searxng` resolve pelo nome."
   },
   "secrets": {
     "openwebui-secret-key": "rand-hex 32"
   },
   "units": {
-    "openwebui-ollama": {
-      "image": "{version}"
-    },
     "openwebui": {
       "image": "v{version}"
     }

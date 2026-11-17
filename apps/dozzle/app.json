@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "dozzle",
   "title": "Dozzle",
-  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/dozzle.svg",
   "tagline": {
     "en": "Live logs of every container in the browser, without opening a terminal",
     "pt": "Log ao vivo de cada container no navegador, sem abrir terminal"

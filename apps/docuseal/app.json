@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "docuseal",
   "title": "DocuSeal",
-  "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/svg/docuseal.svg",
   "tagline": {
     "en": "Signing documents at home, without handing them to a company first",
     "pt": "Assinar documentos em casa, sem entregá-los a uma empresa antes"
@@ -18,11 +16,7 @@
   },
   "units": {
     "docuseal": {
-      "upstream": {
-        "value": "docusealco/docuseal",
-        "note": "The image is `docuseal/docuseal`, the repository is `docusealco/docuseal` — without this updates.py guesses the org from the image and finds nothing."
-      },
-      "image": "{version}"
+      "upstream": "docusealco/docuseal"
     }
   }
 }

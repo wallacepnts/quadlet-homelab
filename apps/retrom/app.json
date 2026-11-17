@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "retrom",
   "title": "Retrom",
-  "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/webp/retrom.webp",
   "tagline": {
     "en": "A game library for emulation — one collection, played in the browser or through the desktop client",
     "pt": "Biblioteca de jogos para emulação — uma coleção só, jogada no navegador ou pelo cliente de desktop"
@@ -22,11 +20,7 @@
   },
   "units": {
     "retrom": {
-      "upstream": {
-        "value": "JMBeresford/retrom",
-        "note": "The image is `retrom-service`, the repository is `retrom` — without this updates.py derives the wrong name and finds nothing."
-      },
-      "image": "{version}"
+      "upstream": "JMBeresford/retrom"
     }
   }
 }

@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "ferdium-server",
   "title": "Ferdium Server",
-  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/ferdium.svg",
   "tagline": {
     "en": "Sync for the Ferdium desktop app — your service list on your own server, not Franz's",
     "pt": "Sincronização do Ferdium desktop — sua lista de serviços no seu servidor, não no do Franz"
@@ -18,10 +16,7 @@
   },
   "units": {
     "ferdium-server": {
-      "upstream": {
-        "value": "registry:^[0-9]+\\.[0-9]+\\.[0-9]+$",
-        "note": "ferdium/ferdium-server tags its versions but publishes no GitHub release, so the redirect trick finds nothing — the registry's tag list is the reference."
-      }
+      "upstream": "registry:^[0-9]+\\.[0-9]+\\.[0-9]+$"
     }
   }
 }

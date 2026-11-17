@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "koffan",
   "title": "Koffan",
-  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/koffan.png",
   "tagline": {
     "en": "The house's shopping list — one password, no accounts, everyone edits the same list",
     "pt": "A lista de compras da casa — uma senha, sem contas, todo mundo edita a mesma lista"

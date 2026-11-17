@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "rclone",
   "title": "rclone",
-  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/rclone.svg",
   "tagline": {
     "en": "Web GUI for the cloud accounts in your rclone config: browse, copy and sync files between them",
     "pt": "Interface web para as contas de nuvem do seu config do rclone: navegar, copiar e sincronizar arquivos entre elas"
@@ -17,19 +15,10 @@
     "pt": "A instalação termina imprimindo o login (`admin` e uma senha gerada). Abra\n`https://rclone.<your-tailnet>.ts.net`: o navegador pede os dois uma vez.\n\n### O que ele enxerga\n\n- **Só os remotes.** Nenhuma pasta local é montada, então a interface navega e\n  move arquivos entre as contas do config, não pelo disco do host. Para usar uma\n  pasta local como ponta, adicione um `Volume=` e um remote `alias` ou `local`\n  apontando para o caminho dentro do container.\n- **O config do host, com escrita.** `~/.config/rclone` é montado em\n  leitura e escrita de propósito: provedores OAuth giram o refresh token, e um\n  config só de leitura deixaria o antigo no disco até parar de funcionar. O\n  Zerobyte monta a mesma pasta só para leitura, e o Air Explorer RS do host usa o\n  mesmo arquivo, então há uma cópia de cada token. O mount é `:z` (rótulo\n  compartilhado) porque mais de uma coisa o abre.\n- **Quem tem a senha tem todas as contas.** A interface lê, copia e apaga em\n  todos os remotes. Fica atrás da tailnet e de autenticação básica, nada além.\n\n### Sua própria senha\n\n```bash\nqh rclone --reinstall --ask-secrets --apply\n```\n\n### Atualização\n\n**A interface web é outro projeto e também está fixada.** Por padrão o `rcd`\npergunta ao GitHub pela release mais nova da interface a cada start.\n`--rc-web-fetch-url` o aponta para uma release só (`v2.0.5`, a atual): o primeiro\nstart baixa essa e os seguintes reaproveitam o cache. Para trocar de release,\nmude a tag nessa URL no `Exec=` e apague\n`~/.config/containers/volumes/rclone/cache/rclone/webgui`.\n\n### Remover\n\nO `--purge` nunca toca em `~/.config/rclone`: é o config do próprio host. O nó\nda tailnet não é desregistrado por isso — é feito no admin do Tailscale."
   },
   "secrets": {
-    "rclone-password": {
-      "value": "rand-alnum 24",
-      "note": "Basic-auth password of the web GUI and the remote-control API, read from RCLONE_RC_PASS. rcd refuses to start without one."
-    }
+    "rclone-password": "rand-alnum 24"
   },
   "login": {
     "user": "admin",
     "password": "rclone-password"
-  },
-  "units": {
-    "rclone": {
-      "upstream": "rclone/rclone",
-      "image": "{version}"
-    }
   }
 }

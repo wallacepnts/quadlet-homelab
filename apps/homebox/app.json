@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "homebox",
   "title": "HomeBox",
-  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/homebox.svg",
   "tagline": {
     "en": "A home inventory — what you own, where it is, the receipt, the manual and the warranty, with search and labels",
     "pt": "Inventário doméstico — o que você tem, onde está, nota fiscal, manual e garantia, com busca e etiquetas"
@@ -12,19 +10,10 @@
   "links": {
     "docs": "https://homebox.software"
   },
-  "notes": {
-    "en": "Open `http://<host-ip>:7745` or `https://homebox.<your-tailnet>.ts.net`.",
-    "pt": "Abrir `http://<ip-do-host>:7745` ou `https://homebox.<your-tailnet>.ts.net`."
-  },
   "secrets": {
     "homebox-api-key-pepper": {
       "value": "rand-base64 48",
       "note": "It needs >=32 bytes or the process panics at start. Changing it later invalidates every API key already issued."
-    }
-  },
-  "units": {
-    "homebox": {
-      "image": "{version}"
     }
   }
 }

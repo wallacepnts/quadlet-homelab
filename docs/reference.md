@@ -24,7 +24,9 @@ apps/<app>/
 ├── <app>.container
 ├── <app>-net.network       # only for a stack that talks to itself
 ├── .env.example
-└── app.json                # everything the app says about itself: see manifest.md
+├── app.json                # everything the app says about itself: see manifest.md
+├── icon.svg                # the logo (or .png, .webp, .jpg)
+└── screenshots/            # optional: 1.png, 2.png ...
 ```
 
 There is no README per app: `app.json` holds the title, the one-line description in both languages, the

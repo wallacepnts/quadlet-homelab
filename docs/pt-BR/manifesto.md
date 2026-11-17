@@ -5,24 +5,31 @@ Tudo o que um app diz de si mesmo mora num arquivo só, ao lado das units. É o 
 um bloco `x-casaos` que guarda os metadados —, num JSON nosso, ao lado das units do Quadlet em vez de dentro
 delas. `"spec": 2` é a versão deste formato.
 
-Uma pasta é, portanto, as units, o `.env.example` se houver, e este arquivo. Não há README por app, nem
+Uma pasta é, portanto, as units, o `.env.example` se houver, este arquivo e o logo. Não há README por app, nem
 `install.ini`, nem `notes.md`: a tabela de serviços dos READMEs raiz é gerada a partir dos manifestos, e o
 painel mostra as notas.
 
 ```json
 {
   "spec": 2,
-  "id": "memos",
   "title": "Memos",
-  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/memos.svg",
   "tagline": { "en": "Quick notes, self-hosted and markdown-native", "pt": "Notas rápidas, self-hosted e markdown-nativo" },
   "category": "Productivity",
   "license": "MIT",
   "links": { "docs": "https://www.usememos.com/docs" },
-  "screenshots": ["https://..."],
-  "notes": { "en": "Open the page and create the account…", "pt": "Abra a página e crie a conta…" },
-  "units": { "memos": { "upstream": "usememos/memos", "image": "{version}" } }
+  "notes": { "en": "The first user to sign up becomes admin…", "pt": "O primeiro usuário vira admin…" },
+  "units": { "memos": { "upstream": "usememos/memos" } }
 }
+```
+
+e, ao lado, o logo e as capturas de tela como arquivos comuns:
+
+```
+apps/memos/
+├── memos.container
+├── app.json
+├── icon.svg                 # o logo: icon.svg, .png, .webp ou .jpg, até 512 KB
+└── screenshots/             # opcional: 1.png, 2.png ... até seis, até 1 MB cada
 ```
 
 ## Os campos
@@ -30,14 +37,11 @@ painel mostra as notas.
 | Campo | Obrigatório | Significado |
 | --- | --- | --- |
 | `spec` | sim | `2`. |
-| `id` | sim | O nome da pasta. O `check.py` reprova se divergir. |
 | `title` | sim | O nome mostrado na loja e na tabela de serviços. |
-| `icon` | sim | Uma imagem `https://`. |
 | `tagline` | sim | Uma linha, `{"en": …, "pt": …}`: a descrição na tabela e no cartão. |
 | `category` | não | Um dos grupos de `qhui.GRUPOS` (as categorias da loja). Infraestrutura sem lugar entre elas (homepage, postfix, toolbx) não tem. |
 | `license` | não | A licença do projeto, uma linha curta. Aparece ao lado das notas. |
 | `links` | não | `docs` (a documentação do projeto, https), `repo` (`owner/repo` ou URL, só onde o caminho da imagem aponta pro lugar errado). |
-| `screenshots` | não | Até seis imagens `https://` que o próprio projeto hospeda, sem repetir. |
 | `works_with` | não | Outras pastas de app que valem rodar junto. Uma sugestão, nunca um requisito. |
 | `min_podman` | não | `"5.4"`: um piso acima do 5.0 que o `Notify=healthy` já exige. |
 | `deprecated` | não | `{"en": …, "pt": …}`: por que foi descontinuado. A loja não oferece instalar. |
@@ -57,8 +61,8 @@ Uma entrada por `.container` que precise, com a chave sendo o basename da unit:
 
 | Campo | Significado |
 | --- | --- |
-| `upstream` | De onde vem a versão dela: `owner/repo` (uma release do GitHub), `registry:<regex>`, `compose:<owner>/<repo>:<arquivo>` (um apoio fixado no que o compose do app valida), ou `-` (nada comparável). |
-| `image` | O formato da tag, `v{version}`, `{version}-alpine`, `{version:2}`. Presente, o `Image=` da unit **não tem tag**, e o `qh` fixa a última release no host (veja [auto-update](./auto-update.md)). |
+| `upstream` | De onde vem a versão dela: `owner/repo` (uma release do GitHub), `registry:<regex>`, `compose:<owner>/<repo>:<arquivo>` (um apoio fixado no que o compose do app valida), ou `-` (nada comparável). Omitido, é derivado do nome da imagem onde a convenção vale (`ghcr.io/<org>/<repo>`, `docker.io/<org>/<repo>`). |
+| `image` | O formato da tag quando não é só a versão: `v{version}`, `{version}-alpine`, `{version:2}`. Uma unit cujo `Image=` **não tem tag** acompanha uma release, o `qh` fixa a última release no host (veja [auto-update](./auto-update.md)), e o formato é `{version}` a menos que isto diga outro. |
 | `login`, `choices` | Como acima, para uma pasta de serviços independentes que não dividem um só. |
 
 ## Explicar uma entrada
@@ -70,7 +74,7 @@ entrada de `secrets`, `config`, `vars`, `validate`, `login` ou o `upstream`/`ima
 ## Gerado, não escrito
 
 A tabela de serviços do `README.md` e do `docs/pt-BR/README.md`, entre os marcadores `services:begin` e
-`services:end`, vem de `title`, `icon` e `tagline`. O `python3 check.py --readme` a reescreve, e o `check.py`
+`services:end`, vem de `title`, do arquivo do logo e de `tagline`. O `python3 check.py --readme` a reescreve, e o `check.py`
 reprova quando ela está desatualizada.
 
 ## O que o formato do CasaOS tem e este (ainda) não
@@ -83,7 +87,7 @@ mudar o número do spec, como campos opcionais novos.
 
 ## Conferir
 
-O `python3 check.py` valida cada manifesto: o número do spec, o `id`, os campos obrigatórios, a categoria, o
+O `python3 check.py` valida cada manifesto: o número do spec, os campos obrigatórios, o arquivo do logo, a categoria, o
 formato de cada objeto, uma chave desconhecida no topo (um erro de digitação), e as regras de cada parte (uma
 receita para cada `Secret=`, um `login` que cita um secret de verdade, um padrão em `vars` para cada `${VAR}` num
-`Volume=`, o formato de `image` para cada unit sem tag). O `python3 manifest.py --selftest` testa o leitor.
+`Volume=`, o formato para cada unit sem tag). O `python3 manifest.py --selftest` testa o leitor.

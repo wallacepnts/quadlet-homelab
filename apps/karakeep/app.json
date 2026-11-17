@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "karakeep",
   "title": "Karakeep",
-  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/karakeep.svg",
   "tagline": {
     "en": "A bookmark manager with full-text search and automatic archiving of every saved page's content",
     "pt": "Gerenciador de bookmarks com busca full-text e arquivamento automático do conteúdo de cada página salva"
@@ -11,10 +9,6 @@
   "license": "AGPL-3.0.",
   "links": {
     "docs": "https://karakeep.app"
-  },
-  "notes": {
-    "en": "Open `http://<host-ip>:8092` or `https://karakeep.<your-tailnet>.ts.net`.",
-    "pt": "Abrir `http://<ip-do-host>:8092` ou `https://karakeep.<your-tailnet>.ts.net`."
   },
   "secrets": {
     "karakeep-meili-key": {
@@ -32,9 +26,6 @@
         "value": "compose:karakeep-app/karakeep:docker/docker-compose.yml",
         "note": "Pinned to the version karakeep's official docker-compose validates, not to Meilisearch's own upstream (docs/auto-update.md, \"Why nothing updates on its own\")."
       }
-    },
-    "karakeep": {
-      "image": "{version}"
     }
   }
 }

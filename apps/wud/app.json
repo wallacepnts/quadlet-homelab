@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "wud",
   "title": "WUD (What's Up Docker)",
-  "icon": "https://cdn.jsdelivr.net/gh/getwud/wud@main/ui/public/img/icons/android-chrome-512x512.png",
   "tagline": {
     "en": "Watches for available image updates for the containers, applying nothing itself — it only reports",
     "pt": "Monitora as atualizações de imagem disponíveis pros containers, sem aplicar nada sozinho — só avisa"
@@ -11,10 +9,6 @@
   "license": "MIT",
   "links": {
     "docs": "https://getwud.github.io/wud/"
-  },
-  "notes": {
-    "en": "Open `http://<host-ip>:8085` or `https://wud.<your-tailnet>.ts.net`.",
-    "pt": "Abrir `http://<ip-do-host>:8085` ou `https://wud.<your-tailnet>.ts.net`."
   },
   "secrets": {
     "wud-admin-password": {
@@ -25,10 +19,5 @@
   "login": {
     "user": "admin",
     "password": "wud-admin-password"
-  },
-  "units": {
-    "wud": {
-      "image": "{version}"
-    }
   }
 }

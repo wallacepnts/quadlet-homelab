@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "vm",
   "title": "VM",
-  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/qemu.svg",
   "tagline": {
     "en": "Windows, macOS, ChromeOS Flex, ZimaOS and 23 Linux distros as VMs in containers, viewed in the browser — needs KVM on the host",
     "pt": "Windows, macOS, ChromeOS Flex, ZimaOS e 23 distros Linux como VMs em containers, vistas pelo navegador — exige KVM no host"
@@ -12,20 +10,10 @@
   "links": {
     "docs": "https://github.com/dockur/windows#readme"
   },
-  "notes": {
-    "en": "Open `http://<host-ip>:3389` or `https://chromeos.<your-tailnet>.ts.net`.",
-    "pt": "Abrir `http://<ip-do-host>:3389` ou `https://chromeos.<your-tailnet>.ts.net`."
-  },
   "secrets": {
-    "vm-windows-password": {
-      "value": "rand-alnum 20",
-      "note": "The password for the `Docker` account inside Windows, used for RDP on 3389. The image's default is the literal string `admin`; this replaces it."
-    },
+    "vm-windows-password": "rand-alnum 20",
     "vm-windows-arm-password": "rand-alnum 20",
-    "vm-chromeos-password": {
-      "value": "rand-alnum 20",
-      "note": "The viewer login for ChromeOS. Upstream's default is `Docker`/`admin`; this replaces the password. The other VMs here have no viewer login at all."
-    }
+    "vm-chromeos-password": "rand-alnum 20"
   },
   "units": {
     "vm-windows": {
@@ -149,10 +137,7 @@
           ]
         }
       },
-      "upstream": {
-        "value": "dockur/windows",
-        "note": "Two of the three image names differ from their GitHub repository: `dockurr` has two r's, and the QEMU org is `qemus` with an s. Without these lines `updates.py` guesses wrong and finds nothing."
-      },
+      "upstream": "dockur/windows",
       "image": "{version:2}"
     },
     "vm-windows-arm": {
@@ -405,8 +390,7 @@
       "image": "{version:2}"
     },
     "vm-zima": {
-      "upstream": "dockur/zima",
-      "image": "{version}"
+      "upstream": "dockur/zima"
     }
   }
 }

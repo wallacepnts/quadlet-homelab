@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "actual-budget",
   "title": "Actual Budget",
-  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/actual-budget.svg",
   "tagline": {
     "en": "Fast, privacy-focused personal finance management using the envelope budgeting method",
     "pt": "Rápido e focado em privacidade pra gerenciar finanças pessoais, usando a metodologia de Orçamento de Envelope"
@@ -12,20 +10,9 @@
   "links": {
     "docs": "https://actualbudget.org"
   },
-  "screenshots": [
-    "https://raw.githubusercontent.com/actualbudget/actual/HEAD/demo.png"
-  ],
-  "notes": {
-    "en": "Open `http://<host-ip>:5006` or `https://actual.<your-tailnet>.ts.net`.",
-    "pt": "Abrir `http://<ip-do-host>:5006` ou `https://actual.<your-tailnet>.ts.net`."
-  },
   "units": {
     "actual": {
-      "upstream": {
-        "value": "actualbudget/actual",
-        "note": "The image is actual-server; the releases are published by actualbudget/actual, tagged `v26.10.0` for the image's `26.10.0`."
-      },
-      "image": "{version}"
+      "upstream": "actualbudget/actual"
     }
   }
 }

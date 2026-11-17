@@ -129,11 +129,15 @@ loc = qhui.translator(PT)
 STATIC = ROOT / "store"
 ARQUIVOS = {"/": "index.html", "/login": "login.html",
             "/app.js": "app.js", "/style.css": "style.css"}
+IMAGENS = {".svg": "image/svg+xml", ".png": "image/png", ".webp": "image/webp", ".jpg": "image/jpeg",
+           ".jpeg": "image/jpeg", ".gif": "image/gif"}
+ASSET = re.compile(r"^/assets/([a-z0-9][a-z0-9._-]*)/(icon\.(?:svg|png|webp|jpg)|screenshots/[A-Za-z0-9._-]+)$")
 TIPOS = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
          ".css": "text/css; charset=utf-8"}
-# Nothing inline, nothing from elsewhere but the icons: every string the page
+# Nothing inline, nothing from elsewhere: the logos and screenshots are served by this very server
+# (/assets/...), and every string the page
 # shows goes in through textContent, and this is the second fence behind that.
-CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; img-src https: data:; "
+CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
        "connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'")
 ACOES = ("install", "update", "remove", "backup", "restore", "upgrade", "access", "trial-keep")
 COOKIE = "qh_store"
@@ -1306,6 +1310,10 @@ def sse_frame(linha):
     return ("data: " + linha.replace("\r", "").replace("\n", " ") + "\n\n").encode()
 
 
+def manifest_tipo(nome):
+    return IMAGENS[Path(nome).suffix.lower()]
+
+
 def unit_exists(unit):
     return bool(NOME.match(unit or "")) and any(I.APPS.glob(f"*/{unit}.container"))
 
@@ -1675,6 +1683,24 @@ class Handler(BaseHTTPRequestHandler):
         parte.rename(destino)
         return self._json(201, {"file": nome})
 
+    def _asset(self, app, nome):
+        """The logo or a screenshot of an app, from its own folder: nothing outside it, nothing but images.
+
+        An SVG is served with a policy that lets it draw and nothing else, so opening one in a tab runs no script."""
+        base = (I.APPS / app).resolve()
+        arquivo = (base / nome).resolve()
+        if not base.is_dir() or base not in arquivo.parents or arquivo.suffix.lower() not in IMAGENS or not arquivo.is_file():
+            return self._json(404, {"error": "not found"})
+        corpo = arquivo.read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Type", IMAGENS[arquivo.suffix.lower()])
+        self.send_header("Content-Length", str(len(corpo)))
+        self.send_header("Cache-Control", "private, max-age=3600")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; sandbox")
+        self.end_headers()
+        self.wfile.write(corpo)
+
     def _static(self, nome):
         f = STATIC / nome
         self._send(200, f.read_bytes(), TIPOS[f.suffix])
@@ -1699,6 +1725,9 @@ class Handler(BaseHTTPRequestHandler):
             return self._redirect("/login")
         if url.path in ARQUIVOS:
             return self._static(ARQUIVOS[url.path])
+        m = ASSET.match(url.path)
+        if m:
+            return self._asset(m.group(1), m.group(2))
         lang = "pt" if q.get("lang") == "pt" else "en"
         if url.path == "/api/catalog":
             return self._json(200, catalog(lang))
@@ -2533,6 +2562,21 @@ def selftest():
                     assert st == 202 and esperar(rev)["rc"] == 0 and O.read_override(unidade) is None
                 finally:
                     os.environ.pop("QH_CGROUP_CONTROLLERS", None)
+
+            # logos and screenshots: served from the app's own folder, behind the login, and nothing else
+            logo = manifest.icon_file(I.APPS / "memos")
+            assert pedir(f"/assets/memos/{logo}")[0] == 303, "the assets need the login too (redirected to /login)"
+            st, h, corpo = pedir(f"/assets/memos/{logo}", headers=ok)
+            assert st == 200 and h["Content-Type"] == manifest_tipo(logo) and len(corpo) > 80, (st, h)
+            assert "sandbox" in h["Content-Security-Policy"] and "private" in h["Cache-Control"]
+            first = sorted((I.APPS / "memos" / "screenshots").glob("1.*"))
+            if first:
+                assert pedir(f"/assets/memos/screenshots/{first[0].name}", headers=ok)[0] == 200
+            for ruim in ("/assets/memos/../../install.py", "/assets/nope/icon.svg", "/assets/memos/app.json",
+                         "/assets/memos/screenshots/../app.json", "/assets/memos/memos.container", "/assets/memos/icon.exe"):
+                assert pedir(ruim, headers=ok)[0] == 404, ruim
+            cat_icone = json.loads(pedir("/api/catalog", headers=ok)[2])["apps"][0]["icon"]
+            assert cat_icone.startswith("/assets/"), "the catalog points at the store's own assets"
 
             # folder picker: only inside the permitted roots, by real path, no symlink out, no hidden, no files
             raiz_v = Path(tmp, ".config/containers/volumes")

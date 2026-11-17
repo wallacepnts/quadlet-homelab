@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "vaultwarden",
   "title": "Vaultwarden",
-  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/vaultwarden.png",
   "tagline": {
     "en": "A password vault compatible with Bitwarden's protocol, light enough to run anywhere",
     "pt": "Cofre de senhas compatível com o protocolo do Bitwarden, leve o bastante pra rodar em qualquer lugar"

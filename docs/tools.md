@@ -311,16 +311,11 @@ Credits, so it is written down once, by a person, and a link that only points ba
 to the repository is left out. Every one of these was checked to answer when it was
 added; `check.py` does not fetch them, so a link can still go stale.
 
-Screenshots come from `app.json`, as images the project itself hosts:
-
-```json
-"screenshots": ["https://example.org/shot-1.png", "https://example.org/shot-2.png"]
-```
-
-`check.py` holds the list to https URLs, at most six, with no repeats. The
-browser loads them from there, so the project's host sees the request, as it
-already does for the icons. A few services carry them as examples; the rest
-have none until someone adds an image worth showing.
+The logo and the screenshots are files in the app's own folder, `icon.svg` and `screenshots/1.png`,
+`2.png`…, and the store serves them itself (`/assets/<app>/...`, behind the login, so the browser never
+asks another host and nothing outside sees which apps you look at). `check.py` wants a logo (`.svg`,
+`.png`, `.webp` or `.jpg`, up to 512 KB) and holds the screenshots to at most six images of up to 1 MB. A few
+services carry screenshots; the rest have none until someone adds an image worth showing.
 
 A service that is discontinued — archived upstream, or with its pinned image gone
 from the registry — is marked in the same file:

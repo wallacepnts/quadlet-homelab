@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "casa",
   "title": "CasaOS",
-  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/casaos.svg",
   "tagline": {
     "en": "A home server dashboard that talks to the Podman socket — it sees every container you run; installing apps from its own store did not work here",
     "pt": "Painel de servidor doméstico que fala com o socket do Podman — enxerga todos os containers que você roda; instalar apps pela loja dele não funcionou aqui"
@@ -21,10 +19,5 @@
   },
   "login": {
     "credentials": "casa-user"
-  },
-  "units": {
-    "casa": {
-      "image": "{version}"
-    }
   }
 }

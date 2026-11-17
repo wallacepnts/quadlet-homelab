@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "zabbix",
   "title": "Zabbix",
-  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/zabbix.svg",
   "tagline": {
     "en": "Monitoring of servers, networks and services with agents, SNMP, triggers and alerts — server, web interface and PostgreSQL",
     "pt": "Monitoramento de servidores, redes e serviços com agentes, SNMP, triggers e alertas — server, interface web e PostgreSQL"
@@ -17,10 +15,7 @@
     "pt": "O primeiro start leva um ou dois minutos: o server cria o schema do banco (uns\n30 s medidos) e só então a interface web sobe. Depois abra\n`https://zabbix.<your-tailnet>.ts.net`.\n\n**O primeiro login é o padrão do próprio Zabbix, `Admin` / `zabbix`.** A imagem\nnão tem configuração para isso, então a instalação não consegue gerar uma senha.\nTroque na hora: *Users → Users → Admin → Change password*.\n\n### PostgreSQL, não SQLite\n\nO repositório prefere SQLite, mas o server do Zabbix não tem modo SQLite: roda em\nPostgreSQL ou MySQL, e SQLite existe só para o *proxy*. O PostgreSQL é o que o\ncompose do próprio projeto usa, e a major (17) é a que ele valida.\n\n### O host \"Zabbix server\" nasce com o agente quebrado\n\nUma instalação nova traz um host chamado *Zabbix server* cujo agente é esperado\nem `127.0.0.1:10050`. Não há agente nesta stack, então os itens falham com\n\"network error\" e o host fica vermelho. Desative esse host, ou instale um agente\nem algum lugar e aponte o host para ele.\n\nPara monitorar uma máquina, instale o agente do Zabbix nela e faça-o alcançar\neste host na porta **10051** (checagens ativas), ou deixe o server alcançar o\nagente na **10050** (passivas). As duas são TCP simples, na tailnet ou na LAN.\n\n### Atualização\n\nO server e a interface web compartilham uma tag e têm de andar juntos. O server atualiza o próprio schema ao subir, então faça um backup antes de um salto de minor. O Postgres fica na 17.\n\n### Backup\n\nA frio, como as outras stacks com banco: para as três units, empacota o volume e\no segredo, e sobe de novo.\n\n### Remover\n\nO nó da tailnet não é desregistrado por isso — é feito no admin do Tailscale."
   },
   "secrets": {
-    "zabbix-postgres-password": {
-      "value": "rand-hex 24",
-      "note": "The one database password: Postgres creates the account with it, and the server and the web interface log in with it."
-    }
+    "zabbix-postgres-password": "rand-hex 24"
   },
   "units": {
     "zabbix": {

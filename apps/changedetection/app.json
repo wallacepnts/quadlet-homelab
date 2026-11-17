@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "changedetection",
   "title": "changedetection.io",
-  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/changedetection.svg",
   "tagline": {
     "en": "Watches web pages and tells you what changed — price, stock, a paragraph of terms",
     "pt": "Vigia páginas e avisa o que mudou — preço, estoque, um parágrafo de termos de uso"
@@ -18,10 +16,5 @@
   "notes": {
     "en": "Open `https://changedetection.<your-tailnet>.ts.net`. Set a password under\n**Settings → General** if anyone else reaches your tailnet.\n\n### Notifications\n\nIt speaks [Apprise](https://github.com/caronc/apprise), so the destination is a\nURL. For the [ntfy](../ntfy) in this repository, under **Settings →\nNotifications**:\n\n```\nntfy://ntfy:2586/changes\n```\n\n`BASE_URL` in the `.env` is what the links inside those messages point at.\nWithout it they carry the container's hostname, which resolves nowhere on your\nphone.\n\n### Pages that need a browser\n\nThe default fetch is a plain HTTP request: fast, cheap, and enough for most\npages. A page that renders its content with JavaScript comes back empty, and\nthe visual element picker needs a real browser too.\n\nThe answer is a Chrome sidecar and the commented `PLAYWRIGHT_DRIVER_URL` line\nin the `.env`. It is left off here on purpose — it is a second container with a\nbrowser inside, which is a lot of machinery for a page you can usually watch\nthrough its JSON endpoint instead. Look for one before adding half a gigabyte\nof Chrome.\n\n### Backup\n\nStops it, packs the datastore and the `.env`, starts it again.",
     "pt": "Abrir `https://changedetection.<your-tailnet>.ts.net`. Defina uma senha em\n**Settings → General** se mais alguém alcança a sua tailnet.\n\n### Notificações\n\nEle fala [Apprise](https://github.com/caronc/apprise), então o destino é uma\nURL. Para o ntfy deste repositório, em **Settings →\nNotifications**:\n\n```\nntfy://ntfy:2586/changes\n```\n\nO `BASE_URL` do `.env` é para onde apontam os links dentro dessas mensagens.\nSem ele, os links levam o hostname do container, que não resolve no seu\ncelular.\n\n### Páginas que exigem navegador\n\nA busca padrão é uma requisição HTTP simples: rápida, barata e suficiente para\na maioria das páginas. Página que monta o conteúdo com JavaScript volta vazia,\ne o seletor visual de elemento também precisa de navegador de verdade.\n\nA saída é um sidecar com Chrome e a linha `PLAYWRIGHT_DRIVER_URL`, comentada no\n`.env`. Ela fica desligada de propósito: é um segundo container com um\nnavegador dentro, maquinário demais para uma página que normalmente dá para\nvigiar pelo endpoint JSON dela. Procure por um antes de acrescentar meio\ngigabyte de Chrome.\n\n### Backup\n\nPara o serviço, empacota o datastore e o `.env`, e sobe de novo."
-  },
-  "units": {
-    "changedetection": {
-      "image": "{version}"
-    }
   }
 }

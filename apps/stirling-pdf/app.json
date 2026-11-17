@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "stirling-pdf",
   "title": "Stirling-PDF",
-  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/stirling-pdf.svg",
   "tagline": {
     "en": "Local PDF manipulation — merge, split, convert, OCR and sign, in place of the \"online PDF\" sites",
     "pt": "Manipulação de PDF local — juntar, dividir, converter, OCR e assinar, no lugar dos sites de \"PDF online\""
@@ -13,13 +11,12 @@
     "docs": "https://stirling.com"
   },
   "notes": {
-    "en": "Open `http://<host-ip>:8095` or `https://stirling-pdf.<your-tailnet>.ts.net`.\n\n### What 3.0 changed\n\n**Analytics.** Left unset, 3.0 asks the admin on first login whether to send\nusage data (PostHog and Scarf). The `.env` ships `SYSTEM_ENABLEANALYTICS=false`,\nso it never asks and never sends. An install from before 3.0 keeps its old\n`.env` on `--update` — add that line to `~/.config/containers/env/stirling-pdf.env`\nby hand.\n\n**A usage allowance.** The new batch \"Processor\", the API and the AI features\nare free up to 1,000 PDFs a month. The editor itself — opening a PDF and using\na tool on it — stays free and unlimited, which is what this service is here for.",
-    "pt": "Abrir `http://<ip-do-host>:8095` ou `https://stirling-pdf.<your-tailnet>.ts.net`.\n\n### O que mudou na 3.0\n\n**Telemetria.** Sem configuração, a 3.0 pergunta ao admin no primeiro login se\npode mandar dados de uso (PostHog e Scarf). O `.env` já vem com\n`SYSTEM_ENABLEANALYTICS=false`, então ela nunca pergunta e nunca envia. Uma\ninstalação de antes da 3.0 mantém o `.env` antigo no `--update` — acrescente\nessa linha à mão em `~/.config/containers/env/stirling-pdf.env`.\n\n**Uma cota de uso.** O novo \"Processor\" em lote, a API e os recursos de IA são\ngratuitos até 1.000 PDFs por mês. O editor em si — abrir um PDF e usar uma\nferramenta nele — continua gratuito e sem limite, que é para o que este serviço\nestá aqui."
+    "en": "### What 3.0 changed\n\n**Analytics.** Left unset, 3.0 asks the admin on first login whether to send\nusage data (PostHog and Scarf). The `.env` ships `SYSTEM_ENABLEANALYTICS=false`,\nso it never asks and never sends. An install from before 3.0 keeps its old\n`.env` on `--update` — add that line to `~/.config/containers/env/stirling-pdf.env`\nby hand.\n\n**A usage allowance.** The new batch \"Processor\", the API and the AI features\nare free up to 1,000 PDFs a month. The editor itself — opening a PDF and using\na tool on it — stays free and unlimited, which is what this service is here for.",
+    "pt": "### O que mudou na 3.0\n\n**Telemetria.** Sem configuração, a 3.0 pergunta ao admin no primeiro login se\npode mandar dados de uso (PostHog e Scarf). O `.env` já vem com\n`SYSTEM_ENABLEANALYTICS=false`, então ela nunca pergunta e nunca envia. Uma\ninstalação de antes da 3.0 mantém o `.env` antigo no `--update` — acrescente\nessa linha à mão em `~/.config/containers/env/stirling-pdf.env`.\n\n**Uma cota de uso.** O novo \"Processor\" em lote, a API e os recursos de IA são\ngratuitos até 1.000 PDFs por mês. O editor em si — abrir um PDF e usar uma\nferramenta nele — continua gratuito e sem limite, que é para o que este serviço\nestá aqui."
   },
   "units": {
     "stirling-pdf": {
-      "upstream": "Stirling-Tools/Stirling-PDF",
-      "image": "{version}"
+      "upstream": "Stirling-Tools/Stirling-PDF"
     }
   }
 }

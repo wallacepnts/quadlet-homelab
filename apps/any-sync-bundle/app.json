@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "any-sync-bundle",
   "title": "any-sync-bundle",
-  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/anytype.svg",
   "tagline": {
     "en": "The Any-Sync protocol backend, which syncs Anytype's data across devices without relying on the company's cloud",
     "pt": "Backend do protocolo Any-Sync, que sincroniza os dados do Anytype entre dispositivos sem depender da nuvem da empresa"
@@ -13,8 +11,8 @@
     "docs": "https://github.com/grishy/any-sync-bundle#readme"
   },
   "notes": {
-    "en": "Open `http://<host-ip>:33010` or `https://any-sync.<your-tailnet>.ts.net`.\n\n### Connecting the Anytype app\n\nThe first start writes `client-config.yml` into the data volume — that is what\npoints an Anytype client here instead of at the company's cloud. Import it in\nthe app, following [Anytype's\ninstructions](https://doc.anytype.io/anytype-docs/advanced/data-and-security/self-hosting/self-hosted#how-to-switch-to-a-self-hosted-network).\n\n```bash\ncat ~/.config/containers/volumes/any-sync-bundle/data/client-config.yml\n```\n\nIt is regenerated on every start, so it needs no backup. `bundle-config.yml`,\nnext to it, is the opposite: it carries the private keys, and losing it means\nlosing the network.\n\n### Backup\n\nFor the scheduled copy, Zerobyte has to find this service stopped too — its\nbackup hook does that, with\n`any-sync-bundle` in the allowlist.",
-    "pt": "Abrir `http://<ip-do-host>:33010` ou `https://any-sync.<your-tailnet>.ts.net`.\n\n### Conectando o app do Anytype\n\nO primeiro start escreve o `client-config.yml` no volume de dados — é ele que\naponta um cliente Anytype para cá em vez da nuvem da empresa. Importe no app\nseguindo as [instruções do\nAnytype](https://doc.anytype.io/anytype-docs/advanced/data-and-security/self-hosting/self-hosted#how-to-switch-to-a-self-hosted-network).\n\n```bash\ncat ~/.config/containers/volumes/any-sync-bundle/data/client-config.yml\n```\n\nEle é regerado a cada start, então não precisa de backup. O\n`bundle-config.yml`, ao lado, é o oposto: carrega as chaves privadas, e\nperdê-lo é perder a rede.\n\n### Backup\n\nPara a cópia agendada, o Zerobyte também precisa encontrar este serviço\nparado — o gancho de backup\nfaz isso, com `any-sync-bundle` na allowlist."
+    "en": "### Connecting the Anytype app\n\nThe first start writes `client-config.yml` into the data volume — that is what\npoints an Anytype client here instead of at the company's cloud. Import it in\nthe app, following [Anytype's\ninstructions](https://doc.anytype.io/anytype-docs/advanced/data-and-security/self-hosting/self-hosted#how-to-switch-to-a-self-hosted-network).\n\n```bash\ncat ~/.config/containers/volumes/any-sync-bundle/data/client-config.yml\n```\n\nIt is regenerated on every start, so it needs no backup. `bundle-config.yml`,\nnext to it, is the opposite: it carries the private keys, and losing it means\nlosing the network.\n\n### Backup\n\nFor the scheduled copy, Zerobyte has to find this service stopped too — its\nbackup hook does that, with\n`any-sync-bundle` in the allowlist.",
+    "pt": "### Conectando o app do Anytype\n\nO primeiro start escreve o `client-config.yml` no volume de dados — é ele que\naponta um cliente Anytype para cá em vez da nuvem da empresa. Importe no app\nseguindo as [instruções do\nAnytype](https://doc.anytype.io/anytype-docs/advanced/data-and-security/self-hosting/self-hosted#how-to-switch-to-a-self-hosted-network).\n\n```bash\ncat ~/.config/containers/volumes/any-sync-bundle/data/client-config.yml\n```\n\nEle é regerado a cada start, então não precisa de backup. O\n`bundle-config.yml`, ao lado, é o oposto: carrega as chaves privadas, e\nperdê-lo é perder a rede.\n\n### Backup\n\nPara a cópia agendada, o Zerobyte também precisa encontrar este serviço\nparado — o gancho de backup\nfaz isso, com `any-sync-bundle` na allowlist."
   },
   "backup": {
     "mode": "stop",

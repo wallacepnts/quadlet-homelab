@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "faved",
   "title": "Faved",
-  "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/svg/faved.svg",
   "tagline": {
     "en": "Bookmarks with nested tags — a lighter shelf than an archiver, kept on your server",
     "pt": "Favoritos com tags aninhadas — prateleira mais leve que um arquivador, no seu servidor"
@@ -15,10 +13,5 @@
   "notes": {
     "en": "Open `https://faved.<your-tailnet>.ts.net` and create the first account —\nthat is also the setup step, since the SQLite database is written on\nregistration.\n\n### Backup\n\nStops it, packs the storage folder, starts it again. That folder is the whole\nof it — the links, the tags and the accounts.",
     "pt": "Abrir `https://faved.<your-tailnet>.ts.net` e criar a primeira conta — que é\ntambém o passo de configuração, já que o banco SQLite é escrito no cadastro.\n\n### Backup\n\nPara o serviço, empacota a pasta storage e sobe de novo. Aquela pasta é tudo —\nos links, as tags e as contas."
-  },
-  "units": {
-    "faved": {
-      "image": "{version}"
-    }
   }
 }

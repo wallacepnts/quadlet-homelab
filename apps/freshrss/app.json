@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "freshrss",
   "title": "FreshRSS",
-  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/freshrss.svg",
   "tagline": {
     "en": "A self-hosted RSS/Atom feed aggregator, with a compatible API for mobile apps",
     "pt": "Agregador de feeds RSS/Atom self-hosted, com API compatível pra apps móveis"
@@ -11,10 +9,6 @@
   "license": "AGPL-3.0",
   "links": {
     "docs": "https://freshrss.org"
-  },
-  "notes": {
-    "en": "Open `http://<host-ip>:8104` or `https://freshrss.<your-tailnet>.ts.net`.",
-    "pt": "Abrir `http://<ip-do-host>:8104` ou `https://freshrss.<your-tailnet>.ts.net`."
   },
   "units": {
     "freshrss": {

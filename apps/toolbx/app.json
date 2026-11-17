@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "toolbx",
   "title": "Toolbx",
-  "icon": "https://cdn.jsdelivr.net/gh/containers/containertoolbx.org@main/apple-touch-icon.png",
   "tagline": {
     "en": "Disposable Arch, Fedora, RHEL and Ubuntu shells, on the official Toolbx images — somewhere to install a one-off tool that is not the host",
     "pt": "Shells descartáveis de Arch, Fedora, RHEL e Ubuntu, nas imagens oficiais do Toolbx — um lugar pra instalar ferramenta avulsa que não é o host"

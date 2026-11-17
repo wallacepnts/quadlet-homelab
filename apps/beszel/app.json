@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "beszel",
   "title": "Beszel",
-  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/beszel.svg",
   "tagline": {
     "en": "A light dashboard for monitoring this host's resources (CPU/RAM/disk/network/containers)",
     "pt": "Dashboard leve de monitoramento de recursos (CPU/RAM/disco/rede/containers) deste host"
@@ -11,10 +9,6 @@
   "license": "MIT",
   "links": {
     "docs": "https://beszel.dev"
-  },
-  "notes": {
-    "en": "Open `http://<host-ip>:8090` or `https://beszel.<your-tailnet>.ts.net`.",
-    "pt": "Abrir `http://<ip-do-host>:8090` ou `https://beszel.<your-tailnet>.ts.net`."
   },
   "secrets": {
     "beszel-agent-key": {
@@ -25,11 +19,7 @@
   },
   "units": {
     "beszel-agent": {
-      "upstream": "henrygd/beszel",
-      "image": "{version}"
-    },
-    "beszel": {
-      "image": "{version}"
+      "upstream": "henrygd/beszel"
     }
   }
 }

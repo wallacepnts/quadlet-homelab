@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "filebrowser",
   "title": "FileBrowser Quantum",
-  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/filebrowser-quantum.svg",
   "tagline": {
     "en": "A web file manager — search, thumbnails, WebDAV, and a shell over a directory you pick",
     "pt": "Gerenciador de arquivos web — busca, miniaturas, WebDAV e um shell sobre um diretório que você escolhe"
@@ -17,14 +15,8 @@
     "pt": "Coloque seus arquivos em `~/.config/containers/volumes/filebrowser/files/` e\nabra `https://filebrowser.<your-tailnet>.ts.net` ou `http://<ip-do-host>:8014`.\n\nO usuário é `admin`. A senha sai no fim da instalação, e de novo com\n`qh filebrowser`.\n\n### Volumes\n\n| caminho | guarda |\n| --- | --- |\n| `volumes/filebrowser/data` | `config.yaml`, `database.db`, cache de miniaturas |\n| `volumes/filebrowser/files` | os arquivos que ele gerencia |\n\nA porta **8014** do host mapeia pra **8080** lá dentro.\n\n### Acrescentar um diretório\n\nUm `Volume=` na unit e a fonte correspondente no `config.yaml`:\n\n```ini\nVolume=%h/Documentos:/docs:Z\n```\n\n```yaml\nserver:\n  sources:\n    - path: \"/srv\"\n    - path: \"/docs\"\n```\n\nCada fonte ganha o próprio índice. Árvore grande custa memória e uma varredura\nna primeira execução.\n\n### Senha\n\n```bash\nqh filebrowser        # imprime usuário e senha\n```\n\nPra trocar:\n\n```bash\npodman secret rm filebrowser-admin-password\npodman secret create filebrowser-admin-password -   # digite, Enter, Ctrl-D\nsystemctl --user restart filebrowser\n```\n\nRotacionar o `filebrowser-jwt-secret` do mesmo jeito derruba todas as sessões\nsem mudar a senha.\n\n### Atualizar\n\nO `config.yaml` é versionado aqui, então leia as notas da release atrás de mudança de schema antes de subir uma major.\n\n### Backup\n\nParado de propósito: o `database.db` é um banco vivo, e copiar com o app\nescrevendo dá um arquivo que só falha na hora de restaurar.\n\nSó os metadados, sem os arquivos:"
   },
   "secrets": {
-    "filebrowser-admin-password": {
-      "value": "rand-alnum 20",
-      "note": "The admin account's password, read from FILEBROWSER_ADMIN_PASSWORD."
-    },
-    "filebrowser-jwt-secret": {
-      "value": "rand-hex 32",
-      "note": "Signs the session cookie. Changing it later logs everyone out."
-    }
+    "filebrowser-admin-password": "rand-alnum 20",
+    "filebrowser-jwt-secret": "rand-hex 32"
   },
   "config": {
     "config.yaml.example": {
@@ -38,7 +30,6 @@
   },
   "units": {
     "filebrowser": {
-      "upstream": "gtsteffaniak/filebrowser",
       "image": "{version}-stable"
     }
   }

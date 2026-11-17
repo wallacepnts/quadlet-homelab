@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "openwa",
   "title": "OpenWA",
-  "icon": "https://cdn.jsdelivr.net/gh/rmyndharis/OpenWA@main/docs/logo/openwa.svg",
   "tagline": {
     "en": "A WhatsApp API gateway — turns the account into REST plus webhooks, for n8n and Home Assistant to use",
     "pt": "Gateway de API do WhatsApp — transforma a conta em REST + webhooks, pro n8n e o Home Assistant usarem"
@@ -13,8 +11,8 @@
     "docs": "https://www.open-wa.org"
   },
   "notes": {
-    "en": "Open `http://<host-ip>:2785` or `https://openwa.<your-tailnet>.ts.net`.\n\n### Behaviour change in 0.15.0\n\nWhile WhatsApp Web reloads its own page — measured around five minutes after a\nfresh pairing — every engine route answers `409` instead of the raw `500` it\nused to. A client that retries on 5xx and gives up on 4xx will now fail where\nit used to recover, so check the flows that call this API.",
-    "pt": "Abrir `http://<ip-do-host>:2785` ou `https://openwa.<your-tailnet>.ts.net`.\n\n### Mudança de comportamento na 0.15.0\n\nEnquanto o WhatsApp Web recarrega a própria página — medido em torno de cinco\nminutos depois de um pareamento novo — todas as rotas do engine respondem `409`\nem vez do `500` cru de antes. Cliente que tenta de novo em 5xx e desiste em 4xx\nvai falhar onde antes se recuperava, então vale conferir os fluxos que chamam\nessa API."
+    "en": "### Behaviour change in 0.15.0\n\nWhile WhatsApp Web reloads its own page — measured around five minutes after a\nfresh pairing — every engine route answers `409` instead of the raw `500` it\nused to. A client that retries on 5xx and gives up on 4xx will now fail where\nit used to recover, so check the flows that call this API.",
+    "pt": "### Mudança de comportamento na 0.15.0\n\nEnquanto o WhatsApp Web recarrega a própria página — medido em torno de cinco\nminutos depois de um pareamento novo — todas as rotas do engine respondem `409`\nem vez do `500` cru de antes. Cliente que tenta de novo em 5xx e desiste em 4xx\nvai falhar onde antes se recuperava, então vale conferir os fluxos que chamam\nessa API."
   },
   "secrets": {
     "openwa-master-key": {
@@ -24,11 +22,6 @@
     "openwa-key-pepper": {
       "value": "rand-hex 32",
       "note": "Server-side pepper for hashing the API keys (HMAC-SHA256 instead of plain SHA-256). Changing it later invalidates every key already issued, so it is generated at install time rather than added afterwards."
-    }
-  },
-  "units": {
-    "openwa": {
-      "image": "{version}"
     }
   }
 }

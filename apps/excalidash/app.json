@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "excalidash",
   "title": "ExcaliDash",
-  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/excalidraw.svg",
   "tagline": {
     "en": "A dashboard for Excalidraw drawings — folders, sharing and multi-user, over your own storage",
     "pt": "Painel para desenhos do Excalidraw — pastas, compartilhamento e multiusuário, no seu armazenamento"
@@ -25,15 +23,10 @@
   },
   "units": {
     "excalidash": {
-      "upstream": {
-        "value": "ZimengXiong/ExcaliDash",
-        "note": "The images are `excalidash-backend` and `excalidash-frontend`, the repository is `ExcaliDash` — updates.py derives neither from the image name."
-      },
-      "image": "{version}"
+      "upstream": "ZimengXiong/ExcaliDash"
     },
     "excalidash-backend": {
-      "upstream": "ZimengXiong/ExcaliDash",
-      "image": "{version}"
+      "upstream": "ZimengXiong/ExcaliDash"
     }
   }
 }

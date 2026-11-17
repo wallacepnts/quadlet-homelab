@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "collabora",
   "title": "Collabora",
-  "icon": "https://sdk.collaboraonline.com/_static/collabora.svg",
   "tagline": {
     "en": "Editing documents inside ownCloud — writer, spreadsheet and slides, in the browser",
     "pt": "Edição de documentos dentro do ownCloud — texto, planilha e slides, no navegador"
@@ -18,10 +16,7 @@
   },
   "units": {
     "collabora": {
-      "upstream": {
-        "value": "registry:^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$",
-        "note": "Four-part tags and no GitHub releases: the redirect trick finds nothing, so the registry's tag list is the reference."
-      }
+      "upstream": "registry:^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$"
     }
   }
 }

@@ -1,8 +1,6 @@
 {
   "spec": 2,
-  "id": "kiwix",
   "title": "Kiwix",
-  "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/kiwix.svg",
   "tagline": {
     "en": "Wikipedia and other libraries served from disk, read with the internet off",
     "pt": "Wikipedia e outras bibliotecas servidas do disco, para ler com a internet desligada"
@@ -18,11 +16,7 @@
   },
   "units": {
     "kiwix": {
-      "upstream": {
-        "value": "kiwix/kiwix-tools",
-        "note": "The image is `kiwix-serve`, one of the binaries released by `kiwix-tools`."
-      },
-      "image": "{version}"
+      "upstream": "kiwix/kiwix-tools"
     }
   }
 }
