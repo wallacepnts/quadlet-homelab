@@ -1634,6 +1634,7 @@ const LOG_MAX = 5000;
 function closeLogs() {
   if (S.logSource) { S.logSource.close(); S.logSource = null; }
   clearTimeout(S.logTimer);
+  S.logTimer = null;          // a cleared timer left set would stop every later repaint
   closeConsole();
 }
 

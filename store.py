@@ -1682,7 +1682,7 @@ class Handler(BaseHTTPRequestHandler):
     def _logged(self):
         jar = cookies.SimpleCookie(self.headers.get("Cookie", ""))
         valor = jar[COOKIE].value if COOKIE in jar else ""
-        return hmac.compare_digest(valor, cookie_for(self.token))
+        return hmac.compare_digest(valor.encode(), cookie_for(self.token).encode())
 
     def _body(self, limite=65536):
         n = int(self.headers.get("Content-Length") or 0)
@@ -1923,7 +1923,7 @@ class Handler(BaseHTTPRequestHandler):
             except ValueError:
                 return self._json(413, {"error": "too large"})
             dado = parse_qs(corpo.decode(errors="replace")).get("token", [""])[0].strip()
-            if dado and hmac.compare_digest(dado, self.token):
+            if dado and hmac.compare_digest(dado.encode(), self.token.encode()):
                 return self._redirect("/", [("Set-Cookie", f"{COOKIE}={cookie_for(self.token)}; "
                                              "Path=/; HttpOnly; SameSite=Strict")])
             time.sleep(1)                 # a guess per second, not thousands

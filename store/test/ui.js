@@ -279,6 +279,12 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   campoFiltro.value = ""; campoFiltro.listeners.input();
   fonte.onmessage({ data: "nov 15 later" }); await esperar(250);
   confere(areaLogs.textContent.split("\n").length === 4, "logs: continua recebendo depois de mudar o filtro");
+  // a repaint still pending when the logs are reopened must not stop the next ones from painting
+  fonte.onmessage({ data: "nov 15 pending" });
+  api.showLogs("homebox");
+  const f2 = fontes[fontes.length - 1];
+  f2.onopen(); f2.onmessage({ data: "nov 15 after reopen" }); await esperar(250);
+  confere(/after reopen/.test([...$("p-section").walk()].find((e) => e.attrs && e.attrs.class === "logs").textContent), "logs: reabrir com um repaint pendente ainda mostra as linhas");
   api.showLogs("homebox");
   confere(fonte.closed === true && fontes[fontes.length - 1] !== fonte, "logs: abrir outro fecha o stream anterior");
   fontes[fontes.length - 1].onerror();
