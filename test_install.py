@@ -607,7 +607,7 @@ def scenario_deprecated(tmp):
     import json
     raiz = Path(tmp, "dep-repo")
     raiz.mkdir()
-    for f in ("install.py", "qhui.py", "overrides.py", "trials.py", "imagepin.py", "manifest.py", "instances.py"):
+    for f in ("install.py", "qhui.py", "overrides.py", "trials.py", "imagepin.py", "manifest.py", "instances.py", "network.py"):
         shutil.copy(ROOT / f, raiz / f)
     shutil.copytree(ROOT / "apps", raiz / "apps", ignore_dangling_symlinks=True)   # apps/durockrj may point nowhere
     import manifest as MF
@@ -677,7 +677,7 @@ def scenario_backup_exclude(tmp):
     """`[backup] exclude` leaves rebuildable folders out of the archive, says how much, and the restore brings the folders back."""
     raiz = Path(tmp, "bx-repo")
     raiz.mkdir()
-    for f in ("install.py", "qhui.py", "overrides.py", "trials.py", "imagepin.py", "manifest.py", "instances.py"):
+    for f in ("install.py", "qhui.py", "overrides.py", "trials.py", "imagepin.py", "manifest.py", "instances.py", "network.py"):
         shutil.copy(ROOT / f, raiz / f)
     shutil.copytree(ROOT / "apps", raiz / "apps", ignore_dangling_symlinks=True)
     import manifest as MF
@@ -889,6 +889,34 @@ def scenario_rollback(tmp):
     check(not ok and "unhealthy" in motivo, "rollback: an unhealthy container is a rollback at once")
 
 
+def scenario_network(tmp):
+    """`--network`: the tailnet as a choice — local only, Tailscale, or Headscale with its own server."""
+    home = str(Path(tmp) / "net")
+    r = run("--network", "--prefix", home)
+    check("network: tailscale" in r.stdout and "not chosen yet" in r.stdout, "network: with no choice, Tailscale is what a host has always had")
+    r = run("--network", "wireguard", "--prefix", home, expected=2)
+    r = run("--network", "headscale", "--prefix", home, expected=1)
+    check("needs a name" in r.stdout + r.stderr, "network: a Headscale network needs a name")
+    r = run("--network", "headscale", "--tailnet", "casa", "--login-server", "ftp://x", "--prefix", home, expected=1)
+    check("http(s)" in r.stdout + r.stderr, "network: the server address is http(s) only")
+    run("--network", "local", "--apply", "--prefix", home)
+    check('"mode": "local"' in Path(home, ".config/quadlet-homelab/network.json").read_text()
+          and Path(home, ".config/quadlet-homelab/access").read_text().startswith("local"), "network: local saves the choice and the local rule")
+    r = run("--network", "headscale", "--tailnet", "casa", "--login-server", "http://192.168.1.10:8093", "--apply", "--prefix", home)
+    cfg = Path(home, ".config/containers/volumes/headscale/config/config.yaml").read_text()
+    check("server_url: http://192.168.1.10:8093" in cfg and "base_domain: " + ".".join(("casa", "ts", "net")) in cfg, "network: Headscale is installed and its config filled in")
+    check("controlUrl: http://192.168.1.10:8093" in Path(home, ".config/containers/volumes/tsdproxy/config/tsdproxy.yaml").read_text(), "network: tsdproxy points at Headscale")
+    check(Path(home, ".config/environment.d/tailnet.conf").read_text() == "TAILNET=casa\n", "network: TAILNET for the units is the network's name")
+    run(APP, "--apply", "--prefix", home)
+    check(path(home, "systemd", f"{APP}.container").is_file(), "network: an app installs under Headscale")
+    run("paperless-ngx", "--apply", "--prefix", home)
+    check("tsdproxy.port.web=80/http:8000/http" in path(home, "systemd", "paperless-ngx", "paperless-ngx.container").read_text(),
+          "network: under Headscale the proxied port is plain HTTP (no certificate to issue)")
+    run("--network", "tailscale", "--apply", "--prefix", home)
+    run("paperless-ngx", "--update", "--apply", "--prefix", home)
+    check("443/https:8000/http" in path(home, "systemd", "paperless-ngx", "paperless-ngx.container").read_text(), "network: back on Tailscale, an update restores the HTTPS port")
+
+
 def main():
     with tempfile.TemporaryDirectory() as tmp:
         home, out = str(Path(tmp) / "home"), str(Path(tmp) / "backups")
@@ -901,6 +929,7 @@ def main():
         print("install options:");    scenario_options(tmp)
         print("instances:");          scenario_instances(tmp)
         print("rollback:");           scenario_rollback(tmp)
+        print("network:");            scenario_network(tmp)
         print("deprecated:");         scenario_deprecated(tmp)
         print("drift:");              scenario_drift(home)
         print("failure:");            scenario_failure(home, tmp)

@@ -85,6 +85,15 @@ const T = {
       paperless: "Em Paperless: Meu perfil → Token de API.", "uptime-kuma": "Crie uma página de status no Uptime Kuma e use o slug do endereço dela.",
       sonarr: "Em Sonarr: Settings → General → API Key.", radarr: "Em Radarr: Settings → General → API Key.", jellyfin: "Em Jellyfin: Painel → Chaves de API." },
     svcSecure: "A chave fica no servidor; o navegador só recebe os números.",
+    netTitle: "Rede (tailnet)", netModes: { local: "Só local", tailscale: "Tailscale", headscale: "Headscale" },
+    netDesc: { local: "Sem tailnet: os apps abrem pela porta na rede local e o tsdproxy fica desligado. É o jeito mais simples.",
+      tailscale: "O host entra numa tailnet do Tailscale e o tsdproxy dá a cada app um nome HTTPS (um nome por app).",
+      headscale: "Uma rede sua, sem conta em terceiros: o projeto roda o servidor Headscale, o host e o tsdproxy entram nele. Os apps ficam em HTTP na tailnet (o Headscale não emite certificado HTTPS)." },
+    netState: "Como está", netTs: "Tailscale no host", netHs: "Servidor Headscale", netTsd: "tsdproxy",
+    netNotInstalled: "não instalado", netNotRunning: "parado", netRunning: "rodando", netInstalledOnly: "instalado, parado", netNoKey: "sem a chave (authkey) ainda",
+    netTailnet: "Nome da rede", netTailnetHint: "os apps ganham nomes nela", netServer: "Endereço do servidor Headscale", netServerHint: "um endereço que seus aparelhos alcancem (a LAN serve em casa)",
+    netApply: "Aplicar", netNeed: "Falta no host (uma vez, com sudo):", netNowTs: "O Tailscale vai fazer o login: se aparecer um link abaixo, abra-o.", netDone: "Rede aplicada.",
+    netHttps: "Os apps que exigem HTTPS não funcionam com Headscale:",
     sideBtn: "Barra lateral", sideTitle: "Painel", sideEdit: "Editar", sideDone: "Pronto", addWidget: "Adicionar widget…", remove: "Remover", moveUp: "Subir", moveDown: "Descer",
     wPerf: "Desempenho do servidor", wApps: "Seus apps", wNotes: "Notas", wLinks: "Links rápidos",
     perfCpu: "Processador", perfMem: "Memória", perfDisk: "Disco", perfNet: "Rede", perfLoad: "carga", perfCores: "núcleos", perfSince: "desde o início", perfNone: "sem dados",
@@ -256,6 +265,15 @@ const T = {
       paperless: "In Paperless: My profile → API token.", "uptime-kuma": "Create a status page in Uptime Kuma and use the slug of its address.",
       sonarr: "In Sonarr: Settings → General → API Key.", radarr: "In Radarr: Settings → General → API Key.", jellyfin: "In Jellyfin: Dashboard → API keys." },
     svcSecure: "The key stays on the server; the browser only gets the numbers.",
+    netTitle: "Network (tailnet)", netModes: { local: "Local only", tailscale: "Tailscale", headscale: "Headscale" },
+    netDesc: { local: "No tailnet: apps open on the LAN port and tsdproxy is off. The simplest way.",
+      tailscale: "The host joins a Tailscale tailnet and tsdproxy gives each app an HTTPS name (a name per app).",
+      headscale: "A network of your own, no account at a third party: the project runs the Headscale server, the host and tsdproxy join it. Apps are served over HTTP on the tailnet (Headscale issues no HTTPS certificate)." },
+    netState: "Where it stands", netTs: "Tailscale on the host", netHs: "Headscale server", netTsd: "tsdproxy",
+    netNotInstalled: "not installed", netNotRunning: "stopped", netRunning: "running", netInstalledOnly: "installed, stopped", netNoKey: "no authkey yet",
+    netTailnet: "Network name", netTailnetHint: "the apps get names in it", netServer: "Headscale server address", netServerHint: "an address your devices can reach (the LAN does at home)",
+    netApply: "Apply", netNeed: "What the host still needs (once, with sudo):", netNowTs: "Tailscale will sign in: if a link shows up below, open it.", netDone: "Network applied.",
+    netHttps: "Apps that insist on HTTPS do not work with Headscale:",
     sideBtn: "Sidebar", sideTitle: "Dashboard", sideEdit: "Edit", sideDone: "Done", addWidget: "Add a widget…", remove: "Remove", moveUp: "Move up", moveDown: "Move down",
     wPerf: "Server performance", wApps: "Your apps", wNotes: "Notes", wLinks: "Quick links",
     perfCpu: "Processor", perfMem: "Memory", perfDisk: "Disk", perfNet: "Network", perfLoad: "load", perfCores: "cores", perfSince: "since boot", perfNone: "no data",
@@ -1728,6 +1746,7 @@ async function renderSettings() {
       h("div", { class: "row" },
         h("button", { type: "button", onclick: () => rodar(false) }, t("saveRule")),
         h("button", { type: "button", class: "ghost", onclick: () => rodar(true) }, t("applyRule")))),
+    await networkSection(),
     await appearanceSection(),
     await alertsSection(),
     h("section", {}, h("p", { class: "muted" }, c.tailnet ? t("tailnetOn") : t("tailnetOff"))));
@@ -2114,6 +2133,61 @@ async function pollSvc() {
     const a = S.current && current();
     if (a && $("panel").open) renderSvc(a);
   } catch (e) { /* next turn */ }
+}
+
+// -- network: Tailscale, Headscale or none ---------------------------------------------------
+// The tailnet is part of the project: one choice here, and `qh --network` does the rest (the host's client,
+// the Headscale server, tsdproxy). What needs root on the host is only shown, as commands to copy.
+async function networkSection() {
+  let n;
+  try { n = await api("/api/network"); } catch (e) { return null; }
+  let modo = n.mode;
+  const aviso = h("p", { class: "muted" });
+  const nome = h("input", { type: "text", value: n.tailnet || "", placeholder: "casa", autocomplete: "off", "aria-label": t("netTailnet") });
+  const url = h("input", { type: "text", value: n.server_url || "", placeholder: "http://192.168.1.10:8093", autocomplete: "off", "aria-label": t("netServer") });
+  const detalhe = h("div", { class: "net-detail" });
+  const estado = (ok, txt) => h("li", {}, h("span", { class: `dot ${ok === true ? "ok" : ok === false ? "off" : "warn"}` }), txt);
+  const ts = n.tailscale, hs = n.headscale, tsd = n.tsdproxy;
+  const lista = h("ul", { class: "net-state" },
+    estado(ts.installed && ts.active && ts.backend === "Running", `${t("netTs")}: ${!ts.installed ? t("netNotInstalled") : !ts.active ? t("netNotRunning") : [ts.backend, ts.ip, ts.domain].filter(Boolean).join(" · ")}`),
+    estado(hs.active, `${t("netHs")}: ${hs.active ? t("netRunning") : hs.installed ? t("netInstalledOnly") : t("netNotInstalled")}`),
+    estado(tsd.active, `${t("netTsd")}: ${tsd.active ? t("netRunning") : tsd.installed ? t("netInstalledOnly") : t("netNotInstalled")}${tsd.authkey || !tsd.installed ? "" : ` · ${t("netNoKey")}`}`));
+  const desenha = () => {
+    const faltaHost = modo !== "local" && (!ts.installed || !ts.active || !ts.operator);
+    const cmds = !ts.installed ? n.commands.install : !ts.active ? n.commands.service : n.commands.operator;
+    fill(detalhe, h("p", { class: "muted" }, t("netDesc")[modo]),
+      modo === "headscale" ? h("label", { class: "field" }, `${t("netServer")}`, url, h("small", { class: "muted" }, t("netServerHint"))) : null,
+      modo !== "local" ? h("label", { class: "field" }, t("netTailnet"), nome, h("small", { class: "muted" }, t("netTailnetHint"))) : null,
+      faltaHost ? h("div", { class: "note" }, h("strong", {}, t("netNeed")), h("pre", {}, cmds.join("\n"))) : null);
+  };
+  const botoes = ["local", "tailscale", "headscale"].map((m) => {
+    const b = h("button", { type: "button", "aria-pressed": String(modo === m), onclick: () => {
+      modo = m; for (const x of botoes) x.setAttribute("aria-pressed", String(x === b)); desenha(); } }, t("netModes")[m]);
+    return b;
+  });
+  const aplicar = async () => {
+    const pre = $("s-out");
+    pre.hidden = false; pre.textContent = `${t("working")}\n`;
+    if (modo !== "local") pre.textContent += `${t("netNowTs")}\n`;
+    try {
+      const { job } = await api("/api/network", { mode: modo, tailnet: nome.value.trim(), server_url: url.value.trim() });
+      let next = 0, st;
+      do {
+        await new Promise((r) => setTimeout(r, 900));
+        st = await api(`/api/job/${job}?from=${next}`);
+        next = st.next;
+        if (st.output) pre.textContent += st.output;
+      } while (st.rc === null);
+      pre.textContent += `\n${st.rc === 0 ? t("netDone") : `${t("failed")} (${st.rc}).`}\n`;
+    } catch (e) { pre.textContent += e.status === 409 ? t("busy") : String(e.message); }
+    const texto = pre.textContent;
+    await renderSettings(); $("s-out").hidden = false; $("s-out").textContent = texto;
+    await load();
+  };
+  desenha();
+  return h("section", {}, h("h3", {}, t("netTitle")), h("div", { class: "seg", role: "group", "aria-label": t("netTitle") }, ...botoes),
+    detalhe, h("p", { class: "lead-sm" }, t("netState")), lista,
+    h("div", { class: "row" }, h("button", { type: "button", onclick: aplicar }, t("netApply"))), aviso);
 }
 
 // -- appearance -----------------------------------------------------------------------------

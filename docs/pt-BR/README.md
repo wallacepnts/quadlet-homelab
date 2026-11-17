@@ -2,7 +2,7 @@
 
 **[🇺🇸 Read in English](../../README.md)**
 
-83 serviços self-hosted como units do [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html),
+84 serviços self-hosted como units do [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html),
 rootless, um serviço por pasta.
 
 ## Início rápido
@@ -90,7 +90,7 @@ use `--reinstall`.
 ## Requisitos
 
 - **Podman 5.0 ou mais novo.** É a régua de verdade: o `Notify=healthy` chegou
-  nessa versão, e 118 das 126 units usam. No 4.x o start volta antes de o app
+  nessa versão, e 119 das 127 units usam. No 4.x o start volta antes de o app
   estar pronto, e a instalação relata um sucesso que ela não tem como saber.
 - **systemd com sessão de usuário** e cgroups v2.
 - **`network-online.target` alcançado no boot.** O Quadlet ordena toda unit que
@@ -178,6 +178,7 @@ aqui.
 | <img src="../../apps/gitea/icon.svg" width="48" height="48" alt=""> | [Gitea](../../apps/gitea) | Um servidor Git simples para o seu código. |
 | <img src="../../apps/gitea-runner/icon.svg" width="48" height="48" alt=""> | [Gitea Runner](../../apps/gitea-runner) | Executa os fluxos automáticos do seu Gitea. |
 | <img src="../../apps/grafana/icon.svg" width="48" height="48" alt=""> | [Grafana](../../apps/grafana) | Gráficos e painéis para os seus dados. |
+| <img src="../../apps/headscale/icon.svg" width="48" height="48" alt=""> | [Headscale](../../apps/headscale) | O seu próprio servidor para uma rede privada. |
 | <img src="../../apps/hermes-agent/icon.png" width="48" height="48" alt=""> | [Hermes Agent](../../apps/hermes-agent) | Um assistente de IA pessoal. |
 | <img src="../../apps/home-assistant/icon.svg" width="48" height="48" alt=""> | [Home Assistant](../../apps/home-assistant) | Controle todos os seus dispositivos de casa inteligente num só lugar. |
 | <img src="../../apps/homebox/icon.svg" width="48" height="48" alt=""> | [HomeBox](../../apps/homebox) | Mantenha um inventário de tudo o que você tem. |
@@ -240,41 +241,41 @@ aqui.
 onde o projeto não publica versão — e atualizada na mão; ver
 [auto-update](./auto-update.md).
 
-## Opcional: a tailnet
+## A rede: Tailscale, Headscale ou só local
 
-O [Tailscale](https://tailscale.com) com o tsdproxy dá a cada serviço um nome
-HTTPS próprio, alcançável de qualquer lugar sem abrir porta. O Vaultwarden
-precisa disso — ele só decifra a sessão em contexto seguro.
+A tailnet faz parte do projeto, e uma escolha (perguntada pelo `bootstrap.sh`, trocada no painel em
+**Configurações → Rede**, ou com `qh --network`) diz qual:
 
-O `qh tailscale` confere os três passos abaixo no host e mostra só o que
-falta.
-
-Instalar o Tailscale pela sua distribuição (ver
-[tailscale.com/download](https://tailscale.com/download)) e depois:
+| Escolha | O que você tem |
+| --- | --- |
+| **Só local** | Sem tailnet. Os apps abrem na porta da LAN e o tsdproxy fica parado. O jeito mais simples. |
+| **Tailscale** | O host entra numa tailnet do [Tailscale](https://tailscale.com) e o tsdproxy dá a cada serviço um nome HTTPS, acessível de qualquer lugar sem abrir porta. O Vaultwarden precisa dela: só decifra a sessão num contexto seguro. |
+| **Headscale** | Uma rede sua, sem conta em terceiros: o projeto roda o [Headscale](https://headscale.net) (o app `headscale`), e o host e o tsdproxy entram nele. O Headscale não emite certificado HTTPS, então os apps ficam em HTTP na tailnet (o WireGuard ainda a cifra) e os que exigem HTTPS (Vaultwarden, Actual) precisam da escolha Tailscale. |
 
 ```bash
+qh --network                                   # onde as coisas estão
+qh --network local --apply
+qh --network tailscale --apply
+qh --network headscale --tailnet <your-tailnet> --apply     # --login-server URL se não for o endereço da LAN
+```
+
+O que pede root no host só é mostrado, nunca executado: o Tailscale é pacote do host (ele precisa *ser* o host na
+rede), então o plano imprime o que falta, uma vez —
+
+```bash
+sudo transactional-update pkg install tailscale     # host imutável; depois reinicie
 sudo systemctl enable --now tailscaled
-sudo tailscale up
-
-mkdir -p ~/.config/environment.d
-echo 'TAILNET=<your-tailnet>' > ~/.config/environment.d/tailnet.conf
-systemctl --user daemon-reload
-
-qh tsdproxy --apply
+sudo tailscale set --operator=$USER                  # deixa o painel fazer o login do host, sem root
 ```
 
-Sem tailnet, defina a regra uma vez e toda instalação a segue:
+— e todo o resto (o login, o servidor Headscale, o usuário e a chave dele, o secret e o `controlUrl` do tsdproxy, o
+`TAILNET` das units, a atualização dos apps) são os passos do plano. Com o Tailscale, o tsdproxy pede uma chave
+reutilizável do console de admin; com o Headscale, o projeto a cria. Trocar muda a label da porta proxiada dos apps
+(uma atualização, que mantém os dados) e é reversível: `--network local` e depois `--network tailscale` é o caminho
+de volta.
 
-```bash
-qh --set-access local
-```
-
-Ele comenta as labels `tsdproxy.*` em vez de apagá-las. Ligar depois é uma atualização, que preserva
-os dados:
-
-```bash
-qh --all --update --apply --access tailnet
-```
+Sem tailnet, `qh --network local` grava a regra e para o tsdproxy; a regra de mais baixo nível sozinha continua
+sendo `qh --set-access local`, que comenta as labels `tsdproxy.*` em vez de apagá-las.
 
 ## Num servidor ARM
 

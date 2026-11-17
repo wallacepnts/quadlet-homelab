@@ -53,11 +53,13 @@ pt*)
     M_C2="  qh memos           # o plano de um, sem instalar"
     M_C3="  qh memos --apply   # fazer"
     M_ASK="Como os serviços devem ficar acessíveis?"
-    M_A1="  1) só na LAN         porta no host, sem tailnet"
-    M_A2="  2) só na tailnet     nome HTTPS próprio, porta fechada na LAN  [padrão]"
-    M_A3="  3) ambos             na tailnet e na LAN"
+    M_A1="  1) só local          porta na rede local, sem tailnet (o mais simples)"
+    M_A2="  2) Tailscale         cada app ganha um nome HTTPS na sua tailnet  [padrão]"
+    M_A3="  3) Headscale         sua própria rede, sem conta em terceiros (o servidor roda aqui)"
     M_CHOICE="1, 2 ou 3 (Enter para o padrão):"
-    M_SAVED="regra salva:"
+    M_SAVED="rede salva:"
+    M_NETNAME="nome da sua rede (os apps ganham nomes nela) [casa]:"
+    M_NETAPPLY="para aplicar (instala o que falta e liga):"
     M_PASK="De onde você vai abrir o painel?"
     M_P1="  1) só desta máquina     (127.0.0.1; de outro computador, por ssh -L)  [padrão]"
     M_P2="  2) da rede local        (qualquer aparelho da LAN, com o token)"
@@ -94,11 +96,13 @@ pt*)
     M_C2="  qh memos           # the plan for one, without installing"
     M_C3="  qh memos --apply   # do it"
     M_ASK="How should the services be reachable?"
-    M_A1="  1) LAN only          a port on the host, no tailnet"
-    M_A2="  2) tailnet only      its own HTTPS name, LAN port closed  [default]"
-    M_A3="  3) both              on the tailnet and on the LAN"
+    M_A1="  1) local only        a port on the local network, no tailnet (the simplest)"
+    M_A2="  2) Tailscale         each app gets an HTTPS name on your tailnet  [default]"
+    M_A3="  3) Headscale         a network of your own, no account at a third party (the server runs here)"
     M_CHOICE="1, 2 or 3 (Enter for the default):"
-    M_SAVED="rule saved:"
+    M_SAVED="network saved:"
+    M_NETNAME="name of your network (the apps get names in it) [casa]:"
+    M_NETAPPLY="to apply it (installs what is missing and turns it on):"
     M_PASK="Where will you open the panel from?"
     M_P1="  1) this machine only    (127.0.0.1; from another computer, over ssh -L)  [default]"
     M_P2="  2) the local network    (any device on the LAN, with the token)"
@@ -131,7 +135,7 @@ fi
 say "$M_DEPSOK"
 
 # 1b. Podman 5.0 is the real floor: `Notify=healthy` arrived there, and
-#     118 of the 126 units use it. On 4.x the start returns before the app is
+#     119 of the 127 units use it. On 4.x the start returns before the app is
 #     ready and the install reports success it cannot know about.
 pv=$(podman --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+' | head -1)
 if [ -n "$pv" ] && [ "${pv%%.*}" -lt 5 ]; then
@@ -214,14 +218,29 @@ if [ ! -f "$ACCESS_FILE" ] && [ -r /dev/tty ]; then
     say "$M_A3"
     printf '  %s ' "$M_CHOICE"
     read -r escolha < /dev/tty || escolha=""
+    # The network is part of the project: local only, Tailscale or Headscale. The choice is only recorded
+    # here (network.json and the access rule); `qh --network` applies it, and the panel can change it later.
+    # Nothing is installed from this script.
     case "$escolha" in
-        1) modo=local ;;
-        3) modo=both ;;
-        *) modo=tailnet ;;
+        1) rede=local;     modo=local ;;
+        3) rede=headscale; modo=tailnet ;;
+        *) rede=tailscale; modo=tailnet ;;
     esac
+    nome=""
+    if [ "$rede" = headscale ]; then
+        printf '  %s ' "$M_NETNAME"
+        read -r nome < /dev/tty || nome=""
+        nome=$(printf '%s' "${nome:-casa}" | tr 'A-Z' 'a-z' | tr -c 'a-z0-9\n-' '-' | sed 's/^-*//; s/-*$//')
+        nome=${nome:-casa}
+    fi
     mkdir -p "$(dirname "$ACCESS_FILE")"
     printf '%s\n' "$modo" > "$ACCESS_FILE"
-    say "$M_SAVED $modo"
+    printf '{\n  "mode": "%s",\n  "server_url": "",\n  "tailnet": "%s"\n}\n' "$rede" "$nome" > "$(dirname "$ACCESS_FILE")/network.json"
+    say "$M_SAVED $rede"
+    if [ "$rede" != local ]; then
+        say "$M_NETAPPLY"
+        say "  qh --network $rede${nome:+ --tailnet $nome} --apply"
+    fi
 fi
 
 # 6. The panel: a `systemd --user` service (not a Quadlet: it drives systemd and podman as you), started

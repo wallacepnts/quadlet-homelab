@@ -555,6 +555,27 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   rotas["/api/alerts/test"] = { ok: true };
   rotas["/api/ui"] = { theme: "system", accent: "orange", card: "shadow", density: "comfortable", bg_blur: 8, bg_dim: 35, background: false, bg_version: null };
   await api.openSettings(); await esperar(50);
+  // network: the three choices, the state of each piece, what the host still needs, and Apply starts the qh job
+  rotas["/api/network"] = { mode: "tailscale", chosen: false, server_url: "http://192.168.1.10:8093", tailnet: "",
+    tailscale: { installed: false, active: false, backend: null, ip: null, domain: null, operator: false },
+    headscale: { installed: false, active: false }, tsdproxy: { installed: true, active: true, authkey: true }, access: null,
+    commands: { install: ["sudo transactional-update pkg install tailscale"], service: ["sudo systemctl enable --now tailscaled"], operator: ["sudo tailscale set --operator=$USER"] } };
+  rotas["/api/job/jn"] = { output: "network: headscale\n", next: 1, rc: 0 };
+  await api.openSettings(); await esperar(50);
+  confere(/Rede \(tailnet\)/.test($("s-body").textContent) && /Só local/.test($("s-body").textContent) && /Headscale/.test($("s-body").textContent), "Rede: as três escolhas");
+  confere(/Tailscale no host: não instalado/.test($("s-body").textContent) && /tsdproxy: rodando/.test($("s-body").textContent), "Rede: o estado de cada peça");
+  confere(/sudo transactional-update pkg install tailscale/.test($("s-body").textContent), "Rede: o que falta no host, como comando para copiar");
+  porTexto($("s-body"), "Headscale")[0].listeners.click();
+  confere(/Endereço do servidor Headscale/.test($("s-body").textContent) && /Nome da rede/.test($("s-body").textContent) && /HTTP na tailnet/.test($("s-body").textContent), "Rede: escolher Headscale pede o endereço e o nome, e avisa do HTTP");
+  const campoNome = [...$("s-body").walk()].find((e) => e.tag === "input" && e.attrs["aria-label"] === "Nome da rede");
+  campoNome.value = "casa";
+  rotas["/api/network"] = { ...rotas["/api/network"], mode: "headscale" };
+  const antesNet = posts.length;
+  const aplicarRede = porTexto($("s-body"), "Aplicar").pop();
+  aplicarRede.listeners.click(); await esperar(1200);
+  const envNet = posts.slice(antesNet).find((x) => x.rota === "/api/network");
+  confere(envNet && envNet.corpo.mode === "headscale" && envNet.corpo.tailnet === "casa" && envNet.corpo.server_url === "http://192.168.1.10:8093", `Rede: Aplicar manda a escolha (${JSON.stringify(envNet && envNet.corpo)})`);
+  rotas["/api/network"] = { ...rotas["/api/network"], mode: "tailscale" };
   // appearance: picking applies at once, on <html>, and is saved on the server
   confere(/Aparência/.test($("s-body").textContent) && /Cor de destaque/.test($("s-body").textContent) && /Imagem de fundo/.test($("s-body").textContent), "Configurações: seção de aparência");
   const antesAp = posts.length;
@@ -570,7 +591,8 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   rotas["/api/ui"] = { ...rotas["/api/ui"], background: true, bg_version: 5 };
   await api.openSettings(); await esperar(50);
   confere(/Alertas/.test($("s-body").textContent) && /Disco cheio/.test($("s-body").textContent) && /Backup falhou/.test($("s-body").textContent), "Configurações: seção de alertas");
-  const entradas = [...$("s-body").walk()].filter((e) => e.tag === "input" && ["text", "password"].includes(e.attrs.type));
+  const entradas = [...$("s-body").walk()].filter((e) => e.tag === "input" && ["text", "password"].includes(e.attrs.type)
+    && !["Nome da rede", "Endereço do servidor Headscale"].includes(e.attrs["aria-label"]));
   confere(entradas.length === 3 && entradas[2].attrs.placeholder && /já definido/.test(entradas[2].attrs.placeholder), "o token já definido não volta: só o aviso");
   entradas[0].value = "https://ntfy.example.org"; entradas[1].value = "lab";
   const antesAl = posts.length;

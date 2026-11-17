@@ -534,3 +534,10 @@ main.apps.grouped { display: block; }
 .svc-stat { background: var(--card); border-radius: 12px; padding: .55rem .7rem; display: grid; }
 .svc-val { font-size: 1.35rem; font-weight: 750; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
 .svc-lbl { color: var(--muted); font-size: .78rem; }
+
+/* ---- Network ------------------------------------------------------------------------------------ */
+.net-state { list-style: none; margin: .3rem 0 .8rem; padding: 0; display: grid; gap: .25rem; font-size: .9rem; }
+.net-state .dot { margin-right: .55rem; }
+.net-detail { display: grid; gap: .5rem; margin: .4rem 0; }
+.net-detail .note { background: var(--accent-soft); border-radius: var(--radius-sm); padding: .6rem .8rem; }
+.net-detail pre { margin: .4rem 0 0; user-select: all; }

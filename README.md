@@ -2,7 +2,7 @@
 
 **[🇧🇷 Leia em português](./docs/pt-BR/README.md)**
 
-83 self-hosted services as [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)
+84 self-hosted services as [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)
 units, rootless, one service per folder.
 
 ## Quick start
@@ -90,7 +90,7 @@ pulled. To go through anyway, use `--reinstall`.
 ## Requirements
 
 - **Podman 5.0 or newer.** This is the real floor: `Notify=healthy` arrived
-  there, and 118 of the 126 units use it. On 4.x the start returns before the app
+  there, and 119 of the 127 units use it. On 4.x the start returns before the app
   is ready, and the install reports a success it cannot know about.
 - **systemd with a user session** and cgroups v2.
 - **`network-online.target` reached at boot.** Quadlet orders every unit it
@@ -177,6 +177,7 @@ Leap 15's problem — it publishes no container image and was not measured here.
 | <img src="./apps/gitea/icon.svg" width="48" height="48" alt=""> | [Gitea](./apps/gitea) | A simple Git server for your code. |
 | <img src="./apps/gitea-runner/icon.svg" width="48" height="48" alt=""> | [Gitea Runner](./apps/gitea-runner) | Runs the automated workflows of your Gitea. |
 | <img src="./apps/grafana/icon.svg" width="48" height="48" alt=""> | [Grafana](./apps/grafana) | Charts and dashboards for your data. |
+| <img src="./apps/headscale/icon.svg" width="48" height="48" alt=""> | [Headscale](./apps/headscale) | Your own server for a private network. |
 | <img src="./apps/hermes-agent/icon.png" width="48" height="48" alt=""> | [Hermes Agent](./apps/hermes-agent) | A personal AI assistant. |
 | <img src="./apps/home-assistant/icon.svg" width="48" height="48" alt=""> | [Home Assistant](./apps/home-assistant) | Control all your smart home devices in one place. |
 | <img src="./apps/homebox/icon.svg" width="48" height="48" alt=""> | [HomeBox](./apps/homebox) | Keep an inventory of everything you own. |
@@ -239,41 +240,41 @@ Leap 15's problem — it publishes no container image and was not measured here.
 digest where upstream publishes none — and updated by hand; see
 [auto-update](./docs/auto-update.md).
 
-## Optional: the tailnet
+## The network: Tailscale, Headscale or local only
 
-[Tailscale](https://tailscale.com) plus tsdproxy give each service its own
-HTTPS name, reachable from anywhere without opening a port. Vaultwarden needs
-it — it only decrypts the session in a secure context.
+The tailnet is part of the project, and one choice (asked by `bootstrap.sh`, changed in the panel under
+**Settings → Network**, or with `qh --network`) says which:
 
-`qh tailscale` checks the three steps below against the host and prints only
-what is missing.
-
-Install Tailscale for your distribution (see
-[tailscale.com/download](https://tailscale.com/download)), then:
+| Choice | What you get |
+| --- | --- |
+| **Local only** | No tailnet. The apps open on their LAN port, tsdproxy is stopped. The simplest way. |
+| **Tailscale** | The host joins a [Tailscale](https://tailscale.com) tailnet and tsdproxy gives each service its own HTTPS name, reachable from anywhere without opening a port. Vaultwarden needs it: it only decrypts the session in a secure context. |
+| **Headscale** | A network of your own, with no account at a third party: the project runs [Headscale](https://headscale.net) (the `headscale` app), and the host and tsdproxy sign in to it. Headscale issues no HTTPS certificate, so the apps are served over HTTP on the tailnet (WireGuard still encrypts it) and the ones that insist on HTTPS (Vaultwarden, Actual) need the Tailscale choice. |
 
 ```bash
+qh --network                                   # where things stand
+qh --network local --apply
+qh --network tailscale --apply
+qh --network headscale --tailnet <your-tailnet> --apply     # --login-server URL if not the LAN address
+```
+
+The part that needs root on the host is only shown, never run: Tailscale is a host package (it has to *be* the
+host on the network), so the plan prints what is missing, once —
+
+```bash
+sudo transactional-update pkg install tailscale     # an immutable host; then reboot
 sudo systemctl enable --now tailscaled
-sudo tailscale up
-
-mkdir -p ~/.config/environment.d
-echo 'TAILNET=<your-tailnet>' > ~/.config/environment.d/tailnet.conf
-systemctl --user daemon-reload
-
-qh tsdproxy --apply
+sudo tailscale set --operator=$USER                  # lets the panel sign the host in, without root
 ```
 
-Without a tailnet, set the rule once and every install follows it:
+— and everything else (the login, the Headscale server, its user and key, tsdproxy's secret and `controlUrl`, the
+`TAILNET` of the units, updating the apps) is the plan's steps. Under Tailscale, tsdproxy asks for a reusable auth
+key from the admin console; under Headscale the project makes it. Switching changes the apps' proxied port label
+(an update, which keeps the data) and is reversible: `--network local` then `--network tailscale` is the way
+back.
 
-```bash
-qh --set-access local
-```
-
-It comments the `tsdproxy.*` labels out instead of deleting them. Turning it on later is an update, which
-keeps the data:
-
-```bash
-qh --all --update --apply --access tailnet
-```
+Without a tailnet, `qh --network local` sets the rule and stops tsdproxy; the lower-level rule alone is still
+`qh --set-access local`, which comments the `tsdproxy.*` labels out instead of deleting them.
 
 ## On an ARM server
 

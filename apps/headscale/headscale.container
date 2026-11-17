@@ -1,0 +1,32 @@
+[Unit]
+Description=Headscale (self-hosted Tailscale control server)
+
+[Container]
+Image=docker.io/headscale/headscale
+ContainerName=headscale
+Exec=serve
+
+PublishPort=8093:8080
+
+Volume=%h/.config/containers/volumes/headscale/config:/etc/headscale:Z
+Volume=%h/.config/containers/volumes/headscale/data:/var/lib/headscale:Z
+
+ReadOnly=true
+Tmpfs=/var/run/headscale:size=1M
+DropCapability=ALL
+PidsLimit=256
+NoNewPrivileges=true
+
+HealthCmd=["CMD", "headscale", "health"]
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=5
+HealthStartPeriod=30s
+Notify=healthy
+
+[Service]
+Restart=always
+TimeoutStartSec=90
+
+[Install]
+WantedBy=default.target

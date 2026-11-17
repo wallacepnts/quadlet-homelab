@@ -56,6 +56,7 @@ import overrides as O  # noqa: E402
 import qhui  # noqa: E402
 import resources  # noqa: E402
 import alerts as A  # noqa: E402
+import network as N  # noqa: E402
 import svcwidgets as W  # noqa: E402
 import imagepin  # noqa: E402
 import manifest  # noqa: E402
@@ -2151,6 +2152,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, {"links": links(app)})
         if url.path == "/api/settings":
             return self._json(200, settings())
+        if url.path == "/api/network":
+            return self._json(200, N.state(I.network_ctx(Path(PREFIX) if PREFIX else Path.home(), PREFIX)))
         if url.path == "/api/ui":
             return self._json(200, ui_settings())
         if url.path == "/api/weather":
@@ -2367,6 +2370,17 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(400, {"error": "set the server and the topic first"})
             erro = A.push(cfg, {"kind": "test", "title": "Quadlet store: test", "message": "Alerts are working."})
             return self._json(200 if not erro else 502, {"ok": not erro, **({"error": erro} if erro else {})})
+        if url.path == "/api/network":
+            modo = d.get("mode", "")
+            url_h, nome = str(d.get("server_url") or "").strip(), str(d.get("tailnet") or "").strip()
+            erros = N.check(modo, url_h, nome)
+            if erros:
+                return self._json(400, {"error": "; ".join(erros)})
+            args = ["--network", modo, *(["--tailnet", nome] if nome else []), *(["--login-server", url_h] if modo == "headscale" and url_h else []), "--apply"]
+            job = start_job("_host", "network", [qh(*args)], lang, origem=self.client_address[0], continuar=True)
+            if job is None:
+                return self._json(409, {"error": loc("another job is running")})
+            return self._json(202, {"job": job.id})
         if url.path == "/api/settings":
             modo = d.get("access", "")
             if modo not in I.ACCESS_MODES:
@@ -3092,6 +3106,25 @@ def selftest():
             assert cfg1["access"] == "both" and cfg1["default"] is False, cfg1
             st, _, corpo = pedir("/api/settings", json.dumps({"access": "tailnet"}).encode(), api)
             assert espera_job(corpo)["rc"] == 0
+            # network: the state is readable, a bad choice is refused, and a good one starts the qh job
+            n0 = json.loads(pedir("/api/network", headers=ok)[2])
+            assert n0["mode"] == "tailscale" and n0["chosen"] is False and n0["tailscale"]["installed"] in (True, False) and "commands" in n0, n0
+            assert pedir("/api/network", json.dumps({"mode": "wireguard"}).encode(), api)[0] == 400
+            assert pedir("/api/network", json.dumps({"mode": "headscale", "tailnet": ""}).encode(), api)[0] == 400, "Headscale needs a name"
+            assert pedir("/api/network", json.dumps({"mode": "headscale", "tailnet": "casa", "server_url": "ftp://x"}).encode(), api)[0] == 400
+            st, _, c = pedir("/api/network", json.dumps({"mode": "local"}).encode(), api)
+            assert st == 202, c
+            jn = json.loads(c)["job"]
+            for _ in range(200):
+                est = json.loads(pedir(f"/api/job/{jn}", headers=ok)[2])
+                if est["rc"] is not None:
+                    break
+                time.sleep(0.2)
+            assert est["rc"] == 0 and "network: local" in est["output"], est["output"][-300:]
+            assert N.load(Path(tmp))["mode"] == "local" and json.loads(pedir("/api/network", headers=ok)[2])["mode"] == "local"
+            N.save(Path(tmp), {"mode": "tailscale", "server_url": "", "tailnet": ""})
+            pedir("/api/settings", json.dumps({"access": "tailnet"}).encode(), api)
+
             # service widgets: the address from the catalog, the credential from the panel, never sent back
             falso_cat = [{"id": "immich", "main_unit": "immich", "web": [{"unit": "immich", "local": "http://x:2283", "tailnet": None}],
                           "units": [{"unit": "immich", "installed": True}]},

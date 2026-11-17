@@ -38,6 +38,7 @@ from pathlib import Path
 import imagepin
 import instances
 import manifest
+import network
 import overrides
 import qhui
 import trials
@@ -2420,6 +2421,9 @@ def config_dests_de_todos():
     return _TODOS_CONFIG
 
 
+NETWORK_MODE = "tailscale"     # local | tailscale | headscale, from network.json (set in main)
+
+
 def unit_bytes(source, access, href_local):
     """Copies the unit, adjusting how the service becomes reachable.
 
@@ -2460,6 +2464,10 @@ def unit_bytes(source, access, href_local):
 
     if access == "local":
         data = re.sub(r"(?m)^(Label=tsdproxy\.)", r"# disabled by --access local: \1", data.decode()).encode()
+    elif NETWORK_MODE == "headscale":
+        # Headscale issues no HTTPS certificate for its MagicDNS names: tsdproxy serves plain HTTP on the tailnet
+        # (WireGuard still encrypts the hop), so the proxied port moves from 443/https to 80/http.
+        data = re.sub(r"(?m)^(Label=tsdproxy\.port\.[^=]+=)443/https:", r"\g<1>80/http:", data.decode()).encode()
     return data
 
 
@@ -3073,7 +3081,7 @@ def addresses(service, tailnet):
             # doubt about which one is the interface.
             host = published[0][-2]
         nome_no = labels.get("tsdproxy.name") or container_name(f)
-        href = "https://" + ".".join((nome_no, tailnet, "ts", "net")) if tailnet else ""
+        href = ("http://" if NETWORK_MODE == "headscale" else "https://") + ".".join((nome_no, tailnet, "ts", "net")) if tailnet else ""
         out.append((f.stem,
                     f"http://{ip}:{host}" if host else None,
                     href or None))
@@ -5148,6 +5156,169 @@ def forget_instance(home, nome):
         shutil.rmtree(d)
 
 
+# -- the tailnet as part of the project (network.py) --------------------------------------
+
+def network_ctx(home, prefix=None):
+    """The real hooks network.py works through: commands, this engine's helpers, the host."""
+    home = Path(home)
+    pre = ["--prefix", str(prefix)] if prefix else []
+    cache = {}
+
+    def engine(args):
+        r = subprocess.run([sys.executable, str(ROOT / "install.py"), *args, *pre], text=True, capture_output=True,
+                           env={**os.environ, "QH_LANG": os.environ.get("QH_LANG", "en")})
+        for l in (r.stdout + r.stderr).splitlines():
+            say(f"       {l}")
+        if r.returncode:
+            raise subprocess.CalledProcessError(r.returncode, args, r.stdout, r.stderr)
+
+    def unit_active(u):
+        if SANDBOX:
+            return False
+        return subprocess.run(["systemctl", "--user", "is-active", "--quiet", u]).returncode == 0
+
+    def app_installed(app):
+        return bool(Service(app, home).installed()) if (APPS / app).is_dir() else False
+
+    def edit(path, chave, valor):
+        f = Path(path)
+        if not f.is_file():
+            raise OSError(f"{f} does not exist yet — install the app first")
+        novo = network.edit_yaml_value(f.read_text(), chave, valor)
+        if novo is None:
+            raise OSError(f"{f}: no `{chave}` to set")
+        f.write_text(novo)
+
+    hs_cfg = home / ".config/containers/volumes/headscale/config/config.yaml"
+    tsd_cfg = home / ".config/containers/volumes/tsdproxy/config/tsdproxy.yaml"
+    ts = lambda: os.environ.get("QH_TAILSCALE") or shutil.which("tailscale")
+
+    def hs(*args):
+        r = subprocess.run(["podman", "exec", "headscale", "headscale", *args], capture_output=True, text=True, timeout=60)
+        if r.returncode:
+            raise subprocess.CalledProcessError(r.returncode, args, r.stdout, r.stderr)
+        return r.stdout
+
+    def headscale_restart():
+        run(["systemctl", "--user", "restart", "headscale"])
+        if SANDBOX:
+            return
+        for _ in range(30):
+            if subprocess.run(["podman", "exec", "headscale", "headscale", "health"], capture_output=True).returncode == 0:
+                return
+            time.sleep(2)
+        raise OSError("Headscale did not answer within a minute: see `journalctl --user -u headscale`")
+
+    def headscale_key():
+        if SANDBOX:
+            say("       (sandbox, not executed: a Headscale user and a reusable pre-authenticated key)")
+            cache["key"] = "sandbox-key"
+            return
+        try:
+            hs("users", "create", "qh")
+        except subprocess.CalledProcessError:
+            pass                                       # it exists already
+        uid = next(u["id"] for u in json.loads(hs("users", "list", "-o", "json")) if u["name"] == "qh")
+        cache["key"] = json.loads(hs("preauthkeys", "create", "--user", str(uid), "--reusable", "--expiration", "87600h", "-o", "json"))["key"]
+
+    def ts_login(url, key):
+        cmd = [ts() or "tailscale", "up", "--timeout=180s"] + ([f"--login-server={url}"] if url else []) + ([f"--authkey={key}"] if key else [])
+        if SANDBOX:
+            say(f"       (sandbox, not executed: {' '.join(c if not c.startswith('--authkey') else '--authkey=…' for c in cmd)})")
+            return
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        for linha in p.stdout:                         # the sign-in link, when there is no key, is in here
+            say(f"       {linha.rstrip()}")
+        if p.wait():
+            raise subprocess.CalledProcessError(p.returncode, cmd[:2])
+
+    def tsdproxy_control(url):
+        edit(tsd_cfg, "tailscale.providers.default.controlUrl", url)
+        if unit_active("tsdproxy"):
+            run(["systemctl", "--user", "restart", "tsdproxy"])
+
+    def tsdproxy_setup(url, key):
+        if not app_installed("tsdproxy"):
+            engine(["tsdproxy", "--apply"])
+        store_secret(Service("tsdproxy", home), "authkey", key)
+        tsdproxy_control(url)
+        run(["systemctl", "--user", "restart", "tsdproxy"])
+
+    def write_tailnet(nome):
+        if not nome:
+            raise OSError("no tailnet name: pass --tailnet NAME")
+        f = home / ".config/environment.d/tailnet.conf"
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(f"TAILNET={nome}\n")
+
+    def tailnet_apps():
+        saida = []
+        for d in sorted(x.name for x in APPS.iterdir() if x.is_dir() and not instances.is_instance(x)):
+            s = Service(d, home)
+            if d != "tsdproxy" and s.installed() and any(k == "Label" and v.startswith("tsdproxy.enable") for k, v in s.ds):
+                saida.append(d)
+        return saida
+
+    def https_apps():
+        return [d for d in tailnet_apps() if manifest.load(APPS / d).get("requires_https")]
+
+    def stop_unit(u):
+        run(["systemctl", "--user", "mask", "--now", u])
+
+    def start_unit(u):
+        run(["systemctl", "--user", "unmask", u])
+        run(["systemctl", "--user", "start", u])
+
+    leitura = lambda cmd: run_read(cmd) if (not SANDBOX or os.environ.get("QH_TAILSCALE")) else None
+    return {"home": home, "tailscale_bin": ts, "run_read": leitura,
+            "default_server_url": lambda: f"http://{local_ip()}:{network.HEADSCALE_URL_PORT}",
+            "app_installed": app_installed, "unit_active": unit_active, "secret_exists": lambda n: False if SANDBOX else secret_exists(n),
+            "saved_access": lambda: saved_access(home), "save_access": lambda m: save_access(m, home),
+            "access_drift": lambda m: access_drift(m, prefix), "engine": engine, "stop_unit": stop_unit, "start_unit": start_unit,
+            "tailnet_apps": tailnet_apps, "https_apps": https_apps,
+            "headscale_config": lambda url, nome: (edit(hs_cfg, "server_url", url), edit(hs_cfg, "dns.base_domain", ".".join((nome, "ts", "net")))),
+            "headscale_restart": headscale_restart, "headscale_key": headscale_key, "key": lambda: cache.get("key", ""),
+            "ts_login": ts_login, "tsdproxy_setup": tsdproxy_setup, "tsdproxy_control": tsdproxy_control, "write_tailnet": write_tailnet,
+            "tailnet_from_host": lambda: ((network.tailscale_state({"tailscale_bin": ts, "run_read": leitura})["domain"]) or "").removesuffix(".ts.net")}
+
+
+def run_network(mode, opts, apply, prefix=None):
+    """`qh --network MODE`: the plan, and with --apply the steps. Returns the exit code."""
+    home = Path(prefix) if prefix else Path.home()
+    ctx = network_ctx(home, prefix)
+    if mode is True:                                   # bare --network: where things stand
+        s = network.state(ctx)
+        say(f"network: {s['mode']}" + ("" if s["chosen"] else "  (not chosen yet; Tailscale is what a host without a choice has always had)"))
+        t = s["tailscale"]
+        say("  tailscale: " + ("not installed" if not t["installed"] else "tailscaled not running" if not t["active"]
+                              else f"{t['backend']}" + (f", {t['ip']}" if t["ip"] else "") + (f", {t['domain']}" if t["domain"] else "")))
+        say(f"  headscale: {'running' if s['headscale']['active'] else 'installed' if s['headscale']['installed'] else 'not installed'}"
+            + (f"  ({s['server_url']})" if s["mode"] == "headscale" else ""))
+        say(f"  tsdproxy:  {'running' if s['tsdproxy']['active'] else 'installed' if s['tsdproxy']['installed'] else 'not installed'}"
+            + ("" if s["tsdproxy"]["authkey"] else "  (no authkey secret yet)"))
+        return 0
+    steps, avisos = network.plan(mode, opts, ctx)
+    if not steps:
+        for w in avisos:
+            say(f"  !  {w}")
+        return 1
+    say(f"network: {mode}, {len(steps)} steps" + ("" if apply else "  (dry-run)"))
+    for desc, _ in steps:
+        say(f"  {'->' if apply else '  '} {desc}")
+    for w in avisos:
+        say(f"  {yellow('!')}  {w}")
+    if not apply:
+        return 0
+    for desc, fn in steps:
+        try:
+            fn()
+        except (subprocess.CalledProcessError, OSError, StopIteration, ValueError) as e:
+            say(f"\n{red('FAILED at:')} {desc}\n{(getattr(e, 'stderr', None) or str(e) or type(e).__name__).strip()}", file=sys.stderr)
+            return 1
+    say(f"\nnetwork: {green('done.')} {mode}")
+    return 0
+
+
 def main():
     # The examples in the docstring have to match how you actually invoked it:
     # installed as a `qh` symlink, telling you to type `python3 install.py`
@@ -5204,6 +5375,10 @@ def main():
                                  "if not (runs on its own after every --apply)"))
     ap.add_argument("--rollback-wait", type=int, default=None, metavar="SECONDS",
                     help=loc("with --update: seconds the new version has to be healthy before it is rolled back (default 120, 0 = never roll back)"))
+    ap.add_argument("--network", nargs="?", const=True, metavar="MODE",
+                    help=loc("the tailnet: local, tailscale or headscale (alone: where things stand). Use with --tailnet NAME and --login-server URL"))
+    ap.add_argument("--tailnet", metavar="NAME", help=loc("with --network: the tailnet's name (the apps' names on it)"))
+    ap.add_argument("--login-server", metavar="URL", help=loc("with --network headscale: the address of the Headscale server"))
     ap.add_argument("--instance", metavar="NAME",
                     help=loc("install the app once more, as <app>-NAME: its own units, volumes, secrets and port"))
     ap.add_argument("--option", action="append", default=[], metavar="KEY=VALUE",
@@ -5239,6 +5414,13 @@ def main():
     global SANDBOX
     SANDBOX = bool(a.prefix)
     casa_inst = Path(a.prefix) if a.prefix else Path.home()
+    global NETWORK_MODE
+    _rede = network.load(casa_inst)
+    NETWORK_MODE = _rede["mode"] if _rede["chosen"] else "tailscale"
+    if a.network is not None:
+        if a.network is not True and a.network not in network.MODES:
+            ap.error(f"--network is one of: {', '.join(network.MODES)}")
+        return run_network(a.network, {"server_url": a.login_server, "tailnet": a.tailnet}, a.apply, a.prefix)
     # A sandbox run has its own record: it must not delete the folders of the real one.
     sync_instances(casa_inst, prune=not a.prefix)
     if a.instance:

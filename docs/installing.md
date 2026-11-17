@@ -391,6 +391,12 @@ stop them all together, or the dependencies keep writing.
 Removing the unit does not deregister the tailnet node; that is done in the
 Tailscale admin.
 
+## The network
+
+`qh --network` is how the tailnet is chosen and switched (local only, Tailscale or Headscale): see
+[the README](../README.md#the-network-tailscale-headscale-or-local-only). It is a plan like every other (dry-run
+unless `--apply`), and the panel's Settings → Network runs the same command.
+
 ## Updates roll back by themselves
 
 `qh <app> --update --apply` (and the panel's update button) keeps the units and the version pin it is about to
