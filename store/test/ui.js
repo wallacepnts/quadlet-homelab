@@ -12,7 +12,8 @@ const path = require("path");
 class Txt { constructor(s) { this.text = s; } }
 class El {
   constructor(tag) { this.tag = tag; this.kids = []; this.attrs = {}; this.listeners = {}; this.dataset = {};
-    this.hidden = false; this.open = false; this.disabled = false; this.checked = false; this.value = ""; this.id = ""; this.className = ""; }
+    this.hidden = false; this.open = false; this.disabled = false; this.checked = false; this.value = ""; this.id = ""; this.className = ""; this.style = {};
+    const cls = new Set(); this.classList = { toggle: (c, on) => (on ? cls.add(c) : cls.delete(c)), contains: (c) => cls.has(c) }; }
   setAttribute(k, v) { this.attrs[k] = v; if (k === "id") this.id = v;
     if (k === "value") this.value = v; if (k === "checked") this.checked = true; if (k === "disabled") this.disabled = true;
     if (k.startsWith("data-")) this.dataset[k.slice(5).replace(/-(.)/g, (_, c) => c.toUpperCase())] = v; }
@@ -35,13 +36,14 @@ class El {
 }
 const byId = {};
 global.document = {
-  hidden: false, documentElement: new El("html"),
+  hidden: false, documentElement: new El("html"), body: new El("body"),
   createElement: (t) => new El(t), createTextNode: (s) => new Txt(s),
   getElementById: (id) => (byId[id] ||= Object.assign(new El("div"), { id })),
   querySelector: (sel) => { for (const e of Object.values(byId)) { const r = e.querySelector(sel); if (r) return r; } return null; },
 };
 global.Node = El;
-global.localStorage = { getItem: () => "pt", setItem() {} };
+const guardado = new Map();
+global.localStorage = { getItem: (k) => (k === "qh-lang" ? "pt" : guardado.has(k) ? guardado.get(k) : null), setItem: (k, v) => guardado.set(k, String(v)) };
 global.navigator = { language: "pt-BR" };
 global.location = {};
 global.setInterval = () => 0;
@@ -102,7 +104,7 @@ global.fetch = async (url, opts = {}) => {
 };
 
 const codigo = fs.readFileSync(path.join(__dirname, "..", "app.js"), "utf8");
-const api = new Function(codigo + "; return { S, openPanel, showEnv, current, renderGrid, pollStats, pollHost, openSettings, showLogs, showConsole, termNew, termFeed, termKey, openResources, hintClean, openHistory, setView };")();
+const api = new Function(codigo + "; return { S, openPanel, showEnv, current, renderGrid, pollStats, pollHost, openSettings, showLogs, showConsole, termNew, termFeed, termKey, openResources, hintClean, openHistory, setView, renderSide, pollPerf };")();
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 let falhas = 0;
 const confere = (cond, msg) => { if (!cond) { falhas++; console.log("FALHOU:", msg); } else console.log("ok   ", msg); };
@@ -186,7 +188,38 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   $("history").open = false;
 
   // an app that is not installed, and a host the image supports
-  rotas["/api/host"] = { cpus: 4, load: 1, mem: { total: 8 * 2 ** 30, used: 2 * 2 ** 30 }, temp: 50, uptime: 90000 };
+  rotas["/api/host"] = { cpus: 4, load: 1, mem: { total: 8 * 2 ** 30, used: 2 * 2 ** 30 }, temp: 50, uptime: 90000,
+    cpu: { pct: 12.4, cpus: 4, load: 1 }, disk: { total: 100 * 2 ** 30, used: 91 * 2 ** 30 }, net: { rx: 5 * 2 ** 30, tx: 2 ** 30, rx_rate: 1572864, tx_rate: 2048 } };
+  // sidebar: the server's performance first, live; widgets added, moved and removed, kept in this browser
+  api.S.sideOpen = true;
+  api.renderSide(); await api.pollPerf(); await esperar(20);
+  const lado = $("side-body");
+  const widgets = () => [...lado.walk()].filter((e) => e.attrs && e.attrs.class === "widget").map((e) => e.attrs["data-widget"]);
+  confere(widgets().join(",") === "perf", `barra lateral: começa com o desempenho do servidor (${widgets()})`);
+  const linhaPerf = (k) => [...lado.walk()].find((e) => e.attrs && e.attrs["data-perf"] === k);
+  confere(/Processador/.test(linhaPerf("Cpu").textContent) && /12%/.test(linhaPerf("Cpu").textContent) && /carga 1\.00 · 4 núcleos/.test(linhaPerf("Cpu").textContent),
+    `desempenho: processador (${linhaPerf("Cpu").textContent})`);
+  confere(/25%/.test(linhaPerf("Mem").textContent) && /2\.0 GB \/ 8\.0 GB/.test(linhaPerf("Mem").textContent), `desempenho: memória (${linhaPerf("Mem").textContent})`);
+  const barraDisco = [...linhaPerf("Disk").walk()].find((e) => /bar-fill/.test(e.className || ""));
+  confere(/91%/.test(linhaPerf("Disk").textContent) && /bad/.test(barraDisco.className) && barraDisco.style.width === "91%", `desempenho: disco, vermelho acima de 90% (${linhaPerf("Disk").textContent})`);
+  confere(/↓ 1\.5 MB\/s/.test(linhaPerf("Net").textContent) && /↑ 2 KB\/s/.test(linhaPerf("Net").textContent) && /desde o início: ↓ 5\.0 GB ↑ 1\.0 GB/.test(linhaPerf("Net").textContent),
+    `desempenho: rede, taxa e total (${linhaPerf("Net").textContent})`);
+  api.S.sideEdit = true; api.renderSide();
+  const addW = [...lado.walk()].find((e) => e.tag === "select");
+  confere(addW && ![...addW.walk()].some((o) => o.attrs && o.attrs.value === "perf"), "o desempenho não se adiciona duas vezes");
+  addW.value = "notes"; addW.listeners.change({ target: addW });
+  const addW2 = [...lado.walk()].find((e) => e.tag === "select"); addW2.value = "apps"; addW2.listeners.change({ target: addW2 });
+  confere(widgets().join(",") === "perf,notes,apps" && JSON.parse(guardado.get("qh-widgets")).length === 3, `adicionar widgets, guardados no navegador (${widgets()})`);
+  confere(/rodando/.test(lado.textContent), "o widget de apps conta o que roda");
+  const notas = [...lado.walk()].find((e) => e.tag === "textarea"); notas.value = "trocar o disco"; notas.listeners.input();
+  [...lado.walk()].filter((e) => e.tag === "button" && /^Subir Notas/.test(e.attrs["aria-label"] || ""))[0].listeners.click();
+  confere(widgets().join(",") === "notes,perf,apps", `subir troca a ordem (${widgets()})`);
+  confere([...lado.walk()].find((e) => e.tag === "textarea").value === "trocar o disco", "as notas ficam guardadas");
+  [...lado.walk()].filter((e) => e.tag === "button" && /^Remover Notas/.test(e.attrs["aria-label"] || ""))[0].listeners.click();
+  confere(widgets().join(",") === "perf,apps", `remover tira o widget (${widgets()})`);
+  api.S.sideEdit = false;
+  api.S.widgets = [{ id: "w-perf", type: "perf" }]; api.renderSide();
+
   rotas["/api/arch"] = { host: "amd64", runs: ["amd64", "arm64"], units: [{ unit: "homebox", ok: true }] };
   api.openPanel("gitea"); await esperar(100);
   confere($("p-actions").textContent === "InstalarPersonalizarNova instânciaHistórico", `app não instalado: Instalar, Personalizar, Nova instância e Histórico (${$("p-actions").textContent})`);

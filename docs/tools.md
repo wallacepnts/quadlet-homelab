@@ -473,3 +473,12 @@ that failed is told at once. The same alert is not sent again within the cooldow
 release is told once per version. The settings are in `~/.config/quadlet-homelab/alerts.json` (mode 600, it may
 hold the token, which the page never receives back); what was sent and when is in
 `~/.cache/quadlet-homelab/alerts-state.json`. Backups scheduled by Zerobyte are not watched.
+
+## The sidebar
+
+The store has a sidebar of widgets (the button beside the clock in the top bar; open by default on a wide
+screen). It starts with **Server performance**: processor, memory, the disk the apps' data lives on, and the
+network (rate and total since boot, counting the real interfaces and not the container bridges or the tailnet's
+copy of the same traffic), refreshed every five seconds from `/api/host`. **Edit** adds, orders and removes
+widgets — your apps at a glance, notes, quick links — and the choice is kept in this browser (localStorage),
+not on the server.

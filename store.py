@@ -1153,18 +1153,27 @@ def resources_survey():
     return resources.survey(Path(PREFIX or Path.home()))
 
 
-def host_summary(proc="/proc", sys_="/sys"):
-    """Load, memory, temperature and uptime of the host: four small file reads, no sampling.
+HOST_PREV, HOST_LOCK = {}, threading.Lock()       # the last reading of CPU and network, for the rates
+VIRTUAL_NICS = ("lo", "veth", "podman", "cni", "br-", "docker", "tailscale", "virbr")
 
-    Load is the 1-minute average over the CPU count (what the kernel already keeps), not an
-    instantaneous percentage — that would need two readings and a clock. Each field is None
-    when the host does not say (no sensor in a VM, say)."""
+
+def host_summary(proc="/proc", sys_="/sys", disk_path=None, prev=None, now=time.monotonic):
+    """Load, CPU, memory, disk, network, temperature and uptime of the host: a few small file reads.
+
+    `cpu.pct` and the network rates are between this reading and the previous one (kept in `prev`), so the
+    first call after a start says None for them; a second call under a second later reuses the last answer.
+    Each field is None when the host does not say (no sensor in a VM, say)."""
+    prev = HOST_PREV if prev is None else prev
     def ler(caminho):
         try:
             return Path(caminho).read_text()
         except OSError:
             return ""
-    r = {"cpus": os.cpu_count() or 1, "load": None, "mem": None, "temp": None, "uptime": None}
+    r = {"cpus": os.cpu_count() or 1, "load": None, "mem": None, "temp": None, "uptime": None,
+         "cpu": None, "disk": None, "net": None}
+    t0 = now()
+    if prev.get("at") is not None and t0 - prev["at"] < 1 and prev.get("out"):
+        return prev["out"]
     try:
         r["load"] = float(ler(f"{proc}/loadavg").split()[0])
     except (ValueError, IndexError):
@@ -1191,6 +1200,39 @@ def host_summary(proc="/proc", sys_="/sys"):
         r["uptime"] = int(float(ler(f"{proc}/uptime").split()[0]))
     except (ValueError, IndexError):
         pass
+    # CPU: busy share between two readings of the first line of /proc/stat
+    try:
+        n = [int(x) for x in ler(f"{proc}/stat").splitlines()[0].split()[1:9]]
+        total, idle = sum(n), n[3] + n[4]
+        pct = None
+        if "cpu" in prev and total > prev["cpu"][0]:
+            pct = round(100 * (1 - (idle - prev["cpu"][1]) / (total - prev["cpu"][0])), 1)
+        prev["cpu"] = (total, idle)
+        r["cpu"] = {"pct": pct, "cpus": r["cpus"], "load": r["load"]}
+    except (ValueError, IndexError):
+        pass
+    # disk: the filesystem the apps' data lives on
+    try:
+        u = shutil.disk_usage(disk_path or (PREFIX or Path.home()))
+        r["disk"] = {"total": u.total, "used": u.used}
+    except OSError:
+        pass
+    # network: bytes through the real interfaces (not the container bridges, nor the tailnet's copy of the same traffic)
+    rx = tx = 0
+    visto = False
+    for l in ler(f"{proc}/net/dev").splitlines()[2:]:
+        nome, _, resto = l.partition(":")
+        campos = resto.split()
+        if len(campos) >= 9 and not nome.strip().startswith(VIRTUAL_NICS):
+            rx, tx, visto = rx + int(campos[0]), tx + int(campos[8]), True
+    if visto:
+        taxa = (None, None)
+        if "net" in prev and t0 > prev["net"][0]:
+            dt = t0 - prev["net"][0]
+            taxa = (max(0, round((rx - prev["net"][1]) / dt)), max(0, round((tx - prev["net"][2]) / dt)))
+        prev["net"] = (t0, rx, tx)
+        r["net"] = {"rx": rx, "tx": tx, "rx_rate": taxa[0], "tx_rate": taxa[1]}
+    prev["at"], prev["out"] = t0, r
     return r
 
 
@@ -1836,7 +1878,8 @@ class Handler(BaseHTTPRequestHandler):
             except (RuntimeError, OSError, subprocess.TimeoutExpired, ValueError) as e:
                 return self._json(502, {"error": f"podman: {e}"})
         if url.path == "/api/host":
-            return self._json(200, host_summary())
+            with HOST_LOCK:
+                return self._json(200, host_summary())
         if url.path == "/api/links":
             app = q.get("app", "")
             if not service_dir(app):
@@ -2928,9 +2971,23 @@ esac
                 Path(fk, "proc/uptime").write_text("7200.5 100.0\n")
                 Path(fk, "sys/class/thermal/thermal_zone0").mkdir(parents=True)
                 Path(fk, "sys/class/thermal/thermal_zone0/temp").write_text("48500\n")
-                r = host_summary(f"{fk}/proc", f"{fk}/sys")
+                Path(fk, "proc/stat").write_text("cpu  100 0 100 700 100 0 0 0 0 0\n")
+                Path(fk, "proc/net").mkdir()
+                Path(fk, "proc/net/dev").write_text("Inter-|   Receive\n face |bytes\n  lo: 5 0 0 0 0 0 0 0 5 0 0 0 0 0 0 0\n"
+                                                    " eth0: 1000 1 0 0 0 0 0 0 400 1 0 0 0 0 0 0\n veth1: 9999 1 0 0 0 0 0 0 9999 1 0 0 0 0 0 0\n")
+                estado, relogio = {}, [100.0]
+                r = host_summary(f"{fk}/proc", f"{fk}/sys", fk, estado, lambda: relogio[0])
                 assert (r["load"], r["uptime"], r["temp"], r["mem"]["used"]) == (2.0, 7200, 48.5, 750 * 1024), r
-                assert host_summary(f"{fk}/none", f"{fk}/none")["mem"] is None, "a host that says nothing gives None, not a crash"
+                assert r["cpu"]["pct"] is None and r["net"]["rx_rate"] is None and r["net"]["rx"] == 1000 and r["net"]["tx"] == 400, "first reading: totals, no rates; bridges and lo are left out"
+                assert r["disk"]["total"] > 0 and r["disk"]["used"] >= 0
+                assert host_summary(f"{fk}/proc", f"{fk}/sys", fk, estado, lambda: relogio[0] + 0.5) is r, "a second reading under a second later reuses the answer"
+                Path(fk, "proc/stat").write_text("cpu  200 0 200 800 200 0 0 0 0 0\n")        # +200 busy, +200 idle: 50%
+                Path(fk, "proc/net/dev").write_text("Inter-|   Receive\n face |bytes\n eth0: 3000 1 0 0 0 0 0 0 900 1 0 0 0 0 0 0\n")
+                relogio[0] = 102.0
+                r = host_summary(f"{fk}/proc", f"{fk}/sys", fk, estado, lambda: relogio[0])
+                assert r["cpu"]["pct"] == 50.0, r["cpu"]
+                assert (r["net"]["rx_rate"], r["net"]["tx_rate"]) == (1000, 250), r["net"]
+                assert host_summary(f"{fk}/none", f"{fk}/none", fk, {})["mem"] is None, "a host that says nothing gives None, not a crash"
             assert "uptime" in json.loads(pedir("/api/host", headers=ok)[2]), "/api/host answers"
 
             # trial: a duration that does not parse, or a trial on anything but an install, never starts a job

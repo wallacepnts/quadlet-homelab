@@ -58,6 +58,11 @@ const T = {
     planTitle: "O que vai acontecer",
     dockerImage: "Imagem Docker", dockerTag: "Tag", containerName: "Nome do contêiner", noLimit: "sem limite", latestPinned: "a última versão",
     emptyRows: "Clique em “+” para adicionar um.", hHost: "Host", hContainer: "Contêiner", hProto: "Protocolo", hIp: "IP (opcional)", hKey: "Chave", hValue: "Valor", hLabel: "Rótulo",
+    sideBtn: "Barra lateral", sideTitle: "Painel", sideEdit: "Editar", sideDone: "Pronto", addWidget: "Adicionar widget…", remove: "Remover", moveUp: "Subir", moveDown: "Descer",
+    wPerf: "Desempenho do servidor", wApps: "Seus apps", wNotes: "Notas", wLinks: "Links rápidos",
+    perfCpu: "Processador", perfMem: "Memória", perfDisk: "Disco", perfNet: "Rede", perfLoad: "carga", perfCores: "núcleos", perfSince: "desde o início", perfNone: "sem dados",
+    wRunning: "rodando", wStopped: "parados", wPaused: "pausados", wUpdates: "com atualização", wProblems: "com problema",
+    notesHint: "Escreva aqui. Fica salvo neste navegador.", linkName: "Nome", linkUrl: "https://…", linkAdd: "Adicionar", linkBad: "Use um endereço http:// ou https://",
     updateAvailable: "Atualização disponível",
     getApp: "Obter", installNow: "Instalar agora", advanced: "Avançado", rolledBack: "voltou à versão anterior", techDetails: "Detalhes técnicos", logTitle: "O que foi feito", closeLabel: "Fechar",
     httpsNeeded: "precisa de HTTPS",
@@ -197,6 +202,11 @@ const T = {
     planTitle: "What will happen",
     dockerImage: "Docker image", dockerTag: "Tag", containerName: "Container name", noLimit: "no limit", latestPinned: "the latest version",
     emptyRows: "Click “+” to add one.", hHost: "Host", hContainer: "Container", hProto: "Protocol", hIp: "IP (optional)", hKey: "Key", hValue: "Value", hLabel: "Label",
+    sideBtn: "Sidebar", sideTitle: "Dashboard", sideEdit: "Edit", sideDone: "Done", addWidget: "Add a widget…", remove: "Remove", moveUp: "Move up", moveDown: "Move down",
+    wPerf: "Server performance", wApps: "Your apps", wNotes: "Notes", wLinks: "Quick links",
+    perfCpu: "Processor", perfMem: "Memory", perfDisk: "Disk", perfNet: "Network", perfLoad: "load", perfCores: "cores", perfSince: "since boot", perfNone: "no data",
+    wRunning: "running", wStopped: "stopped", wPaused: "paused", wUpdates: "with an update", wProblems: "with a problem",
+    notesHint: "Write here. It is saved in this browser.", linkName: "Name", linkUrl: "https://…", linkAdd: "Add", linkBad: "Use an http:// or https:// address",
     updateAvailable: "Update available",
     getApp: "Get", installNow: "Install now", advanced: "Advanced", rolledBack: "rolled back to the previous version", techDetails: "Technical details", logTitle: "What was done", closeLabel: "Close",
     httpsNeeded: "needs HTTPS",
@@ -490,6 +500,7 @@ function renderChrome() {
     $(id).setAttribute("aria-label", t(key));
   }
   $("p-close").setAttribute("aria-label", t("closeLabel"));
+  if (S.widgets) renderSide();
   $("p-tech-title").textContent = t("techDetails");
   $("p-log-title").textContent = t("logTitle");
   renderTabs();
@@ -660,6 +671,7 @@ function storeCard(a) {
 }
 
 function renderGrid() {
+  if (S.live) for (const [id, u] of Object.entries(S.live)) if (!id.includes("perf")) u();
   const q = S.search.trim().toLowerCase();
   const meus = S.view === "apps";
   const pool = meus ? installed().filter(FILTERS[S.filter] || (() => true))
@@ -1970,6 +1982,175 @@ function hostLine(h) {
   ].filter(Boolean);
   return partes.join(" · ");
 }
+
+// -- the sidebar: widgets ------------------------------------------------------------------
+// A column of small panels beside the apps. Which ones, and in what order, is kept in this browser
+// (localStorage); the first is the server's performance. Each type is one function that builds its
+// element and, for the live ones, an `update` the poller calls.
+const WIDGETS = {
+  perf: { title: "wPerf", build: perfWidget },
+  apps: { title: "wApps", build: appsWidget },
+  notes: { title: "wNotes", build: notesWidget },
+  links: { title: "wLinks", build: linksWidget },
+};
+
+function loadWidgets() {
+  try {
+    const l = JSON.parse(localStorage.getItem("qh-widgets"));
+    if (Array.isArray(l) && l.every((w) => w && WIDGETS[w.type] && typeof w.id === "string")) return l;
+  } catch (e) { /* the default below */ }
+  return [{ id: "w-perf", type: "perf" }];
+}
+const saveWidgets = () => localStorage.setItem("qh-widgets", JSON.stringify(S.widgets));
+const novoId = (tipo) => `w-${tipo}-${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`;
+const dadosDe = (id) => { try { return JSON.parse(localStorage.getItem(`qh-w-${id}`)) || {}; } catch (e) { return {}; } };
+const guardaDados = (id, d) => localStorage.setItem(`qh-w-${id}`, JSON.stringify(d));
+
+const bytes = (n) => n >= 2 ** 40 ? `${(n / 2 ** 40).toFixed(1)} TB` : n >= 2 ** 30 ? `${(n / 2 ** 30).toFixed(1)} GB`
+  : n >= 2 ** 20 ? `${(n / 2 ** 20).toFixed(1)} MB` : `${Math.max(0, Math.round(n / 1024))} KB`;
+const tom = (pct) => (pct >= 90 ? "bad" : pct >= 70 ? "warn" : "ok");
+
+// Server performance: processor, memory, disk and network, from /api/host.
+function perfWidget() {
+  const linha = (chave) => {
+    const valor = h("span", { class: "perf-val" }, "—"), sub = h("span", { class: "perf-sub" });
+    const barra = h("span", { class: "bar-fill" });
+    return { chave, valor, sub, barra,
+      el: h("div", { class: "perf-row", "data-perf": chave },
+        h("div", { class: "perf-head" }, h("span", {}, t(`perf${chave}`)), valor),
+        chave === "Net" ? null : h("div", { class: "bar", role: "presentation" }, barra), sub) };
+  };
+  const L = Object.fromEntries(["Cpu", "Mem", "Disk", "Net"].map((k) => [k, linha(k)]));
+  const extra = h("p", { class: "perf-extra" });
+  const pinta = (x, pct, texto, sub) => {
+    x.valor.textContent = texto;
+    x.sub.textContent = sub || "";
+    x.barra.style.width = `${Math.max(0, Math.min(100, pct ?? 0))}%`;
+    x.barra.className = `bar-fill ${pct === null || pct === undefined ? "" : tom(pct)}`;
+  };
+  const update = (d) => {
+    const c = d.cpu && d.cpu.pct !== null && d.cpu.pct !== undefined ? d.cpu.pct : (d.load !== null && d.cpus ? Math.min(100, (d.load / d.cpus) * 100) : null);
+    pinta(L.Cpu, c, c === null ? t("perfNone") : `${Math.round(c)}%`,
+      d.load === null ? "" : `${t("perfLoad")} ${d.load.toFixed(2)} · ${d.cpus} ${t("perfCores")}`);
+    if (d.mem) { const p = (d.mem.used / d.mem.total) * 100; pinta(L.Mem, p, `${Math.round(p)}%`, `${bytes(d.mem.used)} / ${bytes(d.mem.total)}`); }
+    else pinta(L.Mem, null, t("perfNone"));
+    if (d.disk) { const p = (d.disk.used / d.disk.total) * 100; pinta(L.Disk, p, `${Math.round(p)}%`, `${bytes(d.disk.used)} / ${bytes(d.disk.total)}`); }
+    else pinta(L.Disk, null, t("perfNone"));
+    const n = d.net;
+    L.Net.valor.textContent = n && n.rx_rate !== null ? `↓ ${bytes(n.rx_rate)}/s  ↑ ${bytes(n.tx_rate)}/s` : (n ? "…" : t("perfNone"));
+    L.Net.sub.textContent = n ? `${t("perfSince")}: ↓ ${bytes(n.rx)} ↑ ${bytes(n.tx)}` : "";
+    extra.textContent = [d.temp === null || d.temp === undefined ? null : `${d.temp} °C`, d.uptime === null || d.uptime === undefined ? null
+      : `${t("hostUp")} ${d.uptime >= 86400 ? `${Math.floor(d.uptime / 86400)} d` : `${Math.floor(d.uptime / 3600)} h`}`].filter(Boolean).join(" · ");
+  };
+  if (S.hostData) update(S.hostData);
+  return { el: h("div", { class: "perf" }, ...Object.values(L).map((x) => x.el), extra), update };
+}
+
+// The apps at a glance, from the catalog already loaded: no request of its own.
+function appsWidget() {
+  const raiz = h("div", { class: "w-apps" });
+  const update = () => {
+    const mine = installed();
+    const n = (f) => mine.filter(f).length;
+    const linhas = [["ok", n((a) => runState(a) === "running"), "wRunning"], ["off", n((a) => runState(a) === "stopped"), "wStopped"],
+      ["warn", n((a) => runState(a) === "paused"), "wPaused"], ["up", n(hasUpdate), "wUpdates"], ["bad", n(hasProblem), "wProblems"]];
+    fill(raiz, ...linhas.filter(([, v, k]) => v || k === "wRunning").map(([c, v, k]) =>
+      h("div", { class: "w-line" }, h("span", { class: `dot ${c}` }), h("strong", {}, String(v)), ` ${t(k)}`)));
+  };
+  update();
+  return { el: raiz, update };
+}
+
+function notesWidget(w) {
+  const area = h("textarea", { class: "w-notes", rows: 5, placeholder: t("notesHint"), "aria-label": t("wNotes") });
+  area.value = dadosDe(w.id).text || "";
+  area.addEventListener("input", () => guardaDados(w.id, { text: area.value }));
+  return { el: area };
+}
+
+function linksWidget(w) {
+  const lista = h("ul", { class: "w-links" }), aviso = h("p", { class: "muted" });
+  const nome = h("input", { type: "text", placeholder: t("linkName"), "aria-label": t("linkName"), autocomplete: "off" });
+  const url = h("input", { type: "text", placeholder: t("linkUrl"), "aria-label": "URL", autocomplete: "off" });
+  const desenha = () => {
+    const ls = dadosDe(w.id).links || [];
+    fill(lista, ...ls.map((l, i) => h("li", {},
+      h("a", { href: l.url, target: "_blank", rel: "noopener noreferrer" }, l.name),
+      h("button", { type: "button", class: "icon text", title: t("remove"), "aria-label": `${t("remove")} ${l.name}`,
+                    onclick: () => { guardaDados(w.id, { links: ls.filter((_, j) => j !== i) }); desenha(); } }, "✕"))));
+  };
+  const add = () => {
+    const u = url.value.trim();
+    if (!/^https?:\/\/[^\s]+$/i.test(u)) { aviso.textContent = t("linkBad"); return; }
+    aviso.textContent = "";
+    const ls = dadosDe(w.id).links || [];
+    guardaDados(w.id, { links: [...ls, { name: nome.value.trim() || u.replace(/^https?:\/\//i, "").split("/")[0], url: u }] });
+    nome.value = ""; url.value = "";
+    desenha();
+  };
+  desenha();
+  return { el: h("div", {}, lista, h("div", { class: "w-add" }, nome, url, h("button", { type: "button", class: "ghost", onclick: add }, t("linkAdd"))), aviso) };
+}
+
+function renderSide() {
+  S.live = {};
+  const edit = S.sideEdit;
+  const move = (i, d) => { const j = i + d; if (j < 0 || j >= S.widgets.length) return; [S.widgets[i], S.widgets[j]] = [S.widgets[j], S.widgets[i]]; saveWidgets(); renderSide(); };
+  const cartoes = S.widgets.map((w, i) => {
+    const b = WIDGETS[w.type].build(w);
+    if (b.update) S.live[w.id] = b.update;
+    return h("section", { class: "widget", "data-widget": w.type },
+      h("header", {}, h("h3", {}, t(WIDGETS[w.type].title)),
+        edit ? h("span", { class: "w-tools" },
+          h("button", { type: "button", class: "icon text", title: t("moveUp"), "aria-label": `${t("moveUp")} ${t(WIDGETS[w.type].title)}`, disabled: i === 0, onclick: () => move(i, -1) }, "↑"),
+          h("button", { type: "button", class: "icon text", title: t("moveDown"), "aria-label": `${t("moveDown")} ${t(WIDGETS[w.type].title)}`, disabled: i === S.widgets.length - 1, onclick: () => move(i, 1) }, "↓"),
+          h("button", { type: "button", class: "icon text", title: t("remove"), "aria-label": `${t("remove")} ${t(WIDGETS[w.type].title)}`,
+                        onclick: () => { S.widgets.splice(i, 1); localStorage.setItem(`qh-w-${w.id}`, ""); saveWidgets(); renderSide(); } }, "✕")) : null),
+      b.el);
+  });
+  const seletor = h("select", { "aria-label": t("addWidget"), onchange: (ev) => {
+    const tipo = ev.target.value;
+    if (!WIDGETS[tipo]) return;
+    S.widgets.push({ id: novoId(tipo), type: tipo });
+    saveWidgets();
+    renderSide();
+  } }, h("option", { value: "" }, t("addWidget")),
+    ...Object.entries(WIDGETS).filter(([k]) => k === "notes" || k === "links" || !S.widgets.some((w) => w.type === k))
+      .map(([k, v]) => h("option", { value: k }, t(v.title))));
+  fill($("side-body"), ...cartoes, edit ? seletor : null);
+  $("side-edit").textContent = edit ? t("sideDone") : t("sideEdit");
+  $("side-title").textContent = t("sideTitle");
+  $("side-btn").title = t("sideBtn");
+  $("side-btn").setAttribute("aria-label", t("sideBtn"));
+}
+
+function applySide() {
+  $("side").hidden = !S.sideOpen;
+  $("side-btn").setAttribute("aria-pressed", String(S.sideOpen));
+  document.body.classList.toggle("with-side", S.sideOpen);
+}
+
+async function pollPerf() {
+  if (document.hidden || !S.sideOpen || !Object.keys(S.live || {}).length) return;
+  try { S.hostData = await api("/api/host"); for (const u of Object.values(S.live)) u(S.hostData); } catch (e) { /* next turn */ }
+}
+
+$("side-btn").addEventListener("click", () => {
+  S.sideOpen = !S.sideOpen;
+  localStorage.setItem("qh-side", S.sideOpen ? "1" : "0");
+  applySide();
+  if (S.sideOpen) pollPerf();
+});
+$("side-edit").addEventListener("click", () => { S.sideEdit = !S.sideEdit; renderSide(); });
+$("side-close").addEventListener("click", () => { S.sideOpen = false; localStorage.setItem("qh-side", "0"); applySide(); });
+S.widgets = loadWidgets();
+S.sideOpen = localStorage.getItem("qh-side") === "1" || (localStorage.getItem("qh-side") === null && (globalThis.innerWidth || 0) >= 1100);
+renderSide();
+applySide();
+// The rates need two readings: the second comes soon after the first, so the network row does not wait 5 s.
+pollPerf().then(() => setTimeout(pollPerf, 1200));
+setInterval(pollPerf, 5000);
+
 async function pollHost() {
   try { $("host").textContent = hostLine(await api("/api/host")); } catch (e) { /* the line just stays */ }
 }
