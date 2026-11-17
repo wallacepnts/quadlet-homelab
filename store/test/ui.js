@@ -109,6 +109,9 @@ const confere = (cond, msg) => { if (!cond) { falhas++; console.log("FALHOU:", m
 const $ = (id) => document.getElementById(id);
 const botoes = (raiz) => [...raiz.walk()].filter((e) => e.tag === "button");
 const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === texto);
+// The customize sheet: in the fake DOM the dialog does not contain its parts, so they are read as one.
+const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield* $(i).walk(); },
+  get textContent() { return ["c-title", "c-tabs", "c-body", "c-foot"].map((i) => $(i).textContent).join(" "); } };
 
 (async () => {
   await esperar(100);
@@ -404,9 +407,11 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   const gi = api.S.apps.find((x) => x.id === "gitea");
   api.openPanel("gitea"); await esperar(30);
   porTexto($("p-actions"), "Personalizar")[0].listeners.click(); await esperar(100);
-  const formPre = () => [...$("p-section").walk()].find((e) => e.tag === "form");
-  confere(!!formPre() && /Antes de instalar/.test(formPre().textContent) && porTexto(formPre(), "Guardar para a instalação").length === 1
-    && porTexto(formPre(), "Salvar e aplicar").length === 0, "antes de instalar: o formulário abre, com Guardar e sem Salvar e aplicar");
+  const formPre = () => folhaC;
+  confere($("custom").open && /Antes de instalar/.test(formPre().textContent) && porTexto(formPre(), "Instalar").length === 1
+    && porTexto(formPre(), "Salvar e aplicar").length === 0, "antes de instalar: a tela abre, com Instalar e sem Salvar e aplicar");
+  confere(/Imagem Docker/.test(formPre().textContent) && /Nome do contêiner/.test(formPre().textContent) && /Clique em “\+”/.test(formPre().textContent),
+    "a tela mostra a imagem, o nome do contêiner e a dica de lista vazia");
   // the folder picker beside a volume: list, go down, choose with a new sub-folder
   rotas["/api/dirs"] = { path: "/h/vol", value: "%h/vol", shown: "~/vol", parent: null, at_root: true, dirs: [{ name: "a", path: "/h/vol/a" }] };
   const botaoPasta = [...formPre().walk()].filter((e) => e.tag === "button" && e.attrs.title === "Escolher pasta")[0];
@@ -432,13 +437,14 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   global.fetch = async (u, o) => { urlsPre.push(u); return fetchAntes(u, o); };
   const previaAntes = rotas["/api/custom/preview"];
   rotas["/api/custom/preview"] = { text: "# base=x\n[Container]\nEnvironment=A=1\n", errors: [], warnings: [], generated: "", changed: true };
-  porTexto(formPre(), "Guardar para a instalação")[0].listeners.click(); await esperar(100);
+  rotas["/api/plan"] = { rc: 0, output: "x", nothing: false };
+  porTexto(formPre(), "Instalar")[0].listeners.click(); await esperar(150);
   global.fetch = fetchAntes;
   if (previaAntes === undefined) delete rotas["/api/custom/preview"]; else rotas["/api/custom/preview"] = previaAntes;
   const prev = posts.filter((x) => x.rota === "/api/custom/preview").pop().corpo;
   confere(prev.pre === true && prev.unit === "gitea", "a prévia leva pre: true");
   confere(urlsPre.some((u) => /\/api\/custom\?unit=gitea&pre=1|\/api\/custom\/preview/.test(u)), "e pede o estado da unit ainda não instalada");
-  confere(/Guardado: vai junto/.test($("p-out").textContent), "guardar avisa que vai junto com a instalação");
+  confere(!!api.S.preCustom.gitea && !$("custom").open && !$("p-form").hidden, "Instalar guarda a escolha, fecha a tela e abre a confirmação da instalação");
   api.openPanel("gitea"); await esperar(30);
   confere(porTexto($("p-actions"), "Personalizar ✓").length === 1, "o botão mostra que há personalização guardada");
   rotas["/api/plan"] = { rc: 0, output: "x", nothing: false };
@@ -607,61 +613,63 @@ const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === t
   const personalizar = porTexto($("p-actions"), "Personalizar")[0];
   confere(!!personalizar, "o painel de um app instalado tem o botão Personalizar");
   personalizar.listeners.click(); await esperar(100);
-  const formulario = () => [...$("p-section").walk()].find((e) => e.tag === "form");
+  const formulario = () => folhaC;
   const linhasDe = (titulo) => [...[...formulario().walk()].filter((e) => e.attrs && e.attrs.class === "cust-group")
     .find((x) => x.kids[0] && x.kids[0].textContent.startsWith(titulo)).walk()].filter((e) => e.attrs && e.attrs.class === "cust-row");
-  confere(!!formulario() && !$("p-section").hidden, "a tela Personalizar abre");
+  confere($("custom").open, "a tela Personalizar abre");
   confere(linhasDe("Portas").length === 2 && linhasDe("Volumes").length === 2 && linhasDe("Variáveis").length === 1, "mostra o que a unit tem: portas, volumes e variável");
   const opaca = linhasDe("Portas")[1];
   confere(/\$\{DNS\}:53:53\/udp/.test(opaca.textContent) && /vem da unit/.test(opaca.textContent) && ![...opaca.walk()].some((e) => e.tag === "input"),
     "a entrada de forma não simples aparece como está, sem campo");
   confere(/não delega os controladores memory e cpu/.test(formulario().textContent) && /Delegate=/.test(formulario().textContent),
     "sem os controladores: avisa o motivo e como ligar");
-  const campoMem = [...formulario().walk()].find((e) => e.id === "lim-mem"), campoCpu = [...formulario().walk()].find((e) => e.id === "lim-cpu");
-  confere(campoMem.attrs.disabled !== undefined && campoCpu.attrs.disabled !== undefined, "os campos de limite aparecem, desligados, quando o host não delega");
+  const deslizantes = () => [...formulario().walk()].filter((e) => e.tag === "input" && e.attrs.type === "range");
+  confere(deslizantes().length === 2 && deslizantes().every((x) => x.attrs.disabled !== undefined), "os campos de limite aparecem, desligados, quando o host não delega");
   confere(/ficam em Configurar/.test(formulario().textContent) && !/desmarcar a comenta/.test(formulario().textContent),
     "a dica das variáveis é a da personalização, não a do formulário do .env");
   confere(!porTexto(formulario(), "Reverter ao padrão").length, "sem personalização, não há botão de reverter");
   confere(/Pastas permitidas para volumes novos: ~\/\.config\/containers\/volumes/.test(formulario().textContent), "diz onde um volume novo pode morar");
-  const caps = (n) => [...formulario().walk()].find((e) => e.id === `cap-${n}`);
+  const caps = (n) => [...formulario().walk()].find((e) => e.id === `cap-homebox-${n}`);
   confere(caps("CHOWN").checked && !caps("KILL").checked, "capabilities: marca as que a unit tem");
   porTexto(formulario(), "+ Adicionar")[0].listeners.click(); await esperar(20);
   const [, hostIn, contIn] = [...linhasDe("Portas")[2].walk()].filter((e) => e.tag === "input");
   hostIn.value = "8123"; contIn.value = "80";
   [...linhasDe("Volumes")[0].walk()].find((e) => e.tag === "button" && e.attrs.class === "x").listeners.click(); await esperar(20);
   confere(linhasDe("Volumes").length === 1, "remover tira a linha do volume");
-  porTexto(formulario(), "Pré-visualizar")[0].listeners.click(); await esperar(100);
+  porTexto(folhaC, "Pré-visualizar")[0].listeners.click(); await esperar(100);
   const pre = posts.filter((x) => x.rota === "/api/custom/preview").pop().corpo;
   confere(pre.unit === "homebox" && pre.config.ports.length === 3, "o payload leva a lista inteira de portas");
   confere(JSON.stringify(pre.config.ports[2]) === '{"bind":"","host":8123,"container":80,"proto":"tcp"}', "a porta nova, com os tipos certos");
   confere(pre.config.ports[1].opaque === true && pre.config.ports[1].raw === "${DNS}:53:53/udp", "a entrada opaca volta intacta");
   confere(pre.config.volumes.length === 1 && pre.config.volumes[0].host === "%h/b" && pre.config.volumes[0].ro === true, "o volume removido não vai; o outro mantém as opções");
   confere(pre.config.caps.length === 1 && pre.config.caps[0].name === "CHOWN" && pre.config.restart === "always", "capabilities e reinício");
-  confere(!/null|undefined/.test($("p-section").textContent), "nenhum 'null' solto na tela");
+  confere(!/null|undefined/.test(folhaC.textContent), "nenhum 'null' solto na tela");
   confere(/rede local/.test(formulario().textContent) && /PublishPort=/.test(formulario().textContent) && /podman run x/.test(formulario().textContent),
     "a pré-visualização mostra o aviso, o arquivo e o comando gerado");
   rotas["/api/custom/preview"] = { errors: ["volume '/etc': fora das pastas permitidas"], warnings: [], text: null, generated: "", changed: false };
   const antes = posts.length;
-  porTexto(formulario(), "Salvar e aplicar")[0].listeners.click(); await esperar(150);
+  porTexto(folhaC, "Salvar e aplicar")[0].listeners.click(); await esperar(150);
   confere(!posts.slice(antes).some((x) => x.rota === "/api/custom/apply") && /fora das pastas/.test(formulario().textContent), "com erro, o Salvar não aplica e mostra o motivo");
   rotas["/api/custom/preview"] = { errors: [], warnings: [], text: "[Container]\nPublishPort=\n", generated: "", changed: true };
   rotas["/api/custom"] = { ...rotas["/api/custom"], override: true, text: "x" };
-  porTexto(formulario(), "Salvar e aplicar")[0].listeners.click(); await esperar(1500);
+  porTexto(folhaC, "Salvar e aplicar")[0].listeners.click(); await esperar(1500);
   const ap = posts.filter((x) => x.rota === "/api/custom/apply").pop();
   confere(ap && ap.corpo.config.ports.length === 3, "sem erro, aplica com a configuração do formulário");
-  confere(porTexto(formulario(), "Reverter ao padrão").length === 1 && /50-store\.conf/.test(formulario().textContent), "depois de aplicado: o arquivo e o botão de reverter");
+  confere(!$("custom").open, "aplicado: a tela fecha");
+  porTexto($("p-actions"), "Personalizar")[0].listeners.click(); await esperar(100);
+  confere(porTexto(formulario(), "Reverter ao padrão").length === 1 && /50-store\.conf/.test(formulario().textContent), "reaberta: o arquivo e o botão de reverter");
   porTexto(formulario(), "Reverter ao padrão")[0].listeners.click(); await esperar(1500);
   confere(posts.some((x) => x.rota === "/api/custom/reset" && x.corpo.unit === "homebox"), "reverter chama o reset da unit");
   // limits, when the host delegates the controllers: the fields are live and ride along in the form
   rotas["/api/custom"] = { ...rotas["/api/custom"], limits: { memory: true, cpu: true }, limit_values: { memory: "1g", cpus: "" } };
   porTexto($("p-actions"), "Personalizar")[0].listeners.click(); await esperar(100);
-  const cm = [...formulario().walk()].find((e) => e.id === "lim-mem"), cc = [...formulario().walk()].find((e) => e.id === "lim-cpu");
-  confere(cm.attrs.disabled === undefined && cc.attrs.disabled === undefined && cm.attrs.value === "1g" && /Valem na próxima partida/.test(formulario().textContent),
-    "com os controladores delegados: campos ligados, com o valor atual, e a dica");
-  cm.value = "2g"; cc.value = "1.5";
-  porTexto(formulario(), "Pré-visualizar")[0].listeners.click(); await esperar(100);
+  const [cm, cc] = deslizantes();
+  confere(cm.attrs.disabled === undefined && cc.attrs.disabled === undefined && cm.value === "2" && cc.value === "6" && /Valem na próxima partida/.test(formulario().textContent),
+    `com os controladores delegados: deslizantes ligados, no valor atual (1 GB, sem limite de CPU), e a dica (${cm.value}/${cc.value})`);
+  cm.value = "3"; cm.listeners.input(); cc.value = "3"; cc.listeners.input();
+  porTexto(folhaC, "Pré-visualizar")[0].listeners.click(); await esperar(100);
   const prelim = posts.filter((x) => x.rota === "/api/custom/preview").pop().corpo.config.limits;
-  confere(prelim.memory === "2g" && prelim.cpus === "1.5", `os limites vão na configuração (${JSON.stringify(prelim)})`);
+  confere(prelim.memory === "2g" && prelim.cpus === "2", `os limites vão na configuração (${JSON.stringify(prelim)})`);
   rotas["/api/custom"] = { ...rotas["/api/custom"], limits: { memory: false, cpu: false }, limit_values: { memory: "", cpus: "" } };
   $("panel").open = false;
   rotas["/api/custom"] = { ...rotas["/api/custom"], override: false };

@@ -46,8 +46,8 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
   const grupo = (titulo) => `[...document.querySelectorAll('.cust-group')].find((x) => x.querySelector('h4').textContent.startsWith(${JSON.stringify(titulo)}))`;
   const maisLinha = (titulo) => ev(`(() => { const g = ${grupo(titulo)}; g.querySelector('h4 button').click(); return g.querySelectorAll('.cust-row').length; })()`);
   const poeLinha = (titulo, i, valores) => ev(`(() => { const r = ${grupo(titulo)}.querySelectorAll('.cust-row')[${i}]; const ins = r.querySelectorAll('input'); ${JSON.stringify(valores)}.forEach((v, k) => { ins[k].value = v; }); return ins.length; })()`);
-  const clicaForm = (texto) => ev(`(() => { const b = [...document.querySelectorAll('#p-section button')].find((x) => x.textContent === ${JSON.stringify(texto)}); if (!b) return false; b.click(); return true; })()`);
-  const formTexto = () => ev("document.getElementById('p-section').textContent");
+  const clicaForm = (texto) => ev(`(() => { const b = [...document.querySelectorAll('#custom button')].find((x) => x.textContent === ${JSON.stringify(texto)}); if (!b) return false; b.click(); return true; })()`);
+  const formTexto = () => ev("document.getElementById('custom').textContent");
 
   // login: a wrong token first, through the real form, then the real one
   await ir(`${BASE}/login`);
@@ -87,6 +87,20 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
     return fim();
   }
 
+  if (MODO === "portas") {
+    // reads only: opens Customize and adds empty rows to look at the layout; never saves
+    await abrir("Actual Budget"); await esperar(1500);
+    await botao("Personalizar"); await ate("!!document.querySelector('#custom .cust, #c-body .cust')", 10000); await esperar(400);
+    for (const t of ["Portas", "Portas", "Variáveis", "Volumes"]) await maisLinha(t);
+    await poeLinha("Portas", 0, ["", "5335", "53"]);
+    await ev("document.getElementById('c-body').scrollTo(0, 280)"); await esperar(300);
+    await foto("20-portas");
+    await send("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 2, mobile: true });
+    await esperar(600); await ev("document.getElementById('c-body').scrollTo(0, 500)"); await esperar(300);
+    await foto("21-portas-celular");
+    return fim();
+  }
+
   if (MODO === "install") {
     // reads only: opens an uninstalled app and asks for the plan; never confirms
     await tab("tab-store");
@@ -109,11 +123,11 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
   await ate("document.querySelectorAll('#p-project a').length > 2", 8000);
   console.log("links do projeto:", mascara(await ev("[...document.querySelectorAll('#p-project a')].map((a) => a.textContent.replace(' ↗', '') + '=' + a.href).join('  |  ')")));
   await foto("00-painel-links");
-  console.log("Personalizar:", await botao("Personalizar")); await ate("!!document.querySelector('#p-section .cust')", 10000); await esperar(400);
+  console.log("Personalizar:", await botao("Personalizar")); await ate("!!document.querySelector('#custom .cust')", 10000); await esperar(400);
   console.log("grupos:", await ev("[...document.querySelectorAll('.cust-group h4')].map(h => h.firstChild.textContent).join(' | ')"));
-  console.log("linhas:", await ev("[...document.querySelectorAll('.cust-group')].map(g => g.querySelector('h4').firstChild.textContent + '=' + g.querySelectorAll('.cust-row').length).join(' ')"), "| restart:", await ev("[...document.querySelectorAll('#p-section .cust-group')].pop().querySelector('select').value"));
-  console.log("limites avisados:", await ev("/indisponível aqui/.test(document.getElementById('p-section').textContent)"), "| 'null' solto:", await ev("/null|undefined/.test(document.getElementById('p-section').textContent)"));
-  await ev("document.getElementById('p-section').scrollIntoView()"); await esperar(300); await foto("02-personalizar");
+  console.log("linhas:", await ev("[...document.querySelectorAll('.cust-group')].map(g => g.querySelector('h4').firstChild.textContent + '=' + g.querySelectorAll('.cust-row').length).join(' ')"), "| restart:", await ev("[...document.querySelectorAll('#custom .cust-group')].pop().querySelector('select').value"));
+  console.log("limites avisados:", await ev("/indisponível aqui/.test(document.getElementById('custom').textContent)"), "| 'null' solto:", await ev("/null|undefined/.test(document.getElementById('custom').textContent)"));
+  await ev("document.getElementById('custom').scrollIntoView()"); await esperar(300); await foto("02-personalizar");
   await clicaForm("Pré-visualizar"); await esperar(1500);
   console.log("pré-visualização sem mudança:", (await formTexto()).includes("Nada diferente da unit do repositório."));
   // a port and a variable, previewed: the file that would be written, and what Quadlet makes of it
@@ -132,11 +146,11 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
   if (MODO === "sandbox") {
     // remove the /etc row, then really apply and revert — in the sandbox only
     await ev(`(() => { const rows = ${grupo("Volumes")}.querySelectorAll('.cust-row'); rows[rows.length - 1].querySelector('.x').click(); })()`);
-    await clicaForm("Salvar e aplicar"); await ate("/Reverter ao padrão/.test(document.getElementById('p-section').textContent)", 20000); await esperar(800);
+    await clicaForm("Salvar e aplicar"); await ate("/Reverter ao padrão/.test(document.getElementById('custom').textContent)", 20000); await esperar(800);
     console.log("aplicado — botão Reverter:", (await formTexto()).includes("Reverter ao padrão"), "| arquivo:", (await formTexto()).includes("50-store.conf"), "| saída:", (await ev("document.getElementById('p-out').textContent")).replace(/\n+/g, " / ").slice(0, 120));
     console.log("selo 'personalizado' no painel:", await ev("document.getElementById('p-info').textContent.includes('personalizado')"));
     await foto("05-aplicado");
-    await clicaForm("Reverter ao padrão"); await ate("!/Reverter ao padrão/.test(document.getElementById('p-section').textContent)", 20000); await esperar(800);
+    await clicaForm("Reverter ao padrão"); await ate("!/Reverter ao padrão/.test(document.getElementById('custom').textContent)", 20000); await esperar(800);
     console.log("revertido — sem o botão:", !(await formTexto()).includes("Reverter ao padrão"));
   }
   await ev("document.getElementById('p-close').click()"); await esperar(300);
@@ -151,8 +165,8 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
   await send("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 2, mobile: true });
   await esperar(800);
   console.log("celular Meus apps: scrollWidth", await ev("document.documentElement.scrollWidth"), "innerWidth", await ev("innerWidth"));
-  await abrir(app); await esperar(2500); await botao("Personalizar"); await ate("!!document.querySelector('#p-section .cust')", 10000); await esperar(600);
-  await ev("document.getElementById('p-section').scrollIntoView()"); await esperar(300);
+  await abrir(app); await esperar(2500); await botao("Personalizar"); await ate("!!document.querySelector('#custom .cust')", 10000); await esperar(600);
+  await ev("document.getElementById('custom').scrollIntoView()"); await esperar(300);
   console.log("celular Personalizar: scrollWidth", await ev("document.documentElement.scrollWidth"), "| diálogo cabe:", await ev("(() => { const r = document.getElementById('panel').getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; })()"));
   await foto("07-celular-personalizar");
   return fim();

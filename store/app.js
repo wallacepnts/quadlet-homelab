@@ -56,6 +56,8 @@ const T = {
     instanceOf: (b) => `instância de ${b}`,
     readyToInstall: (n) => `Pronto para instalar ${n}. Leva cerca de um minuto.`,
     planTitle: "O que vai acontecer",
+    dockerImage: "Imagem Docker", dockerTag: "Tag", containerName: "Nome do contêiner", noLimit: "sem limite", latestPinned: "a última versão",
+    emptyRows: "Clique em “+” para adicionar um.", hHost: "Host", hContainer: "Contêiner", hProto: "Protocolo", hIp: "IP (opcional)", hKey: "Chave", hValue: "Valor", hLabel: "Rótulo",
     updateAvailable: "Atualização disponível",
     getApp: "Obter", installNow: "Instalar agora", advanced: "Avançado", rolledBack: "voltou à versão anterior", techDetails: "Detalhes técnicos", logTitle: "O que foi feito", closeLabel: "Fechar",
     httpsNeeded: "precisa de HTTPS",
@@ -189,6 +191,8 @@ const T = {
     instanceOf: (b) => `instance of ${b}`,
     readyToInstall: (n) => `Ready to install ${n}. It takes about a minute.`,
     planTitle: "What will happen",
+    dockerImage: "Docker image", dockerTag: "Tag", containerName: "Container name", noLimit: "no limit", latestPinned: "the latest version",
+    emptyRows: "Click “+” to add one.", hHost: "Host", hContainer: "Container", hProto: "Protocol", hIp: "IP (optional)", hKey: "Key", hValue: "Value", hLabel: "Label",
     updateAvailable: "Update available",
     getApp: "Get", installNow: "Install now", advanced: "Advanced", rolledBack: "rolled back to the previous version", techDetails: "Technical details", logTitle: "What was done", closeLabel: "Close",
     httpsNeeded: "needs HTTPS",
@@ -1080,12 +1084,15 @@ function dirPicker(campoHost) {
 const opaca = (it) => ({ els: [h("code", {}, it.raw), h("span", { class: "cust-note" }, t("fromUnit"))],
                          read: () => ({ raw: it.raw, opaque: true }) });
 
-function grupo(nome, titulo, dica, itens) {
+function grupo(nome, titulo, dica, itens, cab = null) {
   const rows = [], caixa = h("div");
-  const mostrar = () => fill(caixa, ...rows.map((r) => r.row));
+  // Column titles above the rows, as in CasaOS: what each box is, said once instead of in every row.
+  const mostrar = () => fill(caixa, ...(rows.length
+    ? [cab ? h("div", { class: "cust-head", "data-kind": nome, "aria-hidden": "true" }, ...cab.map((x) => h("span", {}, x))) : null, ...rows.map((r) => r.row)]
+    : [h("p", { class: "cust-empty" }, `ⓘ ${t("emptyRows")}`)]));
   const juntar = (it) => {
     const r = linhas[nome](it);
-    r.row = h("div", { class: "cust-row" }, ...r.els,
+    r.row = h("div", { class: "cust-row", "data-kind": nome }, ...r.els,
       h("button", { type: "button", class: "x", title: t("removeRow"), "aria-label": t("removeRow"),
                     onclick: () => { rows.splice(rows.indexOf(r), 1); mostrar(); } }, "✕"));
     rows.push(r);
@@ -1098,42 +1105,74 @@ function grupo(nome, titulo, dica, itens) {
     read: () => rows.map((r) => r.read()).filter(Boolean) };
 }
 
-// `pre`: the form before an install. It works on the unit as it will be written, keeps what you choose
-// in S.preCustom, and the install applies it once the unit exists.
-async function showCustom(a, unit, pre = false) {
-  const instaladas = pre ? a.units : a.units.filter((u) => u.installed);
-  unit = unit || (mainUnit(a) || instaladas[0]).unit;
-  let d;
-  try { d = await api(`/api/custom?unit=${encodeURIComponent(unit)}${pre ? "&pre=1" : ""}`); }
-  catch (e) { return section(h("p", { class: "note" }, String(e.message))); }
+// A slider with the stops written under it, as in CasaOS; the last stop is "no limit". It only changes the
+// value once moved, so a limit the unit already has that is not one of the stops is kept as it is.
+function limiteDeslizante(paradas, rotulos, atual, aoMudar, ligado) {
+  const i0 = atual === "" ? paradas.length - 1 : Math.max(0, paradas.findIndex((p, i) => i < paradas.length - 1 && p.v === atual));
+  const r = h("input", { type: "range", min: 0, max: paradas.length - 1, step: 1, value: i0, disabled: !ligado,
+                         "aria-label": rotulos.nome });
+  r.value = String(i0);
+  const lido = h("span", { class: "slider-val" }, atual === "" ? t("noLimit") : atual);
+  r.addEventListener("input", () => {
+    const p = paradas[Number(r.value)];
+    aoMudar(p.v);
+    lido.textContent = p.v === "" ? t("noLimit") : p.rotulo;
+  });
+  return h("div", { class: "slider" }, h("div", { class: "slider-head" }, h("span", {}, rotulos.nome), lido), r,
+    h("div", { class: "slider-ticks", "aria-hidden": "true" }, ...paradas.map((p) => h("span", {}, p.v === "" ? "∞" : p.rotulo))));
+}
+const PARADAS_MEM = [["256m", "256 MB"], ["512m", "512 MB"], ["1g", "1 GB"], ["2g", "2 GB"], ["4g", "4 GB"], ["8g", "8 GB"], ["", ""]]
+  .map(([v, rotulo]) => ({ v, rotulo }));
+const PARADAS_CPU = [["0.25", "¼"], ["0.5", "½"], ["1", "1"], ["2", "2"], ["4", "4"], ["8", "8"], ["", ""]]
+  .map(([v, rotulo]) => ({ v, rotulo }));
+
+// The form of ONE unit (a container). `pre`: before an install — it works on the unit as it will be written
+// and the choice is kept in S.preCustom; the install applies it once the unit exists.
+async function formDaUnidade(a, u, pre) {
+  const unit = u.unit;
+  let d = await api(`/api/custom?unit=${encodeURIComponent(unit)}${pre ? "&pre=1" : ""}`);
   const guardada = pre && (S.preCustom[a.id] || {})[unit];
   if (guardada) {          // what was chosen before comes back in the form
     d = { ...d, effective: { ...d.effective, ports: guardada.ports, volumes: guardada.volumes, env: guardada.env,
                              devices: guardada.devices, caps: guardada.caps },
           restart: guardada.restart || d.restart, limit_values: { memory: guardada.limits.memory, cpus: guardada.limits.cpus } };
   }
-
   const G = {
-    ports: grupo("ports", t("cPorts"), t("portsHint"), d.effective.ports),
-    volumes: grupo("volumes", t("cVolumes"), t("volumesHint")(d.roots), d.effective.volumes),
-    env: grupo("env", t("cEnv"), t("custEnvHint"), d.effective.env),
+    ports: grupo("ports", t("cPorts"), t("portsHint"), d.effective.ports, [t("hHost"), t("hContainer"), t("hProto"), t("hIp"), ""]),
+    volumes: grupo("volumes", t("cVolumes"), t("volumesHint")(d.roots), d.effective.volumes, [t("hHost"), "", t("hContainer"), t("hLabel"), "", ""]),
+    env: grupo("env", t("cEnv"), t("custEnvHint"), d.effective.env, [t("hKey"), t("hValue"), ""]),
     devices: grupo("devices", t("cDevices"), null, d.effective.devices),
   };
   const tem = new Set(d.effective.caps.map((c) => c.name));
   const caps = [...new Set([...d.caps_ok, ...tem])].map((n) =>
-    ({ n, box: h("input", { type: "checkbox", id: `cap-${n}`, checked: tem.has(n) }) }));
+    ({ n, box: h("input", { type: "checkbox", id: `cap-${unit}-${n}`, checked: tem.has(n) }) }));
   const reinicio = escolha(d.restarts.map((r) => [r, r]), d.restart || "always");
   // Limits need the controllers delegated to the user; a field the host cannot honour is shown, disabled,
   // with the reason. Its value still goes back as it is, so what the unit already says is never "changed".
   const lv = d.limit_values || { memory: "", cpus: "" };
-  const limMem = h("input", { id: "lim-mem", type: "text", value: lv.memory, placeholder: "512m", autocomplete: "off",
-                              disabled: !d.limits.memory, "aria-label": t("limMemory") });
-  const limCpu = h("input", { id: "lim-cpu", type: "text", value: lv.cpus, placeholder: "1.5", autocomplete: "off",
-                              disabled: !d.limits.cpu, "aria-label": t("limCpus") });
-  const saida = h("div", { class: "cust-out" });
+  let mem = lv.memory, cpus = lv.cpus;
   const config = () => ({ ports: G.ports.read(), volumes: G.volumes.read(), env: G.env.read(), devices: G.devices.read(),
     caps: caps.filter((c) => c.box.checked).map((c) => ({ name: c.n })), restart: reinicio.value,
-    limits: { memory: limMem.value.trim(), cpus: limCpu.value.trim() } });
+    limits: { memory: String(mem).trim(), cpus: String(cpus).trim() } });
+  const saida = h("div", { class: "cust-out" });
+  const imagem = (u.image || "").replace(/@sha256:.*/, "");
+  const repo = imagem.replace(/:[^/:]*$/, "");
+  const tag = u.templated ? t("latestPinned") : tagOf(u.image);
+  const lerLeitura = (rotulo, valor) => h("label", { class: "field ro" }, rotulo, h("input", { type: "text", value: valor, readonly: true }));
+  const el = h("form", { class: "cust", onsubmit: (ev) => ev.preventDefault() },
+    h("div", { class: "cust-two" }, lerLeitura(t("dockerImage"), repo), lerLeitura(t("dockerTag"), tag)),
+    lerLeitura(t("containerName"), unit),
+    d.base_changed ? h("p", { class: "note" }, t("baseChanged")) : null,
+    d.override ? h("p", { class: "cust-note" }, `${t("filePath")}: ${d.file}`) : null,
+    G.ports.el, G.volumes.el, G.env.el, G.devices.el,
+    h("div", { class: "cust-group" }, h("h4", {}, t("cLimits")),
+      h("p", { class: "cust-note" }, d.limits.memory && d.limits.cpu ? t("limitsHint") : t("limitsOff")),
+      limiteDeslizante(PARADAS_MEM, { nome: t("limMemory") }, lv.memory, (v) => { mem = v; }, d.limits.memory),
+      limiteDeslizante(PARADAS_CPU, { nome: t("limCpus") }, lv.cpus, (v) => { cpus = v; }, d.limits.cpu)),
+    h("div", { class: "cust-group" }, h("h4", {}, t("cRestart")), reinicio),
+    h("div", { class: "cust-group" }, h("h4", {}, t("cCaps")), h("p", { class: "cust-note" }, t("capsHint")),
+      h("div", { class: "caps" }, ...caps.map((c) => h("label", { class: "check", for: `cap-${unit}-${c.n}` }, c.box, ` ${c.n}`)))),
+    saida);
 
   async function previa() {
     try {
@@ -1147,57 +1186,72 @@ async function showCustom(a, unit, pre = false) {
       return r;
     } catch (e) { fill(saida, h("p", { class: "note" }, String(e.message))); return { errors: [String(e.message)], changed: false }; }
   }
+  return { unit, el, d, config, previa, guardada: !!guardada };
+}
 
+// What the person sees: a sheet over the page, a tab per container, the fields of the chosen one, and the
+// one thing to do at the bottom — Install (before the install) or Save and apply.
+async function showCustom(a, unit, pre = false) {
+  const unidades = pre ? a.units : a.units.filter((u) => u.installed);
+  unit = unit || (mainUnit(a) || unidades[0]).unit;
+  const formas = [];
+  try { for (const u of unidades) formas.push(await formDaUnidade(a, u, pre)); }
+  catch (e) { return section(h("p", { class: "note" }, String(e.message))); }
+  let ativa = formas.find((f) => f.unit === unit) || formas[0];
+  const corpo = $("c-body"), abas = $("c-tabs");
+  $("c-title").textContent = pre ? `${t("install")} ${a.name}` : `${t("customize")} · ${a.name}`;
+
+  const mostrar = (f) => {
+    ativa = f;
+    fill(abas, ...formas.map((x) => h("button", { type: "button", role: "tab", "aria-selected": String(x === f),
+      onclick: () => mostrar(x) }, x.unit)));
+    abas.hidden = formas.length < 2;
+    fill(corpo, pre ? h("p", { class: "cust-note" }, t("preIntro")) : h("p", { class: "cust-note" }, t("custIntro")), f.el);
+  };
+
+  // Every unit with a change is checked first; the first with an error is brought forward and nothing goes on.
+  const conferir = async () => {
+    for (const f of formas) {
+      const r = await f.previa();
+      if (r.errors.length) { mostrar(f); return null; }
+      f.r = r;
+    }
+    return formas.filter((f) => f.r.changed);
+  };
+  const instalar = async () => {
+    const mudadas = await conferir();
+    if (!mudadas) return;
+    S.preCustom[a.id] = {};
+    for (const f of mudadas) S.preCustom[a.id][f.unit] = f.config();
+    if (!Object.keys(S.preCustom[a.id]).length) delete S.preCustom[a.id];
+    $("custom").close();
+    await plan("install");
+  };
   const aplicar = async () => {
-    const r = await previa();
-    if (r.errors.length || !r.changed) return;
-    await follow(() => api("/api/custom/apply", { unit, config: config() }));
-    showCustom(current(), unit);
+    const mudadas = await conferir();
+    if (!mudadas || !mudadas.length) return;
+    $("custom").close();
+    for (const f of mudadas) await follow(() => api("/api/custom/apply", { unit: f.unit, config: f.config() }));
   };
   const reverter = async () => {
-    await follow(() => api("/api/custom/reset", { unit }));
-    showCustom(current(), unit);
-  };
-  // Before an install nothing is written: the choice is checked, remembered, and sent with the install.
-  const guardar = async () => {
-    const r = await previa();
-    if (r.errors.length) return;
-    S.preCustom[a.id] = { ...(S.preCustom[a.id] || {}) };
-    if (r.changed) S.preCustom[a.id][unit] = config(); else delete S.preCustom[a.id][unit];
-    if (!Object.keys(S.preCustom[a.id]).length) delete S.preCustom[a.id];
-    out(r.changed ? t("preSaved") : t("preNone"));
+    $("custom").close();
+    await follow(() => api("/api/custom/reset", { unit: ativa.unit }));
   };
   const descartar = () => {
-    if (S.preCustom[a.id]) delete S.preCustom[a.id][unit];
-    if (S.preCustom[a.id] && !Object.keys(S.preCustom[a.id]).length) delete S.preCustom[a.id];
-    showCustom(a, unit, true);
+    delete S.preCustom[a.id];
+    $("custom").close();
+    showCustom(a, ativa.unit, true);
   };
 
-  section(h("form", { class: "cust", onsubmit: (ev) => ev.preventDefault() },
-    h("h3", {}, `${t("customize")} · ${unit}`),
-    pre ? h("p", { class: "note" }, t("preIntro")) : null,
-    instaladas.length > 1
-      ? h("select", { "aria-label": "unit", onchange: (ev) => showCustom(a, ev.target.value, pre) },
-          ...instaladas.map((u) => h("option", { value: u.unit, selected: u.unit === unit }, u.unit)))
-      : null,
-    h("p", { class: "help" }, t("custIntro")),
-    d.base_changed ? h("p", { class: "note" }, t("baseChanged")) : null,
-    d.override ? h("p", { class: "cust-note" }, `${t("filePath")}: ${d.file}`) : null,
-    G.ports.el, G.volumes.el, G.env.el, G.devices.el,
-    h("div", { class: "cust-group" }, h("h4", {}, t("cCaps")), h("p", { class: "cust-note" }, t("capsHint")),
-      h("div", { class: "caps" }, ...caps.map((c) => h("label", { class: "check", for: `cap-${c.n}` }, c.box, ` ${c.n}`)))),
-    h("div", { class: "cust-group" }, h("h4", {}, t("cRestart")), reinicio),
-    h("div", { class: "cust-group" }, h("h4", {}, t("cLimits")),
-      h("p", { class: "cust-note" }, d.limits.memory && d.limits.cpu ? t("limitsHint") : t("limitsOff")),
-      h("div", { class: "row" },
-        h("label", { for: "lim-mem" }, t("limMemory")), limMem, h("span", { class: "muted" }, t("limMemoryHint")),
-        h("label", { for: "lim-cpu" }, t("limCpus")), limCpu, h("span", { class: "muted" }, t("limCpusHint")))),
-    h("div", { class: "row" },
-      h("button", { type: "button", class: "ghost", onclick: previa }, t("previewBtn")),
-      pre ? h("button", { type: "button", onclick: guardar }, t("preSave")) : h("button", { type: "button", onclick: aplicar }, t("saveApply")),
-      pre && guardada ? h("button", { type: "button", class: "danger", onclick: descartar }, t("preDiscard")) : null,
-      !pre && d.override ? h("button", { type: "button", class: "danger", onclick: reverter }, t("revertBtn")) : null),
-    saida));
+  fill($("c-foot"),
+    h("button", { type: "button", class: "ghost", onclick: () => ativa.previa() }, t("previewBtn")),
+    pre && S.preCustom[a.id] ? h("button", { type: "button", class: "danger", onclick: descartar }, t("preDiscard")) : null,
+    !pre && formas.some((f) => f.d.override) ? h("button", { type: "button", class: "danger", onclick: reverter }, t("revertBtn")) : null,
+    h("span", { class: "grow" }),
+    h("button", { type: "button", class: "ghost", onclick: () => $("custom").close() }, t("cancel")),
+    pre ? h("button", { type: "button", onclick: instalar }, t("install")) : h("button", { type: "button", onclick: aplicar }, t("saveApply")));
+  mostrar(ativa);
+  if (!$("custom").open) $("custom").showModal();
 }
 
 // The settings of a service: its .env, as the .example files lay it out. An
@@ -1874,6 +1928,7 @@ $("lang").addEventListener("click", () => {
   load();
 });
 $("p-close").addEventListener("click", () => $("panel").close());
+$("c-close").addEventListener("click", () => $("custom").close());
 $("panel").addEventListener("close", closeLogs);
 $("history-btn").addEventListener("click", () => openHistory(null));
 $("h-close").addEventListener("click", () => $("history").close());
