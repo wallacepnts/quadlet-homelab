@@ -513,6 +513,11 @@ What holds it inside the app's folders:
   reach the host's own files. A link anywhere on the path is refused and shown as a link; it is never followed or
   written through. A link can be renamed, copied as a link and deleted (the link goes, its target stays).
 - **Regular files only**: a fifo or a device is refused, so a read cannot hang.
+- **The units and the `.env` files, read only:** `Units (systemd)` and `Variáveis (.env)` (`@systemd`, `@env`) show
+  `~/.config/containers/systemd` and `env` to look at and download, never to change: a unit is code that runs as you, and
+  editing one freely would skip what **Customize** checks (to change a unit use Customize; a `.env`, Configure).
+- **The secrets are never reachable:** `~/.config/containers/secrets` is one clear file per secret. No root can be or
+  hold it, and a link into it is refused like any other.
 - **The volume itself** cannot be renamed, moved or deleted from here (that is the app's removal, in the panel).
 
 ## Restart or shut down the server

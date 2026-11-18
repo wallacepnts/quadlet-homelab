@@ -1407,14 +1407,40 @@ def files_user_roots():
         for caminho, _ in I.Service(p.name, PREFIX).volumes():
             for nome in re.findall(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}", caminho):
                 valor = I.manager_var(nome)
-                if valor and Path(valor).is_dir():
+                proibido = os.path.realpath(Path(PREFIX or Path.home()) / FILES_NEVER)
+                if valor and Path(valor).is_dir() and not (os.path.realpath(valor) + os.sep).startswith(proibido + os.sep) \
+                        and not proibido.startswith(os.path.realpath(valor) + os.sep) and os.path.realpath(valor) != proibido:
                     saida["@" + nome] = valor
     return saida
 
 
+FILES_RO = {"@systemd": ".config/containers/systemd", "@env": ".config/containers/env"}     # to look at, never to change
+FILES_NEVER = ".config/containers/secrets"          # not reachable by any root: the secrets are one file each, in the clear
+
+
+def files_fixed_roots():
+    """{"@systemd": path, "@env": path}: the units and the .env files, read only. A root that is or holds `secrets/` is
+    refused outright, whatever it is called."""
+    base = Path(PREFIX or Path.home())
+    proibido = os.path.realpath(base / FILES_NEVER)
+    saida = {}
+    for nome, rel in FILES_RO.items():
+        caminho = base / rel
+        real = os.path.realpath(caminho)
+        if caminho.is_dir() and real != proibido and not real.startswith(proibido + os.sep) and not proibido.startswith(real + os.sep):
+            saida[nome] = str(caminho)
+    return saida
+
+
+def files_writable(path):
+    """False for the read-only roots; the panel and the server both ask."""
+    partes = [x for x in (path or "").split("/") if x]
+    return bool(partes) and partes[0] not in FILES_RO
+
+
 def files_apps():
     """The installed apps that keep data under volumes/, then the folders of the person's own, by name."""
-    return sorted(p.name for p in I.APPS.iterdir() if p.is_dir() and files_roots(p.name)) + sorted(files_user_roots())
+    return sorted(p.name for p in I.APPS.iterdir() if p.is_dir() and files_roots(p.name)) + sorted(files_user_roots()) + sorted(files_fixed_roots())
 
 
 def files_split(path):
@@ -1426,7 +1452,7 @@ def files_split(path):
     if not partes:
         return None, None, ""
     if partes[0].startswith("@"):
-        dono = files_user_roots().get(partes[0])
+        dono = files_fixed_roots().get(partes[0]) or files_user_roots().get(partes[0])
         if dono is None:
             raise hostctl.FsError(404, "unknown folder")
         return partes[0], dono, "/".join(partes[1:])
@@ -1467,6 +1493,8 @@ def files_exec(op, root, rel, *extra):
 def files_change(d):
     """One change asked by the panel ({op, path, name | to}), refused when it leaves the app's folders."""
     op, path = d.get("op"), d.get("path", "")
+    if not files_writable(path) or (op in ("copy", "move") and not files_writable(d.get("to", ""))):
+        raise hostctl.FsError(403, "read only")
     _, root, rel = files_split(path)
     if root is None:
         raise hostctl.FsError(400, "choose a folder")
@@ -2141,6 +2169,8 @@ class Handler(BaseHTTPRequestHandler):
     def _file_upload(self, q):
         """A file sent from the browser into a folder of an app: streamed into hostctl, which writes it beside its final name
         and renames it only when whole. Announced length and written length must agree, so a cut upload is not kept."""
+        if not files_writable(q.get("path", [""])[0]):
+            raise hostctl.FsError(403, "read only")
         _, root, rel = files_split(q.get("path", [""])[0])
         if root is None:
             raise hostctl.FsError(400, "choose a folder")
@@ -3590,6 +3620,29 @@ def selftest():
             assert op(op="delete", path=base_f + "/sub/pw")[0] == 200 and not os.path.lexists(vol / "sub/pw") and Path("/etc/passwd").exists(), "a link goes, its target stays"
             assert op(op="delete", path=base_f + "/nope")[0] == 404
             assert op(op="wat", path=base_f)[0] == 400
+            # read-only roots: the units and the .env files can be looked at, never changed; the secrets are not reachable
+            Path(tmp, ".config/containers/env").mkdir(parents=True, exist_ok=True)
+            Path(tmp, ".config/containers/env/x.env").write_text("A=1\n")
+            Path(tmp, ".config/containers/secrets/x").mkdir(parents=True, exist_ok=True)
+            Path(tmp, ".config/containers/secrets/x/token.txt").write_text("SECRET")
+            topo = [e["name"] for e in json.loads(pedir("/api/files", headers=ok)[2])["entries"]]
+            assert "@systemd" in topo and "@env" in topo and not any("secret" in n for n in topo), topo
+            lista_env = [e["name"] for e in json.loads(pedir("/api/files?path=%40env", headers=ok)[2])["entries"]]
+            assert "x.env" in lista_env, lista_env
+            assert json.loads(pedir("/api/files/preview?path=%40env%2Fx.env", headers=ok)[2])["text"] == "A=1\n"
+            assert pedir("/api/files/download?path=%40env%2Fx.env", headers=ok)[2] == b"A=1\n"
+            for corpo_ro in ({"op": "mkdir", "path": "@env", "name": "n"}, {"op": "delete", "path": "@env/x.env"},
+                             {"op": "rename", "path": "@env/x.env", "name": "y"}, {"op": "copy", "path": base_f + "/sub/a.txt", "to": "@env"},
+                             {"op": "move", "path": "@systemd/nope", "to": base_f}):
+                assert pedir("/api/files/op", json.dumps(corpo_ro).encode(), api)[0] == 403, corpo_ro
+            assert pedir("/api/files/upload?path=%40env&name=n", b"1", api)[0] == 403
+            assert Path(tmp, ".config/containers/env/x.env").read_text() == "A=1\n" and not Path(tmp, ".config/containers/env/n").exists()
+            for fora in ("@secrets", "@secrets/x", "@env/../secrets/x/token.txt"):
+                assert pedir(f"/api/files?path={urllib.parse.quote(fora)}", headers=ok)[0] in (400, 404), fora
+            os.symlink(Path(tmp, ".config/containers/secrets"), Path(tmp, ".config/containers/env/linked"))
+            assert pedir("/api/files?path=%40env%2Flinked", headers=ok)[0] == 400, "a link into the secrets is not followed"
+            assert pedir("/api/files/download?path=%40env%2Flinked%2Fx%2Ftoken.txt", headers=ok)[0] == 400
+            os.unlink(Path(tmp, ".config/containers/env/linked"))
             # disk usage: the volumes of an installed app, summed
             uso = json.loads(pedir("/api/usage?refresh=1", headers=ok)[2])
             assert all(set(x) == {"app", "bytes"} for x in uso["apps"]) and uso["at"] > 0, uso

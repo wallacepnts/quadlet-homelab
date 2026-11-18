@@ -40,6 +40,8 @@ const T = {
     filesDownload: "Baixar", filesBack: "Voltar à pasta", filesBinary: "Arquivo binário: só dá para baixar.", filesCut: (n) => `Mostrando só o começo (${n}).`,
     filesMore: "A pasta tem mais itens do que cabem na lista.", filesNote: "Mexer nos arquivos de um app que está rodando pode corromper os dados dele: pare o app antes de apagar ou trocar o que ele usa.",
     filesDenied: "Sem permissão para ler isto.",
+    filesUnits: "Units (systemd)", filesEnv: "Variáveis (.env)",
+    filesRO: "Somente leitura: dá para ver e baixar, não alterar. Para mudar uma unit use Personalizar; para um .env, Configurar. Os secrets nunca aparecem aqui.",
     fGrid: "Grade", fList: "Lista", fColName: "Nome", fColSize: "Tamanho", fColDate: "Modificado", fPlaces: "Locais",
     fUpload: "Enviar", fNewFolder: "Nova pasta", fRename: "Renomear", fCopy: "Copiar", fCut: "Recortar", fPaste: "Colar", fDelete: "Apagar",
     fSure: (n) => `Confirmar: apagar ${n} ${n === 1 ? "item" : "itens"}`, fCancel: "Cancelar", fOk: "OK", fName: "Nome", fSel: (n) => `${n} selecionado${n === 1 ? "" : "s"}`,
@@ -228,6 +230,8 @@ const T = {
     filesDownload: "Download", filesBack: "Back to the folder", filesBinary: "A binary file: it can only be downloaded.", filesCut: (n) => `Showing only the start (${n}).`,
     filesMore: "The folder has more items than the list holds.", filesNote: "Changing the files of a running app can corrupt its data: stop the app before deleting or replacing what it uses.",
     filesDenied: "No permission to read this.",
+    filesUnits: "Units (systemd)", filesEnv: "Environment (.env)",
+    filesRO: "Read only: you can look and download, not change. To change a unit use Customize; for a .env, Configure. The secrets never show here.",
     fGrid: "Grid", fList: "List", fColName: "Name", fColSize: "Size", fColDate: "Modified", fPlaces: "Places",
     fUpload: "Upload", fNewFolder: "New folder", fRename: "Rename", fCopy: "Copy", fCut: "Cut", fPaste: "Paste", fDelete: "Delete",
     fSure: (n) => `Confirm: delete ${n} ${n === 1 ? "item" : "items"}`, fCancel: "Cancel", fOk: "OK", fName: "Name", fSel: (n) => `${n} selected`,
@@ -2618,7 +2622,7 @@ function fsIcon(e, noTopo) {
 
 function fsSide(partes) {
   const atual = partes[0] || "";
-  const nomeApp = (id) => (S.apps.find((a) => a.id === id) || {}).name || id;
+  const nomeApp = fsName;
   fill($("f-side"), h("h4", {}, t("fPlaces")),
     h("button", { type: "button", "aria-current": String(!atual), onclick: () => openFiles("") }, h("span", { class: "fi dir", "aria-hidden": "true" }), t("filesRoot")),
     ...(S.floc || []).map((e) => h("button", { type: "button", "aria-current": String(atual === e.name), onclick: () => openFiles(e.name) },
@@ -2626,17 +2630,19 @@ function fsSide(partes) {
 }
 
 // Writable below the volume level: "app/volume/..." or "@NAME/...", not in the list of apps or of one app's volumes.
-const fsCanWrite = (partes) => partes.length >= 2 || (partes.length === 1 && partes[0].startsWith("@"));
+const FS_RO = ["@systemd", "@env"];                      // the units and the .env files: to look at, not to change
+const fsCanWrite = (partes) => !FS_RO.includes(partes[0]) && (partes.length >= 2 || (partes.length === 1 && partes[0].startsWith("@")));
+const fsName = (id) => (id === "@systemd" ? t("filesUnits") : id === "@env" ? t("filesEnv") : (S.apps.find((a) => a.id === id) || {}).name || id);
 
 async function renderFiles(path, msg = "") {
   S.fpath = path;
   $("f-title").textContent = t("files");
   $("f-view").hidden = true;
   const partes = path.split("/").filter(Boolean);
-  const nomeApp = (id) => (S.apps.find((a) => a.id === id) || {}).name || id;
+  const nomeApp = fsName;
   fill($("f-crumb"), h("button", { type: "button", onclick: () => openFiles("") }, t("filesRoot")),
     ...partes.flatMap((p, i) => [h("span", { class: "sep" }, "/"),
-      h("button", { type: "button", onclick: () => openFiles(partes.slice(0, i + 1).join("/")) }, i === 0 && !p.startsWith("@") ? nomeApp(p) : p)]));
+      h("button", { type: "button", onclick: () => openFiles(partes.slice(0, i + 1).join("/")) }, i === 0 && (!p.startsWith("@") || FS_RO.includes(p)) ? nomeApp(p) : p)]));
   let r;
   try { r = await api(`/api/files?path=${encodeURIComponent(path)}`); }
   catch (e) { fill($("f-body"), h("p", { class: "bad" }, e.status === 403 ? t("filesDenied") : String(e.message))); fill($("f-bar")); return; }
@@ -2697,7 +2703,7 @@ async function renderFiles(path, msg = "") {
     c.addEventListener("change", () => { c.checked ? S.fsel.add(e.name) : S.fsel.delete(e.name); refresca(); });
     return c;
   };
-  const nome = (e) => (topo && !e.name.startsWith("@") ? nomeApp(e.name) : e.name);
+  const nome = (e) => (topo && (!e.name.startsWith("@") || FS_RO.includes(e.name)) ? nomeApp(e.name) : e.name);
   const abrir = (e) => e.type === "dir"
     ? h("button", { type: "button", class: "fname dir", onclick: () => openFiles(fsJoin(path, e.name)) }, fsIcon(e, topo), h("span", { class: "nm" }, nome(e)))
     : e.type === "link"
@@ -2713,7 +2719,7 @@ async function renderFiles(path, msg = "") {
           h("td", { class: "num" }, e.size === null || e.size === undefined ? "" : bytes(e.size)), h("td", { class: "num" }, dataDe(e)))));
   fsSide(partes);
   fill($("f-body"),
-    h("p", { class: "muted" }, gravavel ? t("filesNote") : t("fReadHere")),
+    h("p", { class: "muted" }, gravavel ? t("filesNote") : FS_RO.includes(partes[0]) ? t("filesRO") : t("fReadHere")),
     msg ? h("p", { class: "note" }, msg) : null,
     r.entries.length ? lista : h("p", { class: "muted" }, partes.length ? t("filesEmpty") : t("filesNone")),
     r.truncated ? h("p", { class: "note" }, t("filesMore")) : null);

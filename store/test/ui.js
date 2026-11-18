@@ -332,6 +332,14 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   await api.renderFiles("memos/memos/data");
   linhaF("b.bin").listeners.click(); await esperar(30);
   confere($("f-view").hidden, "sem prévia, a área do texto some");
+  // the units and the .env files: to look at, not to change
+  rotas["/api/files"] = { path: "@env", entries: [{ name: "memos.env", type: "file", size: 12, mtime: 1 }], truncated: false };
+  api.S.fsel = new Set(); await api.renderFiles("@env");
+  confere(porTexto($("f-bar"), "Enviar").length === 0 && porTexto($("f-bar"), "Nova pasta").length === 0 && /Somente leitura/.test($("f-body").textContent)
+    && ![...$("f-body").walk()].some((e) => e.tag === "input" && e.attrs.type === "checkbox"), "@env: sem enviar, sem criar, sem seleção; diz que é só leitura");
+  const antesRo = posts.length;
+  await api.uploadFiles([{ name: "x" }], "@env");
+  confere(posts.length === antesRo && [...$("f-crumb").walk()].some((e) => e.tag === "button" && e.textContent === "Variáveis (.env)"), "@env: não se envia, e tem nome legível");
   // an app level (its volumes) is only a list
   rotas["/api/files"] = { path: "memos", entries: [{ name: "memos", type: "dir", size: null, mtime: null }], truncated: false };
   await api.renderFiles("memos");
