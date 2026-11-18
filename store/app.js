@@ -40,6 +40,7 @@ const T = {
     filesDownload: "Baixar", filesBack: "Voltar à pasta", filesBinary: "Arquivo binário: só dá para baixar.", filesCut: (n) => `Mostrando só o começo (${n}).`,
     filesMore: "A pasta tem mais itens do que cabem na lista.", filesNote: "Mexer nos arquivos de um app que está rodando pode corromper os dados dele: pare o app antes de apagar ou trocar o que ele usa.",
     filesDenied: "Sem permissão para ler isto.",
+    fGrid: "Grade", fList: "Lista", fColName: "Nome", fColSize: "Tamanho", fColDate: "Modificado", fPlaces: "Locais",
     fUpload: "Enviar", fNewFolder: "Nova pasta", fRename: "Renomear", fCopy: "Copiar", fCut: "Recortar", fPaste: "Colar", fDelete: "Apagar",
     fSure: (n) => `Confirmar: apagar ${n} ${n === 1 ? "item" : "itens"}`, fCancel: "Cancelar", fOk: "OK", fName: "Nome", fSel: (n) => `${n} selecionado${n === 1 ? "" : "s"}`,
     fSending: (i, n, nome) => `Enviando ${i} de ${n}: ${nome}`, fSent: (n) => `${n} enviado${n === 1 ? "" : "s"}.`, fDrop: "Solte os arquivos aqui para enviar", fReadHere: "Escolha uma pasta de um app para mexer nos arquivos.",
@@ -227,6 +228,7 @@ const T = {
     filesDownload: "Download", filesBack: "Back to the folder", filesBinary: "A binary file: it can only be downloaded.", filesCut: (n) => `Showing only the start (${n}).`,
     filesMore: "The folder has more items than the list holds.", filesNote: "Changing the files of a running app can corrupt its data: stop the app before deleting or replacing what it uses.",
     filesDenied: "No permission to read this.",
+    fGrid: "Grid", fList: "List", fColName: "Name", fColSize: "Size", fColDate: "Modified", fPlaces: "Places",
     fUpload: "Upload", fNewFolder: "New folder", fRename: "Rename", fCopy: "Copy", fCut: "Cut", fPaste: "Paste", fDelete: "Delete",
     fSure: (n) => `Confirm: delete ${n} ${n === 1 ? "item" : "items"}`, fCancel: "Cancel", fOk: "OK", fName: "Name", fSel: (n) => `${n} selected`,
     fSending: (i, n, nome) => `Uploading ${i} of ${n}: ${nome}`, fSent: (n) => `${n} uploaded.`, fDrop: "Drop the files here to upload", fReadHere: "Open a folder of an app to work on its files.",
@@ -2595,10 +2597,32 @@ S.fclip = null;          // {mode: "copy"|"move", paths: [...]}
 const fsJoin = (a, b) => (a ? `${a}/${b}` : b);
 const fsPost = (body) => api("/api/files/op", body);
 
+S.fview = localStorage.getItem("qh-fview") === "grid" ? "grid" : "list";
+
 async function openFiles(path = "") {
   if (!$("files").open) $("files").showModal();
   S.fsel = new Set();
+  try { S.floc = (await api("/api/files?path=")).entries; } catch (e) { S.floc = []; }     // the places on the left
   await renderFiles(path);
+}
+
+// The icon of an entry: an app's own logo at the top, a folder, or a file by what it is.
+function fsIcon(e, noTopo) {
+  if (noTopo) {
+    const a = S.apps.find((x) => x.id === e.name);
+    if (a && a.icon) return iconPlate(a, "sm");
+  }
+  const tipo = e.type === "dir" ? "dir" : e.type === "link" ? "link" : FS_IMAGES.test(e.name) ? "img" : FS_TEXT.test(e.name) ? "txt" : "file";
+  return h("span", { class: `fi ${tipo}`, "aria-hidden": "true" });
+}
+
+function fsSide(partes) {
+  const atual = partes[0] || "";
+  const nomeApp = (id) => (S.apps.find((a) => a.id === id) || {}).name || id;
+  fill($("f-side"), h("h4", {}, t("fPlaces")),
+    h("button", { type: "button", "aria-current": String(!atual), onclick: () => openFiles("") }, h("span", { class: "fi dir", "aria-hidden": "true" }), t("filesRoot")),
+    ...(S.floc || []).map((e) => h("button", { type: "button", "aria-current": String(atual === e.name), onclick: () => openFiles(e.name) },
+      fsIcon(e, true), nomeApp(e.name))));
 }
 
 // Writable below the volume level: "app/volume/..." or "@NAME/...", not in the list of apps or of one app's volumes.
@@ -2660,29 +2684,38 @@ async function renderFiles(path, msg = "") {
     }
   }
   if (S.fclip && !gravavel) barra.push(h("span", { class: "muted" }, t("fClip")(S.fclip.paths.length, S.fclip.mode)));
-  barra.push(h("button", { type: "button", class: "ghost", onclick: () => refresca() }, t("fRefresh")));
+  barra.push(h("button", { type: "button", class: "ghost push", onclick: () => { S.fview = S.fview === "grid" ? "list" : "grid"; localStorage.setItem("qh-fview", S.fview); refresca(); } },
+    S.fview === "grid" ? t("fList") : t("fGrid")),
+    h("button", { type: "button", class: "ghost", onclick: () => refresca() }, t("fRefresh")));
   fill($("f-bar"), ...barra);
 
   const todos = h("input", { type: "checkbox", "aria-label": t("fSelectAll"), checked: r.entries.length > 0 && nSel === r.entries.length });
   todos.addEventListener("change", () => { S.fsel = todos.checked ? new Set(r.entries.map((e) => e.name)) : new Set(); refresca(); });
-  const linhas = r.entries.map((e) => h("tr", {},
-    gravavel ? h("td", { class: "chk" }, (() => {
-      const c = h("input", { type: "checkbox", "aria-label": e.name, checked: S.fsel.has(e.name) });
-      c.addEventListener("change", () => { c.checked ? S.fsel.add(e.name) : S.fsel.delete(e.name); refresca(); });
-      return c;
-    })()) : null,
-    h("td", {}, e.type === "dir"
-      ? h("button", { type: "button", class: "fname dir", onclick: () => openFiles(fsJoin(path, e.name)) }, `▸ ${partes.length || e.name.startsWith("@") ? e.name : nomeApp(e.name)}`)
-      : e.type === "link"
-        ? h("button", { type: "button", class: "fname", disabled: true, title: t("filesLink") }, `↪ ${e.name}`)
-        : h("button", { type: "button", class: "fname", onclick: () => showFile(fsJoin(path, e.name), e, gravavel) }, e.name)),
-    h("td", { class: "num" }, e.size === null || e.size === undefined ? "" : bytes(e.size)),
-    h("td", { class: "num" }, e.mtime ? new Date(e.mtime * 1000).toLocaleDateString(S.lang === "pt" ? "pt-BR" : "en-GB") : "")));
+  const topo = !partes.length;
+  const caixa = (e) => {
+    const c = h("input", { type: "checkbox", "aria-label": e.name, checked: S.fsel.has(e.name) });
+    c.addEventListener("change", () => { c.checked ? S.fsel.add(e.name) : S.fsel.delete(e.name); refresca(); });
+    return c;
+  };
+  const nome = (e) => (topo && !e.name.startsWith("@") ? nomeApp(e.name) : e.name);
+  const abrir = (e) => e.type === "dir"
+    ? h("button", { type: "button", class: "fname dir", onclick: () => openFiles(fsJoin(path, e.name)) }, fsIcon(e, topo), h("span", { class: "nm" }, nome(e)))
+    : e.type === "link"
+      ? h("button", { type: "button", class: "fname", disabled: true, title: t("filesLink") }, fsIcon(e), h("span", { class: "nm" }, e.name))
+      : h("button", { type: "button", class: "fname", onclick: () => showFile(fsJoin(path, e.name), e, gravavel) }, fsIcon(e), h("span", { class: "nm" }, e.name));
+  const dataDe = (e) => (e.mtime ? new Date(e.mtime * 1000).toLocaleDateString(S.lang === "pt" ? "pt-BR" : "en-GB") : "");
+  const lista = S.fview === "grid"
+    ? h("div", { class: "fgrid" }, ...r.entries.map((e) => h("div", { class: `fcard${S.fsel.has(e.name) ? " sel" : ""}` },
+        gravavel ? h("span", { class: "chk" }, caixa(e)) : null, abrir(e))))
+    : h("table", { class: "hist" },
+        h("tr", {}, gravavel ? h("th", { class: "chk" }, todos) : null, h("th", {}, t("fColName")), h("th", { class: "num" }, t("fColSize")), h("th", { class: "num" }, t("fColDate"))),
+        ...r.entries.map((e) => h("tr", {}, gravavel ? h("td", { class: "chk" }, caixa(e)) : null, h("td", {}, abrir(e)),
+          h("td", { class: "num" }, e.size === null || e.size === undefined ? "" : bytes(e.size)), h("td", { class: "num" }, dataDe(e)))));
+  fsSide(partes);
   fill($("f-body"),
     h("p", { class: "muted" }, gravavel ? t("filesNote") : t("fReadHere")),
     msg ? h("p", { class: "note" }, msg) : null,
-    linhas.length ? h("table", { class: "hist" }, gravavel ? h("tr", {}, h("th", { class: "chk" }, todos), h("th", {}), h("th", {}), h("th", {})) : null, ...linhas)
-      : h("p", { class: "muted" }, partes.length ? t("filesEmpty") : t("filesNone")),
+    r.entries.length ? lista : h("p", { class: "muted" }, partes.length ? t("filesEmpty") : t("filesNone")),
     r.truncated ? h("p", { class: "note" }, t("filesMore")) : null);
 }
 
@@ -2705,12 +2738,14 @@ async function uploadFiles(arquivos, path = S.fpath) {
 }
 
 const FS_IMAGES = /\.(png|jpe?g|gif|webp|bmp)$/i;
+const FS_TEXT = /\.(txt|md|json|ya?ml|toml|ini|conf|cfg|env|log|csv|xml|html?|css|js|py|sh|sql|container|network|service)$/i;
 async function showFile(path, e, gravavel) {
   const pasta = path.split("/").slice(0, -1).join("/");
   const url = `/api/files/download?path=${encodeURIComponent(path)}`;
   const baixar = h("a", { class: "btn", href: url, download: e.name }, t("filesDownload"));
   const voltar = h("button", { type: "button", class: "ghost", onclick: () => renderFiles(pasta) }, t("filesBack"));
   fill($("f-bar"));
+  fsSide(path.split("/").filter(Boolean));
   const corpo = [h("h3", {}, e.name), h("div", { id: "f-actions" }, baixar, voltar), h("p", { class: "muted" }, bytes(e.size || 0))];
   fill($("f-body"), ...corpo);
   const pre = $("f-view");

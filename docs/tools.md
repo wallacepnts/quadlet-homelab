@@ -492,7 +492,8 @@ way CasaOS and ZimaOS have one: apps first, then their volumes and folders (the 
 `~/.config/containers/volumes/`), plus the folders you chose for what the apps share (`@MEDIA_DATA_DIR`, the
 recordings), when they exist.
 
-- **Look:** a path with breadcrumbs, size and date, a text file previewed (first 256 KB), an image shown, any file
+- **Look:** a window with the places on the left (each app with its logo, then your own folders), breadcrumbs, a list
+  with size and date or a grid of icons (the choice is kept in the browser), an icon by kind of file, a text file previewed (first 256 KB), an image shown, any file
   downloaded.
 - **Change:** **Upload** (the button, or drop files on the window; a name already there is kept and the new one becomes
   `name (1)`, and a cut upload leaves nothing), **New folder**, **Rename**, **Copy / Cut / Paste** (across folders and

@@ -65,8 +65,8 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
     const clicar = (txt) => ev(`(() => { const b = [...document.querySelectorAll('#files button')].find((x) => x.textContent.trim().startsWith(${JSON.stringify(txt)})); if (!b) return false; b.click(); return true; })()`);
     await ev("document.getElementById('files-btn').click()"); await esperar(1200);
     await foto("50-arquivos-apps");
-    console.log("entrou no app:", await clicar("▸"), await esperar(800));
-    console.log("entrou no volume:", await clicar("▸"), await esperar(800));
+    console.log("entrou no app:", await ev("(() => { const b = document.querySelector('#f-body .fname.dir'); if (!b) return false; b.click(); return true; })()"), await esperar(800));
+    console.log("entrou no volume:", await ev("(() => { const b = document.querySelector('#f-body .fname.dir'); if (!b) return false; b.click(); return true; })()"), await esperar(800));
     await foto("51-arquivos-volume");
     console.log("barra:", await ev("[...document.querySelectorAll('#f-bar button')].map((b) => b.textContent).join(' | ')"));
     await clicar("Nova pasta"); await esperar(200);
@@ -77,6 +77,11 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
     await clicar("Apagar"); await esperar(200); await clicar("Confirmar"); await esperar(1500);
     console.log("apagou:", !(await ev("[...document.querySelectorAll('#f-body .fname')].some((b) => b.textContent.includes('qh-teste'))")));
     await foto("53-arquivos-depois");
+    await ev("(() => { const b = [...document.querySelectorAll('#f-bar button')].find((x) => x.textContent.trim() === 'Grade'); if (b) b.click(); })()"); await esperar(800);
+    await foto("54-arquivos-grade");
+    await ev("document.getElementById('f-side').querySelector('button').click()"); await esperar(1000);
+    await foto("55-arquivos-raiz-grade");
+    await ev("localStorage.setItem('qh-fview','list')");
   }
 
   if (MODO === "tema") {
