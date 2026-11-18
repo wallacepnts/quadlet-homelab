@@ -480,7 +480,7 @@ The home (My apps) opens with the server at a glance: processor, memory, the dis
 network (rate; real interfaces only, not the container bridges or the tailnet's copy of the same traffic), each with a
 small history, refreshed every five seconds from `/api/host`. There is no widgets sidebar any more.
 
-## Quick Launch, appearance, groups, bookmarks and service widgets
+## Quick Launch, appearance and service widgets
 
 - **Quick Launch:** type any letter on the page (or `/`) and a search opens over it: the installed apps first, then the
   store's. Enter takes the highlighted one (opens the app, or its page in the store), and the last line searches the
@@ -490,8 +490,6 @@ small history, refreshed every five seconds from `/api/host`. There is no widget
   server (`~/.config/quadlet-homelab/store-ui.json` and `store-bg.*`), so every browser sees the same.
 - **Site monitor:** a running container whose app does not answer gets a red dot; one that answers says how fast in
   the dot's tooltip. The server asks each app's address once a minute (`/api/monitor`).
-- **Groups** (My apps → Organize): your own groups, apps moved into them, a group folded or shown as a row of icons.
-  **Bookmarks** (below My apps): shortcuts to what is not an app, in groups. Both are kept in this browser.
 - **Service widgets** (`widgets` in `app.json`, see [manifest](./manifest.md)): numbers from inside an app on its tile
   and in its panel. The key is typed in the panel (Set up the widget) and kept in
   `~/.config/quadlet-homelab/widgets.json` (mode 600); the server calls the app, so the key never reaches the

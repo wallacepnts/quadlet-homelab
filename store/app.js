@@ -65,10 +65,6 @@ const T = {
     apBg: "Imagem de fundo", apBgPick: "Escolher imagem…", apBgRemove: "Tirar o fundo", apBgBlur: "Desfoque", apBgDim: "Véu sobre a imagem",
     apBgHint: "PNG, JPEG ou WebP, até 8 MB. Fica no servidor, para todos os navegadores.", apSaved: "Aparência salva.",
     monDown: "não responde", monStatus: (c) => `responde com erro ${c}`, monMs: (ms) => `responde em ${ms} ms`,
-        bookmarks: "Favoritos", bmEdit: "Editar favoritos", bmDone: "Pronto", bmNewGroup: "Novo grupo de favoritos", bmGroupName: "Nome do grupo", bmAdd: "Adicionar",
-    bmRemoveGroup: "Apagar grupo", bmEmpty: "Guarde aqui atalhos para o que não é app: o roteador, o admin do Tailscale…",
-    organize: "Organizar", organizeDone: "Pronto", newGroup: "Novo grupo", groupName: "Nome do grupo", noGroup: "Sem grupo", groupIcons: "Só ícones",
-    groupTiles: "Azulejos", groupRemove: "Apagar grupo", moveTo: "Grupo",
     svcField: { photos: "fotos", videos: "vídeos", storage: "armazenamento", queries: "consultas", blocked: "bloqueadas", blocked_pct: "bloqueado",
       latency: "latência", documents: "documentos", inbox: "na caixa de entrada", up: "no ar", down: "fora do ar", wanted: "faltando", queued: "na fila",
       series: "séries", movies: "filmes", streams: "tocando agora", songs: "músicas" },
@@ -241,10 +237,6 @@ const T = {
     apBg: "Background image", apBgPick: "Choose an image…", apBgRemove: "Remove the background", apBgBlur: "Blur", apBgDim: "Veil over the image",
     apBgHint: "PNG, JPEG or WebP, up to 8 MB. Kept on the server, for every browser.", apSaved: "Appearance saved.",
     monDown: "not answering", monStatus: (c) => `answers with error ${c}`, monMs: (ms) => `answers in ${ms} ms`,
-        bookmarks: "Bookmarks", bmEdit: "Edit bookmarks", bmDone: "Done", bmNewGroup: "New bookmark group", bmGroupName: "Group name", bmAdd: "Add",
-    bmRemoveGroup: "Delete group", bmEmpty: "Keep shortcuts here to what is not an app: the router, the Tailscale admin…",
-    organize: "Organize", organizeDone: "Done", newGroup: "New group", groupName: "Group name", noGroup: "No group", groupIcons: "Icons only",
-    groupTiles: "Tiles", groupRemove: "Delete group", moveTo: "Group",
     svcField: { photos: "photos", videos: "videos", storage: "storage", queries: "queries", blocked: "blocked", blocked_pct: "blocked",
       latency: "latency", documents: "documents", inbox: "in the inbox", up: "up", down: "down", wanted: "wanted", queued: "queued",
       series: "series", movies: "movies", streams: "playing now", songs: "songs" },
@@ -632,8 +624,6 @@ function renderFilters() {
   $("summary").hidden = !mine.length;
   const comAtualizacao = contar(hasUpdate);
   fill($("summary"), t("summaryLine")(rodando, parados, pausados),
-    h("button", { type: "button", class: "ghost organize", "aria-pressed": String(!!S.organize),
-      onclick: () => { S.organize = !S.organize; renderGroups(); renderGrid(); } }, S.organize ? t("organizeDone") : t("organize")),
     comAtualizacao ? " " : null,
     comAtualizacao ? h("button", { type: "button", id: "update-all", class: "ghost",
       onclick: (ev) => {
@@ -934,10 +924,8 @@ function renderGrid() {
   const pool = meus ? installed().filter(FILTERS[S.filter] || (() => true))
                     : S.apps.filter((a) => !S.group || groupOf(a) === S.group);
   const shown = pool.filter((a) => matches(a, q));
-  const agrupado = meus && shown.length ? groupedTiles(shown) : null;
-  $("grid").className = meus ? (agrupado ? "apps grouped" : "apps") : "";
-  fill($("grid"), ...(agrupado || shown.map(meus ? tile : storeCard)));
-  renderBookmarks();
+  $("grid").className = meus ? "apps" : "";
+  fill($("grid"), ...shown.map(meus ? tile : storeCard));
   renderHome();
   renderHead();
   $("empty").hidden = shown.length > 0;
@@ -2540,95 +2528,6 @@ document.addEventListener("keydown", (ev) => {
   if (ev.key === "/") { ev.preventDefault(); quickLaunch(""); }
   else if (ev.key.length === 1 && /\S/.test(ev.key)) { ev.preventDefault(); quickLaunch(ev.key); }
 });
-
-// -- bookmarks -------------------------------------------------------------------------------
-// Shortcuts to what is not an app (the router, the Tailscale admin), in groups, below My apps.
-// Kept in this browser, like the widgets. A letter in a coloured square stands for the icon:
-// nothing is fetched from the site itself.
-const loadBm = () => { try { const v = JSON.parse(localStorage.getItem("qh-bookmarks")); return Array.isArray(v) ? v : []; } catch (e) { return []; } };
-const saveBm = (v) => localStorage.setItem("qh-bookmarks", JSON.stringify(v));
-const corDe = (txt) => { let n = 0; for (const c of txt) n = (n * 31 + c.charCodeAt(0)) % 360; return n; };
-
-function renderBookmarks() {
-  const el = $("bookmarks");
-  if (S.view !== "apps") { el.hidden = true; return; }
-  el.hidden = false;
-  const grupos = loadBm(), ed = S.bmEdit;
-  const salvar = (g) => { saveBm(g); renderBookmarks(); };
-  const blocos = grupos.map((g, gi) => {
-    const nome = h("input", { type: "text", placeholder: t("linkName"), "aria-label": t("linkName"), autocomplete: "off" });
-    const url = h("input", { type: "text", placeholder: t("linkUrl"), "aria-label": "URL", autocomplete: "off" });
-    const aviso = h("span", { class: "muted" });
-    return h("section", { class: "bm-group" },
-      h("header", {}, h("h3", {}, g.name),
-        ed ? h("button", { type: "button", class: "ghost", onclick: () => salvar(grupos.filter((_, j) => j !== gi)) }, t("bmRemoveGroup")) : null),
-      h("div", { class: "bm-list" }, ...g.links.map((l, li) => {
-        const letra = h("span", { class: "bm-ico", "aria-hidden": "true" }, (l.name || "?").trim()[0].toUpperCase());
-        letra.style.background = `hsl(${corDe(l.name)} 55% 42%)`;
-        return h("span", { class: "bm" }, h("a", { href: l.url, target: "_blank", rel: "noopener noreferrer", title: l.url }, letra, l.name),
-          ed ? h("button", { type: "button", class: "icon text", "aria-label": `${t("remove")} ${l.name}`,
-            onclick: () => { g.links.splice(li, 1); salvar(grupos); } }, "✕") : null);
-      })),
-      ed ? h("div", { class: "bm-add" }, nome, url, h("button", { type: "button", class: "ghost", onclick: () => {
-        const u = url.value.trim();
-        if (!/^https?:\/\/\S+$/i.test(u)) { aviso.textContent = t("linkBad"); return; }
-        g.links.push({ name: nome.value.trim() || u.replace(/^https?:\/\//i, "").split("/")[0], url: u });
-        salvar(grupos); } }, t("bmAdd")), aviso) : null);
-  });
-  const novo = h("input", { type: "text", placeholder: t("bmGroupName"), "aria-label": t("bmGroupName"), autocomplete: "off" });
-  fill(el,
-    h("div", { class: "bm-head" }, h("h2", {}, t("bookmarks")),
-      h("button", { type: "button", class: "ghost", onclick: () => { S.bmEdit = !S.bmEdit; renderBookmarks(); } }, ed ? t("bmDone") : t("bmEdit"))),
-    !grupos.length && !ed ? h("p", { class: "muted" }, t("bmEmpty")) : null,
-    ...blocos,
-    ed ? h("div", { class: "bm-add" }, novo, h("button", { type: "button", onclick: () => {
-      if (!novo.value.trim()) return;
-      salvar([...grupos, { name: novo.value.trim(), links: [] }]); } }, t("bmNewGroup"))) : null);
-}
-
-// -- groups in My apps ---------------------------------------------------------------------
-// The person's own groups ("Media", "Home"...): an app goes in one, a group can be folded, and it can show
-// its apps as tiles or as a row of icons. Kept in this browser. With none, My apps is the plain grid.
-const loadGrp = () => { try { const v = JSON.parse(localStorage.getItem("qh-groups")); return v && Array.isArray(v.groups) ? v : { groups: [], assign: {} }; } catch (e) { return { groups: [], assign: {} }; } };
-const saveGrp = (v) => localStorage.setItem("qh-groups", JSON.stringify(v));
-
-function groupedTiles(apps) {
-  const cfg = loadGrp(), ed = S.organize;
-  if (!cfg.groups.length && !ed) return null;
-  const salvar = () => { saveGrp(cfg); renderGrid(); };
-  const seletor = (a) => {
-    const s = h("select", { "aria-label": `${t("moveTo")} ${a.name}`, class: "grp-pick", onchange: (ev) => {
-      if (ev.target.value) cfg.assign[a.id] = ev.target.value; else delete cfg.assign[a.id];
-      salvar(); } }, h("option", { value: "" }, t("noGroup")), ...cfg.groups.map((g) => h("option", { value: g.id, selected: cfg.assign[a.id] === g.id }, g.name)));
-    s.value = cfg.assign[a.id] || "";
-    return s;
-  };
-  const cartao = (a) => { const el = tile(a); if (ed) el.append(seletor(a)); return el; };
-  const secoes = cfg.groups.map((g) => {
-    const deles = apps.filter((a) => cfg.assign[a.id] === g.id);
-    return h("section", { class: "grp" },
-      h("header", {},
-        h("button", { type: "button", class: "grp-fold", "aria-expanded": String(!g.collapsed), onclick: () => { g.collapsed = !g.collapsed; salvar(); } },
-          `${g.collapsed ? "▸" : "▾"} ${g.name}`, h("span", { class: "count" }, String(deles.length))),
-        h("button", { type: "button", class: "ghost grp-mode", onclick: () => { g.icons = !g.icons; salvar(); } }, g.icons ? t("groupTiles") : t("groupIcons")),
-        ed ? h("button", { type: "button", class: "danger grp-del", onclick: () => {
-          cfg.groups = cfg.groups.filter((x) => x !== g);
-          for (const k of Object.keys(cfg.assign)) if (cfg.assign[k] === g.id) delete cfg.assign[k];
-          salvar(); } }, t("groupRemove")) : null),
-      g.collapsed ? null : h("div", { class: `grp-grid${g.icons ? " icons" : ""}` }, ...deles.map(cartao)));
-  });
-  const soltos = apps.filter((a) => !cfg.groups.some((g) => g.id === cfg.assign[a.id]));
-  const novo = h("input", { type: "text", placeholder: t("groupName"), "aria-label": t("groupName"), autocomplete: "off" });
-  return [
-    ...secoes,
-    soltos.length ? h("section", { class: "grp" }, cfg.groups.length ? h("header", {}, h("span", { class: "grp-fold plain" }, t("noGroup"))) : null,
-      h("div", { class: "grp-grid" }, ...soltos.map(cartao))) : null,
-    ed ? h("div", { class: "bm-add grp-new" }, novo, h("button", { type: "button", onclick: () => {
-      if (!novo.value.trim()) return;
-      cfg.groups.push({ id: `g${Date.now().toString(36)}`, name: novo.value.trim(), collapsed: false, icons: false });
-      salvar(); } }, t("newGroup"))) : null,
-  ];
-}
 
 const bytes = (n) => n >= 2 ** 40 ? `${(n / 2 ** 40).toFixed(1)} TB` : n >= 2 ** 30 ? `${(n / 2 ** 30).toFixed(1)} GB`
   : n >= 2 ** 20 ? `${(n / 2 ** 20).toFixed(1)} MB` : `${Math.max(0, Math.round(n / 1024))} KB`;

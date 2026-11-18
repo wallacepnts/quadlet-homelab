@@ -106,7 +106,7 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
   }
 
   if (MODO === "f9") {
-    // reads only: Quick Launch, Settings → Appearance (looked at, nothing picked), a group and a bookmark group are NOT created
+    // reads only: Quick Launch, Settings → Appearance (looked at, nothing picked) is NOT created
     await ev("document.dispatchEvent(new KeyboardEvent('keydown', { key: 'v', bubbles: true }))"); await esperar(500);
     console.log("quick launch aberto:", await ev("document.getElementById('ql').open"), "| itens:", await ev("document.querySelectorAll('#ql-list li').length"));
     await foto("30-quick-launch");

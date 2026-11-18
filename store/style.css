@@ -487,45 +487,12 @@ body.has-bg .card, body.has-bg #nav, body.has-bg .stat, body.has-bg nav#groups b
 .ap-grid input[type=range] { accent-color: var(--accent); }
 .lead-sm { font-weight: 650; font-size: .88rem; margin: .6rem 0 0; }
 
-/* ---- Bookmarks -------------------------------------------------------------------------------- */
-#bookmarks { padding: 0 1.5rem 1.5rem; }
-.bm-head { display: flex; align-items: center; justify-content: space-between; margin: .5rem 0 .4rem; }
-.bm-head h2 { margin: 0; font-size: 1.05rem; } .bm-head button { min-height: 34px; padding: .2rem .9rem; font-size: .85rem; }
-.bm-group { margin: .6rem 0 1rem; } .bm-group > header { display: flex; align-items: center; gap: .8rem; }
-.bm-group h3 { margin: 0 0 .4rem; font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
-.bm-list { display: flex; flex-wrap: wrap; gap: .5rem; }
-.bm { display: inline-flex; align-items: center; gap: .2rem; background: var(--card); border-radius: 999px; box-shadow: var(--shadow); padding: .25rem .35rem .25rem .3rem; }
-.bm a { display: inline-flex; align-items: center; gap: .5rem; color: var(--fg); text-decoration: none; font-weight: 550; padding-right: .5rem; }
-.bm-ico { width: 28px; height: 28px; border-radius: 9px; display: inline-grid; place-items: center; color: #fff; font-weight: 750; font-size: .85rem; }
-.bm button { width: 28px; min-height: 28px; font-size: .8rem; }
-.bm-add { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-top: .6rem; }
-.bm-add input { flex: 1 1 10rem; } .bm-add button { min-height: 38px; }
-
-/* ---- Groups in My apps ------------------------------------------------------------------------ */
-main.apps.grouped { display: block; }
-.grp { margin-bottom: 1.2rem; }
-.grp > header { display: flex; align-items: center; gap: .6rem; margin-bottom: .6rem; }
-.grp-fold { background: transparent; color: var(--fg); padding: 0 .2rem; min-height: 32px; font-weight: 700; font-size: 1rem; }
-.grp-fold.plain { color: var(--muted); font-weight: 650; font-size: .9rem; }
-.grp-fold .count { color: var(--muted); font-weight: 500; font-size: .8rem; margin-left: .4rem; }
-.grp-mode, .grp-del { min-height: 30px; padding: .1rem .8rem; font-size: .8rem; }
-.grp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr)); gap: 1rem; }
-:root[data-density=compact] .grp-grid { grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: .65rem; }
-.grp-grid.icons { display: flex; flex-wrap: wrap; gap: .6rem; }
-.grp-grid.icons .tile { width: auto; border-radius: 18px; }
-.grp-grid.icons .tile-open { padding: .55rem; } .grp-grid.icons .tile h3, .grp-grid.icons .gear { display: none; }
-.grp-grid.icons .tile > .dot { top: .4rem; left: .45rem; }
-.grp-pick { margin: 0 .7rem .7rem; min-height: 34px; padding: .2rem .5rem; font-size: .85rem; }
-#summary .organize { background: var(--card-2); color: var(--fg); font-weight: 600; }
-#summary .organize[aria-pressed=true] { background: var(--fg); color: var(--bg); }
-@media (max-width: 720px) { #bookmarks { padding: 0 1rem 1rem; } .grp-grid { grid-template-columns: repeat(2, 1fr); } }
 
 /* ---- Service widgets ---------------------------------------------------------------------------- */
 .svc-line { margin: 0; font-size: .78rem; color: var(--muted); font-variant-numeric: tabular-nums; line-height: 1.3; }
 .svc-line strong { color: var(--fg); font-weight: 700; }
 .lv-good strong, .svc-stat.lv-good .svc-val { color: var(--ok); } .lv-warn strong, .svc-stat.lv-warn .svc-val { color: var(--warn); }
 .lv-bad strong, .svc-stat.lv-bad .svc-val { color: var(--bad); }
-.grp-grid.icons .svc-line { display: none; }
 .svc { margin: .6rem 0 1rem; } .svc > h3 { font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 .5rem; }
 .svc-block { background: var(--card-2); border-radius: var(--radius); padding: .8rem 1rem; margin-bottom: .6rem; }
 .svc-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: .5rem; }

@@ -820,43 +820,6 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   confere(!$("ql").open, "com uma janela aberta, também não");
   $("panel").open = false;
 
-
-  // bookmarks: groups of links below My apps, kept in the browser, http(s) only
-  api.setView("apps");
-  confere(!$("bookmarks").hidden && /Favoritos/.test($("bookmarks").textContent) && /roteador/.test($("bookmarks").textContent), "favoritos: aparecem em Meus apps, com a dica");
-  porTexto($("bookmarks"), "Editar favoritos")[0].listeners.click();
-  const nomeGrupo = [...$("bookmarks").walk()].find((e) => e.tag === "input" && e.attrs.placeholder === "Nome do grupo");
-  nomeGrupo.value = "Rede"; porTexto($("bookmarks"), "Novo grupo de favoritos")[0].listeners.click();
-  const [nomeL, urlL] = [...$("bookmarks").walk()].filter((e) => e.tag === "input" && ["Nome", "https://…"].includes(e.attrs.placeholder));
-  nomeL.value = "Roteador"; urlL.value = "javascript:alert(1)"; porTexto($("bookmarks"), "Adicionar")[0].listeners.click();
-  confere(!/Roteador/.test(JSON.stringify(guardado.get("qh-bookmarks") || "")), "favoritos: recusa o que não é http(s)");
-  const [nomeL2, urlL2] = [...$("bookmarks").walk()].filter((e) => e.tag === "input" && ["Nome", "https://…"].includes(e.attrs.placeholder));
-  nomeL2.value = "Roteador"; urlL2.value = "http://192.168.1.1"; porTexto($("bookmarks"), "Adicionar")[0].listeners.click();
-  porTexto($("bookmarks"), "Pronto")[0].listeners.click();
-  const linkBm = [...$("bookmarks").walk()].find((e) => e.tag === "a");
-  confere(linkBm && linkBm.attrs.href === "http://192.168.1.1" && /noopener/.test(linkBm.attrs.rel) && /Rede/.test($("bookmarks").textContent), "favoritos: o link fica no grupo, abre em outra aba");
-  api.setView("store");
-  confere($("bookmarks").hidden, "favoritos: não aparecem na Loja");
-
-  // groups in My apps: a group made, an app moved into it, folded, icons only
-  api.setView("apps");
-  porTexto($("summary"), "Organizar")[0].listeners.click();
-  const nomeG = [...$("grid").walk()].find((e) => e.tag === "input" && e.attrs.placeholder === "Nome do grupo");
-  nomeG.value = "Notas"; porTexto($("grid"), "Novo grupo")[0].listeners.click();
-  const escolheMemos = [...$("grid").walk()].find((e) => e.tag === "select" && /Memos/.test(e.attrs["aria-label"] || ""));
-  escolheMemos.value = JSON.parse(guardado.get("qh-groups")).groups[0].id; escolheMemos.listeners.change({ target: escolheMemos });
-  const secoesG = () => [...$("grid").walk()].filter((e) => e.attrs && e.attrs.class === "grp");
-  confere($("grid").className === "apps grouped" && /Notas/.test(secoesG()[0].textContent) && /Memos/.test(secoesG()[0].textContent)
-    && /Sem grupo/.test(secoesG()[1].textContent) && /Homebox/.test(secoesG()[1].textContent), "grupos: o app vai para o grupo, o resto fica em Sem grupo");
-  porTexto($("summary"), "Pronto")[0].listeners.click();
-  [...secoesG()[0].walk()].find((e) => e.attrs && e.attrs.class === "grp-fold").listeners.click();
-  confere(!/Memos/.test(secoesG()[0].textContent.replace(/Notas.*/, "")) && ![...secoesG()[0].walk()].some((e) => e.attrs && /grp-grid/.test(e.attrs.class || "")), "grupos: recolher esconde os apps do grupo");
-  [...secoesG()[0].walk()].find((e) => e.attrs && e.attrs.class === "grp-fold").listeners.click();
-  porTexto(secoesG()[0], "Só ícones")[0].listeners.click();
-  confere([...secoesG()[0].walk()].some((e) => e.attrs && e.attrs.class === "grp-grid icons"), "grupos: só ícones");
-  guardado.delete("qh-groups"); api.renderGrid();
-  confere($("grid").className === "apps", "sem grupos: a grade simples de sempre");
-
   // service widgets: two numbers on the tile, all of them in the panel, the key typed there and never shown back
   api.S.svc = { homebox: [{ type: "immich", unit: "homebox", slot: "homebox", auth: ["key"], configured: true, url: true,
     fields: [{ key: "photos", value: 12400, kind: "count", level: null }, { key: "storage", value: 5 * 2 ** 30, kind: "bytes", level: null },
