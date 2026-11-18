@@ -36,6 +36,10 @@ const T = {
     backupFirst: "Backup antes",
     envType: { bool: "sim/não", number: "número", email: "e-mail", url: "URL", ip: "IP", password: "senha" },
     resources: "Recursos", resLoading: "Verificando o Podman…",
+    resUsage: "Espaço por app", resUsageNote: "Quanto os dados de cada app ocupam em disco (as pastas em volumes/; uma pasta sua, como a de mídia, não entra).",
+    resUsageRefresh: "Recalcular", resUsageLoading: "Calculando…", resUsageNone: "Nenhum app com dados próprios.", resUsageTotal: "Total",
+    powerLater: "Agendar", powerWhen: { "15": "em 15 minutos", "60": "em 1 hora", "240": "em 4 horas", at: "num horário…" },
+    powerAction: "O quê", powerSchedule: "Agendar", powerScheduled: (acao, quando) => `${acao === "reboot" ? "Reiniciar" : "Desligar"} agendado para ${quando}.`, powerUnschedule: "Cancelar agendamento",
     resImages: "Imagens sem uso", resNetworks: "Redes sem uso", resVolumes: "Volumes sem uso",
     resImagesNote: (n, s) => `${n} imagem(ns) que nenhuma unit instalada nem container usa, até ${s}. Cada atualização deixa a anterior aqui. O espaço real pode ser menor: camadas são compartilhadas entre imagens.`,
     resNone: "Nada sobrando.", resRemove: "Apagar", resSure: "Confirmar", resVolumesWarn: "Volume guarda dados. Digite volumes para apagar:",
@@ -211,6 +215,10 @@ const T = {
     backupFirst: "Back up first",
     envType: { bool: "yes/no", number: "number", email: "email", url: "URL", ip: "IP", password: "password" },
     resources: "Resources", resLoading: "Asking Podman…",
+    resUsage: "Space per app", resUsageNote: "How much each app's data takes on disk (the folders under volumes/; a folder of yours, such as the media one, is not counted).",
+    resUsageRefresh: "Recalculate", resUsageLoading: "Calculating…", resUsageNone: "No app with data of its own.", resUsageTotal: "Total",
+    powerLater: "Schedule", powerWhen: { "15": "in 15 minutes", "60": "in 1 hour", "240": "in 4 hours", at: "at a time…" },
+    powerAction: "What", powerSchedule: "Schedule", powerScheduled: (acao, quando) => `${acao === "reboot" ? "Restart" : "Shutdown"} scheduled for ${quando}.`, powerUnschedule: "Cancel the schedule",
     resImages: "Unused images", resNetworks: "Unused networks", resVolumes: "Unused volumes",
     resImagesNote: (n, s) => `${n} image(s) that no installed unit or container uses, up to ${s}. Every update leaves the previous one here. The real space may be less: layers are shared between images.`,
     resNone: "Nothing left over.", resRemove: "Delete", resSure: "Confirm", resVolumesWarn: "A volume holds data. Type volumes to delete:",
@@ -1953,13 +1961,13 @@ async function renderSettings() {
     await networkSection(),
     await appearanceSection(),
     await alertsSection(),
-    powerSection(),
+    await powerSection(),
     h("section", {}, h("p", { class: "muted" }, c.tailnet ? t("tailnetOn") : t("tailnetOff"))));
 }
 
 // Restart or shut down the machine: each button asks once more, and a restart waits for the panel to answer again.
-function powerSection() {
-  const msg = h("p", { class: "muted" }), linha = h("div", { class: "row" });
+async function powerSection() {
+  const msg = h("p", { class: "muted" }), linha = h("div", { class: "row" }), agenda = h("div", { class: "row" }), quando = h("p", { class: "muted" });
   const botoes = () => {
     fill(linha,
       h("button", { type: "button", class: "ghost", onclick: () => pergunta("reboot") }, t("powerReboot")),
@@ -1971,7 +1979,7 @@ function powerSection() {
   const fazer = async (acao) => {
     try { await api("/api/power", { action: acao }); }
     catch (e) { msg.textContent = e.status === 409 ? t("busy") : String(e.message); msg.className = "bad"; return botoes(); }
-    fill(linha);
+    fill(linha, agenda);
     msg.className = "muted";
     if (acao === "poweroff") { msg.textContent = t("powerOffDone"); return; }
     msg.textContent = t("powerRebooting");
@@ -1982,8 +1990,28 @@ function powerSection() {
     };
     setTimeout(olhar, 4000);
   };
+  // Scheduled: what, and when (a delay, or the next time of day); one at a time, cancellable.
+  const mostra = (ag) => {
+    if (!ag) { fill(quando); return; }
+    const hora = new Date(ag.at * 1000).toLocaleString(S.lang === "pt" ? "pt-BR" : "en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit" });
+    fill(quando, t("powerScheduled")(ag.action, hora), " ",
+      h("button", { type: "button", class: "ghost", onclick: async () => { await api("/api/power", { action: "cancel" }); mostra(null); } }, t("powerUnschedule")));
+  };
+  const oque = h("select", { "aria-label": t("powerAction") },
+    h("option", { value: "reboot" }, t("powerReboot")), h("option", { value: "poweroff" }, t("powerOff")));
+  const espera = h("select", { "aria-label": t("powerLater") },
+    ...["15", "60", "240", "at"].map((k) => h("option", { value: k }, t("powerWhen")[k])));
+  const hora = h("input", { type: "time", value: "03:30", "aria-label": t("powerWhen").at });
+  hora.hidden = true;
+  espera.onchange = () => { hora.hidden = espera.value !== "at"; };
+  fill(agenda, oque, espera, hora, h("button", { type: "button", onclick: async () => {
+    const corpo = { action: oque.value, ...(espera.value === "at" ? { at: hora.value } : { minutes: Number(espera.value) }) };
+    try { mostra((await api("/api/power", corpo)).scheduled); msg.textContent = ""; }
+    catch (e) { msg.textContent = String(e.message); msg.className = "bad"; }
+  } }, t("powerSchedule")));
   botoes();
-  return h("section", {}, h("h3", {}, t("power")), h("p", { class: "muted" }, t("powerDesc")), linha, msg);
+  try { mostra((await api("/api/power")).scheduled); } catch (e) { /* no schedule shown */ }
+  return h("section", {}, h("h3", {}, t("power")), h("p", { class: "muted" }, t("powerDesc")), linha, agenda, quando, msg);
 }
 
 // Alerts to an ntfy topic: opt-in; the token is write-only (the server never sends it back).
@@ -2059,7 +2087,27 @@ async function renderResources() {
   fill($("r-body"),
     secao("images", t("resImages"), r.images, t("resImagesNote")(r.images.length, sizeOf(r.reclaimable)), img),
     secao("networks", t("resNetworks"), r.networks, null, r.networks.map((n) => h("tr", {}, h("td", {}, n.name)))),
-    secao("volumes", t("resVolumes"), r.volumes, null, r.volumes.map((v) => h("tr", {}, h("td", {}, v.name)))));
+    secao("volumes", t("resVolumes"), r.volumes, null, r.volumes.map((v) => h("tr", {}, h("td", {}, v.name)))),
+    usageSection());
+}
+
+// What each app's data takes on disk: asked after the rest of the page (walking a library is slow).
+function usageSection() {
+  const corpo = h("div", {}, h("p", { class: "muted" }, t("resUsageLoading")));
+  const carregar = async (refresh) => {
+    fill(corpo, h("p", { class: "muted" }, t("resUsageLoading")));
+    let u;
+    try { u = await api(`/api/usage${refresh ? "?refresh=1" : ""}`); }
+    catch (e) { fill(corpo, h("p", { class: "bad" }, String(e.message))); return; }
+    const nome = (id) => (S.apps.find((a) => a.id === id) || {}).name || id;
+    const total = u.apps.reduce((n, x) => n + x.bytes, 0);
+    fill(corpo, u.apps.length ? h("table", { class: "hist" },
+      ...u.apps.map((x) => h("tr", {}, h("td", {}, nome(x.app)), h("td", {}, bytes(x.bytes)))),
+      h("tr", {}, h("td", {}, h("b", {}, t("resUsageTotal"))), h("td", {}, h("b", {}, bytes(total))))) : h("p", { class: "muted" }, t("resUsageNone")));
+  };
+  carregar(false);
+  return h("section", {}, h("h3", {}, t("resUsage")), h("p", { class: "muted" }, t("resUsageNote")), corpo,
+    h("button", { type: "button", class: "ghost", onclick: () => carregar(true) }, t("resUsageRefresh")));
 }
 
 async function pruneRun(kind, confirm) {

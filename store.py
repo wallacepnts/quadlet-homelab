@@ -55,6 +55,7 @@ sys.path.insert(0, str(ROOT))
 import overrides as O  # noqa: E402
 import qhui  # noqa: E402
 import resources  # noqa: E402
+import hostctl  # noqa: E402
 import alerts as A  # noqa: E402
 import network as N  # noqa: E402
 import svcwidgets as W  # noqa: E402
@@ -76,6 +77,7 @@ PT = {
     "the token is in": "o token está em",
     "read it with": "leia com",
     "another job is running": "outra tarefa está rodando",
+    "pick a time between a minute and a week from now": "escolha um horário entre um minuto e uma semana a partir de agora",
     "unknown service": "serviço desconhecido",
     "unknown unit": "unit desconhecida",
     "unknown action": "ação desconhecida",
@@ -1383,6 +1385,46 @@ def resources_survey():
     return resources.survey(Path(PREFIX or Path.home()))
 
 
+USAGE, USAGE_LOCK, USAGE_TTL = {"at": 0.0, "apps": []}, threading.Lock(), 300
+
+
+def disk_usage(refresh=False):
+    """What each installed app's data takes on disk, largest first, kept five minutes (walking a library is slow).
+
+    Only the directories under .../volumes/ the unit names: a shared root such as `${MEDIA_DATA_DIR}` is the
+    person's own folder, not the app's."""
+    with USAGE_LOCK:
+        if not refresh and USAGE["at"] and time.time() - USAGE["at"] < USAGE_TTL:
+            return USAGE
+        roots = {}
+        for p in sorted(I.APPS.iterdir()):
+            if p.is_dir():
+                s = I.Service(p.name, PREFIX)
+                if s.installed() and s.volume_roots():
+                    roots[p.name] = s.volume_roots()
+        USAGE.update(at=time.time(), apps=hostctl.usage(roots, unshare=False if PREFIX else None))
+        return USAGE
+
+
+class _SandboxSystemd:
+    """The part of systemd a scheduled power action needs, for a sandbox that must not touch the machine."""
+
+    def __init__(self, base):
+        self.base = base
+
+    def __call__(self, cmd, **kw):
+        class R:
+            stdout, returncode = "", 0
+        r = R()
+        if cmd[:3] == ["systemctl", "--user", "is-active"]:
+            r.stdout = "active\n" if hostctl.state_file(self.base).exists() else "inactive\n"
+        return r
+
+
+def power_run():
+    return _SandboxSystemd(PREFIX) if PREFIX else hostctl._run
+
+
 HOST_PREV, HOST_LOCK = {}, threading.Lock()       # the last reading of CPU and network, for the rates
 VIRTUAL_NICS = ("lo", "veth", "podman", "cni", "br-", "docker", "tailscale", "virbr")
 
@@ -2111,6 +2153,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, resources_survey())
             except (RuntimeError, OSError, subprocess.TimeoutExpired, ValueError) as e:
                 return self._json(502, {"error": f"podman: {e}"})
+        if url.path == "/api/usage":
+            u = disk_usage(q.get("refresh") == "1")
+            return self._json(200, {"apps": u["apps"], "at": int(u["at"])})
+        if url.path == "/api/power":
+            return self._json(200, {"scheduled": hostctl.state(Path(PREFIX or Path.home()), power_run())})
         if url.path == "/api/host":
             with HOST_LOCK:
                 return self._json(200, host_summary())
@@ -2345,11 +2392,24 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(409, {"error": loc("another job is running")})
             return self._json(202, {"job": job.id})
         if url.path == "/api/power":
-            # Reboot or power off the machine (polkit lets the logged-in user do it). Not while a job runs: a
-            # restart in the middle of an update leaves a half-written unit. The answer goes out first.
+            # Reboot or power off the machine, now or later (polkit lets the logged-in user do it). Not while a job
+            # runs: a restart in the middle of an update leaves a half-written unit. The answer goes out first.
+            base, rodar = Path(PREFIX or Path.home()), power_run()
+            if d.get("action") == "cancel":
+                hostctl.cancel(base, rodar)
+                return self._json(200, {"scheduled": None})
             verbo = {"reboot": "reboot", "poweroff": "poweroff"}.get(d.get("action", ""))
             if not verbo:
                 return self._json(400, {"error": loc("unknown action")})
+            if "minutes" in d or "at" in d:
+                try:
+                    espera = hostctl.delay_of(d.get("minutes"), d.get("at"))
+                except ValueError:
+                    return self._json(400, {"error": loc("pick a time between a minute and a week from now")})
+                feito = hostctl.schedule(base, verbo, espera, rodar)
+                if feito is None:
+                    return self._json(502, {"error": "systemd-run"})
+                return self._json(202, {"scheduled": feito})
             if JOB_LOCK.locked():
                 return self._json(409, {"error": loc("another job is running")})
             if not PREFIX:                  # a sandbox does not touch the machine
@@ -3230,6 +3290,20 @@ def selftest():
                 assert pedir("/api/power", json.dumps({"action": "poweroff"}).encode(), api)[0] == 409, "busy: no power action"
             finally:
                 JOB_LOCK.release()
+            # scheduled power: armed, listed, replaced and cancelled; bad times refused (a sandbox never calls systemd)
+            assert json.loads(pedir("/api/power", headers=ok)[2]) == {"scheduled": None}
+            st, _, corpo = pedir("/api/power", json.dumps({"action": "reboot", "minutes": 30}).encode(), api)
+            assert st == 202 and json.loads(corpo)["scheduled"]["action"] == "reboot", corpo
+            assert json.loads(pedir("/api/power", headers=ok)[2])["scheduled"]["action"] == "reboot"
+            assert pedir("/api/power", json.dumps({"action": "poweroff", "at": "03:30"}).encode(), api)[0] == 202
+            assert json.loads(pedir("/api/power", headers=ok)[2])["scheduled"]["action"] == "poweroff", "the new one replaces the old"
+            assert pedir("/api/power", json.dumps({"action": "reboot", "minutes": 0}).encode(), api)[0] == 400
+            assert pedir("/api/power", json.dumps({"action": "reboot", "at": "25:00"}).encode(), api)[0] == 400
+            assert pedir("/api/power", json.dumps({"action": "cancel"}).encode(), api)[0] == 200
+            assert json.loads(pedir("/api/power", headers=ok)[2]) == {"scheduled": None}
+            # disk usage: the volumes of an installed app, summed
+            uso = json.loads(pedir("/api/usage?refresh=1", headers=ok)[2])
+            assert all(set(x) == {"app", "bytes"} for x in uso["apps"]) and uso["at"] > 0, uso
             # the running job can be found again after its window was closed
             assert json.loads(pedir("/api/jobs/active", headers=ok)[2]) == {"job": None}, "nothing running"
             lento = start_job("_host", "update-all", [["sleep", "1"]], "en")

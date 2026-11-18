@@ -378,6 +378,11 @@ be installed again. Masking is not enable/disable (rule 4): the generated unit k
 `[Install]`. Each button is enabled only where it does something. They run
 as jobs, so they appear in the history.
 
+**Resources** also shows **Space per app**: what each installed app's data takes on disk, largest first, with a
+total (`podman unshare du`, because the files a container wrote belong to a subuid a plain `du` cannot read). Only the
+folders under `volumes/` count: a folder of yours, such as the media root, is not the app's. It is computed on opening
+and kept five minutes; **Recalculate** forces it.
+
 **Resources** (the header button, and a hint after an update) lists what Podman keeps
 that nothing uses: images, networks and volumes, with the space the images take
 ("up to": layers are shared). Every update leaves the previous image behind. "Unused"
@@ -486,6 +491,11 @@ small history, refreshed every five seconds from `/api/host`. There is no widget
 your user (`systemctl reboot` / `poweroff`; polkit allows it for a logged-in user) and refuses while a job (an install,
 an update) is running. After a restart the panel waits for the server to answer again and reloads by itself; after a
 shutdown, only the machine's own button turns it back on.
+
+The same section **schedules** one of them: in 15 minutes, 1 or 4 hours, or at a time of day (the next one, by the
+server's clock), between a minute and a week ahead. It is a transient systemd user timer (`qh-power.timer`), one at a
+time: a new schedule replaces the old, and **Cancel schedule** stops it. The state is `~/.config/quadlet-homelab/power.json`.
+Unlike the immediate action, a scheduled one does not wait for a running job.
 
 ## Quick Launch, appearance and service widgets
 

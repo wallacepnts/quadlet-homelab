@@ -29,6 +29,7 @@ jobs:
           python3 overrides.py --selftest
           python3 trials.py --selftest
           python3 resources.py --selftest
+          python3 hostctl.py --selftest
           python3 wsterm.py --selftest
           python3 imagepin.py --selftest
           python3 manifest.py --selftest

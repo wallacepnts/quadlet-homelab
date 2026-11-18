@@ -259,10 +259,12 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
     images: [{ id: "i2", name: "docker.io/o/old:1", size: 3 * 2 ** 30, created: 0 }] };
   rotas["/api/prune"] = { job: "j9" };
   rotas["/api/job/j9"] = { output: "removed x\n", next: 1, rc: 0 };
+  rotas["/api/usage"] = { at: 1, apps: [{ app: "memos", bytes: 3 * 2 ** 30 }, { app: "homebox", bytes: 4096 }] };
   await api.openResources(); await esperar(30);
   const corpoRec = $("r-body").textContent;
   confere(/Imagens sem uso \(1\)/.test(corpoRec) && /docker\.io\/o\/old:1/.test(corpoRec) && /3\.0 GB/.test(corpoRec) && /Redes sem uso \(1\)/.test(corpoRec) && /Volumes sem uso \(1\)/.test(corpoRec),
     `Recursos: imagens, redes e volumes sem uso (${corpoRec.slice(0, 80)})`);
+  confere(/Espaço por app/.test(corpoRec) && /Memos3\.0 GB/.test(corpoRec) && /Homebox4 KB/.test(corpoRec) && /Total3\.0 GB/.test(corpoRec), `Recursos: espaço por app, do maior para o menor (${corpoRec.slice(-120)})`);
   const apagar = porTexto($("r-body"), "Apagar");
   confere(apagar.length === 3, "um Apagar por tipo");
   const antesPrune = posts.length;
@@ -572,6 +574,24 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   porTexto($("s-body"), "Desligar o servidor")[0].listeners.click();
   porTexto($("s-body"), "Confirmar: Desligar o servidor")[0].listeners.click(); await esperar(30);
   confere(posts.slice(antesPow).some((x) => x.rota === "/api/power" && x.corpo.action === "poweroff") && /Para ligar de novo/.test($("s-body").textContent), "desligar: confirmado, envia e avisa");
+  // scheduled power: what is armed shows with a way to cancel it; a new one goes out with the delay or the time
+  rotas["/api/power"] = { scheduled: { action: "reboot", at: Math.floor(Date.now() / 1000) + 3600 } };
+  await api.openSettings(); await esperar(50);
+  confere(/Reiniciar agendado para/.test($("s-body").textContent) && porTexto($("s-body"), "Cancelar agendamento").length === 1, "agendado: mostra o que está armado e como cancelar");
+  rotas["/api/power"] = { scheduled: null };
+  porTexto($("s-body"), "Cancelar agendamento")[0].listeners.click(); await esperar(30);
+  confere(posts.some((x) => x.rota === "/api/power" && x.corpo.action === "cancel") && !/agendado para/.test($("s-body").textContent), "cancelar o agendamento");
+  const selAg = (rot) => [...$("s-body").walk()].find((e) => e.tag === "select" && e.attrs["aria-label"] === rot);
+  const oqueSel = selAg("O quê"), quandoSel = selAg("Agendar");
+  oqueSel.value = "poweroff"; quandoSel.value = "at"; quandoSel.onchange();
+  const campoHora = [...$("s-body").walk()].find((e) => e.tag === "input" && e.attrs.type === "time");
+  confere(campoHora && campoHora.hidden === false, "um horário: aparece o campo de hora");
+  campoHora.value = "04:15";
+  rotas["/api/power"] = { scheduled: { action: "poweroff", at: Math.floor(Date.now() / 1000) + 7200 } };
+  const antesAg = posts.length;
+  porTexto($("s-body"), "Agendar").filter((e) => e.tag === "button")[0].listeners.click(); await esperar(30);
+  confere(posts.slice(antesAg).some((x) => x.rota === "/api/power" && x.corpo.action === "poweroff" && x.corpo.at === "04:15"), "agendar: envia a ação e o horário");
+  confere(/Desligar agendado para/.test($("s-body").textContent), "e mostra o agendamento");
   // network: the three choices, the state of each piece, what the host still needs, and Apply starts the qh job
   rotas["/api/network"] = { mode: "tailscale", chosen: false, server_url: "http://192.168.1.10:8093", tailnet: "",
     tailscale: { installed: false, active: false, backend: null, ip: null, domain: null, operator: false },
