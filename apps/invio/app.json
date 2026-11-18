@@ -1,7 +1,10 @@
 {
   "title": "Invio",
   "short_desc": { "en": "Create and track invoices.", "pt": "Crie e acompanhe faturas." },
-  "description": { "en": "Self-hosted invoicing and invoice tracking, on SQLite and with no external service", "pt": "Emissão e controle de faturas self-hosted, com SQLite e sem depender de serviço externo" },
+  "description": {
+    "en": "Self-hosted invoicing and invoice tracking, on SQLite and with no external service",
+    "pt": "Emissão e controle de faturas self-hosted, com SQLite e sem depender de serviço externo"
+  },
   "author": "kittendevv",
   "source": "https://github.com/kittendevv/invio",
   "docs": "https://github.com/kittendevv/Invio#readme",

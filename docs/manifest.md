@@ -24,8 +24,8 @@ and the panel shows the notes. The descriptions are written in English and Portu
 ```
 
 The text is canonical, the way Runtipi writes its `config.json`: one key per line, keys in the order of the table
-below, a short object or list kept on its line (`"units": { "memos": { "upstream": "usememos/memos" } }`) and an
-`{en, pt}` pair always on one. Do not format it by hand: write it any way and run `python3 check.py --format`, which
+below, a short object or list kept on its line (`"units": { "memos": { "upstream": "usememos/memos" } }`) and one
+that would pass 110 columns (an `{en, pt}` pair with a long text, say) broken into one entry per line. Do not format it by hand: write it any way and run `python3 check.py --format`, which
 `check.py` also demands.
 
 and, beside it, the logo and the screenshots as plain files:

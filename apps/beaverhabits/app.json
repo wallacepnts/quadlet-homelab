@@ -1,7 +1,10 @@
 {
   "title": "Beaver Habits",
   "short_desc": { "en": "A simple habit tracker.", "pt": "Um acompanhador de hábitos simples." },
-  "description": { "en": "Habit tracking with no goals and no streak-shaming — you mark the day and move on", "pt": "Acompanhamento de hábitos sem metas e sem cobrança de sequência — você marca o dia e segue" },
+  "description": {
+    "en": "Habit tracking with no goals and no streak-shaming — you mark the day and move on",
+    "pt": "Acompanhamento de hábitos sem metas e sem cobrança de sequência — você marca o dia e segue"
+  },
   "author": "daya0576",
   "source": "https://github.com/daya0576/beaverhabits",
   "docs": "https://github.com/daya0576/beaverhabits/wiki",

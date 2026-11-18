@@ -1,7 +1,13 @@
 {
   "title": "tsdproxy",
-  "short_desc": { "en": "Puts your apps on your tailnet automatically.", "pt": "Coloca os seus apps na sua tailnet automaticamente." },
-  "description": { "en": "Publishes containers on the tailnet automatically, from labels alone — no per-service proxy configuration", "pt": "Publica containers na tailnet automaticamente, só com labels — sem configurar proxy manualmente por serviço" },
+  "short_desc": {
+    "en": "Puts your apps on your tailnet automatically.",
+    "pt": "Coloca os seus apps na sua tailnet automaticamente."
+  },
+  "description": {
+    "en": "Publishes containers on the tailnet automatically, from labels alone — no per-service proxy configuration",
+    "pt": "Publica containers na tailnet automaticamente, só com labels — sem configurar proxy manualmente por serviço"
+  },
   "author": "almeidapaulopt",
   "source": "https://github.com/almeidapaulopt/tsdproxy",
   "docs": "https://almeidapaulopt.github.io/tsdproxy/",

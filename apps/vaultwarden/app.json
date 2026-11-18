@@ -1,7 +1,13 @@
 {
   "title": "Vaultwarden",
-  "short_desc": { "en": "A password manager you host yourself.", "pt": "Um gerenciador de senhas que você hospeda." },
-  "description": { "en": "A password vault compatible with Bitwarden's protocol, light enough to run anywhere", "pt": "Cofre de senhas compatível com o protocolo do Bitwarden, leve o bastante pra rodar em qualquer lugar" },
+  "short_desc": {
+    "en": "A password manager you host yourself.",
+    "pt": "Um gerenciador de senhas que você hospeda."
+  },
+  "description": {
+    "en": "A password vault compatible with Bitwarden's protocol, light enough to run anywhere",
+    "pt": "Cofre de senhas compatível com o protocolo do Bitwarden, leve o bastante pra rodar em qualquer lugar"
+  },
   "author": "dani-garcia",
   "source": "https://github.com/dani-garcia/vaultwarden",
   "docs": "https://github.com/dani-garcia/vaultwarden/wiki",

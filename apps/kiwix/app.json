@@ -1,7 +1,13 @@
 {
   "title": "Kiwix",
-  "short_desc": { "en": "Read Wikipedia and other libraries offline.", "pt": "Leia a Wikipédia e outras bibliotecas sem internet." },
-  "description": { "en": "Wikipedia and other libraries served from disk, read with the internet off", "pt": "Wikipedia e outras bibliotecas servidas do disco, para ler com a internet desligada" },
+  "short_desc": {
+    "en": "Read Wikipedia and other libraries offline.",
+    "pt": "Leia a Wikipédia e outras bibliotecas sem internet."
+  },
+  "description": {
+    "en": "Wikipedia and other libraries served from disk, read with the internet off",
+    "pt": "Wikipedia e outras bibliotecas servidas do disco, para ler com a internet desligada"
+  },
   "author": "kiwix",
   "source": "https://github.com/kiwix/kiwix-tools",
   "docs": "https://wiki.kiwix.org/",

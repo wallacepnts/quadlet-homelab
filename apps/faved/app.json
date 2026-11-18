@@ -1,7 +1,13 @@
 {
   "title": "Faved",
-  "short_desc": { "en": "A simple place to save bookmarks.", "pt": "Um lugar simples para guardar favoritos." },
-  "description": { "en": "Bookmarks with nested tags — a lighter shelf than an archiver, kept on your server", "pt": "Favoritos com tags aninhadas — prateleira mais leve que um arquivador, no seu servidor" },
+  "short_desc": {
+    "en": "A simple place to save bookmarks.",
+    "pt": "Um lugar simples para guardar favoritos."
+  },
+  "description": {
+    "en": "Bookmarks with nested tags — a lighter shelf than an archiver, kept on your server",
+    "pt": "Favoritos com tags aninhadas — prateleira mais leve que um arquivador, no seu servidor"
+  },
   "author": "denho",
   "source": "https://github.com/denho/faved",
   "docs": "https://faved.to/",

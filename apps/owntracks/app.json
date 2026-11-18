@@ -1,7 +1,13 @@
 {
   "title": "OwnTracks",
-  "short_desc": { "en": "Track your location from your phone.", "pt": "Registre a sua localização pelo celular." },
-  "description": { "en": "Personal location tracking through a phone app, with its own MQTT broker and a position history", "pt": "Rastreamento de localização pessoal via app de celular, com broker MQTT próprio e histórico de posições" },
+  "short_desc": {
+    "en": "Track your location from your phone.",
+    "pt": "Registre a sua localização pelo celular."
+  },
+  "description": {
+    "en": "Personal location tracking through a phone app, with its own MQTT broker and a position history",
+    "pt": "Rastreamento de localização pessoal via app de celular, com broker MQTT próprio e histórico de posições"
+  },
   "author": "owntracks",
   "source": "https://github.com/owntracks/recorder",
   "docs": "https://owntracks.org/booklet/",

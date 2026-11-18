@@ -1,7 +1,10 @@
 {
   "title": "Memos",
   "short_desc": { "en": "A simple place for quick notes.", "pt": "Um lugar simples para notas rápidas." },
-  "description": { "en": "Quick notes, self-hosted and markdown-native", "pt": "Notas rápidas, self-hosted e markdown-nativo" },
+  "description": {
+    "en": "Quick notes, self-hosted and markdown-native",
+    "pt": "Notas rápidas, self-hosted e markdown-nativo"
+  },
   "author": "usememos",
   "source": "https://github.com/usememos/memos",
   "docs": "https://www.usememos.com/docs",

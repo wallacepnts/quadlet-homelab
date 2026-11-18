@@ -1,7 +1,10 @@
 {
   "title": "changedetection.io",
   "short_desc": { "en": "Tells you when a web page changes.", "pt": "Avisa quando uma página da web muda." },
-  "description": { "en": "Watches web pages and tells you what changed — price, stock, a paragraph of terms", "pt": "Vigia páginas e avisa o que mudou — preço, estoque, um parágrafo de termos de uso" },
+  "description": {
+    "en": "Watches web pages and tells you what changed — price, stock, a paragraph of terms",
+    "pt": "Vigia páginas e avisa o que mudou — preço, estoque, um parágrafo de termos de uso"
+  },
   "author": "dgtlmoon",
   "source": "https://github.com/dgtlmoon/changedetection.io",
   "docs": "https://changedetection.io/",

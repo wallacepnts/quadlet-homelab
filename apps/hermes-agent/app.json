@@ -1,7 +1,10 @@
 {
   "title": "Hermes Agent",
   "short_desc": { "en": "A personal AI assistant.", "pt": "Um assistente de IA pessoal." },
-  "description": { "en": "A personal AI agent with skills and memory, exposing an OpenAI-compatible API for the other services to call", "pt": "Agente de IA pessoal com habilidades e memória, expondo uma API compatível com a da OpenAI pros outros serviços chamarem" },
+  "description": {
+    "en": "A personal AI agent with skills and memory, exposing an OpenAI-compatible API for the other services to call",
+    "pt": "Agente de IA pessoal com habilidades e memória, expondo uma API compatível com a da OpenAI pros outros serviços chamarem"
+  },
   "author": "nousresearch",
   "source": "https://github.com/nousresearch/hermes-agent",
   "docs": "https://hermes-agent.nousresearch.com",

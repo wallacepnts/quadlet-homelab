@@ -1,7 +1,13 @@
 {
   "title": "WUD (What's Up Docker)",
-  "short_desc": { "en": "Tells you when your containers have updates.", "pt": "Avisa quando os seus containers têm atualizações." },
-  "description": { "en": "Watches for available image updates for the containers, applying nothing itself — it only reports", "pt": "Monitora as atualizações de imagem disponíveis pros containers, sem aplicar nada sozinho — só avisa" },
+  "short_desc": {
+    "en": "Tells you when your containers have updates.",
+    "pt": "Avisa quando os seus containers têm atualizações."
+  },
+  "description": {
+    "en": "Watches for available image updates for the containers, applying nothing itself — it only reports",
+    "pt": "Monitora as atualizações de imagem disponíveis pros containers, sem aplicar nada sozinho — só avisa"
+  },
   "author": "getwud",
   "source": "https://github.com/getwud/wud",
   "docs": "https://getwud.github.io/wud/",

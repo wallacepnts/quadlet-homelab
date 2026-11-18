@@ -1,7 +1,13 @@
 {
   "title": "Gitea Runner",
-  "short_desc": { "en": "Runs the automated workflows of your Gitea.", "pt": "Executa os fluxos automáticos do seu Gitea." },
-  "description": { "en": "Runs the Actions workflows of the Gitea next door — CI that never leaves the machine", "pt": "Executa os workflows do Actions do Gitea ao lado — CI que não sai da máquina" },
+  "short_desc": {
+    "en": "Runs the automated workflows of your Gitea.",
+    "pt": "Executa os fluxos automáticos do seu Gitea."
+  },
+  "description": {
+    "en": "Runs the Actions workflows of the Gitea next door — CI that never leaves the machine",
+    "pt": "Executa os workflows do Actions do Gitea ao lado — CI que não sai da máquina"
+  },
   "author": "gitea",
   "source": "https://gitea.com/gitea/act_runner",
   "docs": "https://docs.gitea.com/usage/actions/overview",

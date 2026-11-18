@@ -1,7 +1,13 @@
 {
   "title": "Vikunja",
-  "short_desc": { "en": "A to-do list for tasks and projects.", "pt": "Uma lista de afazeres para tarefas e projetos." },
-  "description": { "en": "Tasks with a deadline and a project behind them, in list, kanban or gantt", "pt": "Tarefas com prazo e projeto por trás, em lista, kanban ou gantt" },
+  "short_desc": {
+    "en": "A to-do list for tasks and projects.",
+    "pt": "Uma lista de afazeres para tarefas e projetos."
+  },
+  "description": {
+    "en": "Tasks with a deadline and a project behind them, in list, kanban or gantt",
+    "pt": "Tarefas com prazo e projeto por trás, em lista, kanban ou gantt"
+  },
   "author": "go-vikunja",
   "source": "https://github.com/go-vikunja/vikunja",
   "docs": "https://vikunja.io/docs/",

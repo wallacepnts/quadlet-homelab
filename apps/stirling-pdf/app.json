@@ -1,7 +1,10 @@
 {
   "title": "Stirling-PDF",
   "short_desc": { "en": "Edit and convert PDF files.", "pt": "Edite e converta arquivos PDF." },
-  "description": { "en": "Local PDF manipulation — merge, split, convert, OCR and sign, in place of the \"online PDF\" sites", "pt": "Manipulação de PDF local — juntar, dividir, converter, OCR e assinar, no lugar dos sites de \"PDF online\"" },
+  "description": {
+    "en": "Local PDF manipulation — merge, split, convert, OCR and sign, in place of the \"online PDF\" sites",
+    "pt": "Manipulação de PDF local — juntar, dividir, converter, OCR e assinar, no lugar dos sites de \"PDF online\""
+  },
   "author": "Stirling-Tools",
   "source": "https://github.com/Stirling-Tools/Stirling-PDF",
   "docs": "https://stirling.com",

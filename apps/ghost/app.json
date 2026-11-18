@@ -1,7 +1,10 @@
 {
   "title": "Ghost",
   "short_desc": { "en": "A blog and newsletter platform.", "pt": "Uma plataforma de blog e newsletter." },
-  "description": { "en": "A self-hosted blog/newsletter (SQLite)", "pt": "Blog/newsletter self-hosted (SQLite, modo development — ver README)" },
+  "description": {
+    "en": "A self-hosted blog/newsletter (SQLite)",
+    "pt": "Blog/newsletter self-hosted (SQLite, modo development — ver README)"
+  },
   "author": "TryGhost",
   "source": "https://github.com/TryGhost/Ghost",
   "docs": "https://ghost.org",

@@ -1,7 +1,13 @@
 {
   "title": "any-sync-bundle",
-  "short_desc": { "en": "A sync server for the Anytype app.", "pt": "Um servidor de sincronização para o app Anytype." },
-  "description": { "en": "The Any-Sync protocol backend, which syncs Anytype's data across devices without relying on the company's cloud", "pt": "Backend do protocolo Any-Sync, que sincroniza os dados do Anytype entre dispositivos sem depender da nuvem da empresa" },
+  "short_desc": {
+    "en": "A sync server for the Anytype app.",
+    "pt": "Um servidor de sincronização para o app Anytype."
+  },
+  "description": {
+    "en": "The Any-Sync protocol backend, which syncs Anytype's data across devices without relying on the company's cloud",
+    "pt": "Backend do protocolo Any-Sync, que sincroniza os dados do Anytype entre dispositivos sem depender da nuvem da empresa"
+  },
   "author": "grishy",
   "source": "https://github.com/grishy/any-sync-bundle",
   "docs": "https://github.com/grishy/any-sync-bundle#readme",

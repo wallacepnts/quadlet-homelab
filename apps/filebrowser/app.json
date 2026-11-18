@@ -1,7 +1,10 @@
 {
   "title": "FileBrowser Quantum",
   "short_desc": { "en": "A file manager in your browser.", "pt": "Um gerenciador de arquivos no navegador." },
-  "description": { "en": "A web file manager — search, thumbnails, WebDAV, and a shell over a directory you pick", "pt": "Gerenciador de arquivos web — busca, miniaturas, WebDAV e um shell sobre um diretório que você escolhe" },
+  "description": {
+    "en": "A web file manager — search, thumbnails, WebDAV, and a shell over a directory you pick",
+    "pt": "Gerenciador de arquivos web — busca, miniaturas, WebDAV e um shell sobre um diretório que você escolhe"
+  },
   "author": "gtsteffaniak",
   "source": "https://github.com/gtsteffaniak/filebrowser",
   "docs": "https://filebrowserquantum.com/en/docs/",

@@ -1,7 +1,13 @@
 {
   "title": "Instagram Monitor",
-  "short_desc": { "en": "Watches Instagram profiles and shows their activity.", "pt": "Acompanha perfis do Instagram e mostra a atividade deles." },
-  "description": { "en": "Real-time Instagram OSINT monitor with web dashboard, activity feeds and media downloads", "pt": "Monitor OSINT de Instagram em tempo real com dashboard web, feed de atividade e download de mídia" },
+  "short_desc": {
+    "en": "Watches Instagram profiles and shows their activity.",
+    "pt": "Acompanha perfis do Instagram e mostra a atividade deles."
+  },
+  "description": {
+    "en": "Real-time Instagram OSINT monitor with web dashboard, activity feeds and media downloads",
+    "pt": "Monitor OSINT de Instagram em tempo real com dashboard web, feed de atividade e download de mídia"
+  },
   "author": "misiektoja",
   "source": "https://github.com/misiektoja/instagram_monitor",
   "category": "Monitoring",

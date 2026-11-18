@@ -1,7 +1,13 @@
 {
   "title": "Proxmox VE",
-  "short_desc": { "en": "Try the Proxmox virtualization system.", "pt": "Experimente o sistema de virtualização Proxmox." },
-  "description": { "en": "The Proxmox hypervisor in a container, for trying it without dedicating a machine — runs privileged", "pt": "O hypervisor Proxmox num container, pra experimentar sem dedicar uma máquina — roda privileged" },
+  "short_desc": {
+    "en": "Try the Proxmox virtualization system.",
+    "pt": "Experimente o sistema de virtualização Proxmox."
+  },
+  "description": {
+    "en": "The Proxmox hypervisor in a container, for trying it without dedicating a machine — runs privileged",
+    "pt": "O hypervisor Proxmox num container, pra experimentar sem dedicar uma máquina — roda privileged"
+  },
   "author": "dockur",
   "source": "https://github.com/dockur/proxmox",
   "docs": "https://pve.proxmox.com/pve-docs/",

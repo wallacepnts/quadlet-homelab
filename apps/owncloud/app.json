@@ -1,7 +1,10 @@
 {
   "title": "ownCloud",
   "short_desc": { "en": "Your own cloud for files.", "pt": "A sua própria nuvem de arquivos." },
-  "description": { "en": "File sync and sharing on a cloud of your own", "pt": "Sincronização e compartilhamento de arquivos em nuvem própria" },
+  "description": {
+    "en": "File sync and sharing on a cloud of your own",
+    "pt": "Sincronização e compartilhamento de arquivos em nuvem própria"
+  },
   "author": "owncloud",
   "source": "https://github.com/owncloud/ocis",
   "docs": "https://owncloud.com",

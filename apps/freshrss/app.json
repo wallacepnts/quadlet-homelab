@@ -1,7 +1,13 @@
 {
   "title": "FreshRSS",
-  "short_desc": { "en": "Read all your news feeds in one place.", "pt": "Leia todos os seus feeds de notícias num só lugar." },
-  "description": { "en": "A self-hosted RSS/Atom feed aggregator, with a compatible API for mobile apps", "pt": "Agregador de feeds RSS/Atom self-hosted, com API compatível pra apps móveis" },
+  "short_desc": {
+    "en": "Read all your news feeds in one place.",
+    "pt": "Leia todos os seus feeds de notícias num só lugar."
+  },
+  "description": {
+    "en": "A self-hosted RSS/Atom feed aggregator, with a compatible API for mobile apps",
+    "pt": "Agregador de feeds RSS/Atom self-hosted, com API compatível pra apps móveis"
+  },
   "author": "freshrss",
   "source": "https://github.com/freshrss/freshrss",
   "docs": "https://freshrss.org",

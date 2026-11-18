@@ -1,7 +1,13 @@
 {
   "title": "Media Stack",
-  "short_desc": { "en": "A media server and the tools that fill it.", "pt": "Um servidor de mídia e as ferramentas que o abastecem." },
-  "description": { "en": "Jellyfin, Navidrome, Seerr, Prowlarr, Sonarr, Radarr, Lidarr, Bazarr, SABnzbd, Deluge, Dispatcharr, Downtify and an optional Gluetun — a media server plus automation, a shared data root, each app on its own version", "pt": "Jellyfin, Navidrome, Seerr, Prowlarr, Sonarr, Radarr, Lidarr, Bazarr, SABnzbd, Deluge, Dispatcharr, Downtify e um Gluetun opcional — servidor de mídia + automação, raiz de dados compartilhada, cada app com sua própria versão" },
+  "short_desc": {
+    "en": "A media server and the tools that fill it.",
+    "pt": "Um servidor de mídia e as ferramentas que o abastecem."
+  },
+  "description": {
+    "en": "Jellyfin, Navidrome, Seerr, Prowlarr, Sonarr, Radarr, Lidarr, Bazarr, SABnzbd, Deluge, Dispatcharr, Downtify and an optional Gluetun — a media server plus automation, a shared data root, each app on its own version",
+    "pt": "Jellyfin, Navidrome, Seerr, Prowlarr, Sonarr, Radarr, Lidarr, Bazarr, SABnzbd, Deluge, Dispatcharr, Downtify e um Gluetun opcional — servidor de mídia + automação, raiz de dados compartilhada, cada app com sua própria versão"
+  },
   "author": "jellyfin",
   "source": "https://github.com/jellyfin/jellyfin",
   "docs": "https://jellyfin.org",

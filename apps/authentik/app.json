@@ -1,7 +1,10 @@
 {
   "title": "Authentik",
   "short_desc": { "en": "A login and single sign-on server.", "pt": "Um servidor de login e de login único." },
-  "description": { "en": "An identity server (SSO, MFA, OIDC/SAML) — only the core is deployed, no forward-auth via tsdproxy yet", "pt": "Servidor de identidade (SSO, MFA, OIDC/SAML) — só o core implantado, sem forward-auth via tsdproxy ainda" },
+  "description": {
+    "en": "An identity server (SSO, MFA, OIDC/SAML) — only the core is deployed, no forward-auth via tsdproxy yet",
+    "pt": "Servidor de identidade (SSO, MFA, OIDC/SAML) — só o core implantado, sem forward-auth via tsdproxy ainda"
+  },
   "author": "goauthentik",
   "source": "https://github.com/goauthentik/authentik",
   "docs": "https://goauthentik.io",

@@ -1,7 +1,13 @@
 {
   "title": "Karaoke Eternal",
-  "short_desc": { "en": "Run karaoke parties from your own songs.", "pt": "Faça festas de karaokê com as suas próprias músicas." },
-  "description": { "en": "A karaoke party from your own library — everyone queues songs from their phone, one screen plays", "pt": "Karaokê com a sua própria biblioteca — cada um enfileira do celular, uma tela reproduz" },
+  "short_desc": {
+    "en": "Run karaoke parties from your own songs.",
+    "pt": "Faça festas de karaokê com as suas próprias músicas."
+  },
+  "description": {
+    "en": "A karaoke party from your own library — everyone queues songs from their phone, one screen plays",
+    "pt": "Karaokê com a sua própria biblioteca — cada um enfileira do celular, uma tela reproduz"
+  },
   "author": "bhj",
   "source": "https://github.com/bhj/KaraokeEternal",
   "docs": "https://www.karaoke-eternal.com/docs/",

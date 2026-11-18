@@ -1,7 +1,10 @@
 {
   "title": "mdrop",
   "short_desc": { "en": "Turn documents into Markdown.", "pt": "Transforme documentos em Markdown." },
-  "description": { "en": "Converts PDF, Office, image and audio to Markdown over the web, stateless and without leaving the machine", "pt": "Converte PDF, Office, imagem e áudio para Markdown pela web, sem estado e sem sair da máquina" },
+  "description": {
+    "en": "Converts PDF, Office, image and audio to Markdown over the web, stateless and without leaving the machine",
+    "pt": "Converte PDF, Office, imagem e áudio para Markdown pela web, sem estado e sem sair da máquina"
+  },
   "author": "samapriya",
   "source": "https://github.com/samapriya/mdrop",
   "docs": "https://mdrop.remotelab.dev",

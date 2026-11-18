@@ -1,7 +1,13 @@
 {
   "title": "VaultZap",
-  "short_desc": { "en": "Browse your exported WhatsApp chats.", "pt": "Navegue pelas suas conversas exportadas do WhatsApp." },
-  "description": { "en": "A local, browsable archive of exported WhatsApp conversations — search, gallery and calendar, fully offline", "pt": "Arquivo local e navegável de conversas exportadas do WhatsApp — busca, galeria e calendário, 100% offline" },
+  "short_desc": {
+    "en": "Browse your exported WhatsApp chats.",
+    "pt": "Navegue pelas suas conversas exportadas do WhatsApp."
+  },
+  "description": {
+    "en": "A local, browsable archive of exported WhatsApp conversations — search, gallery and calendar, fully offline",
+    "pt": "Arquivo local e navegável de conversas exportadas do WhatsApp — busca, galeria e calendário, 100% offline"
+  },
   "author": "wallacepnts",
   "source": "https://github.com/wallacepnts/vaultzap",
   "docs": "https://github.com/wallacepnts/vaultzap#readme",

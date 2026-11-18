@@ -1,7 +1,10 @@
 {
   "title": "ntfy",
   "short_desc": { "en": "Send notifications to your phone.", "pt": "Envie notificações para o seu celular." },
-  "description": { "en": "A push notification server — where the uptime-kuma, wud and zerobyte alerts go, with a phone app", "pt": "Servidor de notificações push — destino dos alertas do uptime-kuma, wud e zerobyte, com app no celular" },
+  "description": {
+    "en": "A push notification server — where the uptime-kuma, wud and zerobyte alerts go, with a phone app",
+    "pt": "Servidor de notificações push — destino dos alertas do uptime-kuma, wud e zerobyte, com app no celular"
+  },
   "author": "binwiederhier",
   "source": "https://github.com/binwiederhier/ntfy",
   "docs": "https://ntfy.sh",

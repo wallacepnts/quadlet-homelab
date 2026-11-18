@@ -1,7 +1,10 @@
 {
   "title": "Zerobyte",
   "short_desc": { "en": "Backs up your apps' data.", "pt": "Faz backup dos dados dos seus apps." },
-  "description": { "en": "Automates backups (via Restic) of every other service's data in this repository", "pt": "Automatiza backup (via Restic) dos dados de todos os outros serviços deste repositório" },
+  "description": {
+    "en": "Automates backups (via Restic) of every other service's data in this repository",
+    "pt": "Automatiza backup (via Restic) dos dados de todos os outros serviços deste repositório"
+  },
   "author": "nicotsx",
   "source": "https://github.com/nicotsx/zerobyte",
   "docs": "https://zerobyte.app",

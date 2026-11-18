@@ -1,7 +1,13 @@
 {
   "title": "Audiobookshelf",
-  "short_desc": { "en": "A server for your audiobooks and podcasts.", "pt": "Um servidor para seus audiolivros e podcasts." },
-  "description": { "en": "An audiobook and podcast server, with progress synced across devices", "pt": "Servidor de audiolivros e podcasts, com progresso sincronizado entre dispositivos" },
+  "short_desc": {
+    "en": "A server for your audiobooks and podcasts.",
+    "pt": "Um servidor para seus audiolivros e podcasts."
+  },
+  "description": {
+    "en": "An audiobook and podcast server, with progress synced across devices",
+    "pt": "Servidor de audiolivros e podcasts, com progresso sincronizado entre dispositivos"
+  },
   "author": "advplyr",
   "source": "https://github.com/advplyr/audiobookshelf",
   "docs": "https://audiobookshelf.org",

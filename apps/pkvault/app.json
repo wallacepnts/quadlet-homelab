@@ -1,7 +1,13 @@
 {
   "title": "PKVault",
-  "short_desc": { "en": "Manage your Pokémon save files.", "pt": "Gerencie os seus arquivos de save de Pokémon." },
-  "description": { "en": "Pokémon storage and save editing across every generation, based on PKHeX, with a Pokédex built from all your saves", "pt": "Armazenamento de Pokémon e edição de saves de todas as gerações, baseado no PKHeX, com uma Pokédex montada a partir de todos os seus saves" },
+  "short_desc": {
+    "en": "Manage your Pokémon save files.",
+    "pt": "Gerencie os seus arquivos de save de Pokémon."
+  },
+  "description": {
+    "en": "Pokémon storage and save editing across every generation, based on PKHeX, with a Pokédex built from all your saves",
+    "pt": "Armazenamento de Pokémon e edição de saves de todas as gerações, baseado no PKHeX, com uma Pokédex montada a partir de todos os seus saves"
+  },
   "author": "Chnapy",
   "source": "https://github.com/Chnapy/PKVault",
   "docs": "https://github.com/Chnapy/PKVault/blob/main/docs/functional/en/README.md",

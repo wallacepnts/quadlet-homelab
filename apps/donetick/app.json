@@ -1,7 +1,10 @@
 {
   "title": "Donetick",
   "short_desc": { "en": "Keep track of household chores.", "pt": "Acompanhe as tarefas de casa." },
-  "description": { "en": "Recurring household chores — who does them, how often, and when they are due", "pt": "Tarefas domésticas recorrentes — quem faz, com que frequência e quando vence" },
+  "description": {
+    "en": "Recurring household chores — who does them, how often, and when they are due",
+    "pt": "Tarefas domésticas recorrentes — quem faz, com que frequência e quando vence"
+  },
   "author": "donetick",
   "source": "https://github.com/donetick/donetick",
   "docs": "https://donetick.com",

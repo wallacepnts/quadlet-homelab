@@ -1,7 +1,13 @@
 {
   "title": "Syncthing",
-  "short_desc": { "en": "Sync files between your devices.", "pt": "Sincronize arquivos entre os seus dispositivos." },
-  "description": { "en": "P2P file sync between devices, with no central server", "pt": "Sincronização de arquivos P2P entre dispositivos, sem servidor central" },
+  "short_desc": {
+    "en": "Sync files between your devices.",
+    "pt": "Sincronize arquivos entre os seus dispositivos."
+  },
+  "description": {
+    "en": "P2P file sync between devices, with no central server",
+    "pt": "Sincronização de arquivos P2P entre dispositivos, sem servidor central"
+  },
   "author": "syncthing",
   "source": "https://github.com/syncthing/syncthing",
   "docs": "https://syncthing.net/",

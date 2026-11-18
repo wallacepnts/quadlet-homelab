@@ -1,7 +1,13 @@
 {
   "title": "neko",
-  "short_desc": { "en": "A shared browser you can use together.", "pt": "Um navegador compartilhado para usar em conjunto." },
-  "description": { "en": "A browser running on the server, streamed to yours — shared control, and nothing it opens touches your machine", "pt": "Um navegador rodando no servidor, transmitido para o seu — controle compartilhado, e nada do que ele abre toca a sua máquina" },
+  "short_desc": {
+    "en": "A shared browser you can use together.",
+    "pt": "Um navegador compartilhado para usar em conjunto."
+  },
+  "description": {
+    "en": "A browser running on the server, streamed to yours — shared control, and nothing it opens touches your machine",
+    "pt": "Um navegador rodando no servidor, transmitido para o seu — controle compartilhado, e nada do que ele abre toca a sua máquina"
+  },
   "author": "m1k1o",
   "source": "https://github.com/m1k1o/neko",
   "docs": "https://neko.m1k1o.net/",

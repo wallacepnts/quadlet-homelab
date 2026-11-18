@@ -1,7 +1,13 @@
 {
   "title": "Grafana",
-  "short_desc": { "en": "Charts and dashboards for your data.", "pt": "Gráficos e painéis para os seus dados." },
-  "description": { "en": "Dashboards over whatever you point it at — it brings no data of its own", "pt": "Painéis sobre o que você apontar — ele não traz dado nenhum próprio" },
+  "short_desc": {
+    "en": "Charts and dashboards for your data.",
+    "pt": "Gráficos e painéis para os seus dados."
+  },
+  "description": {
+    "en": "Dashboards over whatever you point it at — it brings no data of its own",
+    "pt": "Painéis sobre o que você apontar — ele não traz dado nenhum próprio"
+  },
   "author": "grafana",
   "source": "https://github.com/grafana/grafana",
   "docs": "https://grafana.com/docs/grafana/latest/",

@@ -1,7 +1,13 @@
 {
   "title": "Prometheus",
-  "short_desc": { "en": "Collects numbers about how your services run.", "pt": "Coleta números sobre como os seus serviços funcionam." },
-  "description": { "en": "Scrapes metrics on a schedule and keeps the history — the data source Grafana draws from", "pt": "Coleta métricas em intervalo e guarda o histórico — a fonte de dados que o Grafana desenha" },
+  "short_desc": {
+    "en": "Collects numbers about how your services run.",
+    "pt": "Coleta números sobre como os seus serviços funcionam."
+  },
+  "description": {
+    "en": "Scrapes metrics on a schedule and keeps the history — the data source Grafana draws from",
+    "pt": "Coleta métricas em intervalo e guarda o histórico — a fonte de dados que o Grafana desenha"
+  },
   "author": "prometheus",
   "source": "https://github.com/prometheus/prometheus",
   "docs": "https://prometheus.io/docs/introduction/overview/",

@@ -1,7 +1,10 @@
 {
   "title": "Karakeep",
   "short_desc": { "en": "Save and search your bookmarks.", "pt": "Guarde e pesquise seus favoritos." },
-  "description": { "en": "A bookmark manager with full-text search and automatic archiving of every saved page's content", "pt": "Gerenciador de bookmarks com busca full-text e arquivamento automático do conteúdo de cada página salva" },
+  "description": {
+    "en": "A bookmark manager with full-text search and automatic archiving of every saved page's content",
+    "pt": "Gerenciador de bookmarks com busca full-text e arquivamento automático do conteúdo de cada página salva"
+  },
   "author": "karakeep-app",
   "source": "https://github.com/karakeep-app/karakeep",
   "docs": "https://karakeep.app",

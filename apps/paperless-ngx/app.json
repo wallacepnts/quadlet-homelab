@@ -1,7 +1,13 @@
 {
   "title": "Paperless-ngx",
-  "short_desc": { "en": "Scan and search your paper documents.", "pt": "Digitalize e pesquise os seus documentos de papel." },
-  "description": { "en": "Scans, OCRs and indexes documents automatically, with full-text search so you never hunt for paper again", "pt": "Digitaliza, faz OCR e indexa documentos automaticamente, com busca full-text pra nunca mais procurar papel" },
+  "short_desc": {
+    "en": "Scan and search your paper documents.",
+    "pt": "Digitalize e pesquise os seus documentos de papel."
+  },
+  "description": {
+    "en": "Scans, OCRs and indexes documents automatically, with full-text search so you never hunt for paper again",
+    "pt": "Digitaliza, faz OCR e indexa documentos automaticamente, com busca full-text pra nunca mais procurar papel"
+  },
   "author": "paperless-ngx",
   "source": "https://github.com/paperless-ngx/paperless-ngx",
   "docs": "https://docs.paperless-ngx.com/",

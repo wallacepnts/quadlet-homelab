@@ -1,7 +1,13 @@
 {
   "title": "DocuSeal",
-  "short_desc": { "en": "Sign documents on your own server.", "pt": "Assine documentos no seu próprio servidor." },
-  "description": { "en": "Signing documents at home, without handing them to a company first", "pt": "Assinar documentos em casa, sem entregá-los a uma empresa antes" },
+  "short_desc": {
+    "en": "Sign documents on your own server.",
+    "pt": "Assine documentos no seu próprio servidor."
+  },
+  "description": {
+    "en": "Signing documents at home, without handing them to a company first",
+    "pt": "Assinar documentos em casa, sem entregá-los a uma empresa antes"
+  },
   "author": "docusealco",
   "source": "https://github.com/docusealco/docuseal",
   "docs": "https://www.docuseal.com/docs",

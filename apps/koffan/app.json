@@ -1,7 +1,10 @@
 {
   "title": "Koffan",
   "short_desc": { "en": "A shared shopping list.", "pt": "Uma lista de compras compartilhada." },
-  "description": { "en": "The house's shopping list — one password, no accounts, everyone edits the same list", "pt": "A lista de compras da casa — uma senha, sem contas, todo mundo edita a mesma lista" },
+  "description": {
+    "en": "The house's shopping list — one password, no accounts, everyone edits the same list",
+    "pt": "A lista de compras da casa — uma senha, sem contas, todo mundo edita a mesma lista"
+  },
   "author": "pansalut",
   "source": "https://github.com/pansalut/koffan",
   "docs": "https://github.com/PanSalut/Koffan#readme",

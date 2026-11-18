@@ -1,7 +1,10 @@
 {
   "title": "Komga",
   "short_desc": { "en": "Read your comics and manga.", "pt": "Leia seus quadrinhos e mangás." },
-  "description": { "en": "Comics and manga, with reading progress that follows you between devices", "pt": "Quadrinhos e mangá, com o progresso de leitura acompanhando você entre aparelhos" },
+  "description": {
+    "en": "Comics and manga, with reading progress that follows you between devices",
+    "pt": "Quadrinhos e mangá, com o progresso de leitura acompanhando você entre aparelhos"
+  },
   "author": "gotson",
   "source": "https://github.com/gotson/komga",
   "docs": "https://komga.org/",

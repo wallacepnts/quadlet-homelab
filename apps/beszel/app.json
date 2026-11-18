@@ -1,7 +1,13 @@
 {
   "title": "Beszel",
-  "short_desc": { "en": "Shows how busy your server is.", "pt": "Mostra o quanto o seu servidor está ocupado." },
-  "description": { "en": "A light dashboard for monitoring this host's resources (CPU/RAM/disk/network/containers)", "pt": "Dashboard leve de monitoramento de recursos (CPU/RAM/disco/rede/containers) deste host" },
+  "short_desc": {
+    "en": "Shows how busy your server is.",
+    "pt": "Mostra o quanto o seu servidor está ocupado."
+  },
+  "description": {
+    "en": "A light dashboard for monitoring this host's resources (CPU/RAM/disk/network/containers)",
+    "pt": "Dashboard leve de monitoramento de recursos (CPU/RAM/disco/rede/containers) deste host"
+  },
   "author": "henrygd",
   "source": "https://github.com/henrygd/beszel",
   "docs": "https://beszel.dev",

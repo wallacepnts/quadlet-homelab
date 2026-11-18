@@ -1,7 +1,13 @@
 {
   "title": "Zabbix",
-  "short_desc": { "en": "Monitors your servers and network.", "pt": "Monitora os seus servidores e a sua rede." },
-  "description": { "en": "Monitoring of servers, networks and services with agents, SNMP, triggers and alerts — server, web interface and PostgreSQL", "pt": "Monitoramento de servidores, redes e serviços com agentes, SNMP, triggers e alertas — server, interface web e PostgreSQL" },
+  "short_desc": {
+    "en": "Monitors your servers and network.",
+    "pt": "Monitora os seus servidores e a sua rede."
+  },
+  "description": {
+    "en": "Monitoring of servers, networks and services with agents, SNMP, triggers and alerts — server, web interface and PostgreSQL",
+    "pt": "Monitoramento de servidores, redes e serviços com agentes, SNMP, triggers e alertas — server, interface web e PostgreSQL"
+  },
   "author": "zabbix",
   "source": "https://github.com/zabbix/zabbix",
   "docs": "https://www.zabbix.com/documentation/current/en/manual/installation/containers",

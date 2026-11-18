@@ -1,7 +1,13 @@
 {
   "title": "LubeLogger",
-  "short_desc": { "en": "Track maintenance for your vehicles.", "pt": "Acompanhe a manutenção dos seus veículos." },
-  "description": { "en": "Vehicle maintenance records — oil changes, services, costs and reminders, per vehicle", "pt": "Registro de manutenção veicular — trocas de óleo, revisões, gastos e lembretes, por veículo" },
+  "short_desc": {
+    "en": "Track maintenance for your vehicles.",
+    "pt": "Acompanhe a manutenção dos seus veículos."
+  },
+  "description": {
+    "en": "Vehicle maintenance records — oil changes, services, costs and reminders, per vehicle",
+    "pt": "Registro de manutenção veicular — trocas de óleo, revisões, gastos e lembretes, por veículo"
+  },
   "author": "hargata",
   "source": "https://github.com/hargata/lubelog",
   "docs": "https://lubelogger.com",

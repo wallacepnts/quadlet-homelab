@@ -1,7 +1,13 @@
 {
   "title": "Immich",
-  "short_desc": { "en": "Back up and browse your photos and videos.", "pt": "Faça backup e navegue pelas suas fotos e vídeos." },
-  "description": { "en": "Photo and video backup and organisation, with face recognition and smart search", "pt": "Backup e organização de fotos/vídeos, com reconhecimento facial e busca smart" },
+  "short_desc": {
+    "en": "Back up and browse your photos and videos.",
+    "pt": "Faça backup e navegue pelas suas fotos e vídeos."
+  },
+  "description": {
+    "en": "Photo and video backup and organisation, with face recognition and smart search",
+    "pt": "Backup e organização de fotos/vídeos, com reconhecimento facial e busca smart"
+  },
   "author": "immich-app",
   "source": "https://github.com/immich-app/immich",
   "docs": "https://immich.app",

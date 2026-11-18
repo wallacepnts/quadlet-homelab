@@ -1,7 +1,13 @@
 {
   "title": "ExcaliDash",
-  "short_desc": { "en": "A place to organize and share Excalidraw drawings.", "pt": "Um lugar para organizar e compartilhar desenhos do Excalidraw." },
-  "description": { "en": "A dashboard for Excalidraw drawings — folders, sharing and multi-user, over your own storage", "pt": "Painel para desenhos do Excalidraw — pastas, compartilhamento e multiusuário, no seu armazenamento" },
+  "short_desc": {
+    "en": "A place to organize and share Excalidraw drawings.",
+    "pt": "Um lugar para organizar e compartilhar desenhos do Excalidraw."
+  },
+  "description": {
+    "en": "A dashboard for Excalidraw drawings — folders, sharing and multi-user, over your own storage",
+    "pt": "Painel para desenhos do Excalidraw — pastas, compartilhamento e multiusuário, no seu armazenamento"
+  },
   "author": "ZimengXiong",
   "source": "https://github.com/ZimengXiong/ExcaliDash",
   "docs": "https://github.com/ZimengXiong/ExcaliDash#readme",

@@ -1,7 +1,13 @@
 {
   "title": "Mailpit",
-  "short_desc": { "en": "Catches the emails your apps send so you can read them.", "pt": "Captura os e-mails que seus apps enviam para você lê-los." },
-  "description": { "en": "An SMTP server that catches everything your apps send, to read in the browser instead of a real inbox", "pt": "Servidor SMTP que captura tudo que seus apps enviam, para ler no navegador em vez de numa caixa de entrada de verdade" },
+  "short_desc": {
+    "en": "Catches the emails your apps send so you can read them.",
+    "pt": "Captura os e-mails que seus apps enviam para você lê-los."
+  },
+  "description": {
+    "en": "An SMTP server that catches everything your apps send, to read in the browser instead of a real inbox",
+    "pt": "Servidor SMTP que captura tudo que seus apps enviam, para ler no navegador em vez de numa caixa de entrada de verdade"
+  },
   "author": "axllent",
   "source": "https://github.com/axllent/mailpit",
   "docs": "https://mailpit.axllent.org/docs/",

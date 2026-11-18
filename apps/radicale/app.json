@@ -1,7 +1,10 @@
 {
   "title": "Radicale",
   "short_desc": { "en": "A calendar and contacts server.", "pt": "Um servidor de calendários e contatos." },
-  "description": { "en": "A light, minimal CalDAV/CardDAV server, on the rebuild that carries the birthday-calendar script (Radicale 3.7.6.0 inside)", "pt": "Servidor CalDAV/CardDAV leve e minimalista, no rebuild que traz o script do calendário de aniversários (Radicale 3.7.6.0 dentro)" },
+  "description": {
+    "en": "A light, minimal CalDAV/CardDAV server, on the rebuild that carries the birthday-calendar script (Radicale 3.7.6.0 inside)",
+    "pt": "Servidor CalDAV/CardDAV leve e minimalista, no rebuild que traz o script do calendário de aniversários (Radicale 3.7.6.0 dentro)"
+  },
   "author": "Kozea",
   "source": "https://github.com/Kozea/Radicale",
   "docs": "https://radicale.org/v3.html",

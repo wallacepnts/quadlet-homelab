@@ -1,7 +1,10 @@
 {
   "title": "Open WebUI",
   "short_desc": { "en": "A chat interface for AI models.", "pt": "Uma interface de chat para modelos de IA." },
-  "description": { "en": "A web chat interface plus a local LLM server, CPU-only by default (NVIDIA/AMD GPU options are documented)", "pt": "Interface de chat web + servidor de LLMs locais, CPU-only por padrão (opções de GPU NVIDIA/AMD documentadas)" },
+  "description": {
+    "en": "A web chat interface plus a local LLM server, CPU-only by default (NVIDIA/AMD GPU options are documented)",
+    "pt": "Interface de chat web + servidor de LLMs locais, CPU-only por padrão (opções de GPU NVIDIA/AMD documentadas)"
+  },
   "author": "open-webui",
   "source": "https://github.com/open-webui/open-webui",
   "docs": "https://ollama.com",

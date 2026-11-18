@@ -1,7 +1,13 @@
 {
   "title": "Headscale",
-  "short_desc": { "en": "Your own server for a private network.", "pt": "O seu próprio servidor para uma rede privada." },
-  "description": { "en": "A self-hosted control server for a Tailscale network, an alternative to Tailscale's own login: your devices join a private network that you run, with no account at a third party.", "pt": "Um servidor de controle self-hosted para uma rede Tailscale, alternativa ao login do próprio Tailscale: seus aparelhos entram numa rede privada que você mesmo mantém, sem conta em terceiros." },
+  "short_desc": {
+    "en": "Your own server for a private network.",
+    "pt": "O seu próprio servidor para uma rede privada."
+  },
+  "description": {
+    "en": "A self-hosted control server for a Tailscale network, an alternative to Tailscale's own login: your devices join a private network that you run, with no account at a third party.",
+    "pt": "Um servidor de controle self-hosted para uma rede Tailscale, alternativa ao login do próprio Tailscale: seus aparelhos entram numa rede privada que você mesmo mantém, sem conta em terceiros."
+  },
   "author": "juanfont",
   "source": "https://github.com/juanfont/headscale",
   "docs": "https://headscale.net/",

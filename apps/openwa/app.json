@@ -1,7 +1,13 @@
 {
   "title": "OpenWA",
-  "short_desc": { "en": "Send WhatsApp messages from your other apps.", "pt": "Envie mensagens de WhatsApp a partir dos seus outros apps." },
-  "description": { "en": "A WhatsApp API gateway — turns the account into REST plus webhooks, for n8n and Home Assistant to use", "pt": "Gateway de API do WhatsApp — transforma a conta em REST + webhooks, pro n8n e o Home Assistant usarem" },
+  "short_desc": {
+    "en": "Send WhatsApp messages from your other apps.",
+    "pt": "Envie mensagens de WhatsApp a partir dos seus outros apps."
+  },
+  "description": {
+    "en": "A WhatsApp API gateway — turns the account into REST plus webhooks, for n8n and Home Assistant to use",
+    "pt": "Gateway de API do WhatsApp — transforma a conta em REST + webhooks, pro n8n e o Home Assistant usarem"
+  },
   "author": "rmyndharis",
   "source": "https://github.com/rmyndharis/openwa",
   "docs": "https://www.open-wa.org",

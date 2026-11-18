@@ -1,7 +1,10 @@
 {
   "title": "Uptime Kuma",
   "short_desc": { "en": "Tells you when a service goes down.", "pt": "Avisa quando um serviço cai." },
-  "description": { "en": "An uptime monitor for the other services and the tailnet, with history and notifications", "pt": "Monitor de disponibilidade dos outros serviços e da tailnet, com histórico e notificação" },
+  "description": {
+    "en": "An uptime monitor for the other services and the tailnet, with history and notifications",
+    "pt": "Monitor de disponibilidade dos outros serviços e da tailnet, com histórico e notificação"
+  },
   "author": "louislam",
   "source": "https://github.com/louislam/uptime-kuma",
   "docs": "https://uptime.kuma.pet",

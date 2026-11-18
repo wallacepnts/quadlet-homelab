@@ -1,7 +1,10 @@
 {
   "title": "CasaOS",
   "short_desc": { "en": "A home server dashboard.", "pt": "Um painel para o servidor doméstico." },
-  "description": { "en": "A home server dashboard that talks to the Podman socket — it sees every container you run; installing apps from its own store did not work here", "pt": "Painel de servidor doméstico que fala com o socket do Podman — enxerga todos os containers que você roda; instalar apps pela loja dele não funcionou aqui" },
+  "description": {
+    "en": "A home server dashboard that talks to the Podman socket — it sees every container you run; installing apps from its own store did not work here",
+    "pt": "Painel de servidor doméstico que fala com o socket do Podman — enxerga todos os containers que você roda; instalar apps pela loja dele não funcionou aqui"
+  },
   "author": "IceWhaleTech",
   "source": "https://github.com/IceWhaleTech/CasaOS",
   "category": "Tools",

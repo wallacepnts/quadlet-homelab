@@ -77,8 +77,7 @@ def _inline(v):
 def _render(v, indent, prefix_len):
     """`v` as text: on one line when it fits (like `"categories": ["finance"]`), else one entry per line."""
     linha = _inline(v)
-    par = isinstance(v, dict) and set(v) == {"en", "pt"} and all(isinstance(x, str) for x in v.values())
-    if not isinstance(v, (dict, list)) or not v or par or prefix_len + len(linha) <= WIDTH:     # an {en, pt} pair is one line
+    if not isinstance(v, (dict, list)) or not v or prefix_len + len(linha) <= WIDTH:
         return linha
     pad, pad_in = "  " * indent, "  " * (indent + 1)
     if isinstance(v, dict):
@@ -91,7 +90,7 @@ def _render(v, indent, prefix_len):
 
 def dump(data):
     """The canonical text of a manifest, the way Runtipi writes its config.json: one key per line, keys in the
-    order the spec lists them, and a short object or list kept on its line."""
+    order the spec lists them, a short object or list kept on its line and a long one broken into one entry per line."""
     d = ordered(data)
     if not d:
         return "{}\n"

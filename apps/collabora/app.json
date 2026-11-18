@@ -1,7 +1,10 @@
 {
   "title": "Collabora",
   "short_desc": { "en": "Edit documents in your browser.", "pt": "Edite documentos no navegador." },
-  "description": { "en": "Editing documents inside ownCloud — writer, spreadsheet and slides, in the browser", "pt": "Edição de documentos dentro do ownCloud — texto, planilha e slides, no navegador" },
+  "description": {
+    "en": "Editing documents inside ownCloud — writer, spreadsheet and slides, in the browser",
+    "pt": "Edição de documentos dentro do ownCloud — texto, planilha e slides, no navegador"
+  },
   "author": "collabora",
   "source": "https://github.com/collabora/code",
   "docs": "https://sdk.collaboraonline.com/docs/installation/",

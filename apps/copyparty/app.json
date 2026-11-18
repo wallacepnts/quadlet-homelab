@@ -1,7 +1,13 @@
 {
   "title": "Copyparty",
-  "short_desc": { "en": "A file server you can upload to from any device.", "pt": "Um servidor de arquivos que aceita envios de qualquer aparelho." },
-  "description": { "en": "A file server with browser or phone uploads, resumable transfers and WebDAV", "pt": "Servidor de arquivos com upload pelo navegador ou celular, retomada de transferência e WebDAV" },
+  "short_desc": {
+    "en": "A file server you can upload to from any device.",
+    "pt": "Um servidor de arquivos que aceita envios de qualquer aparelho."
+  },
+  "description": {
+    "en": "A file server with browser or phone uploads, resumable transfers and WebDAV",
+    "pt": "Servidor de arquivos com upload pelo navegador ou celular, retomada de transferência e WebDAV"
+  },
   "author": "9001",
   "source": "https://github.com/9001/copyparty",
   "docs": "https://github.com/9001/copyparty#readme",

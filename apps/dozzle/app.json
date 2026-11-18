@@ -1,7 +1,13 @@
 {
   "title": "Dozzle",
-  "short_desc": { "en": "Read your containers' logs in the browser.", "pt": "Leia os logs dos seus containers no navegador." },
-  "description": { "en": "Live logs of every container in the browser, without opening a terminal", "pt": "Log ao vivo de cada container no navegador, sem abrir terminal" },
+  "short_desc": {
+    "en": "Read your containers' logs in the browser.",
+    "pt": "Leia os logs dos seus containers no navegador."
+  },
+  "description": {
+    "en": "Live logs of every container in the browser, without opening a terminal",
+    "pt": "Log ao vivo de cada container no navegador, sem abrir terminal"
+  },
   "author": "amir20",
   "source": "https://github.com/amir20/dozzle",
   "docs": "https://dozzle.dev/",

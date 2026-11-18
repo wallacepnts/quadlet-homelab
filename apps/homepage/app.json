@@ -1,7 +1,13 @@
 {
   "title": "homepage",
-  "short_desc": { "en": "A start page for your home server.", "pt": "Uma página inicial para o seu servidor doméstico." },
-  "description": { "en": "A dashboard that discovers and organises the other containers by itself through labels, with no config to edit per new service", "pt": "Dashboard que descobre e organiza os outros containers sozinho via labels, sem editar config a cada serviço novo" },
+  "short_desc": {
+    "en": "A start page for your home server.",
+    "pt": "Uma página inicial para o seu servidor doméstico."
+  },
+  "description": {
+    "en": "A dashboard that discovers and organises the other containers by itself through labels, with no config to edit per new service",
+    "pt": "Dashboard que descobre e organiza os outros containers sozinho via labels, sem editar config a cada serviço novo"
+  },
   "author": "gethomepage",
   "source": "https://github.com/gethomepage/homepage",
   "docs": "https://gethomepage.dev",

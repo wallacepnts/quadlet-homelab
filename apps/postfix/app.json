@@ -1,7 +1,13 @@
 {
   "title": "Postfix",
-  "short_desc": { "en": "Sends email on behalf of your other apps.", "pt": "Envia e-mail em nome dos seus outros apps." },
-  "description": { "en": "An SMTP relay for the other containers — they hand mail to one place, and the credentials of the provider live here only", "pt": "Relay SMTP para os outros containers — eles entregam num lugar só, e a credencial do provedor fica só aqui" },
+  "short_desc": {
+    "en": "Sends email on behalf of your other apps.",
+    "pt": "Envia e-mail em nome dos seus outros apps."
+  },
+  "description": {
+    "en": "An SMTP relay for the other containers — they hand mail to one place, and the credentials of the provider live here only",
+    "pt": "Relay SMTP para os outros containers — eles entregam num lugar só, e a credencial do provedor fica só aqui"
+  },
   "author": "bokysan",
   "source": "https://github.com/bokysan/docker-postfix",
   "docs": "https://github.com/bokysan/docker-postfix#readme",

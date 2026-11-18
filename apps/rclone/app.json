@@ -1,7 +1,13 @@
 {
   "title": "rclone",
-  "short_desc": { "en": "Move files between your cloud accounts.", "pt": "Mova arquivos entre as suas contas na nuvem." },
-  "description": { "en": "Web GUI for the cloud accounts in your rclone config: browse, copy and sync files between them", "pt": "Interface web para as contas de nuvem do seu config do rclone: navegar, copiar e sincronizar arquivos entre elas" },
+  "short_desc": {
+    "en": "Move files between your cloud accounts.",
+    "pt": "Mova arquivos entre as suas contas na nuvem."
+  },
+  "description": {
+    "en": "Web GUI for the cloud accounts in your rclone config: browse, copy and sync files between them",
+    "pt": "Interface web para as contas de nuvem do seu config do rclone: navegar, copiar e sincronizar arquivos entre elas"
+  },
   "author": "rclone",
   "source": "https://github.com/rclone/rclone",
   "docs": "https://rclone.org/rc/",

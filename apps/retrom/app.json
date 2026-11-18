@@ -1,7 +1,10 @@
 {
   "title": "Retrom",
   "short_desc": { "en": "A library for your retro games.", "pt": "Uma biblioteca para os seus jogos retrô." },
-  "description": { "en": "A game library for emulation — one collection, played in the browser or through the desktop client", "pt": "Biblioteca de jogos para emulação — uma coleção só, jogada no navegador ou pelo cliente de desktop" },
+  "description": {
+    "en": "A game library for emulation — one collection, played in the browser or through the desktop client",
+    "pt": "Biblioteca de jogos para emulação — uma coleção só, jogada no navegador ou pelo cliente de desktop"
+  },
   "author": "JMBeresford",
   "source": "https://github.com/JMBeresford/retrom",
   "docs": "https://github.com/JMBeresford/retrom/wiki",

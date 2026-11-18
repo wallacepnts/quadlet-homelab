@@ -1,7 +1,13 @@
 {
   "title": "Postiz",
-  "short_desc": { "en": "Schedule your social media posts.", "pt": "Agende as suas publicações nas redes sociais." },
-  "description": { "en": "Schedules posts to Instagram and other social networks, with a calendar and one place for every channel", "pt": "Agenda posts no Instagram e em outras redes sociais, com calendário e um só lugar para todos os canais" },
+  "short_desc": {
+    "en": "Schedule your social media posts.",
+    "pt": "Agende as suas publicações nas redes sociais."
+  },
+  "description": {
+    "en": "Schedules posts to Instagram and other social networks, with a calendar and one place for every channel",
+    "pt": "Agenda posts no Instagram e em outras redes sociais, com calendário e um só lugar para todos os canais"
+  },
   "author": "gitroomhq",
   "source": "https://github.com/gitroomhq/postiz-app",
   "docs": "https://docs.postiz.com",

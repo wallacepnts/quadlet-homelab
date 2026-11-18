@@ -1,7 +1,13 @@
 {
   "title": "Anki",
-  "short_desc": { "en": "A sync server for your Anki flashcards.", "pt": "Um servidor de sincronização para os seus cartões do Anki." },
-  "description": { "en": "The sync server from Anki itself, so flashcards, reviews and media sync without AnkiWeb", "pt": "O servidor de sincronização do próprio Anki, para cartões, revisões e mídia sincronizarem sem o AnkiWeb" },
+  "short_desc": {
+    "en": "A sync server for your Anki flashcards.",
+    "pt": "Um servidor de sincronização para os seus cartões do Anki."
+  },
+  "description": {
+    "en": "The sync server from Anki itself, so flashcards, reviews and media sync without AnkiWeb",
+    "pt": "O servidor de sincronização do próprio Anki, para cartões, revisões e mídia sincronizarem sem o AnkiWeb"
+  },
   "author": "ankitects",
   "source": "https://github.com/ankitects/anki",
   "docs": "https://docs.ankiweb.net/sync-server.html",

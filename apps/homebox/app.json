@@ -1,7 +1,13 @@
 {
   "title": "HomeBox",
-  "short_desc": { "en": "Keep an inventory of everything you own.", "pt": "Mantenha um inventário de tudo o que você tem." },
-  "description": { "en": "A home inventory — what you own, where it is, the receipt, the manual and the warranty, with search and labels", "pt": "Inventário doméstico — o que você tem, onde está, nota fiscal, manual e garantia, com busca e etiquetas" },
+  "short_desc": {
+    "en": "Keep an inventory of everything you own.",
+    "pt": "Mantenha um inventário de tudo o que você tem."
+  },
+  "description": {
+    "en": "A home inventory — what you own, where it is, the receipt, the manual and the warranty, with search and labels",
+    "pt": "Inventário doméstico — o que você tem, onde está, nota fiscal, manual e garantia, com busca e etiquetas"
+  },
   "author": "sysadminsmedia",
   "source": "https://github.com/sysadminsmedia/homebox",
   "docs": "https://homebox.software",

@@ -1,7 +1,13 @@
 {
   "title": "Ferdium Server",
-  "short_desc": { "en": "A sync server for the Ferdium app.", "pt": "Um servidor de sincronização para o app Ferdium." },
-  "description": { "en": "Sync for the Ferdium desktop app — your service list on your own server, not Franz's", "pt": "Sincronização do Ferdium desktop — sua lista de serviços no seu servidor, não no do Franz" },
+  "short_desc": {
+    "en": "A sync server for the Ferdium app.",
+    "pt": "Um servidor de sincronização para o app Ferdium."
+  },
+  "description": {
+    "en": "Sync for the Ferdium desktop app — your service list on your own server, not Franz's",
+    "pt": "Sincronização do Ferdium desktop — sua lista de serviços no seu servidor, não no do Franz"
+  },
   "author": "ferdium",
   "source": "https://github.com/ferdium/ferdium-server",
   "docs": "https://github.com/ferdium/ferdium-server#readme",

@@ -1,7 +1,13 @@
 {
   "title": "FMD Server",
-  "short_desc": { "en": "Find your Android phone from the browser.", "pt": "Encontre o seu celular Android pelo navegador." },
-  "description": { "en": "Find, ring and lock your Android phone from the browser, end-to-end encrypted, without Google", "pt": "Localizar, tocar e bloquear seu celular Android pelo navegador, com criptografia ponta a ponta, sem o Google" },
+  "short_desc": {
+    "en": "Find your Android phone from the browser.",
+    "pt": "Encontre o seu celular Android pelo navegador."
+  },
+  "description": {
+    "en": "Find, ring and lock your Android phone from the browser, end-to-end encrypted, without Google",
+    "pt": "Localizar, tocar e bloquear seu celular Android pelo navegador, com criptografia ponta a ponta, sem o Google"
+  },
   "author": "Nulide",
   "source": "https://gitlab.com/Nulide/findmydeviceserver",
   "docs": "https://fmd-foss.org/docs/fmd-server/overview",
