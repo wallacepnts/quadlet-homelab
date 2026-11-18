@@ -38,8 +38,12 @@ const T = {
     resources: "Recursos", resLoading: "Verificando o Podman…",
     files: "Arquivos", filesRoot: "Apps", filesEmpty: "Pasta vazia.", filesNone: "Nenhum app com dados próprios.", filesLink: "atalho (não é seguido)",
     filesDownload: "Baixar", filesBack: "Voltar à pasta", filesBinary: "Arquivo binário: só dá para baixar.", filesCut: (n) => `Mostrando só o começo (${n}).`,
-    filesMore: "A pasta tem mais itens do que cabem na lista.", filesRO: "Só leitura: dá para ver e baixar, não alterar. Os dados de um container ficam no volume dele.",
+    filesMore: "A pasta tem mais itens do que cabem na lista.", filesNote: "Mexer nos arquivos de um app que está rodando pode corromper os dados dele: pare o app antes de apagar ou trocar o que ele usa.",
     filesDenied: "Sem permissão para ler isto.",
+    fUpload: "Enviar", fNewFolder: "Nova pasta", fRename: "Renomear", fCopy: "Copiar", fCut: "Recortar", fPaste: "Colar", fDelete: "Apagar",
+    fSure: (n) => `Confirmar: apagar ${n} ${n === 1 ? "item" : "itens"}`, fCancel: "Cancelar", fOk: "OK", fName: "Nome", fSel: (n) => `${n} selecionado${n === 1 ? "" : "s"}`,
+    fSending: (i, n, nome) => `Enviando ${i} de ${n}: ${nome}`, fSent: (n) => `${n} enviado${n === 1 ? "" : "s"}.`, fDrop: "Solte os arquivos aqui para enviar", fReadHere: "Escolha uma pasta de um app para mexer nos arquivos.",
+    fEdit: "Editar", fSave: "Salvar", fSaved: "Salvo.", fClip: (n, modo) => `${n} ${modo === "move" ? "recortado" : "copiado"}${n === 1 ? "" : "s"}`, fExists: "Já existe.", fRefresh: "Atualizar", fSelectAll: "Selecionar tudo",
     resUsage: "Espaço por app", resUsageNote: "Quanto os dados de cada app ocupam em disco (as pastas em volumes/; uma pasta sua, como a de mídia, não entra).",
     resUsageRefresh: "Recalcular", resUsageLoading: "Calculando…", resUsageNone: "Nenhum app com dados próprios.", resUsageTotal: "Total",
     powerLater: "Agendar", powerWhen: { "15": "em 15 minutos", "60": "em 1 hora", "240": "em 4 horas", at: "num horário…" },
@@ -221,8 +225,12 @@ const T = {
     resources: "Resources", resLoading: "Asking Podman…",
     files: "Files", filesRoot: "Apps", filesEmpty: "Empty folder.", filesNone: "No app with data of its own.", filesLink: "link (not followed)",
     filesDownload: "Download", filesBack: "Back to the folder", filesBinary: "A binary file: it can only be downloaded.", filesCut: (n) => `Showing only the start (${n}).`,
-    filesMore: "The folder has more items than the list holds.", filesRO: "Read only: you can look and download, not change. A container's data lives in its volume.",
+    filesMore: "The folder has more items than the list holds.", filesNote: "Changing the files of a running app can corrupt its data: stop the app before deleting or replacing what it uses.",
     filesDenied: "No permission to read this.",
+    fUpload: "Upload", fNewFolder: "New folder", fRename: "Rename", fCopy: "Copy", fCut: "Cut", fPaste: "Paste", fDelete: "Delete",
+    fSure: (n) => `Confirm: delete ${n} ${n === 1 ? "item" : "items"}`, fCancel: "Cancel", fOk: "OK", fName: "Name", fSel: (n) => `${n} selected`,
+    fSending: (i, n, nome) => `Uploading ${i} of ${n}: ${nome}`, fSent: (n) => `${n} uploaded.`, fDrop: "Drop the files here to upload", fReadHere: "Open a folder of an app to work on its files.",
+    fEdit: "Edit", fSave: "Save", fSaved: "Saved.", fClip: (n, modo) => `${n} ${modo === "move" ? "cut" : "copied"}`, fExists: "Already exists.", fRefresh: "Refresh", fSelectAll: "Select all",
     resUsage: "Space per app", resUsageNote: "How much each app's data takes on disk (the folders under volumes/; a folder of yours, such as the media one, is not counted).",
     resUsageRefresh: "Recalculate", resUsageLoading: "Calculating…", resUsageNone: "No app with data of its own.", resUsageTotal: "Total",
     powerLater: "Schedule", powerWhen: { "15": "in 15 minutes", "60": "in 1 hour", "240": "in 4 hours", at: "at a time…" },
@@ -2346,6 +2354,13 @@ $("h-close").addEventListener("click", () => $("history").close());
 $("resources-btn").addEventListener("click", openResources);
 $("files-btn").addEventListener("click", () => openFiles(""));
 $("f-close").addEventListener("click", () => $("files").close());
+$("files").addEventListener("dragover", (ev) => { ev.preventDefault(); $("files").classList.add("drop"); });
+$("files").addEventListener("dragleave", () => $("files").classList.remove("drop"));
+$("files").addEventListener("drop", (ev) => {
+  ev.preventDefault();
+  $("files").classList.remove("drop");
+  uploadFiles([...((ev.dataTransfer || {}).files || [])]);
+});
 $("settings-btn").addEventListener("click", openSettings);
 $("s-close").addEventListener("click", () => $("settings").close());
 $("b-close").addEventListener("click", () => $("bulk").close());
@@ -2571,52 +2586,156 @@ async function appearanceSection() {
     aviso);
 }
 
-// -- Files: look inside the folders of the apps (read only) ------------------------------------
-// The path is "app/volume/sub/dir"; the server lists it, previews a text file and streams a download, and it
-// refuses anything outside the app's volumes and any link.
+// -- Files: a file manager for the folders of the apps --------------------------------------------
+// The path is "app/volume/sub/dir" (or "@NAME" for a folder of the person's own). The server lists, previews, streams
+// downloads and uploads, and makes the changes; it refuses anything outside those folders and any link. Selection,
+// copy/cut/paste, rename, new folder and delete (asked twice) happen here; a drop of files uploads them.
+S.fsel = new Set();
+S.fclip = null;          // {mode: "copy"|"move", paths: [...]}
+const fsJoin = (a, b) => (a ? `${a}/${b}` : b);
+const fsPost = (body) => api("/api/files/op", body);
+
 async function openFiles(path = "") {
   if (!$("files").open) $("files").showModal();
+  S.fsel = new Set();
   await renderFiles(path);
 }
 
-async function renderFiles(path) {
+// Writable below the volume level: "app/volume/..." or "@NAME/...", not in the list of apps or of one app's volumes.
+const fsCanWrite = (partes) => partes.length >= 2 || (partes.length === 1 && partes[0].startsWith("@"));
+
+async function renderFiles(path, msg = "") {
+  S.fpath = path;
   $("f-title").textContent = t("files");
   $("f-view").hidden = true;
   const partes = path.split("/").filter(Boolean);
   const nomeApp = (id) => (S.apps.find((a) => a.id === id) || {}).name || id;
-  fill($("f-crumb"), h("button", { type: "button", onclick: () => renderFiles("") }, t("filesRoot")),
+  fill($("f-crumb"), h("button", { type: "button", onclick: () => openFiles("") }, t("filesRoot")),
     ...partes.flatMap((p, i) => [h("span", { class: "sep" }, "/"),
-      h("button", { type: "button", onclick: () => renderFiles(partes.slice(0, i + 1).join("/")) }, i === 0 ? nomeApp(p) : p)]));
+      h("button", { type: "button", onclick: () => openFiles(partes.slice(0, i + 1).join("/")) }, i === 0 && !p.startsWith("@") ? nomeApp(p) : p)]));
   let r;
   try { r = await api(`/api/files?path=${encodeURIComponent(path)}`); }
-  catch (e) { fill($("f-body"), h("p", { class: "bad" }, e.status === 403 ? t("filesDenied") : String(e.message))); return; }
-  const filho = (n) => (path ? `${path}/${n}` : n);
+  catch (e) { fill($("f-body"), h("p", { class: "bad" }, e.status === 403 ? t("filesDenied") : String(e.message))); fill($("f-bar")); return; }
+  const gravavel = fsCanWrite(partes);
+  const quais = r.entries.filter((e) => S.fsel.has(e.name));
+  const nSel = quais.length;
+  const caminhoDe = (e) => fsJoin(path, e.name);
+  const refresca = (m = "") => renderFiles(path, m);
+  const erro = (e) => refresca(e.status === 409 ? t("fExists") : String(e.message));
+
+  // The bar: what can be done here and with the selection.
+  const barra = [];
+  const campo = (rotulo, inicial, feito) => {            // an inline question that replaces the bar
+    const entrada = h("input", { type: "text", value: inicial, "aria-label": rotulo, autocomplete: "off" });
+    const ok = async () => { const v = entrada.value.trim(); if (v) { try { await feito(v); } catch (e) { return erro(e); } } refresca(); };
+    entrada.addEventListener("keydown", (ev) => { if (ev.key === "Enter") { ev.preventDefault(); ok(); } else if (ev.key === "Escape") refresca(); });
+    fill($("f-bar"), h("label", {}, `${rotulo} `, entrada), h("button", { type: "button", onclick: ok }, t("fOk")),
+      h("button", { type: "button", class: "ghost", onclick: () => refresca() }, t("fCancel")));
+    return entrada;
+  };
+  if (gravavel) {
+    const escolher = h("input", { type: "file", multiple: true, hidden: true, id: "f-pick" });
+    escolher.addEventListener("change", () => uploadFiles([...(escolher.files || [])]));
+    barra.push(escolher, h("button", { type: "button", onclick: () => escolher.click() }, t("fUpload")),
+      h("button", { type: "button", class: "ghost", onclick: () => campo(t("fName"), "", (v) => fsPost({ op: "mkdir", path, name: v })) }, t("fNewFolder")));
+    if (S.fclip)
+      barra.push(h("button", { type: "button", class: "ghost", onclick: async () => {
+        try { for (const p of S.fclip.paths) await fsPost({ op: S.fclip.mode, path: p, to: path }); if (S.fclip.mode === "move") S.fclip = null; }
+        catch (e) { return erro(e); }
+        refresca();
+      } }, `${t("fPaste")} (${S.fclip.paths.length})`));
+  }
+  if (nSel) {
+    barra.push(h("span", { class: "muted" }, t("fSel")(nSel)));
+    if (gravavel) {
+      barra.push(h("button", { type: "button", class: "ghost", onclick: () => { S.fclip = { mode: "copy", paths: quais.map(caminhoDe) }; refresca(); } }, t("fCopy")),
+        h("button", { type: "button", class: "ghost", onclick: () => { S.fclip = { mode: "move", paths: quais.map(caminhoDe) }; refresca(); } }, t("fCut")));
+      if (nSel === 1) barra.push(h("button", { type: "button", class: "ghost", onclick: () => campo(t("fName"), quais[0].name, (v) => fsPost({ op: "rename", path: caminhoDe(quais[0]), name: v })) }, t("fRename")));
+      let pediu = false;
+      const apagar = h("button", { type: "button", class: "danger", onclick: () => {
+        if (!pediu) { pediu = true; apagar.textContent = t("fSure")(nSel); return; }
+        (async () => { try { for (const e of quais) await fsPost({ op: "delete", path: caminhoDe(e) }); } catch (e) { return erro(e); } S.fsel = new Set(); refresca(); })();
+      } }, t("fDelete"));
+      barra.push(apagar);
+    }
+  }
+  if (S.fclip && !gravavel) barra.push(h("span", { class: "muted" }, t("fClip")(S.fclip.paths.length, S.fclip.mode)));
+  barra.push(h("button", { type: "button", class: "ghost", onclick: () => refresca() }, t("fRefresh")));
+  fill($("f-bar"), ...barra);
+
+  const todos = h("input", { type: "checkbox", "aria-label": t("fSelectAll"), checked: r.entries.length > 0 && nSel === r.entries.length });
+  todos.addEventListener("change", () => { S.fsel = todos.checked ? new Set(r.entries.map((e) => e.name)) : new Set(); refresca(); });
   const linhas = r.entries.map((e) => h("tr", {},
+    gravavel ? h("td", { class: "chk" }, (() => {
+      const c = h("input", { type: "checkbox", "aria-label": e.name, checked: S.fsel.has(e.name) });
+      c.addEventListener("change", () => { c.checked ? S.fsel.add(e.name) : S.fsel.delete(e.name); refresca(); });
+      return c;
+    })()) : null,
     h("td", {}, e.type === "dir"
-      ? h("button", { type: "button", class: "fname dir", onclick: () => renderFiles(filho(e.name)) }, `▸ ${partes.length ? e.name : nomeApp(e.name)}`)
+      ? h("button", { type: "button", class: "fname dir", onclick: () => openFiles(fsJoin(path, e.name)) }, `▸ ${partes.length || e.name.startsWith("@") ? e.name : nomeApp(e.name)}`)
       : e.type === "link"
         ? h("button", { type: "button", class: "fname", disabled: true, title: t("filesLink") }, `↪ ${e.name}`)
-        : h("button", { type: "button", class: "fname", onclick: () => showFile(filho(e.name), e) }, e.name)),
+        : h("button", { type: "button", class: "fname", onclick: () => showFile(fsJoin(path, e.name), e, gravavel) }, e.name)),
     h("td", { class: "num" }, e.size === null || e.size === undefined ? "" : bytes(e.size)),
     h("td", { class: "num" }, e.mtime ? new Date(e.mtime * 1000).toLocaleDateString(S.lang === "pt" ? "pt-BR" : "en-GB") : "")));
   fill($("f-body"),
-    h("p", { class: "muted" }, t("filesRO")),
-    linhas.length ? h("table", { class: "hist" }, ...linhas) : h("p", { class: "muted" }, partes.length ? t("filesEmpty") : t("filesNone")),
+    h("p", { class: "muted" }, gravavel ? t("filesNote") : t("fReadHere")),
+    msg ? h("p", { class: "note" }, msg) : null,
+    linhas.length ? h("table", { class: "hist" }, gravavel ? h("tr", {}, h("th", { class: "chk" }, todos), h("th", {}), h("th", {}), h("th", {})) : null, ...linhas)
+      : h("p", { class: "muted" }, partes.length ? t("filesEmpty") : t("filesNone")),
     r.truncated ? h("p", { class: "note" }, t("filesMore")) : null);
 }
 
-async function showFile(path, e) {
+// Files sent one after the other into the folder on screen; a name already there is kept, the new one gets (1).
+async function uploadFiles(arquivos, path = S.fpath) {
+  const partes = (path || "").split("/").filter(Boolean);
+  if (!arquivos.length || !fsCanWrite(partes)) return;
+  let feitos = 0;
+  for (const [i, f] of arquivos.entries()) {
+    $("f-state").textContent = t("fSending")(i + 1, arquivos.length, f.name);
+    try {
+      const r = await fetch(`/api/files/upload?path=${encodeURIComponent(path)}&name=${encodeURIComponent(f.name)}`,
+        { method: "POST", headers: { "X-QH-Store": "1" }, body: f });
+      if (!r.ok) throw new Error(((await r.json().catch(() => ({}))).error) || r.status);
+      feitos += 1;
+    } catch (e) { $("f-state").textContent = `${f.name}: ${e.message}`; return renderFiles(path, `${f.name}: ${e.message}`); }
+  }
+  $("f-state").textContent = "";
+  await renderFiles(path, t("fSent")(feitos));
+}
+
+const FS_IMAGES = /\.(png|jpe?g|gif|webp|bmp)$/i;
+async function showFile(path, e, gravavel) {
   const pasta = path.split("/").slice(0, -1).join("/");
-  const baixar = h("a", { class: "btn", href: `/api/files/download?path=${encodeURIComponent(path)}`, download: e.name }, t("filesDownload"));
+  const url = `/api/files/download?path=${encodeURIComponent(path)}`;
+  const baixar = h("a", { class: "btn", href: url, download: e.name }, t("filesDownload"));
   const voltar = h("button", { type: "button", class: "ghost", onclick: () => renderFiles(pasta) }, t("filesBack"));
-  fill($("f-body"), h("h3", {}, e.name), h("div", { id: "f-actions" }, baixar, voltar), h("p", { class: "muted" }, bytes(e.size || 0)));
+  fill($("f-bar"));
+  const corpo = [h("h3", {}, e.name), h("div", { id: "f-actions" }, baixar, voltar), h("p", { class: "muted" }, bytes(e.size || 0))];
+  fill($("f-body"), ...corpo);
   const pre = $("f-view");
+  if (FS_IMAGES.test(e.name)) {
+    pre.hidden = true;
+    $("f-body").append(h("img", { class: "fimg", src: `${url}&inline=1`, alt: e.name }));
+    return;
+  }
   pre.hidden = false;
   pre.textContent = "";
   try {
     const v = await api(`/api/files/preview?path=${encodeURIComponent(path)}`);
     pre.textContent = v.text;
     if (v.truncated) $("f-body").append(h("p", { class: "note" }, t("filesCut")(bytes(v.text.length))));
+    else if (gravavel) {                                      // a whole text file can be edited here and saved over itself
+      const area = h("textarea", { id: "f-edit", rows: 16, "aria-label": e.name, spellcheck: false });
+      area.value = v.text;
+      const salvar = h("button", { type: "button", onclick: async () => {
+        const r = await fetch(`/api/files/upload?path=${encodeURIComponent(pasta)}&name=${encodeURIComponent(e.name)}&overwrite=1`,
+          { method: "POST", headers: { "X-QH-Store": "1" }, body: area.value });
+        $("f-state").textContent = r.ok ? t("fSaved") : String(r.status);
+      } }, t("fSave"));
+      pre.hidden = true;
+      $("f-body").append(area, h("div", { id: "f-actions" }, salvar));
+    }
   } catch (err) {
     pre.hidden = true;
     $("f-body").append(h("p", { class: "muted" }, err.status === 415 ? t("filesBinary") : err.status === 403 ? t("filesDenied") : String(err.message)));

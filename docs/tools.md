@@ -487,19 +487,32 @@ small history, refreshed every five seconds from `/api/host`. There is no widget
 
 ## Files
 
-**Files** (the navigation, and a button in each app that keeps data) looks inside the folders of your apps, the
-directories under `~/.config/containers/volumes/`: apps first, then their volumes and folders, a text file previewed
-(first 256 KB) and any file downloaded. It is **read only**: nothing is uploaded, edited or deleted from here. Three
-things hold it to that:
+**Files** (the navigation, and a button in each app that keeps data) is a file manager for the folders of your apps, the
+way CasaOS and ZimaOS have one: apps first, then their volumes and folders (the directories under
+`~/.config/containers/volumes/`), plus the folders you chose for what the apps share (`@MEDIA_DATA_DIR`, the
+recordings), when they exist.
 
-- **Only the app's volumes**: a path is `app/volume/folder/...`, and the volume must be one the app's units mount. A
-  folder of yours (the media root) and the rest of the home are not reachable.
-- **No links**: a container can leave a symlink to `/etc/passwd` in its data. Reading happens in `podman unshare`
-  (where the files a container wrote, which belong to a subuid, can be read at all), and there such a link would reach
-  the host's own files, so a link anywhere in the path is refused and shown as a link, never followed.
+- **Look:** a path with breadcrumbs, size and date, a text file previewed (first 256 KB), an image shown, any file
+  downloaded.
+- **Change:** **Upload** (the button, or drop files on the window; a name already there is kept and the new one becomes
+  `name (1)`, and a cut upload leaves nothing), **New folder**, **Rename**, **Copy / Cut / Paste** (across folders and
+  apps), **Delete** (asked twice) and an editor for a whole text file. Select with the checkboxes; the actions follow
+  the selection.
+- **The panel warns, it does not stop you:** changing the files of a running app can corrupt its data (a database
+  copied while it writes). Stop the app first.
+- **Ownership:** what is created takes the owner of the folder it lands in, so the app that owns that folder can read
+  it back. The work runs in `podman unshare`, where the files a container wrote, which belong to a subuid, can be
+  read and written at all (`hostctl.py fs-*`).
+
+What holds it inside the app's folders:
+
+- **Only the volumes**: a path is `app/volume/folder/...` and the volume must be one the app's units mount (or an
+  `@NAME` folder from the variables the installed apps use). The rest of the home is not reachable.
+- **No links**: a container can leave a symlink to `/etc/passwd` in its data, and inside `podman unshare` that would
+  reach the host's own files. A link anywhere on the path is refused and shown as a link; it is never followed or
+  written through. A link can be renamed, copied as a link and deleted (the link goes, its target stays).
 - **Regular files only**: a fifo or a device is refused, so a read cannot hang.
-
-The listing is done by `hostctl.py fs-ls|fs-preview|fs-cat`, which the panel runs inside `podman unshare`.
+- **The volume itself** cannot be renamed, moved or deleted from here (that is the app's removal, in the panel).
 
 ## Restart or shut down the server
 

@@ -104,13 +104,13 @@ const rotas = {
 global.fetch = async (url, opts = {}) => {
   let rota = url.split("?")[0];
   if (rota.startsWith("/api/history/") && !(rota in rotas)) rota = "/api/history/a2";
-  if (opts.method === "POST") posts.push({ rota, corpo: JSON.parse(opts.body) });
+  if (opts.method === "POST") posts.push({ rota, corpo: (() => { try { return JSON.parse(opts.body); } catch (e) { return opts.body; } })(), url });
   if (!(rota in rotas)) return { status: 404, ok: false, json: async () => ({ error: "404 " + rota }) };
   return { status: 200, ok: true, json: async () => rotas[rota] };
 };
 
 const codigo = fs.readFileSync(path.join(__dirname, "..", "app.js"), "utf8");
-const api = new Function(codigo + "; return { S, openPanel, showEnv, current, renderGrid, pollStats, pollHost, openSettings, showLogs, showConsole, termNew, termFeed, termKey, openResources, hintClean, openHistory, setView, openFiles, pollJobs, pollPerf, iconPlate, renderHome, touchRecent };")();
+const api = new Function(codigo + "; return { S, openPanel, showEnv, current, renderGrid, pollStats, pollHost, openSettings, showLogs, showConsole, termNew, termFeed, termKey, openResources, hintClean, openHistory, setView, openFiles, renderFiles, uploadFiles, pollJobs, pollPerf, iconPlate, renderHome, touchRecent };")();
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 let falhas = 0;
 const confere = (cond, msg) => { if (!cond) { falhas++; console.log("FALHOU:", msg); } else console.log("ok   ", msg); };
@@ -254,24 +254,88 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   await api.pollHost();
   confere($("host").textContent === "carga 25% · RAM 2.0/8.0 GB · 50 °C · ligado há 1 d", `topo: resumo do servidor (${$("host").textContent})`);
 
-  // files: apps first, then their volumes and folders; a text file previews, a binary one only downloads, links stay put
+  // files: a manager. Apps first, then volumes and folders; select, create, copy/cut/paste, rename, delete (asked twice), upload, edit
   rotas["/api/files"] = { path: "", entries: [{ name: "memos", type: "dir", size: null, mtime: null }], truncated: false };
   await api.openFiles(""); await esperar(30);
-  confere($("files").open && /Memos/.test($("f-body").textContent) && /Só leitura/.test($("f-body").textContent), "Arquivos: começa pelos apps, só leitura");
+  confere($("files").open && /Memos/.test($("f-body").textContent) && /Escolha uma pasta/.test($("f-body").textContent) && porTexto($("f-bar"), "Enviar").length === 0, "Arquivos: começa pelos apps, sem poder alterar ali");
   rotas["/api/files"] = { path: "memos/memos/data", entries: [{ name: "sub", type: "dir", size: null, mtime: 1 }, { name: "a.txt", type: "file", size: 6, mtime: 1 },
-    { name: "b.bin", type: "file", size: 2, mtime: 1 }, { name: "pw", type: "link", size: null, mtime: 1 }], truncated: false };
+    { name: "p.png", type: "file", size: 9, mtime: 1 }, { name: "b.bin", type: "file", size: 2, mtime: 1 }, { name: "pw", type: "link", size: null, mtime: 1 }], truncated: false };
   await api.openFiles("memos/memos/data"); await esperar(30);
   const trocas = [...$("f-crumb").walk()].filter((e) => e.tag === "button").map((e) => e.textContent);
   confere(trocas.join("|") === "Apps|Memos|memos|data", `Arquivos: o caminho vira migalhas (${trocas})`);
+  confere(porTexto($("f-bar"), "Enviar").length === 1 && porTexto($("f-bar"), "Nova pasta").length === 1 && porTexto($("f-bar"), "Apagar").length === 0 && /Mexer nos arquivos de um app que está rodando/.test($("f-body").textContent), "numa pasta de app: enviar e nova pasta; apagar só com seleção; o aviso sobre app rodando");
+  const caixa = (n) => [...$("f-body").walk()].find((e) => e.tag === "input" && e.attrs.type === "checkbox" && e.attrs["aria-label"] === n);
   const linhaF = (n) => [...$("f-body").walk()].find((e) => e.tag === "button" && e.attrs.class && /fname/.test(e.attrs.class) && e.textContent.includes(n));
   confere(linhaF("pw").attrs.disabled !== undefined, "um atalho (link) não se abre");
+  const marcar = async (n, v = true) => { const c = caixa(n); c.checked = v; c.listeners.change(); await esperar(30); };
+  await marcar("a.txt");
+  confere(/1 selecionado/.test($("f-bar").textContent) && ["Copiar", "Recortar", "Renomear", "Apagar"].every((x) => porTexto($("f-bar"), x).length === 1), "marcar um arquivo: copiar, recortar, renomear e apagar");
+  await marcar("sub");
+  confere(/2 selecionados/.test($("f-bar").textContent) && porTexto($("f-bar"), "Renomear").length === 0, "com dois marcados, não se renomeia");
+  // new folder: asks the name, then posts
+  rotas["/api/files/op"] = { name: "docs" };
+  const antes1 = posts.length;
+  porTexto($("f-bar"), "Nova pasta")[0].listeners.click();
+  const nomeIn = [...$("f-bar").walk()].find((e) => e.tag === "input");
+  nomeIn.value = "docs"; porTexto($("f-bar"), "OK")[0].listeners.click(); await esperar(40);
+  const mk = posts.slice(antes1).find((x) => x.rota === "/api/files/op");
+  confere(mk && mk.corpo.op === "mkdir" && mk.corpo.path === "memos/memos/data" && mk.corpo.name === "docs", "nova pasta: pergunta o nome e envia mkdir");
+  // copy and paste into another folder
+  api.S.fsel = new Set(["a.txt"]); await api.renderFiles("memos/memos/data");
+  porTexto($("f-bar"), "Copiar")[0].listeners.click(); await esperar(30);
+  confere(api.S.fclip && api.S.fclip.mode === "copy" && api.S.fclip.paths[0] === "memos/memos/data/a.txt" && porTexto($("f-bar"), "Colar (1)").length === 1, "copiar guarda na área e oferece Colar");
+  const antes2 = posts.length;
+  porTexto($("f-bar"), "Colar (1)")[0].listeners.click(); await esperar(40);
+  const cp = posts.slice(antes2).find((x) => x.rota === "/api/files/op");
+  confere(cp && cp.corpo.op === "copy" && cp.corpo.path === "memos/memos/data/a.txt" && cp.corpo.to === "memos/memos/data" && api.S.fclip, "colar: envia copy para a pasta aberta e guarda a área (copiar)");
+  // rename one
+  api.S.fsel = new Set(["a.txt"]); api.S.fclip = null; await api.renderFiles("memos/memos/data");
+  const antes3 = posts.length;
+  porTexto($("f-bar"), "Renomear")[0].listeners.click();
+  const novoIn = [...$("f-bar").walk()].find((e) => e.tag === "input");
+  confere(novoIn.value === "a.txt", "renomear: já vem com o nome atual");
+  novoIn.value = "b.txt"; porTexto($("f-bar"), "OK")[0].listeners.click(); await esperar(40);
+  const rn = posts.slice(antes3).find((x) => x.rota === "/api/files/op");
+  confere(rn && rn.corpo.op === "rename" && rn.corpo.path === "memos/memos/data/a.txt" && rn.corpo.name === "b.txt", "renomear envia rename");
+  // delete: the first click only asks, the second deletes each one selected
+  api.S.fsel = new Set(["a.txt", "sub"]); await api.renderFiles("memos/memos/data");
+  const antes4 = posts.length;
+  porTexto($("f-bar"), "Apagar")[0].listeners.click();
+  confere(posts.length === antes4 && porTexto($("f-bar"), "Confirmar: apagar 2 itens").length === 1, "apagar: o primeiro clique só pede confirmação");
+  porTexto($("f-bar"), "Confirmar: apagar 2 itens")[0].listeners.click(); await esperar(60);
+  const dels = posts.slice(antes4).filter((x) => x.rota === "/api/files/op" && x.corpo.op === "delete").map((x) => x.corpo.path);
+  confere(dels.join(",") === "memos/memos/data/sub,memos/memos/data/a.txt", `apagar: o segundo clique apaga cada selecionado (${dels})`);
+  // upload: one request per file, with the name and the folder
+  rotas["/api/files/upload"] = { name: "n.txt" };
+  const antes5 = posts.length;
+  await api.uploadFiles([{ name: "n.txt", size: 3 }, { name: "ç é.bin", size: 1 }], "memos/memos/data"); await esperar(40);
+  const ups = posts.slice(antes5).filter((x) => x.rota === "/api/files/upload").map((x) => decodeURIComponent(x.url));
+  confere(ups.length === 2 && ups[0].includes("path=memos/memos/data&name=n.txt") && ups[1].includes("name=ç é.bin") && /Enviados?|2 enviados/.test($("f-body").textContent), `enviar: um pedido por arquivo (${ups})`);
+  const antes6 = posts.length;
+  await api.uploadFiles([{ name: "x" }], "memos"); await api.uploadFiles([{ name: "x" }], "");
+  confere(posts.length === antes6, "não se envia onde não é pasta de app");
+  // preview and edit a text file; an image shows inline; a binary only downloads
   rotas["/api/files/preview"] = { text: "olá\n", size: 6, truncated: false };
-  linhaF("a.txt").listeners.click(); await esperar(30);
-  confere($("f-view").textContent === "olá\n" && !$("f-view").hidden && [...$("f-body").walk()].some((e) => e.tag === "a" && /files\/download\?path=memos%2Fmemos%2Fdata%2Fa\.txt/.test(e.attrs.href)), "texto: prévia e link de download");
-  delete rotas["/api/files/preview"];
-  await api.openFiles("memos/memos/data"); await esperar(30);
+  api.S.fsel = new Set(); await api.renderFiles("memos/memos/data");
+  linhaF("a.txt").listeners.click(); await esperar(40);
+  const area = [...$("f-body").walk()].find((e) => e.tag === "textarea");
+  confere(area && area.value === "olá\n" && [...$("f-body").walk()].some((e) => e.tag === "a" && /files\/download\?path=memos%2Fmemos%2Fdata%2Fa\.txt/.test(e.attrs.href)), "texto: editor e link de download");
+  area.value = "novo\n";
+  const antes7 = posts.length;
+  porTexto($("f-body"), "Salvar")[0].listeners.click(); await esperar(40);
+  const sv = posts.slice(antes7).find((x) => x.rota === "/api/files/upload");
+  confere(sv && sv.corpo === "novo\n" && /overwrite=1/.test(sv.url) && /name=a\.txt/.test(sv.url) && /Salvo/.test($("f-state").textContent), "salvar: envia por cima do mesmo arquivo");
+  await api.renderFiles("memos/memos/data");
+  linhaF("p.png").listeners.click(); await esperar(30);
+  const img = [...$("f-body").walk()].find((e) => e.tag === "img");
+  confere(img && /files\/download\?path=memos%2Fmemos%2Fdata%2Fp\.png&inline=1/.test(img.attrs.src), "imagem: aparece no painel");
+  await api.renderFiles("memos/memos/data");
   linhaF("b.bin").listeners.click(); await esperar(30);
   confere($("f-view").hidden, "sem prévia, a área do texto some");
+  // an app level (its volumes) is only a list
+  rotas["/api/files"] = { path: "memos", entries: [{ name: "memos", type: "dir", size: null, mtime: null }], truncated: false };
+  await api.renderFiles("memos");
+  confere(porTexto($("f-bar"), "Enviar").length === 0, "na lista de volumes de um app, nada se altera");
   $("files").open = false;
 
   // resources: the dialog lists what is unused and prunes in two clicks; volumes want the word

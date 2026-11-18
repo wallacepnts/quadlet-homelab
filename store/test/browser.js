@@ -60,6 +60,25 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
   console.log("grade carregou:", await ate("document.querySelectorAll('.card').length > 0"), "| azulejos:", await ev("document.querySelectorAll('.tile').length"));
   await esperar(2500);
 
+  if (MODO === "arquivos") {
+    // writes, then undoes: a folder "qh-teste" is made inside the first app's volume and deleted again
+    const clicar = (txt) => ev(`(() => { const b = [...document.querySelectorAll('#files button')].find((x) => x.textContent.trim().startsWith(${JSON.stringify(txt)})); if (!b) return false; b.click(); return true; })()`);
+    await ev("document.getElementById('files-btn').click()"); await esperar(1200);
+    await foto("50-arquivos-apps");
+    console.log("entrou no app:", await clicar("▸"), await esperar(800));
+    console.log("entrou no volume:", await clicar("▸"), await esperar(800));
+    await foto("51-arquivos-volume");
+    console.log("barra:", await ev("[...document.querySelectorAll('#f-bar button')].map((b) => b.textContent).join(' | ')"));
+    await clicar("Nova pasta"); await esperar(200);
+    await ev("(() => { const i = document.querySelector('#f-bar input'); i.value = 'qh-teste'; i.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' })); })()"); await esperar(1500);
+    console.log("criou:", await ev("[...document.querySelectorAll('#f-body .fname')].some((b) => b.textContent.includes('qh-teste'))"));
+    await ev("(() => { const c = [...document.querySelectorAll('#f-body input[type=checkbox]')].find((x) => x.getAttribute('aria-label') === 'qh-teste'); c.checked = true; c.dispatchEvent(new Event('change')); })()"); await esperar(800);
+    await foto("52-arquivos-selecionado");
+    await clicar("Apagar"); await esperar(200); await clicar("Confirmar"); await esperar(1500);
+    console.log("apagou:", !(await ev("[...document.querySelectorAll('#f-body .fname')].some((b) => b.textContent.includes('qh-teste'))")));
+    await foto("53-arquivos-depois");
+  }
+
   if (MODO === "tema") {
     // reads only: the Clean theme — the home, the store, the right-click menu, Appearance
     await ate("document.querySelectorAll('.tile').length > 0", 15000); await esperar(2500);

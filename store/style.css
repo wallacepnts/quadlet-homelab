@@ -533,3 +533,7 @@ body.has-bg .card, body.has-bg #nav, body.has-bg .stat, body.has-bg nav#groups b
 #f-body td.num { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
 #f-view { max-height: 24rem; }
 #f-actions { display: flex; gap: .5rem; align-items: center; margin: .6rem 0; }
+#files { width: min(64rem, 96vw); } #files.drop { outline: 2px dashed var(--accent); outline-offset: -8px; }
+#f-bar { align-items: center; margin-bottom: .6rem; } #f-bar input[type=text] { min-width: 14rem; }
+#f-body td.chk, #f-body th.chk { width: 2rem; } #f-body .fimg { max-width: 100%; max-height: 28rem; border-radius: var(--radius-sm); display: block; margin-top: .6rem; }
+#f-edit { width: 100%; font-family: ui-monospace, monospace; font-size: .85rem; }

@@ -428,6 +428,7 @@ UI_CHOICES = {"theme": ("system", "light", "dark"),
               "icon_size": ("small", "medium", "large"), "depth": ("flat", "soft")}
 UI_RANGES = {"bg_blur": (0, 20), "bg_dim": (0, 80)}
 BG_MAX = 8 * 1024 * 1024
+IMAGE_TYPES = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "gif": "image/gif", "webp": "image/webp", "bmp": "image/bmp"}
 BG_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".webp": "image/webp"}
 
 
@@ -1396,16 +1397,39 @@ def files_roots(app):
     return {Path(r).name: r for r in sv.volume_roots()} if sv.installed() else None
 
 
+def files_user_roots():
+    """{"@VAR": path}: the folders the person chose for what the apps share (the media root, the recordings), read
+    from the systemd variables the installed apps' `Volume=` lines use. Only folders that exist."""
+    saida = {}
+    for p in sorted(I.APPS.iterdir()):
+        if not p.is_dir() or files_roots(p.name) is None:
+            continue
+        for caminho, _ in I.Service(p.name, PREFIX).volumes():
+            for nome in re.findall(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}", caminho):
+                valor = I.manager_var(nome)
+                if valor and Path(valor).is_dir():
+                    saida["@" + nome] = valor
+    return saida
+
+
 def files_apps():
-    """The installed apps that keep data under volumes/, by name."""
-    return sorted(p.name for p in I.APPS.iterdir() if p.is_dir() and files_roots(p.name))
+    """The installed apps that keep data under volumes/, then the folders of the person's own, by name."""
+    return sorted(p.name for p in I.APPS.iterdir() if p.is_dir() and files_roots(p.name)) + sorted(files_user_roots())
 
 
 def files_split(path):
-    """(app, root path, rest) for "app/volume/sub/dir"; (app, None, "") for "app"; raises hostctl.FsError for the rest."""
+    """(app, root path, rest) for "app/volume/sub/dir"; (app, None, "") for "app"; (None, None, "") for the top.
+
+    "@NAME" is a folder of the person's own (the media root): its path is the root, with no volume level.
+    Raises hostctl.FsError for what does not exist."""
     partes = [x for x in (path or "").split("/") if x]
     if not partes:
         return None, None, ""
+    if partes[0].startswith("@"):
+        dono = files_user_roots().get(partes[0])
+        if dono is None:
+            raise hostctl.FsError(404, "unknown folder")
+        return partes[0], dono, "/".join(partes[1:])
     roots = files_roots(partes[0])
     if roots is None:
         raise hostctl.FsError(404, "unknown app")
@@ -1416,14 +1440,48 @@ def files_split(path):
     return partes[0], roots[partes[1]], "/".join(partes[2:])
 
 
-def files_run(op, root, rel):
+def files_run(op, root, rel, *extra):
     """The operation of hostctl on `root`/`rel`: inside `podman unshare` on a host (a container's files belong to a
     subuid the user cannot read from outside), in this process in a sandbox. Returns (rc, stdout bytes, stderr)."""
     if PREFIX or not shutil.which("podman"):
         raise RuntimeError("direct")
-    r = subprocess.run(["podman", "unshare", "python3", str(Path(hostctl.__file__).resolve()), op, root, rel],
-                       capture_output=True, timeout=60)
+    r = subprocess.run(["podman", "unshare", "python3", str(Path(hostctl.__file__).resolve()), op, root, rel, *map(str, extra)],
+                       capture_output=True, timeout=600)
     return r.returncode, r.stdout, r.stderr.decode(errors="replace")
+
+
+def files_exec(op, root, rel, *extra):
+    """A change to a folder, by hostctl in `podman unshare` (or in this process in a sandbox): the answer dict."""
+    try:
+        rc, out, err = files_run(op, root, rel, *extra)
+    except RuntimeError:
+        fn = {"fs-mkdir": hostctl.fs_mkdir, "fs-rename": hostctl.fs_rename, "fs-delete": hostctl.fs_delete,
+              "fs-copy": hostctl.fs_copy, "fs-move": hostctl.fs_move}[op]
+        return fn(root, rel, *extra)
+    d = json.loads(out or b"{}")
+    if "error" in d:
+        raise hostctl.FsError(d["code"], d["error"])
+    return d
+
+
+def files_change(d):
+    """One change asked by the panel ({op, path, name | to}), refused when it leaves the app's folders."""
+    op, path = d.get("op"), d.get("path", "")
+    _, root, rel = files_split(path)
+    if root is None:
+        raise hostctl.FsError(400, "choose a folder")
+    if op == "mkdir":
+        return files_exec("fs-mkdir", root, rel, str(d.get("name", "")))
+    if op == "rename":
+        return files_exec("fs-rename", root, rel, str(d.get("name", "")))
+    if op == "delete":
+        return files_exec("fs-delete", root, rel)
+    if op in ("copy", "move"):
+        _, droot, drel = files_split(d.get("to", ""))
+        if droot is None:
+            raise hostctl.FsError(400, "choose a folder")
+        return files_exec("fs-" + op, root, rel, droot, drel)
+    raise hostctl.FsError(400, "operation")
 
 
 def files_list(path):
@@ -2080,15 +2138,62 @@ class Handler(BaseHTTPRequestHandler):
             raise ValueError("body too large")
         return self.rfile.read(n) if n else b""
 
-    def _file_download(self, path):
+    def _file_upload(self, q):
+        """A file sent from the browser into a folder of an app: streamed into hostctl, which writes it beside its final name
+        and renames it only when whole. Announced length and written length must agree, so a cut upload is not kept."""
+        _, root, rel = files_split(q.get("path", [""])[0])
+        if root is None:
+            raise hostctl.FsError(400, "choose a folder")
+        nome, ow = q.get("name", [""])[0], q.get("overwrite", ["0"])[0] == "1"
+        n = int(self.headers.get("Content-Length") or -1)
+        if n < 0:
+            raise hostctl.FsError(411, "length")
+        hostctl.clean_name(nome)
+        if PREFIX or not shutil.which("podman"):
+            class Lido:
+                def __init__(s, f, restante):
+                    s.f, s.rest = f, restante
+                def read(s, k=-1):
+                    k = s.rest if k is None or k < 0 else min(k, s.rest)
+                    dados = s.f.read(k)
+                    s.rest -= len(dados)
+                    return dados
+            return self._json(200, hostctl.fs_write(root, rel, nome, Lido(self.rfile, n), ow, n))
+        proc = subprocess.Popen(["podman", "unshare", "python3", str(Path(hostctl.__file__).resolve()), "fs-write", root, rel, nome,
+                                 "1" if ow else "0", str(n)], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        try:
+            restante = n
+            while restante:
+                dados = self.rfile.read(min(restante, 1 << 20))
+                if not dados:
+                    break
+                proc.stdin.write(dados)
+                restante -= len(dados)
+            proc.stdin.close()
+            out = proc.stdout.read()
+            proc.wait(timeout=60)
+        except (BrokenPipeError, OSError):
+            proc.kill()
+            raise hostctl.FsError(502, "write")
+        finally:
+            if proc.poll() is None:
+                proc.kill()
+        d = json.loads(out or b"{}")
+        if "error" in d:
+            raise hostctl.FsError(d["code"], d["error"])
+        return self._json(200, d)
+
+    def _file_download(self, path, inline=False):
         """A file of an app's folder, streamed as a download. Refused paths answer before a byte is sent."""
         app, root, rel = files_split(path)
         if root is None:
             raise hostctl.FsError(400, "not a file")
         nome = (rel.rsplit("/", 1)[-1] or "file")
-        cab = lambda tam: ([("Content-Type", "application/octet-stream"), ("X-Content-Type-Options", "nosniff"),   # noqa: E731
+        # `inline` shows an image in the panel; only these types, so a page of a container's making is never rendered
+        tipo = IMAGE_TYPES.get(nome.rsplit(".", 1)[-1].lower()) if inline else None
+        cab = lambda tam: ([("Content-Type", tipo or "application/octet-stream"), ("X-Content-Type-Options", "nosniff"),   # noqa: E731
                             ("Cache-Control", "no-store"),
-                            ("Content-Disposition", "attachment; filename*=UTF-8''" + urllib.parse.quote(nome))]
+                            ("Content-Disposition", ("inline" if tipo else "attachment") + "; filename*=UTF-8''" + urllib.parse.quote(nome))]
                            + ([("Content-Length", str(tam))] if tam is not None else []))
         if PREFIX or not shutil.which("podman"):
             f, tam = hostctl.fs_open(root, rel)
@@ -2267,7 +2372,7 @@ class Handler(BaseHTTPRequestHandler):
                 if url.path == "/api/files/preview":
                     return self._json(200, files_preview(q.get("path", "")))
                 if url.path == "/api/files/download":
-                    return self._file_download(q.get("path", ""))
+                    return self._file_download(q.get("path", ""), q.get("inline") == "1")
             except hostctl.FsError as e:
                 return self._json(e.code, {"error": str(e)})
             except (OSError, subprocess.TimeoutExpired, ValueError) as e:
@@ -2410,6 +2515,17 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(413, {"error": "the image is over 8 MB"})
             erro = ui_set_background(dados)
             return self._json(400, {"error": erro}) if erro else self._json(200, ui_settings())
+        if url.path.startswith("/api/files/"):
+            try:
+                if url.path == "/api/files/upload":
+                    return self._file_upload(parse_qs(url.query))
+                if url.path == "/api/files/op":
+                    d0 = json.loads(self._body() or b"{}")
+                    return self._json(200, files_change(d0 if isinstance(d0, dict) else {}))
+            except hostctl.FsError as e:
+                return self._json(e.code, {"error": str(e)})
+            except (OSError, subprocess.TimeoutExpired, ValueError) as e:
+                return self._json(502, {"error": str(e)})
         if url.path == "/api/backup/upload":
             app = parse_qs(url.query).get("app", [""])[0]
             if not service_dir(app):
@@ -3438,10 +3554,42 @@ def selftest():
             assert pedir(f"/api/files/preview?path={urllib.parse.quote(base_f + '/sub/b.bin')}", headers=ok)[0] == 415
             st, h, corpo = pedir(f"/api/files/download?path={urllib.parse.quote(base_f + '/sub/a.txt')}", headers=ok)
             assert st == 200 and corpo == "olá\n".encode() and "attachment" in h["Content-Disposition"], (st, corpo)
+            (vol / "sub/p.png").write_bytes(b"\x89PNG")
+            st, h, c = pedir(f"/api/files/download?path={urllib.parse.quote(base_f + '/sub/p.png')}&inline=1", headers=ok)
+            assert st == 200 and h["Content-Type"] == "image/png" and h["Content-Disposition"].startswith("inline"), dict(h)
+            st, h, c = pedir(f"/api/files/download?path={urllib.parse.quote(base_f + '/sub/a.txt')}&inline=1", headers=ok)
+            assert h["Content-Type"] == "application/octet-stream" and h["Content-Disposition"].startswith("attachment"), "only images are shown inline"
             for ruim in (base_f + "/sub/pw", base_f + "/../x", dono + "/nope", "nope", base_f + "/sub/missing"):
                 assert pedir(f"/api/files?path={urllib.parse.quote(ruim)}", headers=ok)[0] in (400, 404), ruim
                 assert pedir(f"/api/files/download?path={urllib.parse.quote(ruim)}", headers=ok)[0] in (400, 404), ruim
             assert pedir("/api/files/download?path=" + urllib.parse.quote(base_f), headers=ok)[0] == 400, "a folder is not a download"
+            # files, changing them: create, upload (whole or cut), rename, copy, move and delete; nothing leaves the volume
+            Q = urllib.parse.quote
+            def op(**d):
+                return pedir("/api/files/op", json.dumps(d).encode(), api)
+            assert op(op="mkdir", path=base_f, name="docs")[0] == 200 and (vol / "docs").is_dir()
+            assert op(op="mkdir", path=base_f, name="docs")[0] == 409
+            assert op(op="mkdir", path=base_f, name="../x")[0] == 400
+            assert op(op="mkdir", path=dono, name="x")[0] == 400, "no folder is chosen above the volumes"
+            assert pedir("/api/files/op", json.dumps({"op": "mkdir", "path": base_f, "name": "z"}).encode(), ok)[0] == 403, "the CSRF header is needed"
+            st, _, c = pedir(f"/api/files/upload?path={Q(base_f + '/docs')}&name=r.txt", b"12345", api)
+            assert st == 200 and json.loads(c) == {"name": "r.txt"} and (vol / "docs/r.txt").read_bytes() == b"12345", (st, c)
+            st, _, c = pedir(f"/api/files/upload?path={Q(base_f + '/docs')}&name=r.txt", b"67", api)
+            assert json.loads(c) == {"name": "r (1).txt"}, "a taken name is not overwritten"
+            st, _, c = pedir(f"/api/files/upload?path={Q(base_f + '/docs')}&name=r.txt&overwrite=1", b"new", api)
+            assert (vol / "docs/r.txt").read_bytes() == b"new"
+            assert pedir(f"/api/files/upload?path={Q(base_f + '/docs')}&name=..%2Fx", b"1", api)[0] == 400
+            assert pedir(f"/api/files/upload?path={Q(base_f + '/sub/pw')}&name=x", b"1", api)[0] == 400, "not into a link"
+            assert pedir(f"/api/files/upload?path={Q(dono)}&name=x", b"1", api)[0] == 400
+            assert op(op="rename", path=base_f + "/docs/r.txt", name="s.txt")[0] == 200 and (vol / "docs/s.txt").exists()
+            assert op(op="copy", path=base_f + "/docs/s.txt", to=base_f + "/sub")[0] == 200 and (vol / "sub/s.txt").exists()
+            assert op(op="move", path=base_f + "/docs", to=base_f + "/sub")[0] == 200 and (vol / "sub/docs/s.txt").exists() and not (vol / "docs").exists()
+            assert op(op="move", path=base_f + "/sub", to=base_f + "/sub/docs")[0] == 400, "a folder does not go into itself"
+            assert op(op="delete", path=base_f + "/sub/docs")[0] == 200 and not (vol / "sub/docs").exists()
+            assert op(op="delete", path=base_f)[0] == 400, "the volume itself is not deleted"
+            assert op(op="delete", path=base_f + "/sub/pw")[0] == 200 and not os.path.lexists(vol / "sub/pw") and Path("/etc/passwd").exists(), "a link goes, its target stays"
+            assert op(op="delete", path=base_f + "/nope")[0] == 404
+            assert op(op="wat", path=base_f)[0] == 400
             # disk usage: the volumes of an installed app, summed
             uso = json.loads(pedir("/api/usage?refresh=1", headers=ok)[2])
             assert all(set(x) == {"app", "bytes"} for x in uso["apps"]) and uso["at"] > 0, uso

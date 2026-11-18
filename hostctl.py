@@ -135,7 +135,7 @@ class FsError(Exception):
         self.code = code
 
 
-def confine(root, rel):
+def confine(root, rel, final_link=False):
     """The real path of `rel` under `root`, or FsError. Never leaves the root, never follows a link.
 
     A container wrote what is in there and can put a symlink to /etc/passwd in it. Read as the user inside
@@ -143,13 +143,14 @@ def confine(root, rel):
     own files, so a link anywhere on the way is refused, not resolved."""
     raiz = os.path.realpath(root)
     atual = raiz
-    for parte in [p for p in (rel or "").split("/") if p and p != "."]:
+    partes = [p for p in (rel or "").split("/") if p and p != "."]
+    for i, parte in enumerate(partes):
         if parte == ".." or "\0" in parte:
             raise FsError(400, "path")
         atual = os.path.join(atual, parte)
-        if os.path.islink(atual):
+        if os.path.islink(atual) and not (final_link and i == len(partes) - 1):
             raise FsError(400, "link")
-    real = os.path.realpath(atual)
+    real = os.path.realpath(atual) if not (final_link and os.path.islink(atual)) else atual
     if real != raiz and not real.startswith(raiz + os.sep):
         raise FsError(400, "outside")
     if not os.path.lexists(real):
@@ -214,8 +215,137 @@ def fs_preview(root, rel):
     return {"text": texto, "size": tamanho, "truncated": cortado}
 
 
+# -- files: change them ---------------------------------------------------------------------------
+# Everything here runs in `podman unshare`, where the user is root over the files a container wrote. What is created
+# takes the owner of the folder it lands in, so the app that owns the folder can read it back.
+
+def clean_name(nome):
+    if not isinstance(nome, str) or not nome or nome in (".", "..") or "/" in nome or "\0" in nome or len(nome.encode()) > 255:
+        raise FsError(400, "name")
+    return nome
+
+
+def _adopt(caminho, ref):
+    """Give `caminho` (and what is under it) the owner of the folder `ref`, links themselves and not their targets."""
+    st = os.stat(ref)
+    for atual, pastas, arquivos in os.walk(caminho):
+        os.lchown(atual, st.st_uid, st.st_gid)
+        for n in arquivos + [d for d in pastas if os.path.islink(os.path.join(atual, d))]:
+            os.lchown(os.path.join(atual, n), st.st_uid, st.st_gid)
+    if os.path.isfile(caminho) or os.path.islink(caminho):
+        os.lchown(caminho, st.st_uid, st.st_gid)
+
+
+def unique(pasta, nome):
+    """`nome`, or `nome (1)`, `nome (2)`... when it is taken (before the extension: `a (1).txt`)."""
+    if not os.path.lexists(os.path.join(pasta, nome)):
+        return nome
+    base, ext = os.path.splitext(nome) if not nome.startswith(".") or nome.count(".") > 1 else (nome, "")
+    n = 1
+    while os.path.lexists(os.path.join(pasta, f"{base} ({n}){ext}")):
+        n += 1
+    return f"{base} ({n}){ext}"
+
+
+def fs_mkdir(root, rel, nome):
+    pai = confine(root, rel)
+    if not os.path.isdir(pai):
+        raise FsError(400, "not a folder")
+    destino = os.path.join(pai, clean_name(nome))
+    if os.path.lexists(destino):
+        raise FsError(409, "exists")
+    os.mkdir(destino, 0o755)
+    _adopt(destino, pai)
+    return {"name": nome}
+
+
+def fs_rename(root, rel, novo):
+    if not (rel or "").strip("/"):
+        raise FsError(400, "root")
+    atual = confine(root, rel, final_link=True)
+    destino = os.path.join(os.path.dirname(atual), clean_name(novo))
+    if os.path.lexists(destino):
+        raise FsError(409, "exists")
+    os.rename(atual, destino)
+    return {"name": novo}
+
+
+def fs_delete(root, rel):
+    if not (rel or "").strip("/"):
+        raise FsError(400, "root")              # the volume itself is the app's, not a file
+    alvo = confine(root, rel, final_link=True)
+    if os.path.isdir(alvo) and not os.path.islink(alvo):
+        shutil.rmtree(alvo)                     # rmtree removes a link inside; it never follows it
+    else:
+        os.unlink(alvo)
+    return {}
+
+
+def _transfer(root, rel, droot, drel, mover):
+    if not (rel or "").strip("/"):
+        raise FsError(400, "root")
+    origem = confine(root, rel, final_link=True)
+    pasta = confine(droot, drel)
+    if not os.path.isdir(pasta):
+        raise FsError(400, "not a folder")
+    real_origem = os.path.realpath(origem) if not os.path.islink(origem) else origem
+    if os.path.isdir(real_origem) and (pasta == real_origem or pasta.startswith(real_origem + os.sep)):
+        raise FsError(400, "into itself")
+    nome = unique(pasta, os.path.basename(origem))
+    destino = os.path.join(pasta, nome)
+    if mover:
+        shutil.move(origem, destino)
+    elif os.path.isdir(origem) and not os.path.islink(origem):
+        shutil.copytree(origem, destino, symlinks=True)
+    else:
+        shutil.copy2(origem, destino, follow_symlinks=False)
+    _adopt(destino, pasta)
+    return {"name": nome}
+
+
+def fs_copy(root, rel, droot, drel):
+    return _transfer(root, rel, droot, drel, False)
+
+
+def fs_move(root, rel, droot, drel):
+    return _transfer(root, rel, droot, drel, True)
+
+
+def fs_write(root, rel, nome, origem, overwrite=False, expected=None):
+    """Write the bytes of `origem` (a binary file object) as `nome` in the folder `rel`; the name is kept unless it is
+    taken and `overwrite` is off. A cut upload leaves nothing under the real name: with `expected` (the length the
+    sender announced) a stream that ends short is a cut one, not a small file."""
+    pasta = confine(root, rel)
+    if not os.path.isdir(pasta):
+        raise FsError(400, "not a folder")
+    nome = clean_name(nome)
+    final = nome if overwrite else unique(pasta, nome)
+    destino = os.path.join(pasta, final)
+    if overwrite and os.path.lexists(destino) and (os.path.islink(destino) or not os.path.isfile(destino)):
+        raise FsError(400, "not a file")
+    parte = os.path.join(pasta, f".{final}.qhpart")
+    try:
+        fd = os.open(parte, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o644)
+    except FileExistsError:
+        raise FsError(409, "busy")
+    except PermissionError:
+        raise FsError(403, "denied")
+    try:
+        with os.fdopen(fd, "wb") as out:
+            shutil.copyfileobj(origem, out, 1 << 20)
+        if expected is not None and os.path.getsize(parte) != expected:
+            raise FsError(400, "cut")
+        _adopt(parte, pasta)
+        os.replace(parte, destino)
+    except BaseException:
+        if os.path.lexists(parte):
+            os.unlink(parte)
+        raise
+    return {"name": final}
+
+
 def _cli(argv):
-    """`hostctl.py fs-ls|fs-preview|fs-cat ROOT REL`: what the store runs inside `podman unshare`."""
+    """`hostctl.py fs-<op> ROOT REL ...`: what the store runs inside `podman unshare`."""
     op, raiz, rel = argv[0], argv[1], argv[2] if len(argv) > 2 else ""
     try:
         if op == "fs-ls":
@@ -226,6 +356,15 @@ def _cli(argv):
             f, _ = fs_open(raiz, rel)
             with f:
                 shutil.copyfileobj(f, sys.stdout.buffer, 1 << 20)
+        elif op in ("fs-mkdir", "fs-rename"):
+            sys.stdout.write(json.dumps((fs_mkdir if op == "fs-mkdir" else fs_rename)(raiz, rel, argv[3])))
+        elif op == "fs-delete":
+            sys.stdout.write(json.dumps(fs_delete(raiz, rel)))
+        elif op in ("fs-copy", "fs-move"):
+            sys.stdout.write(json.dumps((fs_copy if op == "fs-copy" else fs_move)(raiz, rel, argv[3], argv[4])))
+        elif op == "fs-write":
+            sys.stdout.write(json.dumps(fs_write(raiz, rel, argv[3], sys.stdin.buffer, argv[4:5] == ["1"],
+                                                  int(argv[5]) if len(argv) > 5 else None)))
         else:
             return 2
     except FsError as e:
@@ -346,9 +485,73 @@ def selftest():
             raise AssertionError("a fifo is not a file")
         except FsError as e:
             assert e.code == 400
+        # change: create, rename, copy, move, write and delete, all inside the root
+        def recusa(fn, *a, code=400):
+            try:
+                fn(*a)
+            except FsError as e:
+                assert e.code == code, (fn.__name__, a, e.code)
+                return
+            raise AssertionError((fn.__name__, a))
+        assert fs_mkdir(raiz, "data", "novo") == {"name": "novo"} and (raiz / "data/novo").is_dir()
+        recusa(fs_mkdir, raiz, "data", "novo", code=409)
+        for ruim in ("", ".", "..", "a/b", "x\0y", "n" * 300):
+            recusa(fs_mkdir, raiz, "data", ruim)
+        recusa(fs_mkdir, raiz, "data/b.txt", "x")
+        recusa(fs_mkdir, raiz, "data/escape", "x")
+        assert fs_rename(raiz, "data/novo", "renomeado") == {"name": "renomeado"} and (raiz / "data/renomeado").is_dir()
+        recusa(fs_rename, raiz, "data/renomeado", "sub", code=409)
+        recusa(fs_rename, raiz, "", "x")
+        recusa(fs_rename, raiz, "data/renomeado", "../fora")
+        assert fs_rename(raiz, "data/escape", "link2") == {"name": "link2"} and os.path.islink(raiz / "data/link2"), "a link itself can be renamed"
+        recusa(fs_rename, raiz, "data/link2/x", "y")
+        # write: a new file, a taken name gets (1), overwrite replaces, a cut stream leaves nothing
+        import io
+        assert fs_write(raiz, "data/sub", "up.txt", io.BytesIO(b"abc")) == {"name": "up.txt"}
+        assert fs_write(raiz, "data/sub", "up.txt", io.BytesIO(b"def")) == {"name": "up (1).txt"}
+        assert (raiz / "data/sub/up.txt").read_bytes() == b"abc" and (raiz / "data/sub/up (1).txt").read_bytes() == b"def"
+        assert fs_write(raiz, "data/sub", "up.txt", io.BytesIO(b"new"), overwrite=True) == {"name": "up.txt"} and (raiz / "data/sub/up.txt").read_bytes() == b"new"
+        class Corta:
+            def read(self, n=-1):
+                raise OSError("connection cut")
+        try:
+            fs_write(raiz, "data/sub", "meio.txt", Corta())
+            raise AssertionError("a cut upload")
+        except OSError:
+            pass
+        assert not (raiz / "data/sub/meio.txt").exists() and not list((raiz / "data/sub").glob(".*qhpart")), "nothing is left half written"
+        recusa(fs_write, raiz, "data/sub", "short.txt", io.BytesIO(b"12"), False, 5)
+        assert not (raiz / "data/sub/short.txt").exists() and not list((raiz / "data/sub").glob(".*qhpart")), "a stream shorter than announced is a cut upload"
+        assert fs_write(raiz, "data/sub", "whole.txt", io.BytesIO(b"12345"), False, 5) == {"name": "whole.txt"}
+        recusa(fs_write, raiz, "data/sub", "../x", io.BytesIO(b""))
+        recusa(fs_write, raiz, "data/sub/up.txt", "x", io.BytesIO(b""))
+        recusa(fs_write, raiz, "data/linkdir", "x", io.BytesIO(b""))
+        os.symlink(Path(tmp, "secret"), raiz / "data/sub/ln")
+        recusa(fs_write, raiz, "data/sub", "ln", io.BytesIO(b"x"), True)
+        assert Path(tmp, "secret").read_text() == "host file", "overwrite never writes through a link"
+        # copy and move: collisions are renamed, a folder cannot go into itself, a move leaves nothing behind
+        assert fs_copy(raiz, "data/sub/up.txt", raiz, "data/renomeado") == {"name": "up.txt"}
+        assert fs_copy(raiz, "data/sub/up.txt", raiz, "data/renomeado") == {"name": "up (1).txt"}
+        assert fs_copy(raiz, "data/sub", raiz, "data/renomeado") == {"name": "sub"} and (raiz / "data/renomeado/sub/c.md").exists()
+        assert (raiz / "data/sub/c.md").exists(), "a copy keeps the original"
+        recusa(fs_copy, raiz, "data/sub", raiz, "data/sub")
+        recusa(fs_move, raiz, "data/renomeado", raiz, "data/renomeado/sub")
+        assert fs_move(raiz, "data/renomeado/up.txt", raiz, "data/sub") == {"name": "up (2).txt"} and not (raiz / "data/renomeado/up.txt").exists()
+        recusa(fs_move, raiz, "", raiz, "data")
+        assert fs_copy(raiz, "data/link2", raiz, "data") == {"name": "link2 (1)"} and os.path.islink(raiz / "data/link2 (1)"), "a link is copied as a link, never followed"
+        fs_delete(raiz, "data/link2 (1)")
+        outra = Path(tmp, "outra"); outra.mkdir()
+        assert fs_move(raiz, "data/sub/up (2).txt", outra, "") == {"name": "up (2).txt"} and (outra / "up (2).txt").exists(), "between two roots"
+        # delete: a file, a folder with a link inside (the link goes, its target stays), never the root
+        assert fs_delete(raiz, "data/sub/up (1).txt") == {}
+        assert fs_delete(raiz, "data/sub") == {} and not (raiz / "data/sub").exists() and Path(tmp, "secret").exists()
+        assert fs_delete(raiz, "data/link2") == {} and not os.path.lexists(raiz / "data/link2") and Path(tmp, "secret").exists()
+        recusa(fs_delete, raiz, "")
+        recusa(fs_delete, raiz, "data/nope", code=404)
+        recusa(fs_delete, raiz, "../secret")
         # the command line the store runs under `podman unshare`
         j = json.loads(subprocess.run([sys.executable, __file__, "fs-ls", str(raiz), "data"], capture_output=True, text=True).stdout)
-        assert j["entries"][0]["name"] == "sub"
+        assert j["entries"][0]["name"] == "renomeado"
         assert subprocess.run([sys.executable, __file__, "fs-cat", str(raiz), "data/b.txt"], capture_output=True).stdout == b"hello\n"
         bad = subprocess.run([sys.executable, __file__, "fs-cat", str(raiz), "data/escape"], capture_output=True)
         assert bad.returncode == 3 and bad.stdout == b"", "a refused file gives no bytes"
