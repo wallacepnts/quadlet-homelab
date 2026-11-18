@@ -570,6 +570,17 @@ server's clock), between a minute and a week ahead. It is a transient systemd us
 time: a new schedule replaces the old, and **Cancel schedule** stops it. The state is `~/.config/quadlet-homelab/power.json`.
 Unlike the immediate action, a scheduled one does not wait for a running job.
 
+## What counts as an update
+
+An installed app has an update when **either** a newer release than the one it runs exists **or** the repository's
+`.container` changed after the install (what `qh --catalog` calls `drift: "changed"`, and `qh <app> --update` copies).
+Both count the same: the *With update* filter, the number on it and **Update all** include the app, and its
+**Update** button does it. A release says which version it goes to; a changed unit says nothing of the kind, so the
+app's panel shows, above the buttons, *The .container of … changed in the repository since the install* and the
+difference as a diff (red what runs now, green what the repository says) before anything is written
+(`/api/drift?unit=`). The unit is compared with what `qh` would write now: the repository's, or your own
+`.container` (see Customize), rendered for the access rule it was installed with.
+
 ## Quick Launch, appearance and service widgets
 
 - **Quick Launch:** type any letter on the page (or `/`) and a search opens over it: the installed apps first, then the

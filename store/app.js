@@ -50,6 +50,7 @@ const T = {
     podmanTitle: "Podman", podmanLine: (v) => `Neste servidor: Podman ${v}.`,
     podmanLate: (v, rec) => `O repositório foi verificado no Podman ${rec}. As versões 6.1.1 a 6.1.3 corrigiram falhas de segurança (extração de arquivos fora da pasta, importação de imagens e volumes, imagens de checkpoint). Atualize o pacote do host quando puder: ${v} é mais antiga.`,
     podmanOk: (rec) => `Igual ou mais nova que a ${rec}, com a qual o repositório foi verificado.`,
+    driftTitle: (units) => `O .container de ${units} mudou no repositório desde a instalação`, driftHint: "Atualizar escreve o arquivo novo e reinicia o serviço. A diferença (− o que roda agora, + o que o repositório diz):", driftNone: "Sem diferença.",
     fGrid: "Grade", fList: "Lista", fColName: "Nome", fColSize: "Tamanho", fColDate: "Modificado", fPlaces: "Locais",
     fUpload: "Enviar", fNewFolder: "Nova pasta", fRename: "Renomear", fCopy: "Copiar", fCut: "Recortar", fPaste: "Colar", fDelete: "Apagar",
     fSure: (n) => `Confirmar: apagar ${n} ${n === 1 ? "item" : "itens"}`, fCancel: "Cancelar", fOk: "OK", fName: "Nome", fSel: (n) => `${n} selecionado${n === 1 ? "" : "s"}`,
@@ -248,6 +249,7 @@ const T = {
     podmanTitle: "Podman", podmanLine: (v) => `On this server: Podman ${v}.`,
     podmanLate: (v, rec) => `The repository was verified on Podman ${rec}. Versions 6.1.1 to 6.1.3 fixed security flaws (files written outside a folder, image and volume imports, checkpoint images). Update the host package when you can: ${v} is older.`,
     podmanOk: (rec) => `The same as or newer than ${rec}, which the repository was verified on.`,
+    driftTitle: (units) => `The .container of ${units} changed in the repository since the install`, driftHint: "Updating writes the new file and restarts the service. The difference (− what runs now, + what the repository says):", driftNone: "No difference.",
     fGrid: "Grid", fList: "List", fColName: "Name", fColSize: "Size", fColDate: "Modified", fPlaces: "Places",
     fUpload: "Upload", fNewFolder: "New folder", fRename: "Rename", fCopy: "Copy", fCut: "Cut", fPaste: "Paste", fDelete: "Delete",
     fSure: (n) => `Confirm: delete ${n} ${n === 1 ? "item" : "items"}`, fCancel: "Cancel", fOk: "OK", fName: "Name", fSel: (n) => `${n} selected`,
@@ -1139,6 +1141,9 @@ function renderPanel() {
   const caidas = a.units.filter((u) => u.installed && u.failure && !u.stopped);
   $("p-fail").hidden = !caidas.length;
   fill($("p-fail"), ...caidas.map((u) => h("p", {}, failText(u))));
+  const mudaram = a.installed ? a.units.filter((u) => u.installed && u.drift === "changed") : [];
+  $("p-drift").hidden = !mudaram.length;
+  if (mudaram.length) showDrift(a, mudaram);
   const velho = a.podman_too_old ? t("podmanOld")(a.min_podman, S.podman) : null;
   // What to do at the first run and what is odd about the app: the notes that live beside its unit (no README per app).
   const notas = a.notes && (a.notes[S.lang] || a.notes.en);
@@ -1565,6 +1570,23 @@ function rawUnit(a, unit, d, pre) {
     d.installed_text ? h("details", {}, h("summary", {}, t("rawRunning")),
       h("pre", {}, d.installed_text + (d.text ? `\n# ---- ${d.file} ----\n${d.text}` : ""))) : null);
   return { el, value: atual, difere, editado, revisar, ack: () => ack.checked, open: () => { el.open = true; } };
+}
+
+// A unit the repository changed after the install counts as an update; this says what changed, before it is applied.
+async function showDrift(a, unidades) {
+  $("p-drift-title").textContent = t("driftTitle")(unidades.map((u) => u.unit).join(", "));
+  $("p-drift-hint").textContent = t("driftHint");
+  const partes = [];
+  for (const u of unidades) {
+    try {
+      const d = await api(`/api/drift?unit=${encodeURIComponent(u.unit)}`);
+      if (a.id !== S.current) return;                           // the person went elsewhere meanwhile
+      if (unidades.length > 1) partes.push(h("b", {}, u.unit), "\n");
+      for (const linha of (d.diff || t("driftNone")).split("\n"))
+        partes.push(h("span", { class: linha.startsWith("+") && !linha.startsWith("+++") ? "add" : linha.startsWith("-") && !linha.startsWith("---") ? "del" : "ctx" }, `${linha}\n`));
+    } catch (e) { partes.push(String(e.message), "\n"); }
+  }
+  fill($("p-drift-diff"), ...partes);
 }
 
 // What the person sees: a sheet over the page, a tab per container, the fields of the chosen one, and the

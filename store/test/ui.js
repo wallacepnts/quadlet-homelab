@@ -455,6 +455,19 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   confere(sk.closed === true, "console: abrir os logs fecha a sessão");
   $("panel").open = false;
 
+  // a unit the repository changed since the install: the panel says so, and shows what changed before the update
+  const bd = api.S.apps.find((x) => x.id === "homebox");
+  bd.units = [unidade("homebox", { drift: "changed" })];
+  rotas["/api/drift"] = { unit: "homebox", changed: true, diff: "--- installed\n+++ repository\n@@ -1,3 +1,3 @@\n [Container]\n-HealthCmd=CMD-SHELL node /app/src/scripts/health-check.js\n+HealthCmd=CMD-SHELL node scripts/health-check.js" };
+  api.openPanel("homebox"); await esperar(80);
+  const spansD = [...$("p-drift-diff").walk()].filter((e) => e.tag === "span");
+  confere(!$("p-drift").hidden && /O \.container de homebox mudou no repositório/.test($("p-drift-title").textContent) && /Atualizar escreve o arquivo novo/.test($("p-drift-hint").textContent), "painel: um .container mudado no repositório é dito, antes de atualizar");
+  confere(spansD.some((e) => e.attrs.class === "add" && /node scripts\/health-check\.js/.test(e.textContent)) && spansD.some((e) => e.attrs.class === "del" && /src\/scripts/.test(e.textContent)) && !spansD.some((e) => e.attrs.class === "add" && /\+\+\+/.test(e.textContent)), "a diferença: o que sai em vermelho, o que entra em verde, sem as linhas de cabeçalho");
+  bd.units = [unidade("homebox")];
+  api.openPanel("homebox"); await esperar(60);
+  confere($("p-drift").hidden, "sem diferença, sem aviso");
+  $("panel").open = false;
+
   // My apps: counters as filters (updates, problems) and a one-line summary
   const mh = api.S.apps.find((x) => x.id === "homebox"), mm = api.S.apps.find((x) => x.id === "memos");
   mh.units = [unidade("homebox", { drift: "changed", image: "x:2" })];

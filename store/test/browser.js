@@ -60,6 +60,25 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
   console.log("grade carregou:", await ate("document.querySelectorAll('.card').length > 0"), "| azulejos:", await ev("document.querySelectorAll('.tile').length"));
   await esperar(2500);
 
+  if (MODO === "drift") {
+    // reads only: does a changed .container count as an update?
+    await ate("document.querySelectorAll('.tile').length > 0", 15000); await esperar(2500);
+    console.log("chips:", await ev("[...document.querySelectorAll('#groups button')].map((b) => b.textContent.trim()).join(' | ')"));
+    console.log("resumo:", await ev("document.getElementById('summary').textContent.trim()"));
+    await ev("[...document.querySelectorAll('#groups button')].find((b) => /atualização/.test(b.textContent)).click()"); await esperar(600);
+    console.log("com atualização:", await ev("[...document.querySelectorAll('.tile h3, .tile .name')].map((x) => x.textContent.trim()).join(', ') || document.getElementById('grid').textContent.slice(0, 200)"));
+    await foto("70-filtro-atualizacao");
+    await ev("[...document.querySelectorAll('#groups button')][0].click()"); await esperar(300);
+    await ev("(() => { const t = [...document.querySelectorAll('.tile')].find((x) => /Actual/.test(x.textContent)); t.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 300, clientY: 300 })); })()"); await esperar(400);
+    console.log("menu:", await ev("document.getElementById('ctx').textContent.trim().slice(0, 300)"));
+    await foto("71-menu-actual");
+    await ev("[...document.querySelectorAll('#ctx button')].find((b) => /Gerenciar/.test(b.textContent)).click()"); await esperar(1200);
+    console.log("acoes:", await ev("[...document.querySelectorAll('#p-actions button, #p-actions a')].map((b) => b.textContent.trim()).join(' | ')"));
+    await ev("document.getElementById('p-drift').open = true"); await esperar(300);
+    console.log("drift:", await ev("document.getElementById('p-drift-title').textContent + ' || ' + document.getElementById('p-drift-diff').textContent.trim()"));
+    await foto("72-actual-gerenciar");
+  }
+
   if (MODO === "unit") {
     // reads only: Customize → the .container as text (nothing is saved)
     await ate("document.querySelectorAll('.tile').length > 0", 15000); await esperar(1500);

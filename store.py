@@ -1183,6 +1183,23 @@ def apply_custom_unit(app, unit, texto):
     return False
 
 
+def unit_drift_diff(unit):
+    """{unit, changed, diff}: the installed `.container` against what `qh --update` would write now (the repository's, or the
+    person's own, rendered for the access rule the unit was installed with), as a unified diff. Empty when they agree."""
+    import difflib
+    p = installed_unit(unit)
+    pasta = unit_pasta(unit)
+    if p is None or not pasta:
+        raise LookupError(loc("not installed"))
+    fonte = I.Service(pasta, PREFIX).source(p.name)
+    lido = I.installed_access(p, fonte)
+    modo = lido[0] if lido and lido[0] else "tailnet"
+    href = lido[1] if lido and lido[1] is not None else modo == "local"
+    novo = I.unit_bytes(fonte, modo, href).decode("utf-8", "replace")
+    linhas = list(difflib.unified_diff(p.read_text().splitlines(), novo.splitlines(), "installed", "repository", lineterm="", n=2))
+    return {"unit": unit, "changed": bool(linhas), "diff": "\n".join(linhas)}
+
+
 def clean_config(config):
     """The form's payload as items of the right types, or ValueError."""
     if not isinstance(config, dict):
@@ -2592,6 +2609,14 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, custom_state(unit, pre=q.get("pre") == "1"))
             except LookupError as e:
                 return self._json(404, {"error": str(e)})
+        if url.path == "/api/drift":
+            unit = q.get("unit", "")
+            if not unit_exists(unit):
+                return self._json(400, {"error": loc("unknown unit")})
+            try:
+                return self._json(200, unit_drift_diff(unit))
+            except LookupError as e:
+                return self._json(404, {"error": str(e)})
         if url.path in ("/api/env", "/api/disk", "/api/arch"):
             app = q.get("app", "")
             if not service_dir(app):
@@ -3792,6 +3817,15 @@ def selftest():
             assert pedir("/api/files/download?path=" + urllib.parse.quote(base_f), headers=ok)[0] == 400, "a folder is not a download"
             cat_p = json.loads(pedir("/api/catalog", headers=ok)[2])
             assert cat_p["podman_recommended"] == I.RECOMMENDED_PODMAN and isinstance(cat_p["podman_outdated"], bool), "the catalog says which Podman it was verified on"
+            # drift: what the repository changed since the install, as a diff the panel shows before the update
+            d_ok = json.loads(pedir("/api/drift?unit=homebox", headers=ok)[2])
+            assert d_ok["changed"] is False and d_ok["diff"] == "", d_ok
+            inst_h = installed_unit("homebox"); texto_h = inst_h.read_text()
+            inst_h.write_text(texto_h.replace("[Container]", "[Container]\nLabel=stale=1", 1))
+            d_ch = json.loads(pedir("/api/drift?unit=homebox", headers=ok)[2])
+            inst_h.write_text(texto_h)
+            assert d_ch["changed"] is True and "-Label=stale=1" in d_ch["diff"] and d_ch["diff"].startswith("--- installed"), d_ch
+            assert pedir("/api/drift?unit=memos", headers=ok)[0] == 404 and pedir("/api/drift?unit=nope", headers=ok)[0] == 400
             # the unit as text: reviewed, saved as the person's own, applied by qh, and put back
             rep = json.loads(pedir("/api/custom?unit=homebox", headers=ok)[2])
             assert rep["custom_unit"] is False and rep["unit_source"] == rep["repo_text"] and "[Container]" in rep["repo_text"], rep.keys()

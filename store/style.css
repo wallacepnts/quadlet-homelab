@@ -567,3 +567,8 @@ body.has-bg .card, body.has-bg #nav, body.has-bg .stat, body.has-bg nav#groups b
 textarea.raw { width: 100%; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .8rem; line-height: 1.45; tab-size: 4; white-space: pre; overflow: auto;
                background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: .7rem; resize: vertical; }
 .raw-sec .row { margin: .5rem 0; } .raw-sec details pre { max-height: 18rem; }
+
+/* ---- A unit the repository changed ------------------------------------------------------------------ */
+.drift { margin: .4rem 0 .8rem; background: var(--accent-soft); border-radius: var(--radius-sm); padding: .6rem .9rem; }
+.drift summary { cursor: pointer; font-weight: 650; color: var(--accent); } .drift pre { max-height: 14rem; margin: .4rem 0 0; font-size: .78rem; }
+.drift .add { color: var(--ok); } .drift .del { color: var(--bad); } .drift .ctx { color: var(--muted); }
