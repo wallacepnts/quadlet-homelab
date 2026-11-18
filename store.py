@@ -3790,6 +3790,8 @@ def selftest():
                 assert pedir(f"/api/files?path={urllib.parse.quote(ruim)}", headers=ok)[0] in (400, 404), ruim
                 assert pedir(f"/api/files/download?path={urllib.parse.quote(ruim)}", headers=ok)[0] in (400, 404), ruim
             assert pedir("/api/files/download?path=" + urllib.parse.quote(base_f), headers=ok)[0] == 400, "a folder is not a download"
+            cat_p = json.loads(pedir("/api/catalog", headers=ok)[2])
+            assert cat_p["podman_recommended"] == I.RECOMMENDED_PODMAN and isinstance(cat_p["podman_outdated"], bool), "the catalog says which Podman it was verified on"
             # the unit as text: reviewed, saved as the person's own, applied by qh, and put back
             rep = json.loads(pedir("/api/custom?unit=homebox", headers=ok)[2])
             assert rep["custom_unit"] is False and rep["unit_source"] == rep["repo_text"] and "[Container]" in rep["repo_text"], rep.keys()

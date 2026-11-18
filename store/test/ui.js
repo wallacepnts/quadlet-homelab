@@ -678,6 +678,13 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   rotas["/api/alerts/test"] = { ok: true };
   rotas["/api/ui"] = { theme: "system", accent: "orange", card: "shadow", density: "comfortable", bg_blur: 8, bg_dim: 35, background: false, bg_version: null };
   await api.openSettings(); await esperar(50);
+  // podman: the version here, and a warning when it is older than the one the repository was verified on
+  api.S.podman = "6.0.2"; api.S.podmanRec = "6.1.4"; api.S.podmanOutdated = true;
+  await api.openSettings(); await esperar(50);
+  confere(/Podman 6\.0\.2/.test($("s-body").textContent) && /verificado no Podman 6\.1\.4/.test($("s-body").textContent) && /6\.1\.1 a 6\.1\.3/.test($("s-body").textContent), "Configurações: Podman antigo, com o aviso");
+  api.S.podman = "6.1.4"; api.S.podmanOutdated = false;
+  await api.openSettings(); await esperar(50);
+  confere(/Podman 6\.1\.4/.test($("s-body").textContent) && /Igual ou mais nova que a 6\.1\.4/.test($("s-body").textContent) && !/Atualize o pacote/.test($("s-body").textContent), "Configurações: Podman em dia, sem aviso");
   // power: each button asks again before it sends anything
   rotas["/api/power"] = { action: "poweroff" };
   const antesPow = posts.length;

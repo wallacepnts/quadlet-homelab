@@ -129,7 +129,8 @@ Medido, instalando o podman em cada uma e lendo a versão:
 | Distribuição | Podman | |
 | --- | --- | --- |
 | Arch | 6.0.2 | funciona |
-| openSUSE Tumbleweed, Slowroll | 6.0.2 | funciona |
+| openSUSE Tumbleweed | 6.1.4 | funciona |
+| openSUSE Slowroll | 6.0.2 | funciona |
 | openSUSE MicroOS, Aeon, Kalpa | 5.8 | funciona |
 | Fedora 42 | 5.8.2 | funciona |
 | Debian 13 | 5.4.2 | funciona |

@@ -24,7 +24,8 @@ import manifest
 import svcwidgets
 import instances
 from qhui import (translator, directives, directives_of, published_port, format_unit,
-                  red, yellow, green, dim, GRUPOS, valid_template, ENV_TYPES, ENV_TYPE_LINE, env_value_problem)
+                  red, yellow, green, dim, GRUPOS, valid_template, ENV_TYPES, ENV_TYPE_LINE, env_value_problem,
+                  BASELINE_PODMAN, QUADLET_KEY_SINCE, parse_version, key_floor)
 
 PT = {
     "unit(s) reformatted": "unit(s) reformatada(s)",
@@ -518,6 +519,21 @@ def check_schema():
         error("manifest", f"{f.relative_to(ROOT)} is out of date — run: python3 check.py --schema")
 
 
+def floor_problems(units, declarado):
+    """What is wrong with the Podman floor of a service (conventions, rule 23), as a list of messages.
+
+    The newest Quadlet key the units use is a release of Podman (`QUADLET_KEY_SINCE`). Up to the baseline the README
+    says works (5.4) that is the way things are; above it, the app.json has to SAY so with `min_podman`, at least that
+    version: otherwise the unit installs on a host that cannot read it and fails at the generator."""
+    piso, chaves = key_floor(units)
+    if not piso or parse_version(piso) <= parse_version(BASELINE_PODMAN):
+        return []
+    if declarado and parse_version(declarado) and parse_version(declarado) >= parse_version(piso):
+        return []
+    return [f"uses {', '.join(chaves)} (Podman {piso}), above the {BASELINE_PODMAN} the README says works: "
+            f'declare "min_podman": "{piso}" in app.json (rule 23)']
+
+
 def check_manifest_format(folders):
     """Every app.json in the canonical text of `manifest.dump` (one key per line, short values inline)."""
     for folder in folders:
@@ -575,6 +591,8 @@ def check_manifest(folders):
         ini = manifest.view(folder)
         for problema in manifest.problems(manifest.load(folder), tuple(GRUPOS), folder):
             error("manifest", f"apps/{folder.name}/app.json: {problema}")
+        for problema in floor_problems(sorted(folder.glob("*.container")), (manifest.load(folder) or {}).get("min_podman")):
+            error("podman", f"apps/{folder.name}: {problema}")
         recipes = set(ini["secrets"]) if ini.has_section("secrets") else set()
         declared = set()
         for f in sorted(folder.glob("*.container")):
@@ -920,6 +938,24 @@ def selftest():
     assert backup_problemas(_i) == []
     _i.read_string("[backup]\nexclude =\n    /abs\n    a/../b\nfoo = 1\n")
     assert len(backup_problemas(_i)) == 3
+
+    # rule 23: a unit may need up to the baseline without saying so; above it app.json has to declare the floor
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        antigo, novo, memoria = (Path(tmp, n) for n in ("a.container", "b.container", "c.container"))
+        antigo.write_text("[Container]\nImage=x\nNetworkAlias=a\n")        # 5.2: under the baseline
+        novo.write_text("[Container]\nImage=x\nMemory=1g\nImageVolume=ignore\n")   # 5.5 and 6.1
+        memoria.write_text("[Container]\nImage=x\nMemory=1g\n")
+        assert floor_problems([antigo], None) == [], "5.2 is under the baseline: nothing to declare"
+        assert floor_problems([], None) == []
+        achado = floor_problems([novo], None)
+        assert len(achado) == 1 and "ImageVolume" in achado[0] and '"min_podman": "6.1"' in achado[0], achado
+        assert floor_problems([novo], "5.5") != [], "declaring less than the newest key is not enough"
+        assert floor_problems([novo], "6.1") == [] and floor_problems([novo], "6.2.0") == []
+        assert floor_problems([memoria], "5.5") == [] and floor_problems([memoria], "five") != []
+    for app_dir in sorted(APPS.iterdir()):
+        if app_dir.is_dir():
+            assert not floor_problems(sorted(app_dir.glob("*.container")), (manifest.load(app_dir) or {}).get("min_podman")), app_dir.name
 
     # [store] min_podman: a version like 5.4
     assert re.fullmatch(r"\d+\.\d+(\.\d+)?", "5.4") and not re.fullmatch(r"\d+\.\d+(\.\d+)?", "five")

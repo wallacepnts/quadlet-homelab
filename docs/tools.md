@@ -38,6 +38,19 @@ the keys need). The generator does not interpret every value (`Notify=maybe` pas
 floor under the other checks, not a substitute for them. The store's Customize screen already
 validates a drop-in with the same generator before it writes it.
 
+**The Podman floor** (rule 23): `check.py` also reads each unit's Quadlet keys against `QUADLET_KEY_SINCE`
+(`qhui.py`, the release that introduced each key) and fails an app whose newest key is above 5.4 without a
+`min_podman` in `app.json` at least that high. `qh` takes the same table as the service's floor and refuses an
+older host. To judge a new Podman release before the host has it, run its generator over all the units:
+
+```bash
+mkdir /tmp/u && cp apps/*/*.container apps/*/*.network /tmp/u/
+podman run --rm -v /tmp/u:/units:ro,Z -e QUADLET_UNIT_DIRS=/units \
+  quay.io/podman/stable:v6.2.0 /usr/libexec/podman/quadlet -dryrun -user
+```
+
+(an error line names the unit; no line other than "Loading source unit file" is a clean run).
+
 To waive a rule deliberately, the unit says so and the reason is required:
 
 ```ini

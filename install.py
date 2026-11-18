@@ -65,6 +65,7 @@ Sem dependências: só a stdlib.
 """
 from qhui import (translator, directives, directives_of, published_port,
                   ref_parts, FLOATING, GRUPOS,
+                  RECOMMENDED_PODMAN, BASELINE_PODMAN, QUADLET_KEY_SINCE, parse_version, key_floor,
                   red, yellow, green, dim, bold)
 
 ROOT = Path(__file__).resolve().parent
@@ -1112,12 +1113,6 @@ NOTIFY_HEALTHY_PODMAN = "5.0"      # Notify=healthy needs it (conventions, rule 
 _PODMAN = []
 
 
-def parse_version(texto):
-    """(5, 4, 2) from "5.4.2" or "5.4.0-dev"; None when it is not a version."""
-    m = re.match(r"\s*v?(\d+)\.(\d+)(?:\.(\d+))?", texto or "")
-    return tuple(int(x or 0) for x in m.groups()) if m else None
-
-
 def podman_version():
     """The host's Podman as a tuple, or None when it cannot be told (not installed, a sandbox box).
 
@@ -1136,15 +1131,27 @@ def podman_version():
 def min_podman(s):
     """The oldest Podman this service runs on, as "5.4", or None when nothing is known.
 
-    `[store] min_podman` is the service's own floor (a Quadlet key it uses that arrived late);
-    `Notify=healthy` is 5.0 for any unit that has it. The larger one counts."""
+    `[store] min_podman` is the service's own floor; `Notify=healthy` is 5.0 for any unit that has it, and each
+    Quadlet key arrived in a release (`QUADLET_KEY_SINCE`), so the newest key the units use is a floor too.
+    The larger one counts."""
     pedidos = []
     if s.ini.has_section("store") and s.ini.get("store", "min_podman", fallback="").strip():
         pedidos.append(s.ini.get("store", "min_podman").strip())
     if any(waits_for_health(u) for u in s.units if u.suffix == ".container"):
         pedidos.append(NOTIFY_HEALTHY_PODMAN)
+    derivado, _ = key_floor(s.units)
+    if derivado:
+        pedidos.append(derivado)
     validos = [p for p in pedidos if parse_version(p)]
     return max(validos, key=parse_version) if validos else None
+
+
+def podman_outdated():
+    """(host, recommended) as strings when the host's Podman is older than the one this repository was verified on."""
+    host = podman_version()
+    if host and host < parse_version(RECOMMENDED_PODMAN):
+        return ".".join(map(str, host)), RECOMMENDED_PODMAN
+    return None
 
 
 def podman_too_old(s):
@@ -3884,6 +3891,16 @@ def selftest():
     assert secret_ok(_ini("[secrets]\nk = manual x\n"), "k", "v") == (True, ""), \
         "no [validate] section means no opinion"
     assert secret_ok(_ini("[validate]\nk = shell true\n"), "k", "v") == (True, "")
+    # the Podman floor of a service: the newest Quadlet key its units use, unless app.json asks for more
+    with tempfile.TemporaryDirectory() as _tmp_d:
+        _u = Path(_tmp_d, "x.container"); _u.write_text("[Container]\nImage=x\nNotify=healthy\nNetworkAlias=a\nImageVolume=ignore\n")
+        _fake = _t.SimpleNamespace(ini=configparser.ConfigParser(interpolation=None), units=[_u])
+        assert min_podman(_fake) == "6.1", min_podman(_fake)
+        _u.write_text("[Container]\nImage=x\nNotify=healthy\nNetworkAlias=a\n")
+        assert min_podman(_fake) == "5.2", "the newest key sets it: NetworkAlias is 5.2, over Notify=healthy's 5.0"
+        _u.write_text("[Container]\nImage=x\n")
+        assert min_podman(_fake) is None
+    assert key_floor([]) == (None, []) and parse_version("6.1.4") > parse_version(BASELINE_PODMAN)
     # `ask` in app.json: the length and format are judged here, before any command, in the terminal and the store alike
     _pt_antes, qhui.PTBR = qhui.PTBR, False
     _ask = {"k": {"type": "password", "min": 12, "regex": "[a-z]+", "pattern_error": {"en": "letters only", "pt": "só letras"}}}
@@ -4744,6 +4761,8 @@ def show_catalog(apps=None, home=None):
         "access": saved_access(Path(home) if home else None) or "tailnet",
         "tailnet": bool(tailnet),
         "podman": ".".join(map(str, podman_version())) if podman_version() else None,
+        "podman_recommended": RECOMMENDED_PODMAN,
+        "podman_outdated": bool(podman_outdated()),
         "apps": [catalog_entry(d, home, tailnet, en, pt, ativos, saude, falhas) for d in pastas],
     }
     print(json.dumps(saida, ensure_ascii=False, indent=2))

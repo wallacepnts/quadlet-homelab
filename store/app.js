@@ -47,6 +47,9 @@ const T = {
     rawCheck: "Verificar", rawRestore: "Voltar ao do repositório", rawCopy: "Copiar", rawCopied: "Copiado.", rawOk: "Sem problemas.", rawRunning: "O que roda agora (unit instalada e personalização)",
     rawAck: "Entendo os riscos e quero usar este .container", rawNeedAck: "Marque que entendeu os avisos para continuar.", rawFormOff: "Com um .container próprio, o formulário desta unidade não é aplicado: o que você quer mudar vai no código.",
     rawSaved: "Salvar este .container", rawDiff: "Diferente do repositório.", rawSame: "Igual ao repositório.", rawUnitReset: "O painel volta ao .container do repositório e reinicia o serviço.", rawChanged: "Edite o código ou use o formulário, não os dois ao mesmo tempo.",
+    podmanTitle: "Podman", podmanLine: (v) => `Neste servidor: Podman ${v}.`,
+    podmanLate: (v, rec) => `O repositório foi verificado no Podman ${rec}. As versões 6.1.1 a 6.1.3 corrigiram falhas de segurança (extração de arquivos fora da pasta, importação de imagens e volumes, imagens de checkpoint). Atualize o pacote do host quando puder: ${v} é mais antiga.`,
+    podmanOk: (rec) => `Igual ou mais nova que a ${rec}, com a qual o repositório foi verificado.`,
     fGrid: "Grade", fList: "Lista", fColName: "Nome", fColSize: "Tamanho", fColDate: "Modificado", fPlaces: "Locais",
     fUpload: "Enviar", fNewFolder: "Nova pasta", fRename: "Renomear", fCopy: "Copiar", fCut: "Recortar", fPaste: "Colar", fDelete: "Apagar",
     fSure: (n) => `Confirmar: apagar ${n} ${n === 1 ? "item" : "itens"}`, fCancel: "Cancelar", fOk: "OK", fName: "Nome", fSel: (n) => `${n} selecionado${n === 1 ? "" : "s"}`,
@@ -242,6 +245,9 @@ const T = {
     rawCheck: "Check", rawRestore: "Back to the repository's", rawCopy: "Copy", rawCopied: "Copied.", rawOk: "No problems.", rawRunning: "What runs now (installed unit and customization)",
     rawAck: "I understand the risks and want to use this .container", rawNeedAck: "Tick that you understood the warnings to go on.", rawFormOff: "With your own .container the form of this unit is not applied: what you want to change goes in the code.",
     rawSaved: "Save this .container", rawDiff: "Different from the repository's.", rawSame: "Same as the repository's.", rawUnitReset: "The panel goes back to the repository's .container and restarts the service.", rawChanged: "Edit the code or use the form, not both at once.",
+    podmanTitle: "Podman", podmanLine: (v) => `On this server: Podman ${v}.`,
+    podmanLate: (v, rec) => `The repository was verified on Podman ${rec}. Versions 6.1.1 to 6.1.3 fixed security flaws (files written outside a folder, image and volume imports, checkpoint images). Update the host package when you can: ${v} is older.`,
+    podmanOk: (rec) => `The same as or newer than ${rec}, which the repository was verified on.`,
     fGrid: "Grid", fList: "List", fColName: "Name", fColSize: "Size", fColDate: "Modified", fPlaces: "Places",
     fUpload: "Upload", fNewFolder: "New folder", fRename: "Rename", fCopy: "Copy", fCut: "Cut", fPaste: "Paste", fDelete: "Delete",
     fSure: (n) => `Confirm: delete ${n} ${n === 1 ? "item" : "items"}`, fCancel: "Cancel", fOk: "OK", fName: "Name", fSel: (n) => `${n} selected`,
@@ -985,6 +991,8 @@ async function load() {
   S.apps = cat.apps;
   S.rule = cat.access;
   S.podman = cat.podman;
+  S.podmanRec = cat.podman_recommended;
+  S.podmanOutdated = !!cat.podman_outdated;
   if (!S.view) {
     const hash = (location.hash || "").slice(1);
     S.view = ["apps", "store"].includes(hash) ? hash : (installed().length ? "apps" : "store");
@@ -2080,11 +2088,18 @@ async function renderSettings() {
     await networkSection(),
     await appearanceSection(),
     await alertsSection(),
+    podmanSection(),
     await powerSection(),
     h("section", {}, h("p", { class: "muted" }, c.tailnet ? t("tailnetOn") : t("tailnetOff"))));
 }
 
 // Restart or shut down the machine: each button asks once more, and a restart waits for the panel to answer again.
+function podmanSection() {
+  if (!S.podman) return null;
+  return h("section", {}, h("h3", {}, t("podmanTitle")), h("p", { class: "muted" }, t("podmanLine")(S.podman)),
+    S.podmanOutdated ? h("p", { class: "note" }, t("podmanLate")(S.podman, S.podmanRec)) : h("p", { class: "muted" }, t("podmanOk")(S.podmanRec)));
+}
+
 async function powerSection() {
   const msg = h("p", { class: "muted" }), linha = h("div", { class: "row" }), agenda = h("div", { class: "row" }), quando = h("p", { class: "muted" });
   const botoes = () => {

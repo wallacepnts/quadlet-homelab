@@ -386,6 +386,52 @@ def format_unit(text):
     return (cabeca + "\n" + corpo if cabeca else corpo) + "\n"
 
 
+# -- Podman versions ------------------------------------------------------------------------------
+
+# The Podman this repository was last verified against (every unit through its Quadlet generator, 2026-11-18). A host
+# older than this is told so: 6.1.1 to 6.1.3 closed three ways to write outside a directory or to drop the sandbox.
+RECOMMENDED_PODMAN = "6.1.4"
+# The oldest Podman the README says works (Debian 13, Leap 16, Ubuntu 25.04): a unit may not need more than this
+# without its app.json saying so (`min_podman`), so a newer key is never a surprise at install.
+BASELINE_PODMAN = "5.4"
+# The Podman release that introduced each Quadlet key, read from the release notes (a key not listed here is older
+# than 5.0 or not yet needed: add it, with its release, the day a unit uses it). `[Install]` and `[Service]` keys are
+# systemd's and not listed.
+QUADLET_KEY_SINCE = {
+    "Entrypoint": "5.0", "StopTimeout": "5.0", "Ulimit": "5.0",
+    "GroupAdd": "5.1",
+    "NetworkAlias": "5.2", "LogOpt": "5.2", "StopSignal": "5.2",
+    "AddHost": "5.3", "CgroupsMode": "5.3", "StartWithPod": "5.3", "DefaultDependencies": "5.3", "ServiceName": "5.3",
+    "Memory": "5.5", "ReloadCmd": "5.5", "ReloadSignal": "5.5", "Retry": "5.5", "RetryDelay": "5.5", "UpheldBy": "5.5",
+    "HttpProxy": "5.7",
+    "AppArmor": "5.8",
+    "ImageVolume": "6.1",
+    "Umask": "6.2", "SetMountsDependency": "6.2",
+}
+
+
+def parse_version(texto):
+    """(5, 4, 2) from "5.4.2" or "5.4.0-dev"; None when it is not a version."""
+    m = re.match(r"\s*v?(\d+)\.(\d+)(?:\.(\d+))?", texto or "")
+    return tuple(int(x or 0) for x in m.groups()) if m else None
+
+
+def key_floor(units):
+    """(version string, the keys that set it) for the Quadlet keys the units use: the newest release among them, or None.
+
+    The floor a unit really has, whatever its app.json says; `check.py` holds the two together."""
+    achados = {}
+    for u in units:
+        if Path(u).suffix == ".container":
+            for k, _ in directives_of(u):
+                if k in QUADLET_KEY_SINCE:
+                    achados[k] = QUADLET_KEY_SINCE[k]
+    if not achados:
+        return None, []
+    novo = max(achados.values(), key=parse_version)
+    return novo, sorted(k for k, v in achados.items() if v == novo)
+
+
 def selftest():
     assert bool_pair("Y") == ("Y", "N") and bool_pair("no") == ("yes", "no") and bool_pair("1") == ("1", "0")
     assert bool_pair("True") == ("True", "False") and bool_pair("whatever") == ("true", "false")
