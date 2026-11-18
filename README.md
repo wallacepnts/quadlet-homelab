@@ -89,9 +89,14 @@ pulled. To go through anyway, use `--reinstall`.
 
 ## Requirements
 
-- **Podman 5.0 or newer.** This is the real floor: `Notify=healthy` arrived
-  there, and 119 of the 127 units use it. On 4.x the start returns before the app
-  is ready, and the install reports a success it cannot know about.
+- **Podman 6.0 or newer.** The minimum of the whole repository (rule 23 of the
+  conventions): 6.0 dropped cgroups v1, CNI and slirp4netns and made network
+  isolation the default, and the units are written and verified for it (6.1.4 is the
+  reference, and the 6.2.0 generator reads them the same). `qh` refuses to install or
+  update on an older Podman, the store says so, and `check.py` holds the units to a
+  generator of 6 or newer. **6.1.4 or later** is recommended: 6.1.1 to 6.1.3 are
+  security fixes. (119 of the 127 units use it, `Notify=healthy`, which is why 4.x was never
+  an option: the start returned before the app was ready.)
 - **systemd with a user session** and cgroups v2.
 - **`network-online.target` reached at boot.** Quadlet orders every unit it
   generates behind `podman-user-wait-network-online.service`, which loops on
@@ -124,18 +129,18 @@ podman --version
 systemctl is-active network-online.target
 ```
 
-Measured, by installing podman in each and reading the version:
+Measured, by installing podman in each and reading the version (a rolling distribution moves: MicroOS follows Tumbleweed, so it reaches 6 when its snapshot does):
 
 | Distribution | Podman | |
 | --- | --- | --- |
 | Arch | 6.0.2 | works |
 | openSUSE Tumbleweed | 6.1.4 | works |
 | openSUSE Slowroll | 6.0.2 | works |
-| openSUSE MicroOS, Aeon, Kalpa | 5.8 | works |
-| Fedora 42 | 5.8.2 | works |
-| Debian 13 | 5.4.2 | works |
-| openSUSE Leap 16.0 | 5.4.2 | works |
-| Ubuntu 25.04 | 5.4.1 | works |
+| openSUSE MicroOS, Aeon, Kalpa | 5.8 | **too old** (below 6.0) |
+| Fedora 42 | 5.8.2 | **too old** (below 6.0) |
+| Debian 13 | 5.4.2 | **too old** (below 6.0) |
+| openSUSE Leap 16.0 | 5.4.2 | **too old** (below 6.0) |
+| Ubuntu 25.04 | 5.4.1 | **too old** (below 6.0) |
 | Ubuntu 24.04 LTS | 4.9.3 | **too old** |
 | openSUSE Leap 15.6 | 4.9.5 | **too old** |
 | Debian 12 | 4.3.1 | **too old** |

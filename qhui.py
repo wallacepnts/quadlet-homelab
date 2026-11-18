@@ -391,20 +391,15 @@ def format_unit(text):
 # The Podman this repository was last verified against (every unit through its Quadlet generator, 2026-11-18). A host
 # older than this is told so: 6.1.1 to 6.1.3 closed three ways to write outside a directory or to drop the sandbox.
 RECOMMENDED_PODMAN = "6.1.4"
-# The oldest Podman the README says works (Debian 13, Leap 16, Ubuntu 25.04): a unit may not need more than this
-# without its app.json saying so (`min_podman`), so a newer key is never a surprise at install.
-BASELINE_PODMAN = "5.4"
-# The Podman release that introduced each Quadlet key, read from the release notes (a key not listed here is older
-# than 5.0 or not yet needed: add it, with its release, the day a unit uses it). `[Install]` and `[Service]` keys are
-# systemd's and not listed.
+# The oldest Podman this repository runs on: 6.0, which dropped cgroups v1, CNI and slirp4netns (none of which a unit
+# here asked for) and made network isolation the default. `qh` refuses to install or update on an older host, the
+# store says so, and `check.py` holds the units to a generator of 6 or newer.
+MIN_PODMAN = "6.0"
+# What a unit may use without saying so: everything up to the minimum. A key that arrived after it needs `min_podman`.
+BASELINE_PODMAN = MIN_PODMAN
+# The Podman release that introduced each Quadlet key newer than the minimum, read from the release notes (older keys
+# are not listed: the minimum already has them). Add a key, with its release, the day a unit first uses it.
 QUADLET_KEY_SINCE = {
-    "Entrypoint": "5.0", "StopTimeout": "5.0", "Ulimit": "5.0",
-    "GroupAdd": "5.1",
-    "NetworkAlias": "5.2", "LogOpt": "5.2", "StopSignal": "5.2",
-    "AddHost": "5.3", "CgroupsMode": "5.3", "StartWithPod": "5.3", "DefaultDependencies": "5.3", "ServiceName": "5.3",
-    "Memory": "5.5", "ReloadCmd": "5.5", "ReloadSignal": "5.5", "Retry": "5.5", "RetryDelay": "5.5", "UpheldBy": "5.5",
-    "HttpProxy": "5.7",
-    "AppArmor": "5.8",
     "ImageVolume": "6.1",
     "Umask": "6.2", "SetMountsDependency": "6.2",
 }

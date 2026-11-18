@@ -30,7 +30,7 @@ qh-check --format      # reescreve todas as units no layout; só ordem e linhas 
 Ele também passa cada unit pelo **gerador do próprio Quadlet** do Podman (`quadlet -dryrun -user`,
 todas as units num diretório só, como no host), que sabe o que o resto do arquivo não sabe: chave
 não suportada, `Network=` que cita um arquivo que não existe, seção que ele não consegue ler. Isso
-só aparecia na instalação. Roda quando a máquina tem um gerador do Podman 5 ou mais novo e é
+só aparecia na instalação. Roda quando a máquina tem um gerador do Podman 6 ou mais novo e é
 pulado em silêncio caso contrário; `qh-check --quadlet` faz a ausência dele virar erro, que é o que
 o CI usa (um job à parte, na imagem oficial `podman/stable`, já que o Podman do runner é mais antigo
 do que as chaves pedem). O gerador não interpreta todo valor (`Notify=maybe` passa), então isto é um
@@ -390,10 +390,11 @@ sai quando nenhum container o monta e nenhum `.volume` o declara. Apagar pede du
 volume (dados) pede a palavra digitada. No terminal: `python3 resources.py` para ver,
 `prune images|networks|volumes --apply` para fazer.
 
-**Podman mínimo**: uma unit com `Notify=healthy` exige o Podman 5.0, e `"min_podman": "5.4"`
-sobe esse piso para um serviço que usa uma chave de Quadlet mais
-nova. O `qh` avisa antes de instalar num host mais antigo e a loja mostra no
-painel; não recusa. `QH_PODMAN_VERSION` substitui o que o host informa.
+**Podman mínimo**: 6.0 para todo serviço (regra 23). `"min_podman": "6.1"` sobe esse piso para um serviço
+que usa uma chave Quadlet que chegou depois (`ImageVolume=`, 6.1; `Umask=` e `SetMountsDependency=`, 6.2), e a
+loja e o `qh --catalog` levam o número. O `qh` **recusa** instalar ou atualizar num host mais velho e diz por
+quê (`podman_too_old` no catálogo, mostrado no painel antes da instalação). `QH_PODMAN_VERSION` sobrescreve o
+que o host informa.
 
 **Personalizar antes de instalar**: um app que não está instalado tem um botão Personalizar ao
 lado de Instalar. O formulário é o mesmo, mas trabalha sobre a unit como o `qh` a escreveria (a do

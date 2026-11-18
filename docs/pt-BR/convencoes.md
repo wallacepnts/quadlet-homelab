@@ -403,37 +403,39 @@ instalação (um `provider = "postgresql"` fixo no Prisma, por exemplo).
 **Checar antes de assumir**, e registrar o porquê em `docs/hardening.md` ("Notas por app"),
 pra ninguém reabrir a discussão depois.
 
-### 23. O piso do Podman é a chave Quadlet mais nova que a unit usa; a referência é a 6.1.4
+### 23. Podman 6.0 é o mínimo; chave Quadlet mais nova é declarada; a referência é a 6.1.4
 
 O Quadlet do Podman ganha chaves a cada versão, e uma unit que usa uma chave que o
-Podman do host não conhece falha no gerador, na instalação. Por isso:
+Podman do host não conhece falha no gerador, na instalação. Por isso o piso é
+escrito e imposto, não deixado ao host:
 
-- **Referência.** Toda unit é conferida no gerador Quadlet do Podman em uso aqui, a
-  **6.1.4** (e no da 6.2.0, de 2026-11-10, rodando o `quadlet -dryrun` da imagem
+- **O mínimo é a 6.0, para todo app.** A 6.0 removeu cgroups v1, CNI e slirp4netns
+  (nenhuma unit daqui pedia) e tornou o isolamento de rede o padrão. Nada é escrito
+  para o Podman 5: ele é **antigo demais**, o `qh` **recusa** instalar ou atualizar
+  nele e diz por quê, a loja mostra antes da instalação, e o `check.py` prende as
+  units a um gerador Quadlet 6 ou mais novo. As units que usavam chaves da 5.x não
+  declaram nada: o mínimo já as tem.
+- **Chave mais nova que o mínimo é declarada.** `QUADLET_KEY_SINCE`, em
+  [`qhui.py`](../../qhui.py), lista a versão que trouxe cada uma (lida das notas de
+  release do Podman): `ImageVolume=` 6.1; `Umask=` e `SetMountsDependency=` 6.2. Uma
+  unit que usa uma precisa de `"min_podman": "<essa versão>"` no `app.json`, no mínimo
+  a da chave mais nova, e o `check.py` reprova sem isso. A chave entra na tabela, com
+  a versão, no mesmo commit que a usa pela primeira vez. `"min_podman"` abaixo da 6.0
+  também é erro: o mínimo não se repete por app.
+- **Referência: 6.1.4**, o Podman em uso aqui. Toda unit é conferida no gerador Quadlet
+  dele (e no da 6.2.0, de 2026-11-10, rodando o `quadlet -dryrun` da imagem
   `quay.io/podman/stable:v6.2.0`): as 139 units geram sem erro e sem aviso, e o
   `podman run` gerado é o mesmo nas duas, salvo a ordem de alguns flags. O
-  `check.py --quadlet` (no CI, com o Podman do Fedora) é a prova permanente e não é
-  opcional: **unit que não passa nele não entra**.
-- **O piso de uma unit é derivado, não chutado.** `QUADLET_KEY_SINCE`, em
-  [`qhui.py`](../../qhui.py), lista a versão que trouxe cada chave (lida das notas de
-  release do Podman), e a mais nova que a unit usa é o piso dela, junto com
-  `Notify=healthy` (5.0). O `qh` recusa instalar num host mais velho e diz por quê; a
-  loja mostra antes da instalação.
-- **Até a 5.4 não se declara nada.** É o que o README mediu funcionando (Debian 13,
-  Leap 16, Ubuntu 25.04). **Acima dela, o `app.json` tem de dizer**:
-  `"min_podman": "<a versão>"`, no mínimo a da chave mais nova. O `check.py` reprova
-  se não (regra 23): chave nova é uma decisão que aparece, nunca uma surpresa no
-  host de alguém. Hoje o maior piso entre os apps é 5.3 (`tsdproxy`, por `AddHost=`).
-- **Chave nova entra na tabela, com a versão, no mesmo commit** que a usa pela
-  primeira vez. Fora da tabela quer dizer que é anterior à 5.0 ou que ninguém precisou ainda.
+  `check.py --quadlet` (CI) é a prova permanente, e **unit que não passa nele não
+  entra**.
 - **Host abaixo da 6.1.4 é avisado** (`qh --catalog` e Configurações na loja): a
   6.1.1 a 6.1.3 fecharam um tar forjado escrevendo fora da pasta, camadas ou volumes
   forjados sobrescrevendo arquivos do host em `podman load`/`volume import` e imagens
-  de checkpoint desligando o sandbox. As units daqui não são a porta de entrada, mas o
+  de checkpoint desligando o sandbox. As units não são a porta de entrada, mas o
   Podman do host é: atualize o pacote.
 - **A cada versão do Podman**: ler as notas, rodar o gerador dela sobre todas as units
-  (a imagem acima, com `QUADLET_UNIT_DIRS`), comparar com o da versão anterior e só
-  então mudar a referência aqui. Da 6.0.2 à 6.1.4 nada foi pedido aos apps (nenhuma
-  quebra chega a uma unit); a 6.2.0 traz `Umask=` e `SetMountsDependency=`
-  (opcionais) e muda o `UserNS=keep-id` (agora força o uid do host sobre o usuário da
-  imagem), o que toca as 15 units que o usam: testar quando o host tiver a 6.2.
+  (a imagem acima, com `QUADLET_UNIT_DIRS`, ver [ferramentas](./ferramentas.md)),
+  comparar com o da anterior e só então mudar a referência aqui. Da 6.0.2 à 6.1.4
+  nada foi pedido aos apps; a 6.2.0 traz `Umask=` e `SetMountsDependency=` (opcionais)
+  e muda o `UserNS=keep-id` (agora força o uid do host sobre o usuário da imagem), o
+  que toca as 15 units que o usam: testar quando o host tiver a 6.2.

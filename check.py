@@ -25,7 +25,7 @@ import svcwidgets
 import instances
 from qhui import (translator, directives, directives_of, published_port, format_unit,
                   red, yellow, green, dim, GRUPOS, valid_template, ENV_TYPES, ENV_TYPE_LINE, env_value_problem,
-                  BASELINE_PODMAN, QUADLET_KEY_SINCE, parse_version, key_floor)
+                  MIN_PODMAN, BASELINE_PODMAN, QUADLET_KEY_SINCE, parse_version, key_floor)
 
 PT = {
     "unit(s) reformatted": "unit(s) reformatada(s)",
@@ -522,16 +522,19 @@ def check_schema():
 def floor_problems(units, declarado):
     """What is wrong with the Podman floor of a service (conventions, rule 23), as a list of messages.
 
-    The newest Quadlet key the units use is a release of Podman (`QUADLET_KEY_SINCE`). Up to the baseline the README
-    says works (5.4) that is the way things are; above it, the app.json has to SAY so with `min_podman`, at least that
-    version: otherwise the unit installs on a host that cannot read it and fails at the generator."""
+    The repository's minimum is 6.0 (`MIN_PODMAN`) and nothing declares less. The newest Quadlet key the units use is a
+    release of Podman too (`QUADLET_KEY_SINCE`): above the minimum, the app.json has to SAY so with `min_podman`, at
+    least that version, or the unit installs on a host that cannot read it and fails at the generator."""
+    erros = []
+    if declarado and parse_version(declarado) and parse_version(declarado) < parse_version(MIN_PODMAN):
+        erros.append(f'"min_podman": "{declarado}" is below the repository\'s minimum, {MIN_PODMAN}: leave it out (rule 23)')
     piso, chaves = key_floor(units)
     if not piso or parse_version(piso) <= parse_version(BASELINE_PODMAN):
-        return []
+        return erros
     if declarado and parse_version(declarado) and parse_version(declarado) >= parse_version(piso):
-        return []
-    return [f"uses {', '.join(chaves)} (Podman {piso}), above the {BASELINE_PODMAN} the README says works: "
-            f'declare "min_podman": "{piso}" in app.json (rule 23)']
+        return erros
+    return erros + [f"uses {', '.join(chaves)} (Podman {piso}), above the {BASELINE_PODMAN} every app needs: "
+                    f'declare "min_podman": "{piso}" in app.json (rule 23)']
 
 
 def check_manifest_format(folders):
@@ -651,7 +654,7 @@ def check_manifest(folders):
                                  else [] if key == "group" and valor.strip() in GRUPOS
                                  else [f"is not one of: {', '.join(GRUPOS)}"] if key == "group"
                                  else [] if key == "min_podman" and re.fullmatch(r"\d+\.\d+(\.\d+)?", valor.strip())
-                                 else ["is not a version like 5.4"] if key == "min_podman"
+                                 else ["is not a version like 6.1"] if key == "min_podman"
                                  else [] if key == "requires_https"
                                  else deprecated_problemas(valor)):
                     error("manifest", f"apps/{folder.name}: app.json [store] {key} {problema}")
@@ -939,26 +942,27 @@ def selftest():
     _i.read_string("[backup]\nexclude =\n    /abs\n    a/../b\nfoo = 1\n")
     assert len(backup_problemas(_i)) == 3
 
-    # rule 23: a unit may need up to the baseline without saying so; above it app.json has to declare the floor
+    # rule 23: the minimum is 6.0 and nothing declares less; a key newer than it needs min_podman at least that high
     import tempfile
     with tempfile.TemporaryDirectory() as tmp:
-        antigo, novo, memoria = (Path(tmp, n) for n in ("a.container", "b.container", "c.container"))
-        antigo.write_text("[Container]\nImage=x\nNetworkAlias=a\n")        # 5.2: under the baseline
-        novo.write_text("[Container]\nImage=x\nMemory=1g\nImageVolume=ignore\n")   # 5.5 and 6.1
-        memoria.write_text("[Container]\nImage=x\nMemory=1g\n")
-        assert floor_problems([antigo], None) == [], "5.2 is under the baseline: nothing to declare"
-        assert floor_problems([], None) == []
+        antigo, novo, so_umask = (Path(tmp, n) for n in ("a.container", "b.container", "c.container"))
+        antigo.write_text("[Container]\nImage=x\nNetworkAlias=a\nMemory=1g\n")          # old keys: the minimum already has them
+        novo.write_text("[Container]\nImage=x\nUmask=0027\nImageVolume=ignore\n")       # 6.2 and 6.1
+        so_umask.write_text("[Container]\nImage=x\nImageVolume=ignore\n")
+        assert floor_problems([antigo], None) == [] and floor_problems([], None) == [] and floor_problems([antigo], "6.0") == []
         achado = floor_problems([novo], None)
-        assert len(achado) == 1 and "ImageVolume" in achado[0] and '"min_podman": "6.1"' in achado[0], achado
-        assert floor_problems([novo], "5.5") != [], "declaring less than the newest key is not enough"
-        assert floor_problems([novo], "6.1") == [] and floor_problems([novo], "6.2.0") == []
-        assert floor_problems([memoria], "5.5") == [] and floor_problems([memoria], "five") != []
+        assert len(achado) == 1 and "Umask" in achado[0] and '"min_podman": "6.2"' in achado[0], achado
+        assert floor_problems([novo], "6.1") != [], "declaring less than the newest key is not enough"
+        assert floor_problems([novo], "6.2") == [] and floor_problems([novo], "6.2.1") == []
+        assert floor_problems([so_umask], "6.1") == [] and floor_problems([so_umask], "6.0") != []
+        baixo = floor_problems([antigo], "5.4")
+        assert len(baixo) == 1 and "below the repository's minimum" in baixo[0], baixo
     for app_dir in sorted(APPS.iterdir()):
         if app_dir.is_dir():
             assert not floor_problems(sorted(app_dir.glob("*.container")), (manifest.load(app_dir) or {}).get("min_podman")), app_dir.name
 
-    # [store] min_podman: a version like 5.4
-    assert re.fullmatch(r"\d+\.\d+(\.\d+)?", "5.4") and not re.fullmatch(r"\d+\.\d+(\.\d+)?", "five")
+    # [store] min_podman: a version like 6.1
+    assert re.fullmatch(r"\d+\.\d+(\.\d+)?", "6.1") and not re.fullmatch(r"\d+\.\d+(\.\d+)?", "five")
 
     # the generator's stderr: an error names the unit, a warning is kept apart
     e, w = quadlet_problemas('quadlet-generator[1]: Warning: a.container specifies the image "x" which not fully\n'
@@ -1079,7 +1083,7 @@ def selftest():
 # --------------------------------------------------------------------------
 
 QUADLET_GERADORES = ("/usr/libexec/podman/quadlet", "/usr/lib/podman/quadlet", "/usr/local/libexec/podman/quadlet")
-QUADLET_MIN = (5, 0)             # the keys these units use (Notify=healthy, PidsLimit...) came with Podman 5
+QUADLET_MIN = (6, 0)             # the repository's minimum Podman (rule 23): its generator is the one that counts
 
 
 def quadlet_generator():
@@ -1124,7 +1128,7 @@ def check_quadlet(folders, exigido=False):
 
     All the units go in one directory, as on the host (a name is unique across apps, rule 1): a
     `Network=tsdproxy-net.network` has to find its file. Run when the machine has a generator at
-    Podman 5 or newer; `exigido` (--quadlet) makes its absence an error, which is what CI asks for."""
+    Podman 6 or newer; `exigido` (--quadlet) makes its absence an error, which is what CI asks for."""
     import subprocess
     import tempfile
     gerador, versao = quadlet_generator()

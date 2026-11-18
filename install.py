@@ -65,7 +65,7 @@ Sem dependências: só a stdlib.
 """
 from qhui import (translator, directives, directives_of, published_port,
                   ref_parts, FLOATING, GRUPOS,
-                  RECOMMENDED_PODMAN, BASELINE_PODMAN, QUADLET_KEY_SINCE, parse_version, key_floor,
+                  RECOMMENDED_PODMAN, MIN_PODMAN, BASELINE_PODMAN, QUADLET_KEY_SINCE, parse_version, key_floor,
                   red, yellow, green, dim, bold)
 
 ROOT = Path(__file__).resolve().parent
@@ -278,6 +278,7 @@ PT = {
     "the app's notes in the panel": 'as notas do app no painel',
     'this service needs Podman': 'este serviço precisa do Podman',
     'the host has': 'o host tem',
+    'update Podman before installing': 'atualize o Podman antes',
     'this service is marked deprecated:': 'este serviço está marcado como descontinuado:',
     'skipped, marked deprecated:': 'ignorado, marcado como descontinuado:',
     'keeps its customization (50-store.conf)': 'mantém a personalização dela (50-store.conf)',
@@ -1109,7 +1110,6 @@ class Service:
 # plan
 # --------------------------------------------------------------------------
 
-NOTIFY_HEALTHY_PODMAN = "5.0"      # Notify=healthy needs it (conventions, rule 14)
 _PODMAN = []
 
 
@@ -1129,21 +1129,15 @@ def podman_version():
 
 
 def min_podman(s):
-    """The oldest Podman this service runs on, as "5.4", or None when nothing is known.
-
-    `[store] min_podman` is the service's own floor; `Notify=healthy` is 5.0 for any unit that has it, and each
-    Quadlet key arrived in a release (`QUADLET_KEY_SINCE`), so the newest key the units use is a floor too.
-    The larger one counts."""
-    pedidos = []
+    """The oldest Podman this service runs on, as "6.0": the repository's minimum, or more when the service declares
+    `[store] min_podman` or its units use a Quadlet key that arrived later (`QUADLET_KEY_SINCE`). The largest counts."""
+    pedidos = [MIN_PODMAN]
     if s.ini.has_section("store") and s.ini.get("store", "min_podman", fallback="").strip():
         pedidos.append(s.ini.get("store", "min_podman").strip())
-    if any(waits_for_health(u) for u in s.units if u.suffix == ".container"):
-        pedidos.append(NOTIFY_HEALTHY_PODMAN)
     derivado, _ = key_floor(s.units)
     if derivado:
         pedidos.append(derivado)
-    validos = [p for p in pedidos if parse_version(p)]
-    return max(validos, key=parse_version) if validos else None
+    return max((p for p in pedidos if parse_version(p)), key=parse_version)
 
 
 def podman_outdated():
@@ -1307,8 +1301,9 @@ def plan_install(s, tailnet, force=False, interactive=False, access="tailnet",
     if sem_versao:
         return [], [loc("could not find the version to pin: ") + "; ".join(sem_versao)]
     velho = podman_too_old(s)
-    if velho:
-        warnings.append(loc("this service needs Podman") + f" {velho[0]}+, " + loc("the host has") + f" {velho[1]}")
+    if velho:                  # a floor, not a hint: the units are written for it (conventions, rule 23)
+        return [], [loc("this service needs Podman") + f" {velho[0]}+, " + loc("the host has") + f" {velho[1]}: "
+                    + loc("update Podman before installing")]
 
     dest = s.unit_dest
     steps.append((f"mkdir -p {dest}", lambda: dest.mkdir(parents=True, exist_ok=True)))
@@ -1786,6 +1781,10 @@ def plan_update(s, access="tailnet", href_local=False, latest=False, major=False
     installed on the host.
     """
     steps, warnings = [], []
+    velho = podman_too_old(s)
+    if velho:
+        return [], [loc("this service needs Podman") + f" {velho[0]}+, " + loc("the host has") + f" {velho[1]}: "
+                    + loc("update Podman before installing")]
     dest = s.unit_dest
     if not s.installed():
         # No steps on purpose: copying the unit without creating the volumes
@@ -3891,15 +3890,30 @@ def selftest():
     assert secret_ok(_ini("[secrets]\nk = manual x\n"), "k", "v") == (True, ""), \
         "no [validate] section means no opinion"
     assert secret_ok(_ini("[validate]\nk = shell true\n"), "k", "v") == (True, "")
-    # the Podman floor of a service: the newest Quadlet key its units use, unless app.json asks for more
+    # the Podman floor of a service: the repository's minimum, or the newest Quadlet key its units use, or what app.json asks
     with tempfile.TemporaryDirectory() as _tmp_d:
-        _u = Path(_tmp_d, "x.container"); _u.write_text("[Container]\nImage=x\nNotify=healthy\nNetworkAlias=a\nImageVolume=ignore\n")
+        _u = Path(_tmp_d, "x.container"); _u.write_text("[Container]\nImage=x\nNotify=healthy\nImageVolume=ignore\nUmask=0027\n")
         _fake = _t.SimpleNamespace(ini=configparser.ConfigParser(interpolation=None), units=[_u])
-        assert min_podman(_fake) == "6.1", min_podman(_fake)
+        assert min_podman(_fake) == "6.2", min_podman(_fake)
+        _u.write_text("[Container]\nImage=x\nImageVolume=ignore\n")
+        assert min_podman(_fake) == "6.1", "the newest key sets it"
         _u.write_text("[Container]\nImage=x\nNotify=healthy\nNetworkAlias=a\n")
-        assert min_podman(_fake) == "5.2", "the newest key sets it: NetworkAlias is 5.2, over Notify=healthy's 5.0"
-        _u.write_text("[Container]\nImage=x\n")
-        assert min_podman(_fake) is None
+        assert min_podman(_fake) == MIN_PODMAN == "6.0", "an old key asks for nothing: the minimum is 6.0"
+        _fake.ini.read_string("[store]\nmin_podman = 6.1\n")
+        assert min_podman(_fake) == "6.1", "app.json can ask for more"
+        # a host older than the floor is refused, for an install and for an update (QH_PODMAN_VERSION stands in for the host)
+        _fake = _t.SimpleNamespace(ini=configparser.ConfigParser(interpolation=None), units=[_u])
+        _antes_v, _antes_p = os.environ.get("QH_PODMAN_VERSION"), list(_PODMAN)
+        try:
+            for _v, _velho in (("5.8.2", True), ("6.0.2", False), ("6.1.4", False)):
+                os.environ["QH_PODMAN_VERSION"] = _v; _PODMAN.clear()
+                assert bool(podman_too_old(_fake)) is _velho, _v
+        finally:
+            _PODMAN.clear(); _PODMAN.extend(_antes_p)
+            if _antes_v is None:
+                os.environ.pop("QH_PODMAN_VERSION", None)
+            else:
+                os.environ["QH_PODMAN_VERSION"] = _antes_v
     assert key_floor([]) == (None, []) and parse_version("6.1.4") > parse_version(BASELINE_PODMAN)
     # `ask` in app.json: the length and format are judged here, before any command, in the terminal and the store alike
     _pt_antes, qhui.PTBR = qhui.PTBR, False

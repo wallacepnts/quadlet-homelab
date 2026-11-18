@@ -13,7 +13,6 @@
   "source": "https://github.com/juanfont/headscale",
   "docs": "https://headscale.net/",
   "category": "Network & Security",
-  "min_podman": "5.0",
   "no_gui": true,
   "config": { "config/config.yaml": "%h/.config/containers/volumes/headscale/config/config.yaml" },
   "units": { "headscale": { "upstream": "juanfont/headscale", "image": "v{version}" } }

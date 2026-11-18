@@ -62,7 +62,7 @@ belongs in `docs/` (the measured hardening is in `docs/hardening.md`). The panel
 | `docs` | no | The project's documentation, an https URL. |
 | `architectures` | no | `["amd64", "arm64"]`: what the image runs on, when known (the panel asks the registry too). |
 | `category` | no | One of the groups in `qhui.GRUPOS` (the store's categories). Infrastructure with no place among them (homepage, postfix, toolbx) has none. |
-| `min_podman` | no | `"5.4"`: a floor above the 5.0 that `Notify=healthy` already needs. |
+| `min_podman` | no | `"6.1"`: a floor above the 6.0 every app already needs, for a unit that uses a Quadlet key newer than that. Never below 6.0 (`check.py` refuses it). |
 | `requires_https` | no | `true`: the app breaks over plain HTTP (a vault, a service worker). The panel warns when it is reached by the local network only. |
 | `no_gui` | no | `true`: the app has no web interface (a runner, a mail relay, a toolbox); the store shows no address and no Open button, whatever port it publishes. |
 | `deprecated` | no | Text: why it is discontinued. The store offers no install. |

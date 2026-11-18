@@ -53,7 +53,7 @@ vai em `docs/` (o endurecimento medido está em `docs/hardening.md`). O painel m
 | `docs` | não | A documentação do projeto, uma URL https. |
 | `architectures` | não | `["amd64", "arm64"]`: onde a imagem roda, quando se sabe (o painel também pergunta ao registry). |
 | `category` | não | Um dos grupos de `qhui.GRUPOS` (as categorias da loja). Infraestrutura sem lugar entre elas (homepage, postfix, toolbx) não tem. |
-| `min_podman` | não | `"5.4"`: um piso acima do 5.0 que o `Notify=healthy` já exige. |
+| `min_podman` | não | `"6.1"`: um piso acima da 6.0 que todo app já exige, para uma unit que usa uma chave Quadlet mais nova. Nunca abaixo da 6.0 (o `check.py` recusa). |
 | `requires_https` | não | `true`: o app quebra em HTTP puro (um cofre, um service worker). O painel avisa quando ele é acessado só pela rede local. |
 | `no_gui` | não | `true`: o app não tem interface web (um runner, um relay de e-mail, uma caixa de ferramentas); a loja não mostra endereço nem o botão Abrir, qualquer que seja a porta que ele publica. |
 | `deprecated` | não | Texto: por que foi descontinuado. A loja não oferece instalar. |

@@ -35,8 +35,8 @@ pt*)
     M_INSTALL1="Instale com o gerenciador de pacotes da sua distribuição e rode"
     M_INSTALL2="de novo. Em sistema imutável o comando é outro e exige reboot."
     M_DEPSOK="git, python3, podman: ok"
-    M_OLD1="é antigo demais — 5.0 ou mais novo é obrigatório (Notify=healthy)."
-    M_OLD2="atualize o podman, ou use uma distribuição que traga 5.x."
+    M_OLD1="é antigo demais — 6.0 ou mais novo é obrigatório (regra 23 das convenções)."
+    M_OLD2="atualize o podman, ou use uma distribuição que traga 6.x."
     M_NOSD="systemd --user não está rodando para este usuário (tente: loginctl enable-linger $USER)"
     M_SDOK="systemd --user: ok"
     M_DIRS="~/.config/containers/{systemd,secrets,env,volumes}: prontos"
@@ -78,8 +78,8 @@ pt*)
     M_INSTALL1="Install them with your distribution's package manager, then run this"
     M_INSTALL2="again. On an immutable system the command differs and needs a reboot."
     M_DEPSOK="git, python3, podman: ok"
-    M_OLD1="is too old — 5.0 or newer is required (Notify=healthy)."
-    M_OLD2="upgrade podman, or use a distribution that ships 5.x."
+    M_OLD1="is too old — 6.0 or newer is required (conventions, rule 23)."
+    M_OLD2="upgrade podman, or use a distribution that ships 6.x."
     M_NOSD="systemd --user is not running for this user (try: loginctl enable-linger $USER)"
     M_SDOK="systemd --user: ok"
     M_DIRS="~/.config/containers/{systemd,secrets,env,volumes}: ready"
@@ -134,11 +134,12 @@ if [ ${#missing[@]} -gt 0 ]; then
 fi
 say "$M_DEPSOK"
 
-# 1b. Podman 5.0 is the real floor: `Notify=healthy` arrived there, and
-#     119 of the 127 units use it. On 4.x the start returns before the app is
-#     ready and the install reports success it cannot know about.
+# 1b. Podman 6.0 is the floor (conventions, rule 23): it dropped cgroups v1, CNI and slirp4netns and made
+#     network isolation the default, and every unit is written and verified for it. (`Notify=healthy` alone
+#     needs 5.0: 119 of the 127 units use it; on 4.x the start returns before the app is ready and the
+#     install reports success it cannot know about.)
 pv=$(podman --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+' | head -1)
-if [ -n "$pv" ] && [ "${pv%%.*}" -lt 5 ]; then
+if [ -n "$pv" ] && [ "${pv%%.*}" -lt 6 ]; then
     say "podman $pv $M_OLD1"
     fail "$M_OLD2"
 fi

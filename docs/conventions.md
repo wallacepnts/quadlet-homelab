@@ -400,39 +400,40 @@ installation docs (a hardcoded `provider = "postgresql"` in Prisma, for
 example). **Check before assuming**, and record why in `docs/hardening.md` ("Per-app notes"),
 so nobody reopens the discussion later.
 
-### 23. The Podman floor is the newest Quadlet key a unit uses; the reference is 6.1.4
+### 23. Podman 6.0 is the minimum; a newer Quadlet key is declared; 6.1.4 is the reference
 
 Podman's Quadlet grows keys release by release, and a unit that uses a key its
-host's Podman does not know fails at the generator, at install. So:
+host's Podman does not know fails at the generator, at install. So the floor is
+written down and enforced, not left to the host:
 
-- **Reference.** Every unit is checked against the Quadlet generator of the
-  Podman in use here, **6.1.4** (and of 6.2.0, released on 2026-11-10, by running the
+- **The minimum is 6.0, for every app.** 6.0 dropped cgroups v1, CNI and
+  slirp4netns (no unit here asked for any of them) and made network isolation the
+  default. Nothing is written for Podman 5: it is **too old**, `qh` **refuses** to
+  install or update on it and says why, the store shows it before the install, and
+  `check.py` holds the units to a Quadlet generator of 6 or newer. The units that
+  used keys of 5.x need nothing declared: the minimum already has them.
+- **A key newer than the minimum is declared.** `QUADLET_KEY_SINCE` in
+  [`qhui.py`](../qhui.py) lists the release that introduced each one (read from
+  Podman's release notes): `ImageVolume=` 6.1; `Umask=` and `SetMountsDependency=` 6.2.
+  A unit that uses one needs `"min_podman": "<that release>"` in `app.json`, at
+  least the newest key's, and `check.py` fails otherwise. A key goes into the table,
+  with its release, in the same commit that first uses it. `"min_podman"` below 6.0
+  is an error too: the minimum is not repeated per app.
+- **Reference: 6.1.4**, the Podman in use here. Every unit is checked against its
+  Quadlet generator (and against 6.2.0's, released on 2026-11-10, by running the
   `quay.io/podman/stable:v6.2.0` image's `quadlet -dryrun`): all 139 units generate
   with no error and no warning, and the generated `podman run` is the same on both
-  but for the order of a few flags. `check.py --quadlet` (CI, on Fedora's Podman) is
-  the standing proof, and it is not optional: **a unit that does not pass it does not
-  merge**.
-- **The floor of a unit is derived, not guessed.** `QUADLET_KEY_SINCE` in
-  [`qhui.py`](../qhui.py) lists the release that introduced each key (read from
-  Podman's release notes), and the newest one a unit uses is its floor, along with
-  `Notify=healthy` (5.0). `qh` refuses to install on an older host and says why; the
-  store shows it before the install.
-- **Up to 5.4 nothing is declared.** That is what the README measured as working
-  (Debian 13, Leap 16, Ubuntu 25.04). **Above it, `app.json` must say so**:
-  `"min_podman": "<the release>"`, at least the newest key's. `check.py` fails
-  otherwise (rule 23): a newer key is a decision that shows, never a surprise on someone's host.
-  Today the newest floor among the apps is 5.3 (`tsdproxy`, for `AddHost=`).
-- **A new key goes in the table, with its release, in the same commit** that first
-  uses it. Not listed means it is older than 5.0 or nobody needed it yet.
-- **A host older than 6.1.4 is told so** (`qh --catalog`, and Settings in the
+  but for the order of a few flags. `check.py --quadlet` (CI) is the standing proof,
+  and **a unit that does not pass it does not merge**.
+- **A host older than 6.1.4 is told so** (`qh --catalog` and Settings in the
   store): 6.1.1 to 6.1.3 closed a crafted tar writing outside its folder, crafted
   layers or volumes overwriting host files on `podman load`/`volume import`, and
-  checkpoint images switching off the sandbox. The units here are not the way in,
-  but the host's Podman is, so update the package.
+  checkpoint images switching off the sandbox. The units are not the way in, but the
+  host's Podman is, so update the package.
 - **On a Podman release**: read its notes, run its generator over all the units
-  (the image above, with `QUADLET_UNIT_DIRS`), compare with the previous
-  version's, and only then change the reference here. 6.0.2 to 6.1.4 asked nothing
-  of the apps (no breaking change reaches a unit); 6.2.0 adds `Umask=` and
-  `SetMountsDependency=` (optional), and changes `UserNS=keep-id` (it now forces the
-  host's uid over the image's user), which touches the 15 units that use it: test
-  them when the host gets 6.2.
+  (the image above, with `QUADLET_UNIT_DIRS`, see [tools](./tools.md)), compare with
+  the previous version's, and only then change the reference here. 6.0.2 to 6.1.4
+  asked nothing of the apps; 6.2.0 adds `Umask=` and `SetMountsDependency=`
+  (optional), and changes `UserNS=keep-id` (it now forces the host's uid over the
+  image's user), which touches the 15 units that use it: test them when the host
+  gets 6.2.

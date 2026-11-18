@@ -31,7 +31,7 @@ qh-check --format      # rewrites every unit into the layout; order and blank li
 It also runs every unit through **Podman's own Quadlet generator** (`quadlet -dryrun -user`,
 all the units in one directory as on the host), which knows what the rest of the file does not: an
 unsupported key, a `Network=` naming a file that is not there, a section it cannot read. Those
-used to show up at install. It runs when the machine has a generator at Podman 5 or newer and is
+used to show up at install. It runs when the machine has a generator at Podman 6 or newer and is
 skipped quietly otherwise; `qh-check --quadlet` makes its absence an error, which is what CI uses
 (a separate job, in the official `podman/stable` image, since the runner's Podman is older than
 the keys need). The generator does not interpret every value (`Notify=maybe` passes), so this is a
@@ -39,8 +39,8 @@ floor under the other checks, not a substitute for them. The store's Customize s
 validates a drop-in with the same generator before it writes it.
 
 **The Podman floor** (rule 23): `check.py` also reads each unit's Quadlet keys against `QUADLET_KEY_SINCE`
-(`qhui.py`, the release that introduced each key) and fails an app whose newest key is above 5.4 without a
-`min_podman` in `app.json` at least that high. `qh` takes the same table as the service's floor and refuses an
+(`qhui.py`, the release that introduced each key newer than the minimum) and fails an app whose newest key is above 6.0 without a
+`min_podman` in `app.json` at least that high, and an app that declares one below 6.0. `qh` takes the same table as the service's floor and refuses an
 older host. To judge a new Podman release before the host has it, run its generator over all the units:
 
 ```bash
@@ -406,10 +406,11 @@ again at its next start. A network is kept if it is the default, used, or declar
 declares it. Deleting asks twice, and volumes (data) want the word typed. The same from
 a terminal: `python3 resources.py` to see, `prune images|networks|volumes --apply` to do.
 
-**Minimum Podman**: a unit with `Notify=healthy` needs Podman 5.0, and `"min_podman": "5.4"`
-raises that floor for a service that uses a newer Quadlet key.
-`qh` warns before installing on an older host and the store shows it in the panel;
-it does not refuse. `QH_PODMAN_VERSION` overrides what the host reports.
+**Minimum Podman**: 6.0 for every service (rule 23). `"min_podman": "6.1"` raises that floor for a
+service that uses a Quadlet key that arrived later (`ImageVolume=`, 6.1; `Umask=` and `SetMountsDependency=`,
+6.2), and the store and `qh --catalog` carry the number. `qh` **refuses** to install or update on an older
+host and says why (`podman_too_old` in the catalog, shown in the panel before the install). `QH_PODMAN_VERSION`
+overrides what the host reports.
 
 **Customize before installing**: an app that is not installed has a Customize button beside Install.
 The form is the same, but it works on the unit as `qh` would write it (the repository's, rendered

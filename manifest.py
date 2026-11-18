@@ -12,7 +12,7 @@ carries its metadata, but in JSON of our own, beside the unit files instead of i
       "website": "https://usememos.com", "docs": "https://www.usememos.com/docs",
       "architectures": ["amd64", "arm64"],            # optional: website, architectures
       "category": "Productivity",                     # one of qhui.GRUPOS
-      "min_podman": "5.4",
+      "min_podman": "6.1",
       "requires_https": true,                         # the app breaks over plain HTTP (a vault, a service worker)
       "deprecated": "why it is discontinued",         # no install is offered
       "secrets": {"memos-token": "rand-hex 32"},      # how each Secret= is made
@@ -633,7 +633,7 @@ def selftest():
     import tempfile
     d = {"title": "X", "category": "Tools", "short_desc": {"en": "a one-liner", "pt": "uma linha"},
          "description": {"en": "long", "pt": "longa"}, "author": "o", "source": "https://github.com/o/r",
-         "docs": "https://d.example", "architectures": ["amd64"], "min_podman": "5.4", "requires_https": True, "deprecated": "gone",
+         "docs": "https://d.example", "architectures": ["amd64"], "min_podman": "6.1", "requires_https": True, "deprecated": "gone",
          "secrets": {"s1": "rand-hex 8", "s2": "shell x"},
          "config": {"c.conf": "%h/c"}, "vars": {"V": "~/v"}, "validate": {"s1": "shell y"},
          "login": {"user": "u", "password": "s1"},

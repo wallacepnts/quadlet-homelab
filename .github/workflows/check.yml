@@ -70,8 +70,8 @@ jobs:
           exit $failed
 
   # Every unit through Podman's own Quadlet generator: it knows what Quadlet accepts, which check.py
-  # does not. The runner's Podman is older than the keys these units use (Notify=healthy and others
-  # came with 5.0), so the generator comes from the official image; python is installed into it.
+  # does not. The runner's Podman is older than the 6.0 this repository needs (rule 23), so the generator
+  # comes from the official image (6 or newer; check.py refuses an older one); python is installed into it.
   quadlet:
     runs-on: ubuntu-latest
     steps:
