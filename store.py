@@ -27,6 +27,7 @@ No dependencies: stdlib only.
 import argparse
 import ssl
 import urllib.error
+import urllib.parse
 import urllib.request
 import configparser
 import contextlib
@@ -1385,6 +1386,76 @@ def resources_survey():
     return resources.survey(Path(PREFIX or Path.home()))
 
 
+# -- files: the folders of the apps ------------------------------------------------------------
+
+def files_roots(app):
+    """{name: absolute path} of the directories under .../volumes/ the app's units use, or None when it is not installed."""
+    if not service_dir(app):
+        return None
+    sv = I.Service(app, PREFIX)
+    return {Path(r).name: r for r in sv.volume_roots()} if sv.installed() else None
+
+
+def files_apps():
+    """The installed apps that keep data under volumes/, by name."""
+    return sorted(p.name for p in I.APPS.iterdir() if p.is_dir() and files_roots(p.name))
+
+
+def files_split(path):
+    """(app, root path, rest) for "app/volume/sub/dir"; (app, None, "") for "app"; raises hostctl.FsError for the rest."""
+    partes = [x for x in (path or "").split("/") if x]
+    if not partes:
+        return None, None, ""
+    roots = files_roots(partes[0])
+    if roots is None:
+        raise hostctl.FsError(404, "unknown app")
+    if len(partes) == 1:
+        return partes[0], None, ""
+    if partes[1] not in roots:
+        raise hostctl.FsError(404, "unknown volume")
+    return partes[0], roots[partes[1]], "/".join(partes[2:])
+
+
+def files_run(op, root, rel):
+    """The operation of hostctl on `root`/`rel`: inside `podman unshare` on a host (a container's files belong to a
+    subuid the user cannot read from outside), in this process in a sandbox. Returns (rc, stdout bytes, stderr)."""
+    if PREFIX or not shutil.which("podman"):
+        raise RuntimeError("direct")
+    r = subprocess.run(["podman", "unshare", "python3", str(Path(hostctl.__file__).resolve()), op, root, rel],
+                       capture_output=True, timeout=60)
+    return r.returncode, r.stdout, r.stderr.decode(errors="replace")
+
+
+def files_list(path):
+    app, root, rel = files_split(path)
+    if app is None:
+        return {"entries": [{"name": a, "type": "dir", "size": None, "mtime": None} for a in files_apps()], "truncated": False}
+    if root is None:
+        return {"entries": [{"name": n, "type": "dir", "size": None, "mtime": None} for n in sorted(files_roots(app))], "truncated": False}
+    try:
+        rc, out, err = files_run("fs-ls", root, rel)
+    except RuntimeError:
+        return hostctl.fs_list(root, rel)
+    d = json.loads(out or b"{}")
+    if "error" in d:
+        raise hostctl.FsError(d["code"], d["error"])
+    return d
+
+
+def files_preview(path):
+    app, root, rel = files_split(path)
+    if root is None:
+        raise hostctl.FsError(400, "not a file")
+    try:
+        rc, out, err = files_run("fs-preview", root, rel)
+    except RuntimeError:
+        return hostctl.fs_preview(root, rel)
+    d = json.loads(out or b"{}")
+    if "error" in d:
+        raise hostctl.FsError(d["code"], d["error"])
+    return d
+
+
 USAGE, USAGE_LOCK, USAGE_TTL = {"at": 0.0, "apps": []}, threading.Lock(), 300
 
 
@@ -2009,6 +2080,42 @@ class Handler(BaseHTTPRequestHandler):
             raise ValueError("body too large")
         return self.rfile.read(n) if n else b""
 
+    def _file_download(self, path):
+        """A file of an app's folder, streamed as a download. Refused paths answer before a byte is sent."""
+        app, root, rel = files_split(path)
+        if root is None:
+            raise hostctl.FsError(400, "not a file")
+        nome = (rel.rsplit("/", 1)[-1] or "file")
+        cab = lambda tam: ([("Content-Type", "application/octet-stream"), ("X-Content-Type-Options", "nosniff"),   # noqa: E731
+                            ("Cache-Control", "no-store"),
+                            ("Content-Disposition", "attachment; filename*=UTF-8''" + urllib.parse.quote(nome))]
+                           + ([("Content-Length", str(tam))] if tam is not None else []))
+        if PREFIX or not shutil.which("podman"):
+            f, tam = hostctl.fs_open(root, rel)
+            with f:
+                self.send_response(200)
+                for k, v in cab(tam):
+                    self.send_header(k, v)
+                self.end_headers()
+                shutil.copyfileobj(f, self.wfile, 1 << 20)
+            return
+        proc = subprocess.Popen(["podman", "unshare", "python3", str(Path(hostctl.__file__).resolve()), "fs-cat", root, rel],
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        try:
+            primeiro = proc.stdout.read(1 << 16)
+            if not primeiro and proc.wait() != 0:
+                erro = json.loads(proc.stderr.read() or b"{}")
+                raise hostctl.FsError(erro.get("code", 400), erro.get("error", "read"))
+            self.send_response(200)
+            for k, v in cab(None):
+                self.send_header(k, v)
+            self.end_headers()
+            self.wfile.write(primeiro)
+            shutil.copyfileobj(proc.stdout, self.wfile, 1 << 20)
+        finally:
+            proc.kill()
+            proc.wait()
+
     def _download(self, f):
         """Streams an archive: a backup can be gigabytes, so never read whole."""
         self.send_response(200)
@@ -2153,6 +2260,18 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, resources_survey())
             except (RuntimeError, OSError, subprocess.TimeoutExpired, ValueError) as e:
                 return self._json(502, {"error": f"podman: {e}"})
+        if url.path.startswith("/api/files"):
+            try:
+                if url.path == "/api/files":
+                    return self._json(200, {"path": q.get("path", ""), **files_list(q.get("path", ""))})
+                if url.path == "/api/files/preview":
+                    return self._json(200, files_preview(q.get("path", "")))
+                if url.path == "/api/files/download":
+                    return self._file_download(q.get("path", ""))
+            except hostctl.FsError as e:
+                return self._json(e.code, {"error": str(e)})
+            except (OSError, subprocess.TimeoutExpired, ValueError) as e:
+                return self._json(502, {"error": str(e)})
         if url.path == "/api/usage":
             u = disk_usage(q.get("refresh") == "1")
             return self._json(200, {"apps": u["apps"], "at": int(u["at"])})
@@ -3301,6 +3420,28 @@ def selftest():
             assert pedir("/api/power", json.dumps({"action": "reboot", "at": "25:00"}).encode(), api)[0] == 400
             assert pedir("/api/power", json.dumps({"action": "cancel"}).encode(), api)[0] == 200
             assert json.loads(pedir("/api/power", headers=ok)[2]) == {"scheduled": None}
+            # files: the app's volume folders, listed, previewed and downloaded; nothing outside them, no links
+            apps_f = json.loads(pedir("/api/files", headers=ok)[2])["entries"]
+            assert apps_f and all(e["type"] == "dir" for e in apps_f), apps_f
+            dono = apps_f[0]["name"]
+            raizes = json.loads(pedir(f"/api/files?path={dono}", headers=ok)[2])["entries"]
+            assert raizes and raizes[0]["type"] == "dir", raizes
+            vol = Path(tmp, ".config/containers/volumes", raizes[0]["name"])
+            (vol / "sub").mkdir(parents=True, exist_ok=True)
+            (vol / "sub/a.txt").write_text("olá\n"); (vol / "sub/b.bin").write_bytes(b"\x00\x01")
+            os.symlink("/etc/passwd", vol / "sub/pw")
+            base_f = f"{dono}/{raizes[0]['name']}"
+            lista = json.loads(pedir(f"/api/files?path={urllib.parse.quote(base_f + '/sub')}", headers=ok)[2])
+            assert [e["name"] for e in lista["entries"]] == ["a.txt", "b.bin", "pw"] and lista["entries"][2]["type"] == "link", lista
+            pv = json.loads(pedir(f"/api/files/preview?path={urllib.parse.quote(base_f + '/sub/a.txt')}", headers=ok)[2])
+            assert pv["text"] == "olá\n", pv
+            assert pedir(f"/api/files/preview?path={urllib.parse.quote(base_f + '/sub/b.bin')}", headers=ok)[0] == 415
+            st, h, corpo = pedir(f"/api/files/download?path={urllib.parse.quote(base_f + '/sub/a.txt')}", headers=ok)
+            assert st == 200 and corpo == "olá\n".encode() and "attachment" in h["Content-Disposition"], (st, corpo)
+            for ruim in (base_f + "/sub/pw", base_f + "/../x", dono + "/nope", "nope", base_f + "/sub/missing"):
+                assert pedir(f"/api/files?path={urllib.parse.quote(ruim)}", headers=ok)[0] in (400, 404), ruim
+                assert pedir(f"/api/files/download?path={urllib.parse.quote(ruim)}", headers=ok)[0] in (400, 404), ruim
+            assert pedir("/api/files/download?path=" + urllib.parse.quote(base_f), headers=ok)[0] == 400, "a folder is not a download"
             # disk usage: the volumes of an installed app, summed
             uso = json.loads(pedir("/api/usage?refresh=1", headers=ok)[2])
             assert all(set(x) == {"app", "bytes"} for x in uso["apps"]) and uso["at"] > 0, uso

@@ -485,6 +485,22 @@ The home (My apps) opens with the server at a glance: processor, memory, the dis
 network (rate; real interfaces only, not the container bridges or the tailnet's copy of the same traffic), each with a
 small history, refreshed every five seconds from `/api/host`. There is no widgets sidebar any more.
 
+## Files
+
+**Files** (the navigation, and a button in each app that keeps data) looks inside the folders of your apps, the
+directories under `~/.config/containers/volumes/`: apps first, then their volumes and folders, a text file previewed
+(first 256 KB) and any file downloaded. It is **read only**: nothing is uploaded, edited or deleted from here. Three
+things hold it to that:
+
+- **Only the app's volumes**: a path is `app/volume/folder/...`, and the volume must be one the app's units mount. A
+  folder of yours (the media root) and the rest of the home are not reachable.
+- **No links**: a container can leave a symlink to `/etc/passwd` in its data. Reading happens in `podman unshare`
+  (where the files a container wrote, which belong to a subuid, can be read at all), and there such a link would reach
+  the host's own files, so a link anywhere in the path is refused and shown as a link, never followed.
+- **Regular files only**: a fifo or a device is refused, so a read cannot hang.
+
+The listing is done by `hostctl.py fs-ls|fs-preview|fs-cat`, which the panel runs inside `podman unshare`.
+
 ## Restart or shut down the server
 
 **Settings → Server** has **Restart** and **Shut down**, each asking once more before it acts. The panel runs them as

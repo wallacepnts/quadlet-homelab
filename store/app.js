@@ -36,6 +36,10 @@ const T = {
     backupFirst: "Backup antes",
     envType: { bool: "sim/não", number: "número", email: "e-mail", url: "URL", ip: "IP", password: "senha" },
     resources: "Recursos", resLoading: "Verificando o Podman…",
+    files: "Arquivos", filesRoot: "Apps", filesEmpty: "Pasta vazia.", filesNone: "Nenhum app com dados próprios.", filesLink: "atalho (não é seguido)",
+    filesDownload: "Baixar", filesBack: "Voltar à pasta", filesBinary: "Arquivo binário: só dá para baixar.", filesCut: (n) => `Mostrando só o começo (${n}).`,
+    filesMore: "A pasta tem mais itens do que cabem na lista.", filesRO: "Só leitura: dá para ver e baixar, não alterar. Os dados de um container ficam no volume dele.",
+    filesDenied: "Sem permissão para ler isto.",
     resUsage: "Espaço por app", resUsageNote: "Quanto os dados de cada app ocupam em disco (as pastas em volumes/; uma pasta sua, como a de mídia, não entra).",
     resUsageRefresh: "Recalcular", resUsageLoading: "Calculando…", resUsageNone: "Nenhum app com dados próprios.", resUsageTotal: "Total",
     powerLater: "Agendar", powerWhen: { "15": "em 15 minutos", "60": "em 1 hora", "240": "em 4 horas", at: "num horário…" },
@@ -215,6 +219,10 @@ const T = {
     backupFirst: "Back up first",
     envType: { bool: "yes/no", number: "number", email: "email", url: "URL", ip: "IP", password: "password" },
     resources: "Resources", resLoading: "Asking Podman…",
+    files: "Files", filesRoot: "Apps", filesEmpty: "Empty folder.", filesNone: "No app with data of its own.", filesLink: "link (not followed)",
+    filesDownload: "Download", filesBack: "Back to the folder", filesBinary: "A binary file: it can only be downloaded.", filesCut: (n) => `Showing only the start (${n}).`,
+    filesMore: "The folder has more items than the list holds.", filesRO: "Read only: you can look and download, not change. A container's data lives in its volume.",
+    filesDenied: "No permission to read this.",
     resUsage: "Space per app", resUsageNote: "How much each app's data takes on disk (the folders under volumes/; a folder of yours, such as the media one, is not counted).",
     resUsageRefresh: "Recalculate", resUsageLoading: "Calculating…", resUsageNone: "No app with data of its own.", resUsageTotal: "Total",
     powerLater: "Schedule", powerWhen: { "15": "in 15 minutes", "60": "in 1 hour", "240": "in 4 hours", at: "at a time…" },
@@ -569,7 +577,7 @@ function renderChrome() {
     $(id).title = t(key);
     $(id).setAttribute("aria-label", t(key));
   }
-  for (const [id, key] of [["history-btn", "history"], ["resources-btn", "resources"], ["settings-btn", "settings"]]) {
+  for (const [id, key] of [["history-btn", "history"], ["files-btn", "files"], ["resources-btn", "resources"], ["settings-btn", "settings"]]) {
     fill($(id), h("span", { class: "nl" }, t(key)));
     $(id).title = t(key);
   }
@@ -1164,6 +1172,8 @@ function renderPanel() {
       acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showEnv(a) }, t("configure")));
     if (a.has_login)
       acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showLogin(a) }, t("login")));
+    if (a.has_data)
+      acoes.push(h("button", { type: "button", class: "ghost", onclick: () => { $("panel").close(); openFiles(a.id); } }, t("files")));
     acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showBackups(a) }, t("backups")));
     acoes.push(h("button", { type: "button", class: "danger", onclick: () => plan("remove") }, t("remove")));
   }
@@ -2334,6 +2344,8 @@ $("panel").addEventListener("close", closeLogs);
 $("history-btn").addEventListener("click", () => openHistory(null));
 $("h-close").addEventListener("click", () => $("history").close());
 $("resources-btn").addEventListener("click", openResources);
+$("files-btn").addEventListener("click", () => openFiles(""));
+$("f-close").addEventListener("click", () => $("files").close());
 $("settings-btn").addEventListener("click", openSettings);
 $("s-close").addEventListener("click", () => $("settings").close());
 $("b-close").addEventListener("click", () => $("bulk").close());
@@ -2557,6 +2569,58 @@ async function appearanceSection() {
     h("p", { class: "help" }, t("apBgHint")),
     u.background ? h("div", { class: "ap-grid" }, h("label", {}, t("apBgBlur"), deslize("bg_blur", 20)), h("label", {}, t("apBgDim"), deslize("bg_dim", 80))) : null,
     aviso);
+}
+
+// -- Files: look inside the folders of the apps (read only) ------------------------------------
+// The path is "app/volume/sub/dir"; the server lists it, previews a text file and streams a download, and it
+// refuses anything outside the app's volumes and any link.
+async function openFiles(path = "") {
+  if (!$("files").open) $("files").showModal();
+  await renderFiles(path);
+}
+
+async function renderFiles(path) {
+  $("f-title").textContent = t("files");
+  $("f-view").hidden = true;
+  const partes = path.split("/").filter(Boolean);
+  const nomeApp = (id) => (S.apps.find((a) => a.id === id) || {}).name || id;
+  fill($("f-crumb"), h("button", { type: "button", onclick: () => renderFiles("") }, t("filesRoot")),
+    ...partes.flatMap((p, i) => [h("span", { class: "sep" }, "/"),
+      h("button", { type: "button", onclick: () => renderFiles(partes.slice(0, i + 1).join("/")) }, i === 0 ? nomeApp(p) : p)]));
+  let r;
+  try { r = await api(`/api/files?path=${encodeURIComponent(path)}`); }
+  catch (e) { fill($("f-body"), h("p", { class: "bad" }, e.status === 403 ? t("filesDenied") : String(e.message))); return; }
+  const filho = (n) => (path ? `${path}/${n}` : n);
+  const linhas = r.entries.map((e) => h("tr", {},
+    h("td", {}, e.type === "dir"
+      ? h("button", { type: "button", class: "fname dir", onclick: () => renderFiles(filho(e.name)) }, `▸ ${partes.length ? e.name : nomeApp(e.name)}`)
+      : e.type === "link"
+        ? h("button", { type: "button", class: "fname", disabled: true, title: t("filesLink") }, `↪ ${e.name}`)
+        : h("button", { type: "button", class: "fname", onclick: () => showFile(filho(e.name), e) }, e.name)),
+    h("td", { class: "num" }, e.size === null || e.size === undefined ? "" : bytes(e.size)),
+    h("td", { class: "num" }, e.mtime ? new Date(e.mtime * 1000).toLocaleDateString(S.lang === "pt" ? "pt-BR" : "en-GB") : "")));
+  fill($("f-body"),
+    h("p", { class: "muted" }, t("filesRO")),
+    linhas.length ? h("table", { class: "hist" }, ...linhas) : h("p", { class: "muted" }, partes.length ? t("filesEmpty") : t("filesNone")),
+    r.truncated ? h("p", { class: "note" }, t("filesMore")) : null);
+}
+
+async function showFile(path, e) {
+  const pasta = path.split("/").slice(0, -1).join("/");
+  const baixar = h("a", { class: "btn", href: `/api/files/download?path=${encodeURIComponent(path)}`, download: e.name }, t("filesDownload"));
+  const voltar = h("button", { type: "button", class: "ghost", onclick: () => renderFiles(pasta) }, t("filesBack"));
+  fill($("f-body"), h("h3", {}, e.name), h("div", { id: "f-actions" }, baixar, voltar), h("p", { class: "muted" }, bytes(e.size || 0)));
+  const pre = $("f-view");
+  pre.hidden = false;
+  pre.textContent = "";
+  try {
+    const v = await api(`/api/files/preview?path=${encodeURIComponent(path)}`);
+    pre.textContent = v.text;
+    if (v.truncated) $("f-body").append(h("p", { class: "note" }, t("filesCut")(bytes(v.text.length))));
+  } catch (err) {
+    pre.hidden = true;
+    $("f-body").append(h("p", { class: "muted" }, err.status === 415 ? t("filesBinary") : err.status === 403 ? t("filesDenied") : String(err.message)));
+  }
 }
 
 // -- Quick Launch ---------------------------------------------------------------------------

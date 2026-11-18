@@ -110,7 +110,7 @@ global.fetch = async (url, opts = {}) => {
 };
 
 const codigo = fs.readFileSync(path.join(__dirname, "..", "app.js"), "utf8");
-const api = new Function(codigo + "; return { S, openPanel, showEnv, current, renderGrid, pollStats, pollHost, openSettings, showLogs, showConsole, termNew, termFeed, termKey, openResources, hintClean, openHistory, setView, pollJobs, pollPerf, iconPlate, renderHome, touchRecent };")();
+const api = new Function(codigo + "; return { S, openPanel, showEnv, current, renderGrid, pollStats, pollHost, openSettings, showLogs, showConsole, termNew, termFeed, termKey, openResources, hintClean, openHistory, setView, openFiles, pollJobs, pollPerf, iconPlate, renderHome, touchRecent };")();
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 let falhas = 0;
 const confere = (cond, msg) => { if (!cond) { falhas++; console.log("FALHOU:", msg); } else console.log("ok   ", msg); };
@@ -253,6 +253,26 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   // host summary: one line at the top
   await api.pollHost();
   confere($("host").textContent === "carga 25% · RAM 2.0/8.0 GB · 50 °C · ligado há 1 d", `topo: resumo do servidor (${$("host").textContent})`);
+
+  // files: apps first, then their volumes and folders; a text file previews, a binary one only downloads, links stay put
+  rotas["/api/files"] = { path: "", entries: [{ name: "memos", type: "dir", size: null, mtime: null }], truncated: false };
+  await api.openFiles(""); await esperar(30);
+  confere($("files").open && /Memos/.test($("f-body").textContent) && /Só leitura/.test($("f-body").textContent), "Arquivos: começa pelos apps, só leitura");
+  rotas["/api/files"] = { path: "memos/memos/data", entries: [{ name: "sub", type: "dir", size: null, mtime: 1 }, { name: "a.txt", type: "file", size: 6, mtime: 1 },
+    { name: "b.bin", type: "file", size: 2, mtime: 1 }, { name: "pw", type: "link", size: null, mtime: 1 }], truncated: false };
+  await api.openFiles("memos/memos/data"); await esperar(30);
+  const trocas = [...$("f-crumb").walk()].filter((e) => e.tag === "button").map((e) => e.textContent);
+  confere(trocas.join("|") === "Apps|Memos|memos|data", `Arquivos: o caminho vira migalhas (${trocas})`);
+  const linhaF = (n) => [...$("f-body").walk()].find((e) => e.tag === "button" && e.attrs.class && /fname/.test(e.attrs.class) && e.textContent.includes(n));
+  confere(linhaF("pw").attrs.disabled !== undefined, "um atalho (link) não se abre");
+  rotas["/api/files/preview"] = { text: "olá\n", size: 6, truncated: false };
+  linhaF("a.txt").listeners.click(); await esperar(30);
+  confere($("f-view").textContent === "olá\n" && !$("f-view").hidden && [...$("f-body").walk()].some((e) => e.tag === "a" && /files\/download\?path=memos%2Fmemos%2Fdata%2Fa\.txt/.test(e.attrs.href)), "texto: prévia e link de download");
+  delete rotas["/api/files/preview"];
+  await api.openFiles("memos/memos/data"); await esperar(30);
+  linhaF("b.bin").listeners.click(); await esperar(30);
+  confere($("f-view").hidden, "sem prévia, a área do texto some");
+  $("files").open = false;
 
   // resources: the dialog lists what is unused and prunes in two clicks; volumes want the word
   rotas["/api/resources"] = { reclaimable: 3 * 2 ** 30, networks: [{ name: "stray" }], volumes: [{ name: "vf" }],

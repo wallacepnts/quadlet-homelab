@@ -14,8 +14,10 @@ Both are small and both touch the machine, so every call that does goes through 
 """
 
 import json
+import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -119,6 +121,120 @@ def state(base, run=_run, now=None):
     return None
 
 
+# -- files: look inside an app's folder -------------------------------------------------------
+
+LIST_MAX = 2000                       # entries of one folder shown; a folder past this says so
+PREVIEW_MAX = 256 * 1024              # bytes of a file shown as text in the browser
+
+
+class FsError(Exception):
+    """Why a path was refused or could not be read (`code` is what the API answers)."""
+
+    def __init__(self, code, msg):
+        super().__init__(msg)
+        self.code = code
+
+
+def confine(root, rel):
+    """The real path of `rel` under `root`, or FsError. Never leaves the root, never follows a link.
+
+    A container wrote what is in there and can put a symlink to /etc/passwd in it. Read as the user inside
+    `podman unshare` (where the user is root over the subuid files), that link would be followed to the host's
+    own files, so a link anywhere on the way is refused, not resolved."""
+    raiz = os.path.realpath(root)
+    atual = raiz
+    for parte in [p for p in (rel or "").split("/") if p and p != "."]:
+        if parte == ".." or "\0" in parte:
+            raise FsError(400, "path")
+        atual = os.path.join(atual, parte)
+        if os.path.islink(atual):
+            raise FsError(400, "link")
+    real = os.path.realpath(atual)
+    if real != raiz and not real.startswith(raiz + os.sep):
+        raise FsError(400, "outside")
+    if not os.path.lexists(real):
+        raise FsError(404, "missing")
+    return real
+
+
+def fs_list(root, rel):
+    """{"entries": [{name, type, size, mtime}], "truncated"}: folders first, then files, each by name."""
+    pasta = confine(root, rel)
+    if not os.path.isdir(pasta):
+        raise FsError(400, "not a folder")
+    itens = []
+    try:
+        with os.scandir(pasta) as it:
+            for e in it:
+                try:
+                    st = e.stat(follow_symlinks=False)
+                except OSError:
+                    continue
+                tipo = "link" if e.is_symlink() else "dir" if e.is_dir(follow_symlinks=False) else "file"
+                itens.append({"name": os.fsdecode(e.name).encode("utf-8", "replace").decode(), "type": tipo,
+                              "size": st.st_size if tipo == "file" else None, "mtime": int(st.st_mtime)})
+    except PermissionError:
+        raise FsError(403, "denied")
+    itens.sort(key=lambda x: (x["type"] != "dir", x["name"].lower()))
+    return {"entries": itens[:LIST_MAX], "truncated": len(itens) > LIST_MAX}
+
+
+def fs_open(root, rel):
+    """(open binary file, size) for a regular file under `root`; FsError otherwise."""
+    caminho = confine(root, rel)
+    try:
+        fd = os.open(caminho, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    except PermissionError:
+        raise FsError(403, "denied")
+    except OSError:
+        raise FsError(400, "not a file")
+    st = os.fstat(fd)
+    if not stat.S_ISREG(st.st_mode):         # a fifo or a device would block or leak
+        os.close(fd)
+        raise FsError(400, "not a file")
+    return os.fdopen(fd, "rb"), st.st_size
+
+
+def fs_preview(root, rel):
+    """{"text", "size", "truncated"} for a file that is UTF-8 text; FsError(415) for anything else."""
+    f, tamanho = fs_open(root, rel)
+    with f:
+        dados = f.read(PREVIEW_MAX + 1)
+    cortado = len(dados) > PREVIEW_MAX
+    dados = dados[:PREVIEW_MAX]
+    if b"\0" in dados:
+        raise FsError(415, "binary")
+    try:
+        texto = dados.decode("utf-8")
+    except UnicodeDecodeError as e:
+        if cortado and e.start >= len(dados) - 3:           # a character cut at the edge is not a binary file
+            texto = dados[:e.start].decode("utf-8")
+        else:
+            raise FsError(415, "binary")
+    return {"text": texto, "size": tamanho, "truncated": cortado}
+
+
+def _cli(argv):
+    """`hostctl.py fs-ls|fs-preview|fs-cat ROOT REL`: what the store runs inside `podman unshare`."""
+    op, raiz, rel = argv[0], argv[1], argv[2] if len(argv) > 2 else ""
+    try:
+        if op == "fs-ls":
+            sys.stdout.write(json.dumps(fs_list(raiz, rel)))
+        elif op == "fs-preview":
+            sys.stdout.write(json.dumps(fs_preview(raiz, rel)))
+        elif op == "fs-cat":
+            f, _ = fs_open(raiz, rel)
+            with f:
+                shutil.copyfileobj(f, sys.stdout.buffer, 1 << 20)
+        else:
+            return 2
+    except FsError as e:
+        # fs-cat has the file's bytes on stdout, so its error goes to stderr and the exit code says it failed
+        (sys.stderr if op == "fs-cat" else sys.stdout).write(json.dumps({"error": str(e), "code": e.code}))
+        return 3 if op == "fs-cat" else 0
+    return 0
+
+
 # -- selftest -----------------------------------------------------------------------------------
 
 def selftest():
@@ -186,10 +302,62 @@ def selftest():
             raise AssertionError("an unknown verb")
         except ValueError:
             pass
+    # files: nothing leaves the root, links are refused, text is told from binary
+    with tempfile.TemporaryDirectory() as tmp:
+        raiz = Path(tmp, "app"); (raiz / "data/sub").mkdir(parents=True)
+        (raiz / "data/b.txt").write_text("hello\n"); (raiz / "data/A.bin").write_bytes(b"\x00\x01")
+        (raiz / "data/sub/c.md").write_text("é" * 10)
+        Path(tmp, "secret").write_text("host file")
+        os.symlink(Path(tmp, "secret"), raiz / "data/escape")
+        os.symlink(raiz / "data/sub", raiz / "data/linkdir")
+        r = fs_list(raiz, "data")
+        assert [(e["name"], e["type"]) for e in r["entries"]] == [("sub", "dir"), ("A.bin", "file"), ("b.txt", "file"), ("escape", "link"), ("linkdir", "link")], r
+        assert next(e for e in r["entries"] if e["name"] == "b.txt")["size"] == 6
+        assert fs_list(raiz, "")["entries"][0]["name"] == "data" and fs_list(raiz, "/data/")["entries"], "slashes are forgiven"
+        for ruim, codigo in (("../secret", 400), ("data/../../secret", 400), ("data/escape", 400), ("data/linkdir", 400),
+                             ("data/linkdir/c.md", 400), ("data/nope", 404), ("data/b.txt\0x", 400)):
+            try:
+                fs_list(raiz, ruim) if not ruim.endswith(".txt") and "\0" not in ruim else fs_preview(raiz, ruim)
+                raise AssertionError(ruim)
+            except FsError as e:
+                assert e.code == codigo, (ruim, e.code)
+        try:
+            fs_list(raiz, "data/b.txt")
+            raise AssertionError("a file is not a folder")
+        except FsError as e:
+            assert e.code == 400
+        assert fs_preview(raiz, "data/b.txt") == {"text": "hello\n", "size": 6, "truncated": False}
+        try:
+            fs_preview(raiz, "data/A.bin")
+            raise AssertionError("binary")
+        except FsError as e:
+            assert e.code == 415
+        (raiz / "data/big.txt").write_text("é" * (PREVIEW_MAX // 2 + 10))      # cut in the middle of a character
+        g = fs_preview(raiz, "data/big.txt")
+        assert g["truncated"] and len(g["text"].encode()) <= PREVIEW_MAX, "a cut character is not a binary file"
+        try:
+            fs_open(raiz, "data/escape")
+            raise AssertionError("a link is never opened")
+        except FsError as e:
+            assert e.code == 400
+        os.mkfifo(raiz / "data/fifo")
+        try:
+            fs_open(raiz, "data/fifo")
+            raise AssertionError("a fifo is not a file")
+        except FsError as e:
+            assert e.code == 400
+        # the command line the store runs under `podman unshare`
+        j = json.loads(subprocess.run([sys.executable, __file__, "fs-ls", str(raiz), "data"], capture_output=True, text=True).stdout)
+        assert j["entries"][0]["name"] == "sub"
+        assert subprocess.run([sys.executable, __file__, "fs-cat", str(raiz), "data/b.txt"], capture_output=True).stdout == b"hello\n"
+        bad = subprocess.run([sys.executable, __file__, "fs-cat", str(raiz), "data/escape"], capture_output=True)
+        assert bad.returncode == 3 and bad.stdout == b"", "a refused file gives no bytes"
     print("hostctl selftest: ok")
 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1].startswith("fs-"):
+        sys.exit(_cli(sys.argv[1:]))
     if "--selftest" in sys.argv:
         selftest()
     else:
