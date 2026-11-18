@@ -455,6 +455,16 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   confere(sk.closed === true, "console: abrir os logs fecha a sessão");
   $("panel").open = false;
 
+  // a stopped or paused app greys out: the tile says its state, and the stylesheet does the rest
+  const bdTile = api.S.apps.find((x) => x.id === "homebox");
+  api.setView("apps");
+  const estadoTile = (u) => { bdTile.units = u; api.renderGrid(); return [...$("grid").walk()].find((e) => e.attrs && /(^| )tile( |$)/.test(e.attrs.class || "") && /Homebox/.test(e.textContent)).attrs["data-run"]; };
+  confere(estadoTile([unidade("homebox")]) === "running", "tile: rodando fica colorido (data-run=running)");
+  confere(estadoTile([unidade("homebox", { service: "inactive", container: "—" })]) === "stopped", "tile: parado marca data-run=stopped");
+  confere(estadoTile([unidade("homebox", { container: "paused" })]) === "paused", "tile: pausado marca data-run=paused");
+  confere(/\.card\.tile:not\(\[data-run=running\]\) \.plate[^}]*grayscale\(1\)[^}]*opacity/.test(fs.readFileSync(path.join(__dirname, "..", "style.css"), "utf8")), "o CSS deixa o ícone preto e branco e com transparência");
+  bdTile.units = [unidade("homebox")];
+
   // a unit the repository changed since the install: the panel says so, and shows what changed before the update
   const bd = api.S.apps.find((x) => x.id === "homebox");
   bd.units = [unidade("homebox", { drift: "changed" })];

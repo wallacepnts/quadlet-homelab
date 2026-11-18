@@ -60,6 +60,15 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
   console.log("grade carregou:", await ate("document.querySelectorAll('.card').length > 0"), "| azulejos:", await ev("document.querySelectorAll('.tile').length"));
   await esperar(2500);
 
+  if (MODO === "cinza") {
+    // reads only: a stopped or paused app's icon is grey and a little transparent
+    await ate("document.querySelectorAll('.tile').length > 0", 15000); await esperar(2500);
+    console.log("estados:", await ev("[...document.querySelectorAll('.tile')].map((t) => t.dataset.run + ':' + t.querySelector('h3').textContent).join(', ')"));
+    console.log("estilo parado:", await ev("(() => { const t = document.querySelector('.tile:not([data-run=running]) .plate'); if (!t) return 'nenhum parado'; const c = getComputedStyle(t); return c.filter + ' / opacity ' + c.opacity; })()"));
+    console.log("estilo rodando:", await ev("(() => { const t = document.querySelector('.tile[data-run=running] .plate'); const c = getComputedStyle(t); return c.filter + ' / opacity ' + c.opacity; })()"));
+    await foto("80-parados-cinza");
+  }
+
   if (MODO === "drift") {
     // reads only: does a changed .container count as an update?
     await ate("document.querySelectorAll('.tile').length > 0", 15000); await esperar(2500);

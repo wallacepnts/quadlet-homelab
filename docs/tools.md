@@ -605,6 +605,7 @@ icons (⇤), and the choice is kept. The font is Plus Jakarta Sans (OFL, served 
   readings), what you used recently, and then all your apps. An app is its icon and its name: **right-click it** (or
   press and hold on a phone) for its state, the update, Open, Manage, Customize,
   restart, pause, stop, logs and remove. A failure still shows on the tile, in words.
+  An app that is **stopped or paused** has its icon in grey and half transparent (a little less when the pointer is over it).
 - **Icons** sit on a squircle plate, Samsung One UI style, soft. The panel reads each logo once (its hue, whether it is a
   full square, mostly white, vivid or grey, and how much of its box it fills) and picks the plate and the size, so every
   logo weighs the same. `icon` in the app's `app.json` overrides it: `bg` (the plate's colour), `fit` and `tone`

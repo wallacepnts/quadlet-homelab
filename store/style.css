@@ -572,3 +572,8 @@ textarea.raw { width: 100%; font-family: ui-monospace, "SF Mono", Menlo, monospa
 .drift { margin: .4rem 0 .8rem; background: var(--accent-soft); border-radius: var(--radius-sm); padding: .6rem .9rem; }
 .drift summary { cursor: pointer; font-weight: 650; color: var(--accent); } .drift pre { max-height: 14rem; margin: .4rem 0 0; font-size: .78rem; }
 .drift .add { color: var(--ok); } .drift .del { color: var(--bad); } .drift .ctx { color: var(--muted); }
+
+/* ---- A stopped or paused app: its icon goes grey and a little transparent ----------------------------- */
+.card.tile .plate, .card.tile .ico { transition: filter .2s, opacity .2s; }
+.card.tile:not([data-run=running]) .plate, .card.tile:not([data-run=running]) .ico { filter: grayscale(1); opacity: .5; }
+.card.tile:not([data-run=running]):hover .plate, .card.tile:not([data-run=running]):hover .ico { opacity: .75; }

@@ -915,7 +915,7 @@ function tile(a) {
     svcLine(a),
   ];
   const abre = () => touchRecent(a.id);
-  const carta = h("div", { class: "card tile",
+  const carta = h("div", { class: "card tile", "data-run": runState(a),      // a stopped or paused app greys out (CSS)
     oncontextmenu: (ev) => { ev.preventDefault(); ev.stopPropagation(); ctxMenu(ev.clientX, ev.clientY, a); },
     ontouchstart: (ev) => { const p = ev.touches && ev.touches[0]; if (p) tempo = setTimeout(() => ctxMenu(p.clientX, p.clientY, a), 550); },
     ontouchend: () => clearTimeout(tempo), ontouchmove: () => clearTimeout(tempo) },
