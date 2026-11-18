@@ -60,6 +60,23 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
   console.log("grade carregou:", await ate("document.querySelectorAll('.card').length > 0"), "| azulejos:", await ev("document.querySelectorAll('.tile').length"));
   await esperar(2500);
 
+  if (MODO === "unit") {
+    // reads only: Customize → the .container as text (nothing is saved)
+    await ate("document.querySelectorAll('.tile').length > 0", 15000); await esperar(1500);
+    await ev("(() => { const t = [...document.querySelectorAll('.tile')].find((x) => /Actual/.test(x.textContent)); t.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 300, clientY: 300 })); })()"); await esperar(400);
+    await ev("[...document.querySelectorAll('#ctx button')].find((b) => /Gerenciar/.test(b.textContent)).click()"); await esperar(1200);
+    await ev("[...document.querySelectorAll('#p-actions button')].find((b) => b.textContent.trim().startsWith('Personalizar')).click()"); await esperar(1500);
+    await ev("document.querySelector('.raw-sec').open = true"); await esperar(400);
+    await ev("document.querySelector('.raw-sec').scrollIntoView()"); await esperar(300);
+    await foto("60-unit-codigo");
+    console.log("texto no editor:", (await ev("document.querySelector('textarea.raw').value.slice(0, 80)")));
+    await ev("(() => { const a = document.querySelector('textarea.raw'); a.value = a.value + 'PodmanArgs=--privileged\\n'; a.dispatchEvent(new Event('input')); })()");
+    await ev("[...document.querySelectorAll('.raw-sec button')].find((b) => b.textContent.trim() === 'Verificar').click()"); await esperar(2500);
+    await ev("document.querySelector('.raw-sec').scrollIntoView()");
+    await foto("61-unit-verificar");
+    console.log("avisos:", await ev("[...document.querySelectorAll('.raw-sec .cust-warn li, .raw-sec .cust-errors li')].map((x) => x.textContent).join(' | ')"));
+  }
+
   if (MODO === "arquivos") {
     // writes, then undoes: a folder "qh-teste" is made inside the first app's volume and deleted again
     const clicar = (txt) => ev(`(() => { const b = [...document.querySelectorAll('#files button')].find((x) => x.textContent.trim().startsWith(${JSON.stringify(txt)})); if (!b) return false; b.click(); return true; })()`);

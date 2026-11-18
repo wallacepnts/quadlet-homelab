@@ -428,10 +428,34 @@ when the customization is applied); a port must be at
 or above the unprivileged floor and free (not another unit's, not listening); a
 capability must be on a short list (Podman's defaults plus `NET_RAW`,
 `SYS_NICE`, `MKNOD`, `AUDIT_WRITE`); a device must exist under `/dev`. There is
-no image or tag field, because the version belongs to the repository (rule 9),
+no image or tag field in the form, because the version belongs to the repository (rule 9),
 and no privileged switch: with the store's token, either would make it a shell
-on your host. For those, edit the unit by hand. The `.env` file stays under
-**Configure**; the form edits the `Environment=` lines.
+on your host. The `.env` file stays under **Configure**; the form edits the
+`Environment=` lines. For what the form cannot say, there is the code, below.
+
+**The `.container` as text** (Customize, section *The .container (code)*, before and after the install): the
+unit as `qh` will write it, in a text box. Read it, copy it, or **change it and keep it as your own**: the whole file
+is saved beside the panel's settings (`~/.config/quadlet-homelab/custom-units/<app>/<unit>.container`), and from
+then on `qh` installs and updates **that** file in place of the repository's (the same name, rendered for the access
+rule as any unit). The repository's file is not touched; **Back to the repository's** deletes yours and `qh` goes
+back to it. An update that finds the repository's unit changed does not overwrite yours, and the plan names the file
+it takes the unit from.
+
+This is the power the form deliberately does not give, so the panel treats it with more care, not less:
+
+- **Syntax**: the host's own Quadlet generator checks the file on a scratch copy of the repository's units. An error
+  blocks saving.
+- **What you added**: the panel compares with the repository's file and flags only what is new: a command run on the
+  host (`ExecStart*`, `ExecStop*`), `PodmanArgs=--privileged` or any `PodmanArgs`, a capability off the short list, a
+  folder of the host outside the allowed ones, `Network=host`, `UserNS=host`, `SecurityLabelDisable=true`,
+  `AutoUpdate=`, a floating tag. A flag does not block, but saving needs the *I understand the risks* box.
+- **If the service does not come up**, the previous `.container` is put back and the journal is printed, as in the form.
+- **The form is left out for a unit you rewrite**: its changes would be measured against a file that no longer is the
+  unit. Edit the code, or use the form, not both at once.
+- Whoever holds the store's token can therefore make the host run any command as your user. That was already true of
+  the console and of installing apps, but this is the direct way: keep the token as you keep a shell.
+
+`qh --catalog` says which units are your own (`custom_unit`), and the action shows in the history as *own .container*.
 
 **Limits** (memory and CPU) are offered only where they can work. Rootless, they need the user's
 systemd to delegate those controllers, and where it does not, `--memory` stops the container from

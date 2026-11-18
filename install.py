@@ -630,6 +630,24 @@ def options_dropin(unit_path):
     return p.parent / (p.name + ".d") / "20-options.conf"
 
 
+CUSTOM_UNITS = ".config/quadlet-homelab/custom-units"
+
+
+def shown(path):
+    """A path for the plan: relative to the repository when it is in it, `~/...` when it is the person's own unit."""
+    path = Path(path)
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return str(path).replace(str(Path.home()), "~", 1)
+
+
+def custom_unit_file(home, app, filename):
+    """Where a unit the person rewrote whole is kept: beside the store's settings, not in the repository, and not in
+    systemd/ (the next `qh --update` rewrites that). `Service` reads it in place of the repository's file."""
+    return Path(home) / CUSTOM_UNITS / app / filename
+
+
 class Service:
     def __init__(self, name, prefix=None, only=None, options=None):
         self.name = name
@@ -663,10 +681,26 @@ class Service:
             # The `.network` files stay: `Network=` names the file, and Quadlet
             # cannot generate the unit without it. They are cheap and inert.
             self.units = [chosen] + sorted(self.dir.glob("*.network"))
+        # A unit rewritten whole by the person (the store's "your own .container") stands in for the repository's:
+        # same file name, other place. Everything below and everything that reads `s.units` sees it, and the
+        # repository's file is still what `source` falls back on.
+        def propria(u):
+            c = custom_unit_file(self.home, name, u.name)
+            return c if u.suffix == ".container" and c.is_file() else u
+        self.units = [propria(u) for u in self.units]
+        self.folder_units = [propria(u) for u in self.folder_units]
         # Everything below — volumes, env files, secrets, examples — derives
         # from these directives, so the filter above narrows all of them at once.
         self.ds = [(k, v) for u in self.units if u.suffix == ".container"
                    for k, v in directives_of(u)]
+
+    def source(self, filename):
+        """The file a unit is installed from: the person's own `.container` when there is one, else the repository's."""
+        c = custom_unit_file(self.home, self.name, filename)
+        return c if filename.endswith(".container") and c.is_file() else self.dir / filename
+
+    def has_custom_unit(self, filename):
+        return custom_unit_file(self.home, self.name, filename).is_file()
 
     # -- destinations -----------------------------------------------------
 
@@ -985,7 +1019,7 @@ class Service:
 
     def env_file_for(self, unit_stem):
         """That unit's own `EnvironmentFile=`, or None."""
-        path = self.dir / f"{unit_stem}.container"
+        path = self.source(f"{unit_stem}.container")
         if not path.is_file():
             return None
         for key, value in directives_of(path):
@@ -1281,7 +1315,7 @@ def plan_install(s, tailnet, force=False, interactive=False, access="tailnet",
             mark = "  (no tsdproxy, href to the LAN)"
         elif href_local:
             mark = "  (on the tailnet, href to the LAN)"
-        steps.append((f"cp {u.relative_to(ROOT)} -> {target}{mark}",
+        steps.append((f"cp {shown(u)} -> {target}{mark}",
                       lambda u=u, target=target: write_unit(u, target, access, href_local)))
 
     steps.extend(option_steps(s, dest, warnings))
@@ -1864,7 +1898,7 @@ def plan_update(s, access="tailnet", href_local=False, latest=False, major=False
         drift = unit_drift(u, atual, modo, href_local)
         if drift:
             warnings.append(drift_warning(u, drift))
-        steps.append((f"cp {u.relative_to(ROOT)} -> {target}  (--access {modo})",
+        steps.append((f"cp {shown(u)} -> {target}  (--access {modo})",
                       lambda u=u, target=target, modo=modo:
                           write_unit(u, target, modo, href_local)))
     steps.extend(gravar)
@@ -4336,7 +4370,7 @@ def estado_do_container(status):
 
 def unit_deriva(s, u):
     """"", "changed" or "duplicated": the installed unit `u` against the repository."""
-    fonte = s.dir / u.name
+    fonte = s.source(u.name)
     deriva = ""
     if fonte.exists():
         # Rendered with what the file itself says it was installed
@@ -4612,6 +4646,8 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude, falhas=None):
             "installed": p is not None,
             # A drop-in beside the unit (overrides.py): the store's Customize screen wrote it.
             "override": bool(p and overrides.read_override(p) is not None),
+            # The person rewrote the whole `.container` (the store's "your own .container"): qh installs that one.
+            "custom_unit": s.has_custom_unit(u.name),
             "service": ativos.get(u.stem) if p else None,
             "failure": (falhas or {}).get(u.stem) if p else None,
             "stopped": bool(p) and unit_masked(s.home, u.stem),     # stopped on purpose: stays so after a reboot

@@ -42,6 +42,11 @@ const T = {
     filesDenied: "Sem permissão para ler isto.",
     filesUnits: "Units (systemd)", filesEnv: "Variáveis (.env)",
     filesRO: "Somente leitura: dá para ver e baixar, não alterar. Para mudar uma unit use Personalizar; para um .env, Configurar. Os secrets nunca aparecem aqui.",
+    rawTitle: "O .container (código)", rawRepo: "É o arquivo do repositório, como ele será instalado.", rawCustom: "É o seu .container, guardado ao lado das configurações do painel: as atualizações usam este, não o do repositório.",
+    rawWarn: "Este é o arquivo que o systemd lê. Um .container escrito à mão pode executar comandos e abrir o acesso ao host. O painel confere a sintaxe e avisa o que você acrescentou ao do repositório, mas não impede.",
+    rawCheck: "Verificar", rawRestore: "Voltar ao do repositório", rawCopy: "Copiar", rawCopied: "Copiado.", rawOk: "Sem problemas.", rawRunning: "O que roda agora (unit instalada e personalização)",
+    rawAck: "Entendo os riscos e quero usar este .container", rawNeedAck: "Marque que entendeu os avisos para continuar.", rawFormOff: "Com um .container próprio, o formulário desta unidade não é aplicado: o que você quer mudar vai no código.",
+    rawSaved: "Salvar este .container", rawDiff: "Diferente do repositório.", rawSame: "Igual ao repositório.", rawUnitReset: "O painel volta ao .container do repositório e reinicia o serviço.", rawChanged: "Edite o código ou use o formulário, não os dois ao mesmo tempo.",
     fGrid: "Grade", fList: "Lista", fColName: "Nome", fColSize: "Tamanho", fColDate: "Modificado", fPlaces: "Locais",
     fUpload: "Enviar", fNewFolder: "Nova pasta", fRename: "Renomear", fCopy: "Copiar", fCut: "Recortar", fPaste: "Colar", fDelete: "Apagar",
     fSure: (n) => `Confirmar: apagar ${n} ${n === 1 ? "item" : "itens"}`, fCancel: "Cancelar", fOk: "OK", fName: "Nome", fSel: (n) => `${n} selecionado${n === 1 ? "" : "s"}`,
@@ -188,7 +193,7 @@ const T = {
     took: "Duração", from: "de", output: "Saída",
     act: { pause: "Pausar", resume: "Retomar", install: "Instalar", update: "Atualizar", upgrade: "Atualizar versão", remove: "Remover", backup: "Backup",
            restore: "Restaurar", access: "Acesso", env: "Configuração", start: "Iniciar", stop: "Parar", restart: "Reiniciar",
-           customize: "Personalizar", revert: "Reverter", prune: "Limpar" },
+           customize: "Personalizar", revert: "Reverter", prune: "Limpar", "custom-unit": ".container próprio" },
     link: { repo: "Projeto", docs: "Documentação", issues: "Problemas", releases: "Releases", image: "Imagem", recipe: "Receita neste repositório" },
     shots: "Capturas de tela",
     lang: "English",
@@ -232,6 +237,11 @@ const T = {
     filesDenied: "No permission to read this.",
     filesUnits: "Units (systemd)", filesEnv: "Environment (.env)",
     filesRO: "Read only: you can look and download, not change. To change a unit use Customize; for a .env, Configure. The secrets never show here.",
+    rawTitle: "The .container (code)", rawRepo: "This is the repository's file, as it will be installed.", rawCustom: "This is your own .container, kept beside the panel's settings: updates use it, not the repository's.",
+    rawWarn: "This is the file systemd reads. A hand-written .container can run commands and open the host up. The panel checks the syntax and flags what you added to the repository's, but does not stop you.",
+    rawCheck: "Check", rawRestore: "Back to the repository's", rawCopy: "Copy", rawCopied: "Copied.", rawOk: "No problems.", rawRunning: "What runs now (installed unit and customization)",
+    rawAck: "I understand the risks and want to use this .container", rawNeedAck: "Tick that you understood the warnings to go on.", rawFormOff: "With your own .container the form of this unit is not applied: what you want to change goes in the code.",
+    rawSaved: "Save this .container", rawDiff: "Different from the repository's.", rawSame: "Same as the repository's.", rawUnitReset: "The panel goes back to the repository's .container and restarts the service.", rawChanged: "Edit the code or use the form, not both at once.",
     fGrid: "Grid", fList: "List", fColName: "Name", fColSize: "Size", fColDate: "Modified", fPlaces: "Places",
     fUpload: "Upload", fNewFolder: "New folder", fRename: "Rename", fCopy: "Copy", fCut: "Cut", fPaste: "Paste", fDelete: "Delete",
     fSure: (n) => `Confirm: delete ${n} ${n === 1 ? "item" : "items"}`, fCancel: "Cancel", fOk: "OK", fName: "Name", fSel: (n) => `${n} selected`,
@@ -378,7 +388,7 @@ const T = {
     took: "Took", from: "from", output: "Output",
     act: { pause: "Pause", resume: "Resume", install: "Install", update: "Update", upgrade: "Update version", remove: "Remove", backup: "Backup",
            restore: "Restore", access: "Access", env: "Settings", start: "Start", stop: "Stop", restart: "Restart",
-           customize: "Customize", revert: "Revert", prune: "Clean up" },
+           customize: "Customize", revert: "Revert", prune: "Clean up", "custom-unit": "own .container" },
     link: { repo: "Project", docs: "Documentation", issues: "Issues", releases: "Releases", image: "Image", recipe: "Recipe in this repository" },
     shots: "Screenshots",
     lang: "Português",
@@ -389,7 +399,7 @@ const S = {
   lang: localStorage.getItem("qh-lang") || (navigator.language.startsWith("pt") ? "pt" : "en"),
   backupFirst: localStorage.getItem("qh-backup-first") === "1",   // the box next to Update, remembered
   rule: "tailnet",          // the host's access rule (qh --set-access)
-  apps: [], group: null, filter: null, search: "", current: null, preCustom: {},
+  apps: [], group: null, filter: null, search: "", current: null, preCustom: {}, preUnit: {}, preUnitAck: {},
   view: null,               // "apps" (what is installed) or "store" (the catalog); kept in the URL hash
   stats: {},                // unit -> {cpu, mem}, from /api/stats
   upd: {}, checked: null,   // unit -> qh-updates --host row; when it was asked
@@ -1155,7 +1165,7 @@ function renderPanel() {
       acoes.push(h("button", { type: "button", onclick: () => plan("install") },
         deps.length ? t("installWith")(deps.map((x) => x.name).join(", ")) : t("install")));
       acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showCustom(a, null, true) },
-        S.preCustom[a.id] ? `${t("customize")} ✓` : t("customize")));
+        S.preCustom[a.id] || S.preUnit[a.id] ? `${t("customize")} ✓` : t("customize")));
     }
   }
   else {
@@ -1463,6 +1473,9 @@ async function formDaUnidade(a, u, pre) {
     caps: caps.filter((c) => c.box.checked).map((c) => ({ name: c.n })), restart: reinicio.value,
     limits: { memory: String(mem).trim(), cpus: String(cpus).trim() } });
   const saida = h("div", { class: "cust-out" });
+  // The unit as text: what it is, and the person's own version of it. Saved as a whole file the install and every
+  // update then use, instead of the repository's; the form above does not apply to a unit rewritten this way.
+  const rawSec = rawUnit(a, unit, d, pre);
   const imagem = (u.image || "").replace(/@sha256:.*/, "");
   const repo = imagem.replace(/:[^/:]*$/, "");
   const tag = u.templated ? t("latestPinned") : tagOf(u.image);
@@ -1483,6 +1496,7 @@ async function formDaUnidade(a, u, pre) {
       h("summary", {}, t("cCaps")), h("p", { class: "cust-note" }, t("capsHint")),
       h("div", { class: "caps" }, ...caps.map((c) => h("label", { class: "check cap", for: `cap-${unit}-${c.n}`, title: t("capInfo")[c.n] || c.n },
         c.box, h("span", {}, c.n, t("capInfo")[c.n] ? h("small", {}, t("capInfo")[c.n]) : null))))),
+    rawSec.el,
     saida);
 
   async function previa() {
@@ -1497,7 +1511,52 @@ async function formDaUnidade(a, u, pre) {
       return r;
     } catch (e) { fill(saida, h("p", { class: "note" }, String(e.message))); return { errors: [String(e.message)], changed: false }; }
   }
-  return { unit, el, d, config, previa, guardada: !!guardada };
+  return { unit, el, d, config, previa, guardada: !!guardada, raw: rawSec };
+}
+
+// The `.container` as text, in the Customize screen: read it, change it, check it, keep it as the person's own.
+function rawUnit(a, unit, d, pre) {
+  d = { unit_source: "", repo_text: "", ...d };
+  const salvo = pre && (S.preUnit[a.id] || {})[unit];
+  const inicial = salvo !== undefined && salvo !== false ? salvo : d.unit_source;
+  const area = h("textarea", { class: "raw", rows: 18, spellcheck: false, "aria-label": `${unit}.container`, id: `raw-${unit}` });
+  area.value = inicial;
+  const saida = h("div", { class: "cust-out" });
+  const ack = h("input", { type: "checkbox", id: `rawack-${unit}` });
+  const ackLinha = h("label", { class: "check", hidden: true }, ack, ` ${t("rawAck")}`);
+  const estado = h("p", { class: "cust-note" });
+  const atual = () => area.value;
+  const difere = () => area.value.trim() !== d.repo_text.trim();
+  const editado = () => area.value !== d.unit_source;          // against what is saved (installed) now
+  const marca = () => { estado.textContent = difere() ? t("rawDiff") : t("rawSame"); };
+  area.addEventListener("input", marca);
+  marca();
+  async function revisar() {
+    let r;
+    try { r = await api("/api/custom/unit-check", { unit, text: area.value }); }
+    catch (e) { fill(saida, h("p", { class: "note" }, String(e.message))); return { errors: [String(e.message)], warnings: [] }; }
+    fill(saida,
+      r.errors.length ? h("ul", { class: "cust-errors" }, ...r.errors.map((x) => h("li", {}, x))) : null,
+      r.warnings.length ? h("ul", { class: "cust-warn" }, ...r.warnings.map((x) => h("li", {}, x))) : null,
+      !r.errors.length && !r.warnings.length ? h("p", { class: "cust-note" }, t("rawOk")) : null);
+    ackLinha.hidden = !r.warnings.length;
+    return r;
+  }
+  const el = h("details", { class: "cust-group tech raw-sec", open: !!d.custom_unit || (salvo !== undefined && salvo !== false) },
+    h("summary", {}, t("rawTitle")),
+    h("p", { class: "cust-note" }, d.custom_unit ? t("rawCustom") : t("rawRepo")),
+    h("p", { class: "note" }, t("rawWarn")),
+    area, estado,
+    h("div", { class: "row" },
+      h("button", { type: "button", class: "ghost", onclick: revisar }, t("rawCheck")),
+      h("button", { type: "button", class: "ghost", onclick: () => { area.value = d.repo_text; marca(); } }, t("rawRestore")),
+      h("button", { type: "button", class: "ghost", onclick: async () => {
+        try { await navigator.clipboard.writeText(area.value); estado.textContent = t("rawCopied"); } catch (e) { /* no clipboard here */ }
+      } }, t("rawCopy"))),
+    saida, ackLinha,
+    d.installed_text ? h("details", {}, h("summary", {}, t("rawRunning")),
+      h("pre", {}, d.installed_text + (d.text ? `\n# ---- ${d.file} ----\n${d.text}` : ""))) : null);
+  return { el, value: atual, difere, editado, revisar, ack: () => ack.checked, open: () => { el.open = true; } };
 }
 
 // What the person sees: a sheet over the page, a tab per container, the fields of the chosen one, and the
@@ -1535,16 +1594,42 @@ async function showCustom(a, unit, pre = false) {
   const instalar = async () => {
     const mudadas = await conferir();
     if (!mudadas) return;
+    if (mudadas.length && formas.some((f) => f.raw.difere() && mudadas.includes(f))) {   // both at once: the code wins
+      const f = formas.find((x) => x.raw.difere() && mudadas.includes(x));
+      mostrar(f); f.raw.open();
+      fill(f.el.querySelector(".raw-sec .cust-out") || f.el, h("p", { class: "note" }, t("rawFormOff")));
+    }
+    // A unit rewritten whole is reviewed first; its form is not applied (the code is the change).
+    const proprias = {};
+    let precisaAck = false;
+    for (const f of formas) {
+      if (!f.raw.difere()) continue;
+      const rv = await f.raw.revisar();
+      if (rv.errors.length) { mostrar(f); f.raw.open(); return; }
+      if (rv.warnings.length && !f.raw.ack()) { precisaAck = true; mostrar(f); f.raw.open(); }
+      proprias[f.unit] = f.raw.value();
+    }
+    if (precisaAck) return;
     S.preCustom[a.id] = {};
-    for (const f of mudadas) S.preCustom[a.id][f.unit] = f.config();
+    for (const f of mudadas) if (!(f.unit in proprias)) S.preCustom[a.id][f.unit] = f.config();
     if (!Object.keys(S.preCustom[a.id]).length) delete S.preCustom[a.id];
+    if (Object.keys(proprias).length) { S.preUnit[a.id] = proprias; S.preUnitAck[a.id] = true; } else { delete S.preUnit[a.id]; delete S.preUnitAck[a.id]; }
     $("custom").close();
     await plan("install");
   };
   const aplicar = async () => {
-    const mudadas = await conferir();
-    if (!mudadas || !mudadas.length) return;
+    // A unit whose code was edited is saved as the person's own first (reviewed, and the warnings acknowledged).
+    const editadas = formas.filter((f) => f.raw.editado());
+    for (const f of editadas) {
+      const rv = await f.raw.revisar();
+      if (rv.errors.length || (rv.warnings.length && !f.raw.ack())) { mostrar(f); f.raw.open(); return; }
+    }
+    const mudadas = editadas.length ? [] : await conferir();
+    if (!mudadas) return;
+    if (!mudadas.length && !editadas.length) return;
     $("custom").close();
+    for (const f of editadas)
+      await follow(() => api("/api/custom/unit-save", { unit: f.unit, text: f.raw.value(), ack: f.raw.ack() }));
     for (const f of mudadas) await follow(() => api("/api/custom/apply", { unit: f.unit, config: f.config() }));
   };
   const reverter = async () => {
@@ -1553,14 +1638,21 @@ async function showCustom(a, unit, pre = false) {
   };
   const descartar = () => {
     delete S.preCustom[a.id];
+    delete S.preUnit[a.id];
+    delete S.preUnitAck[a.id];
     $("custom").close();
     showCustom(a, ativa.unit, true);
   };
 
   fill($("c-foot"),
     h("button", { type: "button", class: "ghost", onclick: () => ativa.previa() }, t("previewBtn")),
-    pre && S.preCustom[a.id] ? h("button", { type: "button", class: "danger", onclick: descartar }, t("preDiscard")) : null,
+    pre && (S.preCustom[a.id] || S.preUnit[a.id]) ? h("button", { type: "button", class: "danger", onclick: descartar }, t("preDiscard")) : null,
     !pre && formas.some((f) => f.d.override) ? h("button", { type: "button", class: "danger", onclick: reverter }, t("revertBtn")) : null,
+    !pre && formas.some((f) => f.d.custom_unit) ? h("button", { type: "button", class: "danger", title: t("rawUnitReset"), onclick: async () => {
+      const f = formas.find((x) => x.d.custom_unit && x.unit === ativa.unit) || formas.find((x) => x.d.custom_unit);
+      $("custom").close();
+      await follow(() => api("/api/custom/unit-reset", { unit: f.unit }));
+    } }, t("rawRestore")) : null,
     h("span", { class: "grow" }),
     h("button", { type: "button", class: "ghost", onclick: () => $("custom").close() }, t("cancel")),
     pre ? h("button", { type: "button", onclick: instalar }, t("install")) : h("button", { type: "button", onclick: aplicar }, t("saveApply")));
@@ -1767,8 +1859,8 @@ function buildForm(a, action, file = "") {
       h("label", { class: "check" }, h("input", { id: "trial-purge", type: "checkbox" }), " " + t("trialPurge")),
       h("p", { class: "help" }, t("trialHint"))));
   }
-  if (action === "install" && S.preCustom[a.id])
-    campos.push(h("p", { class: "note" }, t("preRides")(Object.keys(S.preCustom[a.id]).join(", "))));
+  if (action === "install" && (S.preCustom[a.id] || S.preUnit[a.id]))
+    campos.push(h("p", { class: "note" }, t("preRides")([...Object.keys(S.preCustom[a.id] || {}), ...Object.keys(S.preUnit[a.id] || {})].join(", "))));
   if (action === "remove") {
     campos.push(h("p", { class: "note" }, t("removeNote")));
     // Deleting the data is its own, typed, step — the same guard a restore has.
@@ -1805,11 +1897,14 @@ async function run(action, file = "") {
   const trial_purge = !!trial && !!($("trial-purge") || {}).checked;
   $("p-form").hidden = true;
   const custom = action === "install" && S.preCustom[a.id] ? S.preCustom[a.id] : null;
+  const unidades = action === "install" && S.preUnit[a.id] ? S.preUnit[a.id] : null;
   const purge = action === "remove" && !!($("p-form").querySelector("[data-purge]") || {}).checked;
   await follow(() => api("/api/run", { app: a.id, action, secrets, vars, file, confirm,
                                        ...(trial ? { trial, trial_purge } : {}), ...(custom ? { custom } : {}),
+                                       ...(unidades ? { custom_units: unidades, ack: !!S.preUnitAck[a.id] } : {}),
                                        ...(purge ? { purge: true } : {}), ...(Object.keys(options).length ? { options } : {}) }));
   if (custom) delete S.preCustom[a.id];
+  if (unidades) { delete S.preUnit[a.id]; delete S.preUnitAck[a.id]; }
   if (action === "backup" || action === "restore") showBackups(a);
 }
 

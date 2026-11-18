@@ -78,6 +78,10 @@ PT = {
     "the token is in": "o token está em",
     "read it with": "leia com",
     "another job is running": "outra tarefa está rodando",
+    "your own .container saved": "o seu .container foi guardado",
+    "back to the repository's .container": "de volta ao .container do repositório",
+    "The service did not come up with this .container. Going back to the previous one:": "O serviço não subiu com este .container. Voltando ao anterior:",
+    "confirm the warnings to go on": "confirme os avisos para continuar",
     "pick a time between a minute and a week from now": "escolha um horário entre um minuto e uma semana a partir de agora",
     "unknown service": "serviço desconhecido",
     "unknown unit": "unit desconhecida",
@@ -1027,8 +1031,9 @@ def unit_source(unit, pre=False):
         return p, p.read_text(), O.read_override(p)
     if pre and unit_exists(unit):
         caminho = next(I.APPS.glob(f"*/{unit}.container"))
-        modo, href = I.effective_access(I.Service(caminho.parent.name, PREFIX))
-        return None, I.unit_bytes(caminho, modo, href).decode(), None
+        sv = I.Service(caminho.parent.name, PREFIX)
+        modo, href = I.effective_access(sv)
+        return None, I.unit_bytes(sv.source(caminho.name), modo, href).decode(), None
     raise LookupError(loc("not installed"))
 
 
@@ -1047,7 +1052,135 @@ def custom_state(unit, pre=False):
             "effective": O.describe(efetivo[0]), "restart": efetivo[1],
             "roots": [r.replace(casa, "~") for r in volume_roots()], "caps_ok": list(O.CAPS_OK),
             "restarts": list(O.RESTARTS), "quadlet": O.quadlet_binary() is not None,
+            "unit_source": (unit_custom_file(unit).read_text() if unit_custom_file(unit) and unit_custom_file(unit).is_file()
+                            else unit_repo_text(unit)),
+            "repo_text": unit_repo_text(unit), "custom_unit": bool(unit_custom_file(unit) and unit_custom_file(unit).is_file()),
+            "installed_text": unit_texto if p is not None else None,
             "limits": cgroup_limits(), "limit_values": O.merged_limits(unit_texto, texto)}
+
+
+# -- the unit as text: see it, rewrite it, or install the person's own -------------------------------
+UNIT_MAX = 64 * 1024
+RISKY = (("Container", "SecurityLabelDisable", "true", "desliga o rótulo SELinux do container"),
+         ("Container", "Network", "host", "usa a rede do host, sem isolamento"),
+         ("Container", "UserNS", "host", "usa o espaço de usuários do host"),
+         ("Container", "PodmanArgs", None, "passa argumentos soltos ao podman"),
+         ("Container", "AutoUpdate", None, "baixa imagens sozinho (regra 9: nada atualiza sozinho)"))
+SERVICE_EXEC = ("ExecStart", "ExecStartPre", "ExecStartPost", "ExecStop", "ExecStopPost", "ExecReload")
+
+
+def unit_pasta(unit):
+    c = next(I.APPS.glob(f"*/{unit}.container"), None)
+    return c.parent.name if c else None
+
+
+def unit_repo_text(unit):
+    """The repository's `.container` as written: what the editor starts from when the person has not rewritten it."""
+    c = next(I.APPS.glob(f"*/{unit}.container"), None)
+    return c.read_text() if c else ""
+
+
+def unit_custom_file(unit):
+    pasta = unit_pasta(unit)
+    return I.custom_unit_file(Path(PREFIX or Path.home()), pasta, f"{unit}.container") if pasta else None
+
+
+def unit_risks(texto):
+    """The set of things in `texto` that run commands on the host, widen what the container may do or leave the rules."""
+    secoes = O.parse_sections(texto)
+    achados = set()
+    for sec, chave, valor, porque in RISKY:
+        for k, v in secoes.get(sec, []):
+            if k == chave and (valor is None or v.lower() == valor):
+                achados.add(f"{chave}={v}: {porque}")
+    for k, v in secoes.get("Container", []):
+        if k == "PodmanArgs" and "--privileged" in v:
+            achados.add(f"PodmanArgs={v}: roda com --privileged, acesso total ao host")
+    for k, v in secoes.get("Service", []):
+        if k in SERVICE_EXEC:
+            achados.add(f"{k}=: executa um comando no host, como o seu usuário")
+    for k, v in secoes.get("Container", []):
+        if k == "AddCapability":
+            for c in re.split(r"[\s,]+", v):
+                c = c.upper().removeprefix("CAP_")
+                if c and c not in O.CAPS_OK and c != "ALL":
+                    achados.add(f"AddCapability={c}: fora da lista curta ({', '.join(O.CAPS_OK[:4])}…)")
+        elif k == "Volume":
+            host = v.split(":")[0]
+            if host.startswith("/") and not O.under(host, volume_roots()) and host not in ("/etc/localtime",):
+                achados.add(f"Volume={host}: pasta do host fora das permitidas")
+        elif k == "Image" and re.search(r":(latest|main|master|stable)$", v):
+            achados.add(f"Image={v}: tag flutuante (regra 9)")
+    return achados
+
+
+def quadlet_check_text(unit, texto):
+    """(ok or None, problems): the host's own generator on a scratch copy of the app's units with `texto` as this one."""
+    binario = O.quadlet_binary()
+    if not binario or not unit_pasta(unit):
+        return None, []
+    with tempfile.TemporaryDirectory() as tmp:
+        copia = Path(tmp) / "units"
+        copia.mkdir()
+        # Every unit of the repository, so what this one names (a network of another app) is there to be found.
+        for f in [*I.APPS.glob("*/*.container"), *I.APPS.glob("*/*.network")]:
+            shutil.copy2(f, copia / f.name)
+        (copia / f"{unit}.container").write_text(texto)
+        r = subprocess.run([binario, "-dryrun", "-user"], capture_output=True, text=True,
+                           env={**os.environ, "QUADLET_UNIT_DIRS": str(copia)}, timeout=60)
+    problemas = [re.sub(r"^quadlet-generator\[\d+\]:\s*", "", l).replace(str(copia), "")
+                 for l in r.stderr.splitlines() if f'"{unit}.container"' in l and "converting" in l]
+    return (not problemas), problemas
+
+
+def unit_review(unit, texto):
+    """{errors, warnings, changed}: what blocks saving `texto` as the unit, what only deserves a second look
+    (what it adds against the repository's own file), and whether it differs from that file at all."""
+    erros = []
+    if not isinstance(texto, str) or not texto.strip():
+        return {"errors": ["o texto está vazio"], "warnings": [], "changed": False}
+    if len(texto.encode()) > UNIT_MAX or "\0" in texto:
+        erros.append(f"o arquivo passa de {UNIT_MAX // 1024} KB ou tem bytes nulos")
+    secoes = O.parse_sections(texto) if not erros else {}
+    if not erros and not any(k == "Image" and v for k, v in secoes.get("Container", [])):
+        erros.append("falta [Container] com Image=")
+    if not erros:
+        ok, problemas = quadlet_check_text(unit, texto)
+        erros += [f"quadlet: {x}" for x in problemas]
+    repo = unit_repo_text(unit)
+    novos = sorted(unit_risks(texto) - unit_risks(repo)) if not erros else []
+    return {"errors": erros, "warnings": novos, "changed": texto.strip() != repo.strip()}
+
+
+def apply_custom_unit(app, unit, texto):
+    """Keeps `texto` as the person's own `.container` (None goes back to the repository's), has qh write it where systemd
+    reads it, and puts the previous one back if the service no longer comes up. Runs inside a job."""
+    arq = I.custom_unit_file(Path(PREFIX or Path.home()), app, f"{unit}.container")
+    anterior = arq.read_text() if arq.is_file() else None
+
+    def guardar(t):
+        if t is None:
+            arq.unlink(missing_ok=True)
+            with contextlib.suppress(OSError):
+                arq.parent.rmdir()
+        else:
+            arq.parent.mkdir(parents=True, exist_ok=True)
+            arq.write_text(t)
+
+    def atualizar():
+        r = subprocess.run(qh(app, "--update", "--apply"), capture_output=True, text=True, cwd=ROOT, env=qh_env(None))
+        print((r.stdout + r.stderr).rstrip())
+        return r.returncode == 0
+
+    ativo_antes = PREFIX or subprocess.run(["systemctl", "--user", "is-active", f"{unit}.service"], capture_output=True).returncode == 0
+    guardar(texto)
+    print(("  " + loc("your own .container saved")) if texto is not None else ("  " + loc("back to the repository's .container")))
+    if atualizar() and (PREFIX or not ativo_antes or systemctl("is-active", f"{unit}.service")):
+        return True
+    print("\n" + loc("The service did not come up with this .container. Going back to the previous one:"))
+    guardar(anterior)
+    atualizar()
+    return False
 
 
 def clean_config(config):
@@ -2593,6 +2726,31 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(409, {"error": loc("another job is running")})
             return self._json(202, {"job": job.id})
 
+        if url.path in ("/api/custom/unit-check", "/api/custom/unit-save", "/api/custom/unit-reset"):
+            unit = d.get("unit", "")
+            if not unit_exists(unit):
+                return self._json(400, {"error": loc("unknown unit")})
+            app = unit_pasta(unit)
+            if url.path.endswith("-check"):
+                return self._json(200, unit_review(unit, d.get("text")))
+            if installed_unit(unit) is None:
+                return self._json(404, {"error": loc("not installed")})
+            texto = None
+            if url.path.endswith("-save"):
+                texto = d.get("text")
+                rev = unit_review(unit, texto)
+                if rev["errors"]:
+                    return self._json(400, {"error": "; ".join(rev["errors"]), **rev})
+                if rev["warnings"] and d.get("ack") is not True:
+                    return self._json(400, {"error": loc("confirm the warnings to go on"), "need_ack": True, **rev})
+                if not rev["changed"]:
+                    texto = None                       # the same as the repository's: nothing is custom
+            job = start_job(app, "custom-unit", [], lang, lambda: apply_custom_unit(app, unit, texto),
+                            origem=self.client_address[0], unit=unit)
+            if job is None:
+                return self._json(409, {"error": loc("another job is running")})
+            return self._json(202, {"job": job.id})
+
         if url.path == "/api/env/save":
             app = d.get("app", "")
             if not service_dir(app):
@@ -2813,6 +2971,34 @@ class Handler(BaseHTTPRequestHandler):
                     return feito
                 if not planos:
                     depois = None
+            unidades_proprias = d.get("custom_units") or {}
+            if unidades_proprias:
+                # The person's own `.container` for a unit of this service, chosen before the install: reviewed now
+                # (blocking errors; warnings only with `ack`), written beside the store's settings, and the install
+                # then reads it in place of the repository's file.
+                if action != "install" or not isinstance(unidades_proprias, dict):
+                    return self._json(400, {"error": loc("unknown action")})
+                escritos = {}
+                for nome, texto in unidades_proprias.items():
+                    if not unit_exists(nome) or unit_pasta(nome) != app:
+                        return self._json(400, {"error": loc("unknown unit")})
+                    rev = unit_review(nome, texto)
+                    if rev["errors"]:
+                        return self._json(400, {"error": f"{nome}: " + "; ".join(rev["errors"]), **rev})
+                    if rev["warnings"] and d.get("ack") is not True:
+                        return self._json(400, {"error": loc("confirm the warnings to go on"), "need_ack": True, **rev})
+                    if rev["changed"]:
+                        escritos[nome] = texto
+                if escritos:
+                    previo = prepare
+
+                    def prepare(previo=previo, escritos=escritos):
+                        for nome, texto in escritos.items():
+                            arq = unit_custom_file(nome)
+                            arq.parent.mkdir(parents=True, exist_ok=True)
+                            arq.write_text(texto)
+                            print(f"  {loc('your own .container saved')}: {nome}")
+                        return previo() if previo else True
             quando = d.get("trial")
             if quando:
                 # Install to try it: qh removes it by itself, by a timer. Only the service asked
@@ -3387,7 +3573,16 @@ def selftest():
             assert st == 400, "a customization of another app's unit does not ride on this install"
             st, _, corpo = pedir("/api/run", json.dumps({"app": "mailpit", "action": "update", "custom": {"mailpit": cfg_pre}}).encode(), api)
             assert st == 400, "only an install takes one"
-            st, _, corpo = pedir("/api/run", json.dumps({"app": "mailpit", "action": "install", "custom": {"mailpit": cfg_pre}}).encode(), api)
+            proprio = unit_repo_text("mailpit").replace("[Container]", "[Container]\nLabel=qh.meu=sim", 1)
+            perigo = proprio.replace("[Container]", "[Container]\nPodmanArgs=--privileged", 1)
+            for ruim_u, esperado in (({"homebox": proprio}, 400), ({"mailpit": ""}, 400), ({"mailpit": "[Service]\nRestart=no\n"}, 400), ({"mailpit": perigo}, 400)):
+                st, _, corpo = pedir("/api/run", json.dumps({"app": "mailpit", "action": "install", "custom_units": ruim_u}).encode(), api)
+                assert st == esperado, (ruim_u, st, corpo)
+            assert json.loads(pedir("/api/run", json.dumps({"app": "mailpit", "action": "install", "custom_units": {"mailpit": perigo}}).encode(), api)[2])["need_ack"] is True
+            assert pedir("/api/run", json.dumps({"app": "mailpit", "action": "update", "custom_units": {"mailpit": proprio}}).encode(), api)[0] == 400, "only an install takes one"
+            assert not unit_custom_file("mailpit").is_file(), "a refused install writes nothing"
+            st, _, corpo = pedir("/api/run", json.dumps({"app": "mailpit", "action": "install", "custom": {"mailpit": cfg_pre},
+                                                         "custom_units": {"mailpit": proprio}}).encode(), api)
             assert st == 202, (st, corpo)
             job = json.loads(corpo)["job"]
             for _ in range(600):
@@ -3398,6 +3593,8 @@ def selftest():
             assert estado["rc"] == 0 and "mailpit" in estado["output"], estado["output"][-400:]
             gravado = O.read_override(installed_unit("mailpit"))
             assert gravado and "PRE_NOVA=antes" in gravado and "Restart=on-failure" in gravado, gravado
+            assert unit_custom_file("mailpit").read_text() == proprio and "qh.meu=sim" in installed_unit("mailpit").read_text(), "the install used the person's own unit"
+            assert json.loads(pedir("/api/catalog", headers=ok)[2])["apps"] and I.Service("mailpit", PREFIX).has_custom_unit("mailpit.container")
 
             # the panel on its own: settings (the access rule), update everything, delete the data with a typed name
             def espera_job(corpo_json):
@@ -3593,6 +3790,38 @@ def selftest():
                 assert pedir(f"/api/files?path={urllib.parse.quote(ruim)}", headers=ok)[0] in (400, 404), ruim
                 assert pedir(f"/api/files/download?path={urllib.parse.quote(ruim)}", headers=ok)[0] in (400, 404), ruim
             assert pedir("/api/files/download?path=" + urllib.parse.quote(base_f), headers=ok)[0] == 400, "a folder is not a download"
+            # the unit as text: reviewed, saved as the person's own, applied by qh, and put back
+            rep = json.loads(pedir("/api/custom?unit=homebox", headers=ok)[2])
+            assert rep["custom_unit"] is False and rep["unit_source"] == rep["repo_text"] and "[Container]" in rep["repo_text"], rep.keys()
+            def rev(texto, caminho="unit-check", **extra):
+                return pedir(f"/api/custom/{caminho}", json.dumps({"unit": "homebox", "text": texto, **extra}).encode(), api)
+            st, _, c = rev(rep["repo_text"])
+            assert st == 200 and json.loads(c) == {"errors": [], "warnings": [], "changed": False}, c
+            st, _, c = rev(rep["repo_text"] + "\n# a note\n")
+            assert json.loads(c)["changed"] is True and not json.loads(c)["errors"] and not json.loads(c)["warnings"], c
+            assert json.loads(rev("")[2])["errors"] and json.loads(rev("[Service]\nRestart=always\n")[2])["errors"], "no Image: refused"
+            risco = rep["repo_text"].replace("[Container]", "[Container]\nPodmanArgs=--privileged\nAddCapability=SYS_ADMIN", 1)
+            avisos = json.loads(rev(risco)[2])["warnings"]
+            assert any("--privileged" in a for a in avisos) and any("SYS_ADMIN" in a for a in avisos), avisos
+            assert any("ExecStartPre" in a for a in json.loads(rev(rep["repo_text"] + "\n[Service]\nExecStartPre=/bin/true\n")[2])["warnings"])
+            st, _, c = rev(risco, "unit-save")
+            assert st == 400 and json.loads(c)["need_ack"] is True and not unit_custom_file("homebox").is_file(), "warnings need a yes"
+            assert rev("", "unit-save")[0] == 400
+            st, _, c = rev(risco, "unit-save", ack=True)
+            assert st == 202, c
+            est_u = espera_job(c)
+            assert est_u["rc"] == 0, est_u["output"][-600:]
+            assert unit_custom_file("homebox").read_text() == risco and "--privileged" in installed_unit("homebox").read_text(), "qh wrote the unit from it"
+            rep2 = json.loads(pedir("/api/custom?unit=homebox", headers=ok)[2])
+            assert rep2["custom_unit"] is True and rep2["unit_source"] == risco and rep2["repo_text"] == rep["repo_text"]
+            st, _, c = rev(rep["repo_text"], "unit-save")
+            assert st == 202 and espera_job(c)["rc"] == 0 and not unit_custom_file("homebox").is_file(), "the repository's own text is not custom"
+            assert "--privileged" not in installed_unit("homebox").read_text()
+            assert espera_job(rev(risco, "unit-save", ack=True)[2])["rc"] == 0 and unit_custom_file("homebox").is_file()
+            st, _, c = pedir("/api/custom/unit-reset", json.dumps({"unit": "homebox"}).encode(), api)
+            assert st == 202 and espera_job(c)["rc"] == 0 and not unit_custom_file("homebox").is_file(), "reset goes back to the repository's"
+            assert pedir("/api/custom/unit-save", json.dumps({"unit": "memos", "text": "x"}).encode(), api)[0] in (400, 404)
+            assert pedir("/api/custom/unit-save", json.dumps({"unit": "homebox", "text": risco}).encode(), ok)[0] == 403, "needs the CSRF header"
             # files, changing them: create, upload (whole or cut), rename, copy, move and delete; nothing leaves the volume
             Q = urllib.parse.quote
             def op(**d):
@@ -3839,7 +4068,7 @@ esac
 
             # history: every job is on disk, newest first, with who asked and how it ended
             lista = [e for e in json.loads(pedir("/api/history?app=homebox", headers=ok)[2])["entries"]
-                     if e["action"] != "shell"]          # a console is recorded too, and is newer than all of these
+                     if e["action"] not in ("shell", "custom-unit")]     # a console and a rewritten .container are recorded too
             acoes = [e["action"] for e in lista]
             assert acoes[:2] == ["revert", "customize"], "the customization and its revert are in the history"
             assert "env" in acoes and "install" in acoes and "backup" in acoes, acoes

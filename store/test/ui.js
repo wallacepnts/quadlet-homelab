@@ -605,6 +605,28 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   confere(instalou && instalou.corpo.action === "install" && instalou.corpo.custom && instalou.corpo.custom.gitea, `a instalação leva a personalização (${JSON.stringify(instalou && Object.keys(instalou.corpo))})`);
   confere(!api.S.preCustom.gitea, "depois de instalar, o que estava guardado é descartado");
   $("panel").open = false;
+  const areaRaw = () => [...folhaC.walk()].find((e) => e.tag === "textarea" && e.attrs.class === "raw");
+  // before an install, the person's own .container rides along (and the form is left out for that unit)
+  const REPO_PRE = "[Container]\nImage=x:1\n";
+  rotas["/api/custom"] = { ...rotas["/api/custom"], unit_source: REPO_PRE, repo_text: REPO_PRE, custom_unit: false, installed_text: null };
+  rotas["/api/custom/unit-check"] = { errors: [], warnings: [], changed: true };
+  const previaGuardada = rotas["/api/custom/preview"];
+  rotas["/api/custom/preview"] = { text: null, errors: [], warnings: [], generated: "", changed: false };
+  api.openPanel("gitea"); await esperar(30);
+  porTexto($("p-actions"), "Personalizar")[0].listeners.click(); await esperar(100);
+  areaRaw().value = REPO_PRE + "Label=meu=sim\n"; areaRaw().listeners.input();
+  porTexto(folhaC, "Instalar")[0].listeners.click(); await esperar(200);
+  confere(api.S.preUnit.gitea && api.S.preUnit.gitea.gitea === REPO_PRE + "Label=meu=sim\n" && !$("custom").open, "antes de instalar: o .container editado fica guardado e a tela fecha");
+  api.openPanel("gitea"); await esperar(30);
+  confere(porTexto($("p-actions"), "Personalizar ✓").length === 1, "o botão mostra que há personalização (o .container)");
+  porTexto($("p-actions"), "Instalar")[0].listeners.click(); await esperar(100);
+  const antesRun2 = posts.length;
+  await $("p-form").onsubmit({ preventDefault() {} }); await esperar(1000);
+  const inst2 = posts.slice(antesRun2).find((x) => x.rota === "/api/run");
+  confere(inst2 && inst2.corpo.custom_units && inst2.corpo.custom_units.gitea.includes("meu=sim") && inst2.corpo.ack === true && !inst2.corpo.custom, "a instalação leva o .container próprio (e não o formulário dessa unit)");
+  confere(!api.S.preUnit.gitea, "depois de instalar, o .container guardado é descartado");
+  if (previaGuardada === undefined) delete rotas["/api/custom/preview"]; else rotas["/api/custom/preview"] = previaGuardada;
+  $("panel").open = false;
 
   // instances: a base app offers "New instance", and the install carries the name; an instance does not offer it
   api.openPanel("gitea"); await esperar(30);
@@ -877,6 +899,39 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   confere(porTexto(formulario(), "Reverter ao padrão").length === 1 && /50-store\.conf/.test(formulario().textContent), "reaberta: o arquivo e o botão de reverter");
   porTexto(formulario(), "Reverter ao padrão")[0].listeners.click(); await esperar(1500);
   confere(posts.some((x) => x.rota === "/api/custom/reset" && x.corpo.unit === "homebox"), "reverter chama o reset da unit");
+  // the .container as text: shown, edited, checked, saved as the person's own after the warnings are acknowledged
+  const REPO = "[Container]\nImage=x:1\n";
+  rotas["/api/custom"] = { ...rotas["/api/custom"], unit_source: REPO, repo_text: REPO, custom_unit: false, installed_text: REPO, override: false, text: null };
+  porTexto($("p-actions"), "Personalizar")[0].listeners.click(); await esperar(100);
+  confere(areaRaw() && areaRaw().value === REPO && /O \.container \(código\)/.test(folhaC.textContent) && /pode executar comandos/.test(folhaC.textContent) && /Igual ao repositório/.test(folhaC.textContent),
+    "Personalizar mostra o .container, com o aviso e dizendo que é igual ao repositório");
+  areaRaw().value = REPO + "PodmanArgs=--privileged\n"; areaRaw().listeners.input();
+  confere(/Diferente do repositório/.test(folhaC.textContent), "editado: diz que difere");
+  rotas["/api/custom/unit-check"] = { errors: [], warnings: ["PodmanArgs=--privileged: roda com --privileged"], changed: true };
+  rotas["/api/custom/unit-save"] = { job: "j1" };
+  const antesU = posts.length;
+  porTexto(folhaC, "Salvar e aplicar")[0].listeners.click(); await esperar(150);
+  confere(!posts.slice(antesU).some((x) => x.rota === "/api/custom/unit-save") && /roda com --privileged/.test(folhaC.textContent) && $("custom").open, "com aviso e sem confirmar, não salva e mostra o aviso");
+  const caixaAck = [...folhaC.walk()].find((e) => e.tag === "input" && e.attrs.type === "checkbox" && /rawack-/.test(e.attrs.id || ""));
+  caixaAck.checked = true;
+  porTexto(folhaC, "Salvar e aplicar")[0].listeners.click(); await esperar(1500);
+  const us = posts.slice(antesU).find((x) => x.rota === "/api/custom/unit-save");
+  confere(us && us.corpo.unit === "homebox" && us.corpo.text.includes("--privileged") && us.corpo.ack === true && !posts.slice(antesU).some((x) => x.rota === "/api/custom/apply"), "confirmado: salva o .container (e não aplica o formulário junto)");
+  rotas["/api/custom/unit-check"] = { errors: ["quadlet: converting x"], warnings: [], changed: true };
+  porTexto($("p-actions"), "Personalizar")[0].listeners.click(); await esperar(100);
+  areaRaw().value = "lixo"; areaRaw().listeners.input();
+  const antesU2 = posts.length;
+  porTexto(folhaC, "Salvar e aplicar")[0].listeners.click(); await esperar(150);
+  confere(!posts.slice(antesU2).some((x) => x.rota === "/api/custom/unit-save") && /quadlet: converting x/.test(folhaC.textContent), "com erro, não salva");
+  rotas["/api/custom"] = { ...rotas["/api/custom"], unit_source: REPO + "Label=a=b\n", custom_unit: true };
+  $("custom").open = false;
+  porTexto($("p-actions"), "Personalizar")[0].listeners.click(); await esperar(100);
+  confere(/É o seu \.container/.test(folhaC.textContent) && porTexto(folhaC, "Voltar ao do repositório").length >= 1, "um .container próprio: diz que é o seu e oferece voltar");
+  const antesU3 = posts.length;
+  botoes(folhaC).filter((b) => b.textContent === "Voltar ao do repositório" && b.attrs.class && /danger/.test(b.attrs.class))[0].listeners.click(); await esperar(1500);
+  confere(posts.slice(antesU3).some((x) => x.rota === "/api/custom/unit-reset" && x.corpo.unit === "homebox"), "voltar ao do repositório chama unit-reset");
+  rotas["/api/custom"] = { ...rotas["/api/custom"], custom_unit: false, unit_source: REPO };
+  $("panel").open = false;
   // limits, when the host delegates the controllers: the fields are live and ride along in the form
   rotas["/api/custom"] = { ...rotas["/api/custom"], limits: { memory: true, cpu: true }, limit_values: { memory: "1g", cpus: "" } };
   porTexto($("p-actions"), "Personalizar")[0].listeners.click(); await esperar(100);

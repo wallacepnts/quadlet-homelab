@@ -562,3 +562,8 @@ body.has-bg .card, body.has-bg #nav, body.has-bg .stat, body.has-bg nav#groups b
 #f-view { max-height: 24rem; } #f-actions { display: flex; gap: .5rem; align-items: center; margin: .6rem 0; }
 #f-edit { width: 100%; font-family: ui-monospace, monospace; font-size: .85rem; }
 @media (max-width: 720px) { #f-layout { grid-template-columns: 1fr; } #f-side { display: flex; overflow-x: auto; border: 0; padding: 0 0 .4rem; } #f-side button { width: auto; white-space: nowrap; } #f-side h4 { display: none; } }
+
+/* ---- The .container as text ---------------------------------------------------------------------- */
+textarea.raw { width: 100%; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .8rem; line-height: 1.45; tab-size: 4; white-space: pre; overflow: auto;
+               background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: .7rem; resize: vertical; }
+.raw-sec .row { margin: .5rem 0; } .raw-sec details pre { max-height: 18rem; }

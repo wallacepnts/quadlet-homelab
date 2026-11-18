@@ -600,6 +600,29 @@ def scenario_override(tmp):
           "--remove takes the customization with the unit")
 
 
+def scenario_custom_unit(tmp):
+    """A `.container` the person rewrote whole stands in for the repository's: install, update, catalog and plan see it."""
+    import json
+    home = str(Path(tmp, "cu"))
+    custom = Path(home, ".config/quadlet-homelab/custom-units", APP, f"{APP}.container")
+    repo = Path(I.APPS, APP, f"{APP}.container").read_text()
+    custom.parent.mkdir(parents=True)
+    custom.write_text(repo.replace("[Container]", "[Container]\nLabel=qh.meu=sim", 1))
+    run(APP, "--apply", "--prefix", home)
+    unit = path(home, "systemd", f"{APP}.container")
+    check("qh.meu=sim" in unit.read_text(), "the install writes the person's own unit, not the repository's")
+    cat = json.loads(run("--catalog", APP, "--prefix", home).stdout)["apps"][0]
+    check(cat["units"][0]["custom_unit"] is True and cat["units"][0]["drift"] is None, "--catalog says it is custom, and it is not drift")
+    unit.write_text(unit.read_text() + "# stale\n")
+    check("custom-units" in run(APP, "--update", "--prefix", home).stdout, "the update plan names the person's own file as the source")
+    run(APP, "--update", "--apply", "--prefix", home)
+    check("qh.meu=sim" in unit.read_text() and "# stale" not in unit.read_text(), "--update --apply rewrites from the person's unit")
+    custom.unlink()
+    run(APP, "--update", "--apply", "--prefix", home)
+    check("qh.meu=sim" not in unit.read_text(), "without it, back to the repository's")
+    run(APP, "--remove", "--apply", "--prefix", home)
+
+
 def scenario_deprecated(tmp):
     """A service marked deprecated in app.json: qh warns, the catalog says so, `--all` leaves it out.
 
@@ -926,6 +949,7 @@ def main():
         print("user files:");         scenario_no_overwrite(home)
         print("catalog:");            scenario_catalog(home)
         print("customization:");      scenario_override(tmp)
+        print("own .container:");      scenario_custom_unit(tmp)
         print("install options:");    scenario_options(tmp)
         print("instances:");          scenario_instances(tmp)
         print("rollback:");           scenario_rollback(tmp)
