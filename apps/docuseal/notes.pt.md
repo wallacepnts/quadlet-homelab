@@ -1,0 +1,1 @@
+Abra `https://docuseal.<your-tailnet>.ts.net` e crie a primeira conta: essa é a configuração. Depois coloque o seu endereço em `HOST` no `.env` e reinicie, ou os links de assinatura que você envia apontam para o nome do próprio container e não abrem nada para a outra pessoa.

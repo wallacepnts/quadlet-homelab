@@ -1,0 +1,1 @@
+Abra `https://vaultwarden.<your-tailnet>.ts.net`. O cofre só é alcançável pela tailnet: `PublishPort=8082:80` vem comentado na unit, porque publicá-lo responderia a qualquer um na rede local. Descomente se quiser também `http://<host-ip>:8082`.

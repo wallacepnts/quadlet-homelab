@@ -1,0 +1,1 @@
+Coloque os jogos em `~/.config/containers/volumes/retrom/library`, na [estrutura de pastas que o Retrom espera](https://github.com/JMBeresford/retrom/wiki/Library-Structure), e abra `http://<host-ip>:5101` ou `https://retrom.<your-tailnet>.ts.net`. O primeiro início leva uns 90 segundos (ele baixa o EmulatorJS e migra o banco).

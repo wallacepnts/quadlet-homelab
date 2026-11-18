@@ -6,8 +6,8 @@ with an `x-casaos` block holding its metadata — in JSON of our own, beside the
 inside them.
 
 A folder is therefore the units, the `.env.example` if there is one, this file, and the logo. There is no README
-per app, no `install.ini`, no `notes.md`: the services table in the root READMEs is generated from the manifests,
-and the panel shows the notes. The descriptions are written in English and Portuguese; the notes, once, in English.
+per app and no `install.ini`: the services table in the root READMEs is generated from the manifests, and the panel shows
+the notes. The descriptions and the notes are written in English and Portuguese.
 
 ```json
 {
@@ -18,7 +18,6 @@ and the panel shows the notes. The descriptions are written in English and Portu
   "source": "https://github.com/usememos/memos",
   "docs": "https://www.usememos.com/docs",
   "category": "Productivity",
-  "notes": "The first user to sign up becomes admin…",
   "units": { "memos": { "upstream": "usememos/memos" } }
 }
 ```
@@ -38,9 +37,17 @@ and, beside it, the logo and the screenshots as plain files:
 apps/memos/
 ├── memos.container
 ├── app.json
+├── notes.en.md              # only for an app that needs one: what to do first, and notes.pt.md beside it
 ├── icon.svg                 # the logo: icon.svg, .png, .webp or .jpg, up to 512 KB
 └── screenshots/             # optional: 1.png, 2.png ... up to six, up to 1 MB each
 ```
+
+## The notes
+
+`notes.en.md` and `notes.pt.md` hold what the person has to do at the first run, or what could hurt them: turn signup
+off, change a default password, a library that has to be put in place. **Only an app that needs one has them**, always
+both languages, up to 2,500 characters each (`check.py` enforces both). Anything longer, or about how the unit is built,
+belongs in `docs/` (the measured hardening is in `docs/hardening.md`). The panel shows them in the app's screen.
 
 ## The fields
 
@@ -59,7 +66,6 @@ apps/memos/
 | `requires_https` | no | `true`: the app breaks over plain HTTP (a vault, a service worker). The panel warns when it is reached by the local network only. |
 | `no_gui` | no | `true`: the app has no web interface (a runner, a mail relay, a toolbox); the store shows no address and no Open button, whatever port it publishes. |
 | `deprecated` | no | Text: why it is discontinued. The store offers no install. |
-| `notes` | no | Markdown: what to do at the first run and what is odd about the app. The panel shows it. A text with line breaks is written as a list, one line of text per item (`"notes": ["first line", "", "second paragraph"]`): `check.py --format` does it, and a plain string still loads. |
 | `secrets` | per `Secret=` | `{"<secret>": "rand-hex 32"}`: how each secret is made (`rand-hex N`, `rand-base64 N`, `rand-urlsafe N`, `rand-alnum N`, `shell <cmd>`, `manual <text>`). |
 | `validate` | no | `{"<secret>": "shell <cmd>"}`: a check of a `manual` secret that only the far end can judge. The value arrives on stdin. |
 | `config` | no | `{"<file in the folder>": "<where it lands on the host>"}`: auxiliary files `qh` copies once and never overwrites. |

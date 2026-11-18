@@ -13,7 +13,6 @@
   "source": "https://github.com/dockur/proxmox",
   "docs": "https://pve.proxmox.com/pve-docs/",
   "category": "Virtual Machines",
-  "notes": "It runs privileged.",
   "secrets": { "proxmox-root-password": "rand-alnum 20" },
   "login": { "user": "root", "password": "proxmox-root-password" },
   "units": { "proxmox": { "upstream": "dockur/proxmox" } }

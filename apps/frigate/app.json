@@ -13,7 +13,6 @@
   "source": "https://github.com/blakeblackshear/frigate",
   "docs": "https://frigate.video",
   "category": "Home",
-  "notes": "It runs on the CPU by default, and no camera is configured yet.",
   "vars": { "FRIGATE_MEDIA_DIR": "~/frigate-media" },
   "ask": {
     "FRIGATE_MEDIA_DIR": {

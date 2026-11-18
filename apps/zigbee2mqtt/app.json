@@ -13,7 +13,6 @@
   "source": "https://github.com/koenkk/zigbee2mqtt",
   "docs": "https://www.zigbee2mqtt.io",
   "category": "Home",
-  "notes": "No Zigbee coordinator is plugged in yet.",
   "config": {
     "configuration.yaml": "%h/.config/containers/volumes/zigbee2mqtt/data/configuration.yaml",
     "mosquitto.conf": "%h/.config/containers/volumes/zigbee2mqtt/mosquitto/config/mosquitto.conf"

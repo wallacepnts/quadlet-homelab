@@ -1,0 +1,1 @@
+Put the karaoke files in `~/.config/containers/volumes/karaoke-eternal/media`, then open `http://<host-ip>:8017` or `https://karaoke.<your-tailnet>.ts.net`. **The first account you create is the admin.** In the app, add `/mnt/karaoke` under Media Folders and scan. It reads CDG+MP3 and MP4, and parses the file name: `Artist - Title.mp4`.

@@ -15,7 +15,6 @@ carries its metadata, but in JSON of our own, beside the unit files instead of i
       "min_podman": "5.4",
       "requires_https": true,                         # the app breaks over plain HTTP (a vault, a service worker)
       "deprecated": "why it is discontinued",         # no install is offered
-      "notes": ["markdown: first run, what is odd about it,", "one line of text per item"],
       "secrets": {"memos-token": "rand-hex 32"},      # how each Secret= is made
       "validate": {"authkey": "shell ..."},           # a value only the far end can judge
       "config": {"nginx.conf": "%h/.config/.../nginx.conf"},
@@ -59,19 +58,12 @@ def load(folder):
     if not p.is_file():
         return {}
     try:
-        data = json.loads(p.read_text())
+        return json.loads(p.read_text())
     except ValueError as e:
         raise ValueError(f"{p}: not valid JSON ({e})")
-    if isinstance(data, dict) and isinstance(data.get("notes"), list) and all(isinstance(x, str) for x in data["notes"]):
-        data["notes"] = "\n".join(data["notes"])         # in the file, one line of text per item; in memory, one string
-    return data
 
 
 WIDTH = 110          # a value that fits in this many columns stays on one line
-
-
-class _Linhas(list):
-    """The lines of a text, which dump writes one per line however short they are."""
 
 
 def _inline(v):
@@ -85,7 +77,7 @@ def _inline(v):
 def _render(v, indent, prefix_len):
     """`v` as text: on one line when it fits (like `"categories": ["finance"]`), else one entry per line."""
     linha = _inline(v)
-    if not isinstance(v, (dict, list)) or not v or (prefix_len + len(linha) <= WIDTH and not isinstance(v, _Linhas)):
+    if not isinstance(v, (dict, list)) or not v or (prefix_len + len(linha) <= WIDTH):
         return linha
     pad, pad_in = "  " * indent, "  " * (indent + 1)
     if isinstance(v, dict):
@@ -102,14 +94,12 @@ def dump(data):
     d = ordered(data)
     if not d:
         return "{}\n"
-    if isinstance(d.get("notes"), str) and "\n" in d["notes"]:
-        d["notes"] = _Linhas(d["notes"].split("\n"))          # a note that runs over lines is written one per line
     linhas = [f"  {json.dumps(k, ensure_ascii=False)}: " + _render(v, 1, 2 + len(json.dumps(k, ensure_ascii=False)) + 2) for k, v in d.items()]
     return "{\n" + ",\n".join(linhas) + "\n}\n"
 
 
 KEY_ORDER = ["$schema", "title", "short_desc", "description", "author", "website", "source", "docs", "architectures", "category",
-             "min_podman", "requires_https", "no_gui", "deprecated", "notes", "secrets", "validate", "config", "vars", "ask",
+             "min_podman", "requires_https", "no_gui", "deprecated", "secrets", "validate", "config", "vars", "ask",
              "login", "choices", "options", "widgets", "icon", "backup", "units", "instance"]
 
 
@@ -289,6 +279,32 @@ def assets_problems(folder):
         for f in d.iterdir():
             if f.name not in shots:
                 erros.append(f"screenshots/{f.name} is not an image the store can show ({', '.join(SHOT_SUFFIXES)})")
+    return erros
+
+
+NOTES_MAX = 2500            # characters: a note is what to do first, not a manual (that goes in docs/)
+
+
+def notes_file(folder, lang):
+    return Path(folder) / f"notes.{lang}.md"
+
+
+def notes(folder):
+    """The app's notes, {"en": markdown|None, "pt": markdown|None}: what to do at the first run and what is odd about it.
+
+    They live beside app.json in `notes.en.md` and `notes.pt.md`, written only for an app that really needs one."""
+    return {lang: (notes_file(folder, lang).read_text().strip() or None) if notes_file(folder, lang).is_file() else None
+            for lang in ("en", "pt")}
+
+
+def notes_problems(folder):
+    """Both languages or neither, and short enough to be read."""
+    erros, n = [], notes(folder)
+    if bool(n["en"]) != bool(n["pt"]):
+        erros.append("notes.en.md and notes.pt.md go together: write the one that is missing")
+    for lang, texto in n.items():
+        if texto and len(texto) > NOTES_MAX:
+            erros.append(f"notes.{lang}.md has {len(texto)} characters, at most {NOTES_MAX}: the rest belongs in docs/")
     return erros
 
 
@@ -499,7 +515,7 @@ def schema(grupos):
         "docs": {"type": "string", "format": "uri"}, "architectures": {"type": "array", "items": texto},
         "category": {"enum": list(grupos)}, "min_podman": {"type": "string"},
         "requires_https": {"type": "boolean"}, "no_gui": {"const": True}, "deprecated": par,
-        "notes": {"oneOf": [{"type": "string"}, {"type": "array", "items": {"type": "string"}}]}, "secrets": mapa(texto), "validate": mapa(texto), "config": mapa(texto),
+        "secrets": mapa(texto), "validate": mapa(texto), "config": mapa(texto),
         "vars": mapa(texto), "ask": mapa(campo), "login": {"type": "object"}, "choices": {"type": "object"},
         "options": {"type": "object"}, "widgets": {"type": "array", "items": {"type": "object", "required": ["type"]}},
         "icon": {"type": "object", "additionalProperties": False, "properties": {
@@ -542,9 +558,8 @@ def problems(data, grupos, folder=None):
         erros.append('"architectures" must be a list of: amd64, arm64, arm, riscv64, 386, ppc64le, s390x')
     if "requires_https" in data and data["requires_https"] is not True:
         erros.append('"requires_https" is `true` or left out')
-    for k in ("notes", "deprecated"):
-        if k in data and not isinstance(data[k], str):
-            erros.append(f'"{k}" must be a string' + (' (or, for "notes", a list of lines)' if k == "notes" else ""))
+    if "deprecated" in data and not isinstance(data["deprecated"], str):
+        erros.append('"deprecated" must be a string')
     for k in ("secrets", "validate", "config", "vars"):
         if k in data and not isinstance(data[k], dict):
             erros.append(f'"{k}" must be an object')
@@ -581,7 +596,7 @@ def problems(data, grupos, folder=None):
     if desconhecidas:
         erros.append(f"unknown key(s): {', '.join(sorted(desconhecidas))}")
     if folder is not None:
-        erros += assets_problems(folder)
+        erros += assets_problems(folder) + notes_problems(folder)
     return erros
 
 
@@ -615,6 +630,7 @@ def splice(readme_text, tabela):
 
 
 def selftest():
+    import tempfile
     d = {"title": "X", "category": "Tools", "short_desc": {"en": "a one-liner", "pt": "uma linha"},
          "description": {"en": "long", "pt": "longa"}, "author": "o", "source": "https://github.com/o/r",
          "docs": "https://d.example", "architectures": ["amd64"], "min_podman": "5.4", "requires_https": True, "deprecated": "gone",
@@ -646,7 +662,7 @@ def selftest():
     assert problems({**d, "architectures": ["x86"]}, ("Tools",)) and problems({**d, "source": "http://x"}, ("Tools",))
     assert problems({**d, "tagline": "old"}, ("Tools",)), "tagline became short_desc"
     assert v.get("store", "requires_https") == "true" and problems({**d, "requires_https": False}, ("Tools",))
-    assert problems({**d, "category": "Nope"}, ("Tools",)) and problems({**d, "notes": {"en": "x"}}, ("Tools",))
+    assert problems({**d, "category": "Nope"}, ("Tools",)) and problems({**d, "notes": "x"}, ("Tools",))
     opt = {"database": {"question": "Database?", "default": "sqlite", "values": {
         "sqlite": {"label": "SQLite"},
         "postgres": {"label": "PostgreSQL", "units": ["x-pg"], "env": {"DB": "pg"}, "secrets": ["s1"]}}}}
@@ -714,13 +730,15 @@ def selftest():
         assert any("at most 6" in e for e in assets_problems(pasta))
     assert splice("a\n" + TABLE_BEGIN + "\nold\n" + TABLE_END + "\nz", "T").count("T") == 1
     assert splice("no markers", "T") is None
-    # notes: a text with line breaks is written as a list of lines and read back as the same string
-    import tempfile
+    # notes: both languages or neither, short enough to read
     with tempfile.TemporaryDirectory() as tmp:
-        for nota in ("one line", "a\n\nb `c`", "ends\n"):
-            Path(tmp, FILE).write_text(dump({"title": "x", "notes": nota}))
-            assert load(tmp)["notes"] == nota, nota
-        assert '"notes": [' in dump({"notes": "a\nb"}) and '"notes": "one line"' in dump({"notes": "one line"})
+        assert notes(tmp) == {"en": None, "pt": None} and not notes_problems(tmp)
+        notes_file(tmp, "en").write_text("Do this.\n")
+        assert notes(tmp)["en"] == "Do this." and notes_problems(tmp), "one language alone is refused"
+        notes_file(tmp, "pt").write_text("x" * (NOTES_MAX + 1))
+        assert any("at most" in e for e in notes_problems(tmp)), "too long"
+        notes_file(tmp, "pt").write_text("Faça isto.\n")
+        assert not notes_problems(tmp)
     # ask: the form of a manual secret or a ${VAR}
     base = {"title": "x", "short_desc": {"en": "a", "pt": "a"}, "description": {"en": "a", "pt": "a"},
             "secrets": {"k": "manual paste it", "r": "rand-hex 8"}, "vars": {"V": "~/v"}}

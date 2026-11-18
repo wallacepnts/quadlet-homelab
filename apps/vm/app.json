@@ -13,7 +13,6 @@
   "source": "https://github.com/dockur/windows",
   "docs": "https://github.com/dockur/windows#readme",
   "category": "Virtual Machines",
-  "notes": "It needs KVM on the host.",
   "secrets": {
     "vm-windows-password": "rand-alnum 20",
     "vm-windows-arm-password": "rand-alnum 20",

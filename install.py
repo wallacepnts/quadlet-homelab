@@ -4580,13 +4580,6 @@ def parse_failures(texto):
     return saida
 
 
-def notes_of(m):
-    """The app's notes (markdown, English: what to do at the first run, what is odd about it), or None.
-
-    They live in `app.json` under "notes"; the panel shows them."""
-    return ((m or {}).get("notes") or "").strip() or None
-
-
 def catalog_entry(d, home, tailnet, en, pt, ativos, saude, falhas=None):
     """One service as the store sees it: the window, what the install asks, the host."""
     s = Service(d, home)
@@ -4658,7 +4651,7 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude, falhas=None):
         "has_login": s.login() is not None,
         # Marked in app.json (store): the store shows the reason and offers no install.
         "deprecated": deprecation(s.ini),
-        "notes": {"en": notes_of(s.manifest), "pt": notes_of(s.manifest)},
+        "notes": manifest.notes(s.dir),
         "min_podman": min_podman(s),
         "requires_https": s.ini.get("store", "requires_https", fallback="") == "true" if s.ini.has_section("store") else False,
         "podman_too_old": bool(podman_too_old(s)),

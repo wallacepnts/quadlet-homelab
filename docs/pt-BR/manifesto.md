@@ -6,8 +6,8 @@ um bloco `x-casaos` que guarda os metadados —, num JSON nosso, ao lado das uni
 delas.
 
 Uma pasta é, portanto, as units, o `.env.example` se houver, este arquivo e o logo. Não há README por app, nem
-`install.ini`, nem `notes.md`: a tabela de serviços dos READMEs raiz é gerada a partir dos manifestos, e o painel
-mostra as notas. As descrições são escritas em inglês e português; as notas, uma vez, em inglês.
+`install.ini`: a tabela de serviços dos READMEs raiz é gerada a partir dos manifestos, e o painel
+mostra as notas. As descrições e as notas são escritas em inglês e português.
 
 ```json
 {
@@ -18,7 +18,6 @@ mostra as notas. As descrições são escritas em inglês e português; as notas
   "source": "https://github.com/usememos/memos",
   "docs": "https://www.usememos.com/docs",
   "category": "Productivity",
-  "notes": "The first user to sign up becomes admin…",
   "units": { "memos": { "upstream": "usememos/memos" } }
 }
 ```
@@ -29,16 +28,24 @@ e, ao lado, o logo e as capturas de tela como arquivos comuns:
 apps/memos/
 ├── memos.container
 ├── app.json
+├── notes.en.md              # só para app que precisa: o que fazer primeiro, e o notes.pt.md ao lado
 ├── icon.svg                 # o logo: icon.svg, .png, .webp ou .jpg, até 512 KB
 └── screenshots/             # opcional: 1.png, 2.png ... até seis, até 1 MB cada
 ```
+
+## As notas
+
+`notes.en.md` e `notes.pt.md` guardam o que a pessoa precisa fazer no primeiro acesso, ou o que pode machucá-la: desligar o
+cadastro, trocar uma senha padrão, uma biblioteca que precisa ser posta no lugar. **Só um app que precisa tem**, sempre nos
+dois idiomas, com até 2.500 caracteres cada (o `check.py` confere os dois). O que for maior, ou sobre como a unit é feita,
+vai em `docs/` (o endurecimento medido está em `docs/hardening.md`). O painel mostra na tela do app.
 
 ## Os campos
 
 | Campo | Obrigatório | Significado |
 | --- | --- | --- |
 | `title` | sim | O nome mostrado na loja e na tabela de serviços. |
-| `short_desc` | sim | `{en, pt}`: uma frase curta e simples em cada idioma, até 70 caracteres, sem travessão nem parênteses (*Um servidor de mídia para a sua coleção.*). É a descrição na tabela e no cartão. Ressalvas vão em `notes`. |
+| `short_desc` | sim | `{en, pt}`: uma frase curta e simples em cada idioma, até 70 caracteres, sem travessão nem parênteses (*Um servidor de mídia para a sua coleção.*). É a descrição na tabela e no cartão. Ressalvas vão nas notas. |
 | `description` | sim | `{en, pt}`: o que o app é, em poucas linhas. O painel mostra ao abrir o app. |
 | `author` | não | Quem faz o projeto (o dono de `source`). |
 | `source` | não | O repositório do projeto, uma URL https. O painel o liga, e as issues e releases vêm dele. |
@@ -50,7 +57,6 @@ apps/memos/
 | `requires_https` | não | `true`: o app quebra em HTTP puro (um cofre, um service worker). O painel avisa quando ele é acessado só pela rede local. |
 | `no_gui` | não | `true`: o app não tem interface web (um runner, um relay de e-mail, uma caixa de ferramentas); a loja não mostra endereço nem o botão Abrir, qualquer que seja a porta que ele publica. |
 | `deprecated` | não | Texto: por que foi descontinuado. A loja não oferece instalar. |
-| `notes` | não | Markdown: o que fazer no primeiro acesso e o que o app tem de estranho. O painel mostra. Um texto com quebras de linha é escrito como lista, uma linha de texto por item (`"notes": ["primeira linha", "", "segundo parágrafo"]`): o `check.py --format` faz isso, e uma string simples continua carregando. |
 | `secrets` | por `Secret=` | `{"<secret>": "rand-hex 32"}`: como cada secret é feito (`rand-hex N`, `rand-base64 N`, `rand-urlsafe N`, `rand-alnum N`, `shell <cmd>`, `manual <texto>`). |
 | `validate` | não | `{"<secret>": "shell <cmd>"}`: uma conferência de um secret `manual` que só o outro lado sabe julgar. O valor chega por stdin. |
 | `config` | não | `{"<arquivo na pasta>": "<onde cai no host>"}`: arquivos auxiliares que o `qh` copia uma vez e nunca sobrescreve. |

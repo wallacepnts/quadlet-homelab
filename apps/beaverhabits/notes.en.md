@@ -1,0 +1,1 @@
+Open `http://<host-ip>:8015` or `https://habits.<your-tailnet>.ts.net` and create the account. **Anyone who reaches the address can create one too**: once yours exists, set `MAX_USER_COUNT=1` in the `.env` and restart.

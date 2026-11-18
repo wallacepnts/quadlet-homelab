@@ -1,0 +1,1 @@
+Open `https://vaultwarden.<your-tailnet>.ts.net`. The vault is reachable over the tailnet only: `PublishPort=8082:80` ships commented out in the unit, because publishing it would answer to anyone on the LAN. Uncomment it if you want `http://<host-ip>:8082` too.

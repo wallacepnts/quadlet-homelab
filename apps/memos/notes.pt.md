@@ -1,0 +1,1 @@
+Abra `http://<host-ip>:5230` ou `https://memos.<your-tailnet>.ts.net` e crie a conta. **O primeiro usuário a se cadastrar vira admin**, sem confirmação por e-mail. Logo depois, desligue o cadastro em Configurações → "Permitir cadastro", ou qualquer um que alcance o endereço cria uma conta.

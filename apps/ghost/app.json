@@ -10,6 +10,5 @@
   "source": "https://github.com/TryGhost/Ghost",
   "docs": "https://ghost.org",
   "category": "Productivity",
-  "notes": "It runs on SQLite, in development mode.",
   "units": { "ghost": { "upstream": "TryGhost/Ghost", "image": "{version}-alpine" } }
 }

@@ -13,15 +13,6 @@
   "source": "https://github.com/jellyfin/jellyfin",
   "docs": "https://jellyfin.org",
   "category": "Downloads",
-  "notes": [
-    "Each unit publishes its own port and its own tailnet name; the addresses are",
-    "printed at the end of the install.",
-    "",
-    "### Update",
-    "",
-    "Each unit carries its own tag — the table above lists them. Nothing updates",
-    "on its own; the command above applies whatever the repository pins."
-  ],
   "config": { ".env.example": "%h/.config/containers/env/media-stack.env" },
   "vars": { "MEDIA_DATA_DIR": "~/data" },
   "ask": {

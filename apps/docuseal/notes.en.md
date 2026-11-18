@@ -1,0 +1,1 @@
+Open `https://docuseal.<your-tailnet>.ts.net` and create the first account: that is the setup. Then put your address in `HOST` in the `.env` and restart, or the signing links you send point at the container's own hostname and open nothing for the other person.

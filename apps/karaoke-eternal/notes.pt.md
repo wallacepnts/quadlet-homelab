@@ -1,0 +1,1 @@
+Coloque os arquivos de karaokê em `~/.config/containers/volumes/karaoke-eternal/media` e abra `http://<host-ip>:8017` ou `https://karaoke.<your-tailnet>.ts.net`. **A primeira conta que você criar é a admin.** No app, adicione `/mnt/karaoke` em Pastas de mídia e escaneie. Ele lê CDG+MP3 e MP4 e interpreta o nome do arquivo: `Artista - Título.mp4`.
