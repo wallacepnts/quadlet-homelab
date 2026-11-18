@@ -463,6 +463,6 @@ Not part of the skeleton, because each needs testing per image: `ReadOnly`, `Dro
 `PidsLimit` and `NoNewPrivileges` are asked of every unit and warned about when missing. The blocks inside `[Container]`
 are already ordered by `check.py --format` (the layout), and the images are pinned (rule 9).
 
-Eight units carry `# check: ignore health` today: the four `toolbx-*` (an idle shell kept alive by `sleep infinity`) and
-`cookcli`, `collabora`, `authentik-worker` and `paperless-ngx-tika`, whose image has no probe measured yet. Each of those
-four is an open item, not a decision: when a probe that works inside the image is found, the ignore goes away.
+Four units carry `# check: ignore health` today: the four `toolbx-*`, an idle shell kept alive by `sleep infinity`, with
+nothing to probe. Every other unit has a probe that was measured inside its image: when the image has no `curl` or `wget`
+(`cookcli`, Tika) the probe uses bash's `/dev/tcp`, and `collabora` uses the image's own `coolwsd --probe`.

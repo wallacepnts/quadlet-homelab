@@ -136,7 +136,7 @@ say "$M_DEPSOK"
 
 # 1b. Podman 6.0 is the floor (conventions, rule 23): it dropped cgroups v1, CNI and slirp4netns and made
 #     network isolation the default, and every unit is written and verified for it. (`Notify=healthy` alone
-#     needs 5.0: 119 of the 127 units use it; on 4.x the start returns before the app is ready and the
+#     needs 5.0: 123 of the 127 units use it; on 4.x the start returns before the app is ready and the
 #     install reports success it cannot know about.)
 pv=$(podman --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+' | head -1)
 if [ -n "$pv" ] && [ "${pv%%.*}" -lt 6 ]; then

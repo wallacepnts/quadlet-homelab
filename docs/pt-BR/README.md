@@ -95,7 +95,7 @@ use `--reinstall`.
   referência, e o gerador da 6.2.0 as lê do mesmo jeito). O `qh` recusa instalar ou
   atualizar num Podman mais velho, a loja avisa, e o `check.py` prende as units a um
   gerador 6 ou mais novo. **6.1.4 ou posterior** é o recomendado: a 6.1.1 a 6.1.3 são
-  correções de segurança. (119 das 127 units usam `Notify=healthy`, e por isso a 4.x nunca foi
+  correções de segurança. (123 das 127 units usam `Notify=healthy`, e por isso a 4.x nunca foi
   opção: o start voltava antes de o app estar pronto.)
 - **systemd com sessão de usuário** e cgroups v2.
 - **`network-online.target` alcançado no boot.** O Quadlet ordena toda unit que

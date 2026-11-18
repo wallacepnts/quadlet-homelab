@@ -11,9 +11,15 @@ NetworkAlias=tika
 ReadOnly=true
 Tmpfs=/tmp:size=256M
 DropCapability=ALL
-# check: ignore health no probe that runs inside this image has been measured yet; rule 24 asks for one.
 PidsLimit=256
 NoNewPrivileges=true
+
+HealthCmd=["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/9998 && { echo 'GET /version HTTP/1.0'; echo; } >&3 && head -n1 <&3 | grep -q ' 200 '"]
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+HealthStartPeriod=20s
+Notify=healthy
 
 [Service]
 Restart=always

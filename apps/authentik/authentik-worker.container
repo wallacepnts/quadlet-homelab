@@ -32,13 +32,19 @@ AddCapability=SETGID
 AddCapability=DAC_OVERRIDE
 AddCapability=FOWNER
 User=0
-# check: ignore health no probe that runs inside this image has been measured yet; rule 24 asks for one.
 PidsLimit=256
 NoNewPrivileges=true
 
+HealthCmd=CMD-SHELL ak healthcheck || exit 1
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=5
+HealthStartPeriod=120s
+Notify=healthy
+
 [Service]
 Restart=always
-TimeoutStartSec=120
+TimeoutStartSec=300
 
 [Install]
 WantedBy=default.target

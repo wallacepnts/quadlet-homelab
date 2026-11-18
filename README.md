@@ -95,7 +95,7 @@ pulled. To go through anyway, use `--reinstall`.
   reference, and the 6.2.0 generator reads them the same). `qh` refuses to install or
   update on an older Podman, the store says so, and `check.py` holds the units to a
   generator of 6 or newer. **6.1.4 or later** is recommended: 6.1.1 to 6.1.3 are
-  security fixes. (119 of the 127 units use it, `Notify=healthy`, which is why 4.x was never
+  security fixes. (123 of the 127 units use it, `Notify=healthy`, which is why 4.x was never
   an option: the start returned before the app was ready.)
 - **systemd with a user session** and cgroups v2.
 - **`network-online.target` reached at boot.** Quadlet orders every unit it

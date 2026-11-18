@@ -240,6 +240,13 @@ exits cleanly, with code 0.
 store grows. The embedded MongoDB flushes and checkpoints on shutdown, and systemd's default is 90 s and then `SIGKILL`,
 which would kill Mongo mid-write, on the very stop the backup asked for.
 
+### authentik
+
+The worker's health check is the same `ak healthcheck` as the server's, and it reports healthy only once the worker is up:
+measured at about 130 s on a fresh database, because the worker runs the migrations on its first start (and fails with exit
+1 before that). Hence `HealthStartPeriod=120s` and `TimeoutStartSec=300`, which only matter on that first start; the server
+does not wait for it (`Wants=`, no `After=`).
+
 ### collabora
 
 One capability, `SYS_CHROOT`. Collabora runs each document in its own chroot
@@ -256,6 +263,18 @@ while coolwsd runs as uid 1001, which the image already sets.
 There is no `HealthCmd`, and therefore no `Notify=healthy`: the image carries
 no shell and no `curl` or `wget` — `coolwsd`, `coolmount`, `coolforkit` and
 `openssl` are the whole of `/usr/bin`, so there is nothing to run inside it.
+
+The health check is the image's own probe, `coolwsd --probe --use-env-vars`, which asks `http://127.0.0.1:9980/livez`: the
+image has no shell, curl or wget, so a `CMD-SHELL` probe could not run. Measured both ways: it exits 69 with no server and 0
+with one (about 30 s after the start). Rule 14 still asks for it in the unit, even though the image ships it.
+
+### cookcli
+
+The image is Debian slim with `bash` and `perl` but no `curl`, `wget` or `nc`, so the probe opens the port with bash's
+`/dev/tcp` and reads the status line of `GET /`: `exec 3<>/dev/tcp/127.0.0.1/9080 && { echo 'GET / HTTP/1.0'; echo; } >&3 &&
+head -n1 <&3 | grep -q ' 200 '`, in exec form (no backslashes, so nothing for systemd or Quadlet to unquote). Send no `Host:`
+header: the server answers `403` to a `Host` it does not expect and `200` to none. Measured with the unit's hardening
+(`ReadOnly`, `DropCapability=ALL`, `keep-id`): healthy, and the same command fails against a closed port.
 
 ### docuseal
 
@@ -328,6 +347,11 @@ and `/actuator/health` answering 200 — not just with the container running.
 
 `HealthStartPeriod=90s` is not padding: a JVM takes about eleven seconds to
 boot here before the first scan, and a cold library takes longer.
+
+### paperless-ngx
+
+The Tika unit's image (Ubuntu minimal with Java) has `bash` and no `curl` or `wget`: the probe is the same `/dev/tcp` one as
+cookcli's, on port 9998 and `GET /version`, which answers `200` (measured, with `ReadOnly` and every capability dropped).
 
 ### pkvault
 

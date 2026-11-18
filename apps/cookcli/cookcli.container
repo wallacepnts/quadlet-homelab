@@ -15,9 +15,15 @@ ReadOnly=true
 Tmpfs=/tmp:size=64M
 DropCapability=ALL
 UserNS=keep-id
-# check: ignore health no probe that runs inside this image has been measured yet; rule 24 asks for one.
 PidsLimit=256
 NoNewPrivileges=true
+
+HealthCmd=["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/9080 && { echo 'GET / HTTP/1.0'; echo; } >&3 && head -n1 <&3 | grep -q ' 200 '"]
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+HealthStartPeriod=20s
+Notify=healthy
 
 Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true

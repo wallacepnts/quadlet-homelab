@@ -12,9 +12,15 @@ EnvironmentFile=%h/.config/containers/env/collabora.env
 
 DropCapability=ALL
 AddCapability=SYS_CHROOT
-# check: ignore health no probe that runs inside this image has been measured yet; rule 24 asks for one.
 PidsLimit=512
 NoNewPrivileges=true
+
+HealthCmd=["CMD", "/usr/bin/coolwsd", "--probe", "--use-env-vars"]
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=60s
+Notify=healthy
 
 Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true

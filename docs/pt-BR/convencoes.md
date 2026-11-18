@@ -464,6 +464,6 @@ Fora do esqueleto, porque cada um exige teste por imagem: `ReadOnly`, `DropCapab
 `NoNewPrivileges` se pedem a toda unit e avisam quando faltam. Os blocos dentro de `[Container]` já são ordenados pelo
 `check.py --format` (o layout), e as imagens são fixadas (regra 9).
 
-Oito units levam `# check: ignore health` hoje: as quatro `toolbx-*` (um shell parado, mantido por `sleep infinity`) e
-`cookcli`, `collabora`, `authentik-worker` e `paperless-ngx-tika`, cuja imagem ainda não teve uma sonda medida. Cada uma
-dessas quatro é um item em aberto, não uma decisão: quando se achar uma sonda que funcione dentro da imagem, o ignore sai.
+Quatro units levam `# check: ignore health` hoje: as quatro `toolbx-*`, um shell parado mantido por `sleep infinity`, sem nada
+para sondar. Toda outra unit tem uma sonda medida dentro da própria imagem: quando a imagem não tem `curl` nem `wget`
+(`cookcli`, Tika) a sonda usa o `/dev/tcp` do bash, e o `collabora` usa o `coolwsd --probe` da própria imagem.

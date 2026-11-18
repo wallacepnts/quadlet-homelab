@@ -238,6 +238,13 @@ O `TimeoutStopSec` é longo de propósito: o compose do upstream dá `stop_grace
 cresce. O MongoDB embutido descarrega e faz checkpoint ao desligar, e o padrão do systemd é 90 s e depois `SIGKILL`, que
 mataria o Mongo no meio de uma escrita, justo no stop que o backup pediu.
 
+### authentik
+
+O health check do worker é o mesmo `ak healthcheck` do servidor, e só dá saudável quando o worker já subiu: medido em cerca
+de 130 s num banco novo, porque o worker roda as migrações no primeiro início (e sai com 1 antes disso). Por isso
+`HealthStartPeriod=120s` e `TimeoutStartSec=300`, que só contam nesse primeiro início; o servidor não espera por ele
+(`Wants=`, sem `After=`).
+
 ### collabora
 
 Uma capacidade, a `SYS_CHROOT`. O Collabora roda cada documento numa jaula
@@ -254,6 +261,18 @@ enquanto o coolwsd roda como uid 1001, que a própria imagem já define.
 Não há `HealthCmd`, e por isso não há `Notify=healthy`: a imagem não tem shell
 nem `curl` ou `wget` — `coolwsd`, `coolmount`, `coolforkit` e `openssl` são
 todo o `/usr/bin`, então não há o que rodar dentro dela.
+
+O health check é a sonda da própria imagem, `coolwsd --probe --use-env-vars`, que consulta `http://127.0.0.1:9980/livez`: a
+imagem não tem shell, curl nem wget, então uma sonda `CMD-SHELL` não rodaria. Medido dos dois jeitos: sai com 69 sem servidor
+e com 0 com ele (uns 30 s depois do início). A regra 14 ainda a pede na unit, mesmo a imagem trazendo uma.
+
+### cookcli
+
+A imagem é Debian slim com `bash` e `perl` mas sem `curl`, `wget` nem `nc`, então a sonda abre a porta com o `/dev/tcp` do
+bash e lê a linha de status de `GET /`: `exec 3<>/dev/tcp/127.0.0.1/9080 && { echo 'GET / HTTP/1.0'; echo; } >&3 && head -n1
+<&3 | grep -q ' 200 '`, em forma exec (sem barras invertidas, então nada para o systemd ou o Quadlet desfazer). Não mande
+cabeçalho `Host:`: o servidor responde `403` a um `Host` que não espera e `200` a nenhum. Medido com o endurecimento da unit
+(`ReadOnly`, `DropCapability=ALL`, `keep-id`): saudável, e o mesmo comando falha contra uma porta fechada.
 
 ### docuseal
 
@@ -326,6 +345,11 @@ log e `/actuator/health` respondendo 200 —, não só com o container rodando.
 
 O `HealthStartPeriod=90s` não é folga: a JVM leva uns onze segundos para subir
 aqui antes da primeira varredura, e biblioteca fria demora mais.
+
+### paperless-ngx
+
+A imagem da unit do Tika (Ubuntu minimal com Java) tem `bash` e não tem `curl` nem `wget`: a sonda é a mesma `/dev/tcp` do
+cookcli, na porta 9998 e `GET /version`, que responde `200` (medido, com `ReadOnly` e todas as capacidades descartadas).
 
 ### pkvault
 
