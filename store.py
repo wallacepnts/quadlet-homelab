@@ -2179,6 +2179,10 @@ class Handler(BaseHTTPRequestHandler):
             if not unit_exists(unit):
                 return self._json(400, {"error": loc("unknown unit")})
             return self._json(200, notes(unit))
+        if url.path == "/api/jobs/active":
+            # What is running now, so a window closed (or a page reloaded) can pick the job up again.
+            vivo = next((j for j in reversed(list(JOBS.values())) if j.rc is None), None)
+            return self._json(200, {"job": {"id": vivo.id, "app": vivo.app, "action": vivo.action} if vivo else None})
         if url.path.startswith("/api/job/"):
             job = JOBS.get(url.path.rsplit("/", 1)[1])
             if not job:
@@ -3187,6 +3191,16 @@ def selftest():
                 assert est["rc"] == 0 and "=== [1/1] homebox ===" in est["output"], est["output"][-300:]
             finally:
                 globals()["apps_with_update"] = apps_with_update_orig
+            # the running job can be found again after its window was closed
+            assert json.loads(pedir("/api/jobs/active", headers=ok)[2]) == {"job": None}, "nothing running"
+            lento = start_job("_host", "update-all", [["sleep", "1"]], "en")
+            vivo = json.loads(pedir("/api/jobs/active", headers=ok)[2])["job"]
+            assert vivo and vivo["id"] == lento.id and vivo["action"] == "update-all", vivo
+            for _ in range(100):
+                if lento.rc is not None:
+                    break
+                time.sleep(0.1)
+            assert json.loads(pedir("/api/jobs/active", headers=ok)[2]) == {"job": None}, "finished is not running"
             # a failing command does not stop the ones after it, and the job still ends as failed
             j = start_job("_host", "update-all", [["sh", "-c", "echo first; exit 3"], ["echo", "second"]], "en", continuar=True)
             for _ in range(100):

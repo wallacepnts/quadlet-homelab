@@ -110,7 +110,7 @@ global.fetch = async (url, opts = {}) => {
 };
 
 const codigo = fs.readFileSync(path.join(__dirname, "..", "app.js"), "utf8");
-const api = new Function(codigo + "; return { S, openPanel, showEnv, current, renderGrid, pollStats, pollHost, openSettings, showLogs, showConsole, termNew, termFeed, termKey, openResources, hintClean, openHistory, setView, pollPerf, iconPlate, renderHome, touchRecent };")();
+const api = new Function(codigo + "; return { S, openPanel, showEnv, current, renderGrid, pollStats, pollHost, openSettings, showLogs, showConsole, termNew, termFeed, termKey, openResources, hintClean, openHistory, setView, pollJobs, pollPerf, iconPlate, renderHome, touchRecent };")();
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 let falhas = 0;
 const confere = (cond, msg) => { if (!cond) { falhas++; console.log("FALHOU:", msg); } else console.log("ok   ", msg); };
@@ -201,6 +201,17 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   // an app that is not installed, and a host the image supports
   rotas["/api/host"] = { cpus: 4, load: 1, mem: { total: 8 * 2 ** 30, used: 2 * 2 ** 30 }, temp: 50, uptime: 90000,
     cpu: { pct: 12.4, cpus: 4, load: 1 }, disk: { total: 100 * 2 ** 30, used: 91 * 2 ** 30 }, net: { rx: 5 * 2 ** 30, tx: 2 ** 30, rx_rate: 1572864, tx_rate: 2048 } };
+  // a job running on the server shows as a chip; clicking it reopens the window with everything printed so far
+  rotas["/api/jobs/active"] = { job: { id: "j9", app: "_host", action: "update-all" } };
+  rotas["/api/job/j9"] = { app: "_host", action: "update-all", rc: 0, next: 2, output: "=== [1/2] memos ===\nok\n" };
+  await api.pollJobs(); await esperar(20);
+  confere(!$("job-chip").hidden && /update-all/.test($("job-chip").textContent), `chip do job em andamento (${$("job-chip").textContent})`);
+  $("job-chip").onclick(); await esperar(60);
+  confere($("bulk").open && /=== \[1\/2\] memos ===/.test($("b-out").textContent), "reabrir a janela mostra o log desde o começo");
+  $("bulk").open = false;
+  rotas["/api/jobs/active"] = { job: null }; await api.pollJobs();
+  confere($("job-chip").hidden, "sem job, sem chip");
+
   // the server numbers live on the home: one reading fills the tiles
   await api.pollPerf(); await esperar(20);
   confere(/12%/.test($("home").textContent) && /25%/.test($("home").textContent) && /91%/.test($("home").textContent), `início: processador, memória e disco (${$("home").textContent.slice(0, 120)})`);

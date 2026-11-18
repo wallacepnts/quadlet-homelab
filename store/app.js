@@ -1857,24 +1857,48 @@ async function hintClean() {
 
 const sizeOf = (b) => b >= 2 ** 30 ? `${(b / 2 ** 30).toFixed(1)} GB` : `${Math.max(1, Math.round(b / 2 ** 20))} MB`;
 
-// A job shown in its own window: what an update of everything, or a rule applied to all, prints.
+// A job shown in its own window: what an update of everything, or a rule applied to all, prints. The job
+// runs on the server, so closing the window does not stop it: the chip in the top bar brings it back.
 async function jobWindow(titulo, start) {
   $("b-title").textContent = titulo;
   $("b-out").textContent = `${t("working")}\n`;
   $("bulk").showModal();
+  try { await watchJob(titulo, (await start()).job); }
+  catch (e) { $("b-out").textContent += e.status === 409 ? t("busy") : String(e.message); await load(); }
+}
+
+async function watchJob(titulo, job) {
+  const eu = (S.watch = Symbol("watch"));          // reopening starts a new loop and ends the old one
+  $("b-title").textContent = titulo;
+  $("b-out").textContent = "";
+  if (!$("bulk").open) $("bulk").showModal();
   try {
-    const { job } = await start();
     let next = 0, st;
     do {
-      await new Promise((r) => setTimeout(r, 900));
       st = await api(`/api/job/${job}?from=${next}`);
       next = st.next;
+      if (S.watch !== eu) return;
       if (st.output) { $("b-out").textContent += st.output; $("b-out").scrollTop = $("b-out").scrollHeight; }
+      if (st.rc === null) await new Promise((r) => setTimeout(r, 900));
     } while (st.rc === null);
     $("b-out").textContent += `\n${st.rc === 0 ? t("done") : `${t("failed")} (${st.rc}).`}\n`;
     $("b-out").scrollTop = $("b-out").scrollHeight;
-  } catch (e) { $("b-out").textContent += e.status === 409 ? t("busy") : String(e.message); }
+  } catch (e) { if (S.watch === eu) $("b-out").textContent += String(e.message); }
   await load();
+}
+
+// The chip: shown while something runs on the server, whoever started it and whether or not a window is open.
+async function pollJobs() {
+  let j = null;
+  try { j = (await api("/api/jobs/active")).job; } catch (e) { return; }
+  const chip = $("job-chip"), antes = S.activeJob;
+  S.activeJob = j ? j.id : null;
+  chip.hidden = !j;
+  if (j) {
+    const titulo = j.app === "_host" ? j.action : `${j.action} · ${j.app}`;
+    chip.textContent = `⟳ ${titulo}`;
+    chip.onclick = () => watchJob(titulo, j.id);
+  } else if (antes) await load();
 }
 
 async function openSettings() {
@@ -2631,6 +2655,8 @@ setTimeout(pollMonitor, 3000);
 setTimeout(pollSvc, 2000);
 setInterval(pollSvc, 60000);
 setInterval(pollMonitor, 60000);
+pollJobs();
+setInterval(pollJobs, 3000);
 pollPerf().then(() => setTimeout(pollPerf, 1200));
 setInterval(pollPerf, 5000);
 
