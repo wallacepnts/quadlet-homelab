@@ -3,6 +3,7 @@ Description=Ollama (local LLMs, Open WebUI's backend)
 
 [Container]
 Image=docker.io/ollama/ollama
+# check: ignore container-name the name the other containers resolve (openwebui reaches it as `ollama`).
 ContainerName=ollama
 
 Network=tsdproxy-net.network

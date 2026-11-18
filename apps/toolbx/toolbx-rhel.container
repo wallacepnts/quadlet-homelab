@@ -12,6 +12,7 @@ Environment=HOME=/work
 Volume=%h/.config/containers/volumes/toolbx/rhel:/work:Z
 
 UserNS=keep-id
+# check: ignore health an interactive shell kept alive by `sleep infinity`: there is no service to probe.
 PidsLimit=1024
 NoNewPrivileges=true
 

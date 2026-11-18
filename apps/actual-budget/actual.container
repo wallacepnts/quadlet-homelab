@@ -34,6 +34,7 @@ Label=tsdproxy.dash.icon=sh/actual-budget
 
 [Service]
 Restart=always
+TimeoutStartSec=60
 
 [Install]
 WantedBy=default.target

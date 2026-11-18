@@ -15,6 +15,7 @@ ReadOnly=true
 Tmpfs=/tmp:size=64M
 DropCapability=ALL
 UserNS=keep-id
+# check: ignore health no probe that runs inside this image has been measured yet; rule 24 asks for one.
 PidsLimit=256
 NoNewPrivileges=true
 

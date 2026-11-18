@@ -1,2 +1,5 @@
+[Unit]
+Description=Zigbee2MQTT network
+
 [Network]
 NetworkName=zigbee2mqtt-net

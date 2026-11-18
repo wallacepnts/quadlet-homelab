@@ -32,6 +32,7 @@ AddCapability=SETGID
 AddCapability=DAC_OVERRIDE
 AddCapability=FOWNER
 User=0
+# check: ignore health no probe that runs inside this image has been measured yet; rule 24 asks for one.
 PidsLimit=256
 NoNewPrivileges=true
 

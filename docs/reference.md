@@ -62,6 +62,8 @@ NoNewPrivileges=true
 
 HealthCmd=CMD-SHELL curl -fsS -o /dev/null http://127.0.0.1:<port>/ || exit 1
 HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
 HealthStartPeriod=20s
 Notify=healthy
 
@@ -71,6 +73,7 @@ Label=tsdproxy.port.web=443/https:<port>/http
 
 [Service]
 Restart=always
+TimeoutStartSec=60
 
 [Install]
 WantedBy=default.target

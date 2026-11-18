@@ -37,6 +37,7 @@ Label=tsdproxy.port.web=443/https:3000/http
 
 [Service]
 Restart=always
+TimeoutStartSec=60
 
 [Install]
 WantedBy=default.target

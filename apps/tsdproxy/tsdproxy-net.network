@@ -1,2 +1,5 @@
+[Unit]
+Description=tsdproxy network (every proxied service joins it)
+
 [Network]
 NetworkName=tsdproxy-net

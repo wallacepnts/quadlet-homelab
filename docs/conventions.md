@@ -5,7 +5,7 @@ rules are named in `check.py`'s error messages (1, 7, 12, 13, 14, 18), which is
 what the numbering is for. To install and operate, see
 [Installing and operating](./installing.md).
 
-This repository's 23 rules, each with the real case that produced it. They are
+This repository's 24 rules, each with the real case that produced it. They are
 what [`check.py`](../check.py) verifies automatically where it can.
 
 Rules to follow for any new service in this repository (verified on Podman 6.1.4 —
@@ -437,3 +437,32 @@ written down and enforced, not left to the host:
   (optional), and changes `UserNS=keep-id` (it now forces the host's uid over the
   image's user), which touches the 15 units that use it: test them when the host
   gets 6.2.
+
+### 24. Every unit has the same skeleton
+
+What a unit says the same way, whatever the app, so that reading one is reading all of them and a new app cannot
+forget the part that makes the others reliable. `check.py` fails a unit that lacks any of it:
+
+- **A `Description=`** in `[Unit]`, one short line saying what it is, in every Quadlet file: `.container` and
+  `.network` alike. It is what `systemctl status` and the journal show; nothing else reads it.
+- **`ContainerName=` is the unit's name** (`immich-postgres.container` is `ContainerName=immich-postgres`). A
+  container that other containers reach by a shorter name (`ollama`, `mosquitto`) says so with
+  `# check: ignore container-name <reason>` above it.
+- **`Restart=always`** in `[Service]` and **`WantedBy=default.target`** in `[Install]`, as in the anatomy of
+  [reference](./reference.md). Nothing is enabled or disabled by hand (rule 4).
+- **A complete health block**: `HealthCmd`, `HealthInterval`, `HealthTimeout`, `HealthRetries` and
+  `HealthStartPeriod`, plus `Notify=healthy`, which makes systemd report the start only when the app answers (rule 14).
+  A service that cannot have one (an interactive shell, an image with nothing to probe) says why with
+  `# check: ignore health <reason>`; a missing probe is a debt that is written down, not a silent one.
+- **`TimeoutStartSec=` is written**, never left at systemd's 90 s, and is **at least 15 s above `HealthStartPeriod`**: the
+  start period is the window in which the app is allowed to still be starting, and systemd must not give up inside it
+  (the same shape as the bug Podman 6.2 fixed for a start period longer than the timeout). 15 s is what the tightest unit
+  here leaves.
+
+Not part of the skeleton, because each needs testing per image: `ReadOnly`, `DropCapability`, `User` (rule 20).
+`PidsLimit` and `NoNewPrivileges` are asked of every unit and warned about when missing. The blocks inside `[Container]`
+are already ordered by `check.py --format` (the layout), and the images are pinned (rule 9).
+
+Eight units carry `# check: ignore health` today: the four `toolbx-*` (an idle shell kept alive by `sleep infinity`) and
+`cookcli`, `collabora`, `authentik-worker` and `paperless-ngx-tika`, whose image has no probe measured yet. Each of those
+four is an open item, not a decision: when a probe that works inside the image is found, the ignore goes away.

@@ -12,6 +12,7 @@ EnvironmentFile=%h/.config/containers/env/collabora.env
 
 DropCapability=ALL
 AddCapability=SYS_CHROOT
+# check: ignore health no probe that runs inside this image has been measured yet; rule 24 asks for one.
 PidsLimit=512
 NoNewPrivileges=true
 

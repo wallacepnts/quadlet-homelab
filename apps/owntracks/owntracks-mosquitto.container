@@ -3,6 +3,7 @@ Description=Mosquitto (OwnTracks' MQTT broker)
 
 [Container]
 Image=docker.io/library/eclipse-mosquitto:2.1.2-alpine
+# check: ignore container-name the name the other containers resolve (the apps reach it as `mosquitto`).
 ContainerName=mosquitto
 
 Network=owntracks-net.network

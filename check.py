@@ -537,6 +537,80 @@ def floor_problems(units, declarado):
                     f'declare "min_podman": "{piso}" in app.json (rule 23)']
 
 
+QUADLET_SUFFIXES = (".container", ".network", ".volume", ".image", ".build", ".pod", ".kube")
+START_MARGIN = 15       # seconds: what the tightest unit here leaves between the start period and the start timeout
+HEALTH_KEYS = ("HealthCmd", "HealthInterval", "HealthTimeout", "HealthRetries", "HealthStartPeriod")
+
+
+def unit_sections(text):
+    """{section: [(key, value)]} of a unit, comments and blank lines skipped, repeated keys kept in order."""
+    saida, atual = {}, None
+    for linha in text.splitlines():
+        linha = linha.strip()
+        if not linha or linha.startswith(("#", ";")):
+            continue
+        if linha.startswith("[") and linha.endswith("]"):
+            atual = linha[1:-1]
+            saida.setdefault(atual, [])
+        elif atual is not None and "=" in linha:
+            k, _, v = linha.partition("=")
+            saida[atual].append((k.strip(), v.strip()))
+    return saida
+
+
+def _seconds(valor):
+    m = re.fullmatch(r"(\d+)(s|min|m)?", (valor or "").strip())
+    return int(m.group(1)) * (60 if m.group(2) in ("min", "m") else 1) if m else None
+
+
+def skeleton_problems(texto, nome):
+    """What is wrong with the skeleton of one Quadlet file (conventions, rule 24), as a list of messages.
+
+    The skeleton is what every unit says the same way, whatever the app: a Description, the container named after the
+    unit, always restarted and wanted by the user's default target, a health block that makes systemd wait for the app
+    (`Notify=healthy`) and a start timeout that outlasts the health start period. An app that cannot have one of them says why in the unit
+    (`# check: ignore health <reason>`, `# check: ignore container-name <reason>`)."""
+    sec, ign = unit_sections(texto), exemptions(texto)
+    stem, suffix = Path(nome).stem, Path(nome).suffix
+    erros = []
+    if not any(k == "Description" and v for k, v in sec.get("Unit", [])):
+        erros.append("has no Description= in [Unit]: one short line saying what it is")
+    if suffix != ".container":
+        return erros
+    c = {}
+    for k, v in sec.get("Container", []):
+        c.setdefault(k, v)
+    srv = dict(sec.get("Service", []))
+    if c.get("ContainerName") != stem and "container-name" not in ign:
+        erros.append(f"ContainerName={c.get('ContainerName')} is not the unit's name ({stem}): "
+                     "a name other containers resolve needs `# check: ignore container-name <reason>`")
+    if srv.get("Restart") != "always":
+        erros.append("[Service] has no Restart=always")
+    if ("WantedBy", "default.target") not in sec.get("Install", []):
+        erros.append("[Install] has no WantedBy=default.target")
+    if "TimeoutStartSec" not in srv:
+        erros.append("[Service] has no TimeoutStartSec=: say how long the start may take, do not leave systemd's 90 s")
+    if "health" not in ign:
+        faltam = (["Notify=healthy"] if c.get("Notify") != "healthy" else []) + [k + "=" for k in HEALTH_KEYS if k not in c]
+        if faltam:
+            erros.append(f"no complete health block, missing {', '.join(faltam)}: a service that cannot have one "
+                         "says why with `# check: ignore health <reason>`")
+    hp, ts = _seconds(c.get("HealthStartPeriod")), _seconds(srv.get("TimeoutStartSec"))
+    if hp is not None and ts is not None and ts < hp + START_MARGIN:
+        erros.append(f"TimeoutStartSec={srv['TimeoutStartSec']} is not at least {START_MARGIN} s above HealthStartPeriod={c['HealthStartPeriod']}: "
+                     "systemd would give up while the app is still allowed to be starting")
+    return erros
+
+
+def check_skeleton(folders):
+    """Every Quadlet file in the standard skeleton (rule 24)."""
+    for folder in folders:
+        for f in sorted(folder.iterdir()):
+            if f.is_file() and f.suffix in QUADLET_SUFFIXES:
+                for problema in skeleton_problems(f.read_text(), f.name):
+                    error("rule 24", f"apps/{folder.name}/{f.name} {problema}")
+
+
 def check_manifest_format(folders):
     """Every app.json in the canonical text of `manifest.dump` (one key per line, short values inline)."""
     for folder in folders:
@@ -942,6 +1016,23 @@ def selftest():
     _i.read_string("[backup]\nexclude =\n    /abs\n    a/../b\nfoo = 1\n")
     assert len(backup_problemas(_i)) == 3
 
+    # rule 24: the skeleton of a unit
+    ok = ("[Unit]\nDescription=x\n\n[Container]\nImage=x\nContainerName=a\nHealthCmd=CMD true\nHealthInterval=30s\nHealthTimeout=5s\n"
+          "HealthRetries=3\nHealthStartPeriod=20s\nNotify=healthy\n\n[Service]\nRestart=always\nTimeoutStartSec=60\n\n[Install]\nWantedBy=default.target\n")
+    assert skeleton_problems(ok, "a.container") == [], skeleton_problems(ok, "a.container")
+    assert skeleton_problems("[Network]\nNetworkName=n\n", "n.network") and not skeleton_problems("[Unit]\nDescription=n\n\n[Network]\nNetworkName=n\n", "n.network")
+    for ruim, trecho in ((ok.replace("Description=x\n", ""), "Description"), (ok.replace("ContainerName=a", "ContainerName=b"), "ContainerName"),
+                         (ok.replace("Restart=always", "Restart=on-failure"), "Restart=always"), (ok.replace("WantedBy=default.target", "WantedBy=multi-user.target"), "WantedBy"),
+                         (ok.replace("TimeoutStartSec=60\n", ""), "TimeoutStartSec"), (ok.replace("HealthTimeout=5s\n", ""), "HealthTimeout"),
+                         (ok.replace("Notify=healthy\n", ""), "Notify=healthy"), (ok.replace("TimeoutStartSec=60", "TimeoutStartSec=30"), "above HealthStartPeriod")):
+        achado = skeleton_problems(ruim, "a.container")
+        assert len(achado) == 1 and trecho in achado[0], (trecho, achado)
+    assert skeleton_problems(ok.replace("ContainerName=a", "# check: ignore container-name other containers resolve it\nContainerName=b"), "a.container") == []
+    sem_saude = ok.replace("Notify=healthy\n", "").replace("HealthCmd=CMD true\n", "")
+    assert skeleton_problems("# check: ignore health a shell\n" + sem_saude, "a.container") == [], "a stated exemption waives only the health block"
+    assert skeleton_problems(ok.replace("TimeoutStartSec=60\n", "TimeoutStartSec=3min\n").replace("HealthStartPeriod=20s", "HealthStartPeriod=1min"), "a.container") == []
+    assert skeleton_problems(ok.replace("TimeoutStartSec=60", "TimeoutStartSec=35"), "a.container") == [], "exactly the margin is enough"
+
     # rule 23: the minimum is 6.0 and nothing declares less; a key newer than it needs min_podman at least that high
     import tempfile
     with tempfile.TemporaryDirectory() as tmp:
@@ -1198,6 +1289,7 @@ def main():
     check_quadlet(folders, exigido="--quadlet" in sys.argv)
     check_layout(folders)
     check_manifest_format(folders)
+    check_skeleton(folders)
     check_schema()
     uses = check_ports(folders)
     check_manifest(folders)
