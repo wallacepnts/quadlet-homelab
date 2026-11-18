@@ -94,6 +94,10 @@ const T = {
     netTailnet: "Nome da rede", netTailnetHint: "os apps ganham nomes nela", netServer: "Endereço do servidor Headscale", netServerHint: "um endereço que seus aparelhos alcancem (a LAN serve em casa)",
     netApply: "Aplicar", netNeed: "Falta no host (uma vez, com sudo):", netNowTs: "O Tailscale vai fazer o login: se aparecer um link abaixo, abra-o.", netDone: "Rede aplicada.",
     netHttps: "Os apps que exigem HTTPS não funcionam com Headscale:",
+    pageApps: "Meus apps", hello2: ["Bom dia", "Boa tarde", "Boa noite"], helloLine: (n, u) => `${n} apps${u ? `, ${u} com atualização` : ""}. Clique com o botão direito num app para ver o estado.`,
+    recent: "Usados recentemente", allApps: "Todos os apps", moreActions: "Mais ações", navCollapse: "Recolher a barra lateral", navExpand: "Expandir a barra lateral",
+    hStat: { cpu: "Processador", mem: "Memória", disk: "Disco", net: "Rede" }, ctxStart: "Iniciar", ctxResume: "Retomar", ctxPause: "Pausar",
+    apIconSize: "Tamanho dos ícones", apIconSizes: { small: "Pequeno", medium: "Médio", large: "Grande" }, apDepth: "Fundo", apDepths: { flat: "Chapado", soft: "Com profundidade e cor" },
     sideBtn: "Barra lateral", sideTitle: "Painel", sideEdit: "Editar", sideDone: "Pronto", addWidget: "Adicionar widget…", remove: "Remover", moveUp: "Subir", moveDown: "Descer",
     wPerf: "Desempenho do servidor", wApps: "Seus apps", wNotes: "Notas", wLinks: "Links rápidos",
     perfCpu: "Processador", perfMem: "Memória", perfDisk: "Disco", perfNet: "Rede", perfLoad: "carga", perfCores: "núcleos", perfSince: "desde o início", perfNone: "sem dados",
@@ -274,6 +278,10 @@ const T = {
     netTailnet: "Network name", netTailnetHint: "the apps get names in it", netServer: "Headscale server address", netServerHint: "an address your devices can reach (the LAN does at home)",
     netApply: "Apply", netNeed: "What the host still needs (once, with sudo):", netNowTs: "Tailscale will sign in: if a link shows up below, open it.", netDone: "Network applied.",
     netHttps: "Apps that insist on HTTPS do not work with Headscale:",
+    pageApps: "My apps", hello2: ["Good morning", "Good afternoon", "Good evening"], helloLine: (n, u) => `${n} apps${u ? `, ${u} with an update` : ""}. Right-click an app to see its state.`,
+    recent: "Used recently", allApps: "All apps", moreActions: "More actions", navCollapse: "Collapse the sidebar", navExpand: "Expand the sidebar",
+    hStat: { cpu: "Processor", mem: "Memory", disk: "Disk", net: "Network" }, ctxStart: "Start", ctxResume: "Resume", ctxPause: "Pause",
+    apIconSize: "Icon size", apIconSizes: { small: "Small", medium: "Medium", large: "Large" }, apDepth: "Background", apDepths: { flat: "Flat", soft: "With depth and colour" },
     sideBtn: "Sidebar", sideTitle: "Dashboard", sideEdit: "Edit", sideDone: "Done", addWidget: "Add a widget…", remove: "Remove", moveUp: "Move up", moveDown: "Move down",
     wPerf: "Server performance", wApps: "Your apps", wNotes: "Notes", wLinks: "Quick links",
     perfCpu: "Processor", perfMem: "Memory", perfDisk: "Disk", perfNet: "Network", perfLoad: "load", perfCores: "cores", perfSince: "since boot", perfNone: "no data",
@@ -566,15 +574,30 @@ function renderChrome() {
   $("search").placeholder = t("search");
   // Icon buttons: the glyph is drawn in CSS; the words are the accessible name and the tooltip.
   $("lang").textContent = t("lang");
-  for (const [id, key] of [["recheck", "recheck"], ["history-btn", "history"], ["resources-btn", "resources"], ["settings-btn", "settings"]]) {
+  for (const [id, key] of [["recheck", "recheck"]]) {
     $(id).textContent = "";
     $(id).title = t(key);
     $(id).setAttribute("aria-label", t(key));
   }
+  for (const [id, key] of [["history-btn", "history"], ["resources-btn", "resources"], ["settings-btn", "settings"]]) {
+    fill($(id), h("span", { class: "nl" }, t(key)));
+    $(id).title = t(key);
+  }
+  renderHead();
+  const fechada = document.body.dataset.nav === "collapsed";
+  $("nav-toggle").textContent = fechada ? "⇥" : "⇤";
+  $("nav-toggle").title = $("nav-toggle").getAttribute && fechada ? t("navExpand") : t("navCollapse");
+  $("nav-toggle").setAttribute("aria-label", fechada ? t("navExpand") : t("navCollapse"));
   $("p-close").setAttribute("aria-label", t("closeLabel"));
   if (S.widgets) renderSide();
   $("p-tech-title").textContent = t("techDetails");
   $("p-log-title").textContent = t("logTitle");
+  renderTabs();
+}
+
+// The page title and the tabs: cheap, so the grid may call it at every refresh.
+function renderHead() {
+  $("page-title").textContent = S.view === "store" ? t("tabStore") : t("pageApps");
   renderTabs();
 }
 
@@ -585,7 +608,8 @@ const installed = () => S.apps.filter((a) => a.installed);
 // or a bookmark lands on the same one.
 function renderTabs() {
   const aba = (id, key, view, n) => {
-    fill($(id), t(key), h("span", { class: "count" }, String(n)));
+    fill($(id), h("span", { class: "nl" }, t(key)), h("span", { class: "count" }, String(n)));
+    $(id).title = t(key);
     $(id).setAttribute("aria-selected", String(S.view === view));
   };
   aba("tab-apps", "tabApps", "apps", installed().length);
@@ -679,6 +703,22 @@ function controls(a) {
     botao("stop", "■", t("stopApp"), st !== "stopped"));
 }
 
+// Restart the app's main unit in the background, like control(): only a failure is worth a word.
+async function restartApp(a) {
+  const u = mainUnit(a);
+  if (!u) return;
+  try {
+    const { job } = await api("/api/unit", { unit: u.unit, verb: "restart" });
+    let st;
+    do {
+      await new Promise((r2) => setTimeout(r2, 600));
+      st = await api(`/api/job/${job}?from=0`);
+    } while (st.rc === null);
+    if (st.rc !== 0) toast(`${t("ctlFailed")} ${a.name} — ${(st.output || "").trim().split("\n").pop()}`);
+  } catch (e) { toast(e.status === 409 ? t("busy") : `${t("ctlFailed")} ${e.message}`); }
+  await load();
+}
+
 function toast(texto) {
   const el = $("toast");
   el.textContent = texto;
@@ -722,39 +762,187 @@ async function pollMonitor() {
   } catch (e) { /* next turn */ }
 }
 
+
+// -- icon plates ----------------------------------------------------------------------------
+// The logo sits on a squircle plate whose tone comes from the logo itself: read once from the image the server
+// already serves (same origin, so the canvas may read it) — its hue, whether it is a full square, mostly white,
+// vivid or grey, and how much room it takes, so every logo weighs the same. app.json `icon` overrides any of it.
+let ICON_INFO = {};
+try { ICON_INFO = JSON.parse(localStorage.getItem("qh-icons2")) || {}; } catch (e) { ICON_INFO = {}; }
+const hueDe = (txt) => { let n = 0; for (const c of String(txt)) n = (n * 31 + c.charCodeAt(0)) % 360; return n; };
+const preso = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+function analyseImage(img) {
+  const N = 96, cv = document.createElement("canvas");
+  cv.width = cv.height = N;
+  const cx = cv.getContext("2d", { willReadFrequently: true });
+  const ar = img.naturalWidth / img.naturalHeight || 1;
+  let W = N, H = N;
+  if (ar > 1) H = N / ar; else W = N * ar;
+  cx.drawImage(img, (N - W) / 2, (N - H) / 2, W, H);
+  let d;
+  try { d = cx.getImageData(0, 0, N, N).data; } catch (e) { return null; }
+  let x0 = N, y0 = N, x1 = -1, y1 = -1, n = 0, lum = 0, sat = 0, branco = 0, hx = 0, hy = 0;
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const i = (y * N + x) * 4, a = d[i + 3];
+    if (a <= 24) continue;
+    n++; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+    const r = d[i] / 255, g = d[i + 1] / 255, b = d[i + 2] / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), s = mx ? (mx - mn) / mx : 0;
+    const l = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    lum += l; sat += s;
+    if (l > 0.9 && s < 0.12) branco++;
+    if (s > 0.25 && a > 128) {
+      const h = Math.atan2(Math.sqrt(3) * (g - b), 2 * r - g - b);
+      hx += Math.cos(h) * s; hy += Math.sin(h) * s;
+    }
+  }
+  if (!n) return null;
+  const area = n / (N * N), caixa = Math.max(x1 - x0 + 1, y1 - y0 + 1) / N;
+  const cantos = [[0, 0], [N - 1, 0], [0, N - 1], [N - 1, N - 1]].filter(([x, y]) => d[(y * N + x) * 4 + 3] > 200).length;
+  const mLum = lum / n, mSat = sat / n, mBranco = branco / n;
+  const matiz = hx || hy ? Math.round(((Math.atan2(hy, hx) * 180) / Math.PI + 360) % 360) : 220;
+  let tone = "light";
+  if (area > 0.9 || cantos >= 3) tone = "full";
+  else if (mBranco > 0.2 || mLum > 0.82 || (mSat < 0.15 && mLum > 0.3 && mLum < 0.75)) tone = "dark";
+  else if (mSat > 0.5) tone = "color";
+  const reforco = preso(Math.pow(0.6 / area, 0.18), 0.95, 1.18);
+  return { tone, h: matiz, fit: tone === "full" ? 1 : +preso(reforco / caixa, 0.9, 1.35).toFixed(2) };
+}
+
+function decoratePlate(p, a, img) {
+  const cfg = a.icon_cfg || {};
+  const aplica = (info) => {
+    p.style.setProperty("--h", String(info.h));
+    p.style.setProperty("--fit", String(cfg.fit || info.fit));
+    const tone = cfg.tone || info.tone;
+    if (tone && tone !== "light") p.setAttribute("data-tone", tone); else p.removeAttribute("data-tone");
+    if (cfg.bg && tone !== "full") { p.setAttribute("data-custom", "1"); p.style.setProperty("--bgc", cfg.bg); } else p.removeAttribute("data-custom");
+  };
+  p.style.setProperty("--h", String(hueDe(a.id)));
+  const conhecida = ICON_INFO[a.icon];
+  if (conhecida) return aplica(conhecida);
+  aplica({ h: hueDe(a.id), fit: 1, tone: "light" });
+  const ler = () => {
+    const info = analyseImage(img);
+    if (!info) return;
+    ICON_INFO[a.icon] = info;
+    try { localStorage.setItem("qh-icons2", JSON.stringify(ICON_INFO)); } catch (e) { /* the cache is a courtesy */ }
+    aplica(info);
+  };
+  if (img.complete && img.naturalWidth) ler(); else img.addEventListener("load", ler, { once: true });
+}
+
+function iconPlate(a, tam = "") {
+  const img = h("img", { src: a.icon, alt: "", loading: "lazy", referrerpolicy: "no-referrer" });
+  const p = h("span", { class: `plate ${tam}`.trim() }, img);
+  decoratePlate(p, a, img);
+  return p;
+}
+
+// -- recently used ----------------------------------------------------------------------------
+function touchRecent(id) {
+  S.recent = [id, ...(S.recent || []).filter((x) => x !== id)].slice(0, 8);
+  try { localStorage.setItem("qh-recent", JSON.stringify(S.recent)); } catch (e) { /* kept for this session */ }
+}
+
+// -- the right-click menu of an app ----------------------------------------------------------
+const hideCtx = () => $("ctx").classList.remove("open");
+function ctxMenu(x, y, a) {
+  const m = $("ctx"), [cls, estado] = runDot(a), rodando = runState(a) !== "stopped", pausado = runState(a) === "paused";
+  const novo = behind(a)[0], mudou = a.units.find((u) => u.installed && u.drift), url = openUrl(a), principal = mainUnit(a);
+  const item = (rotulo, acao, extra = "") => h("button", { type: "button", role: "menuitem", class: `it ${extra}`.trim(), onclick: () => { hideCtx(); acao(); } }, rotulo);
+  const gerir = (f) => () => { openPanel(a.id); f(); };
+  fill(m,
+    h("div", { class: "hd" }, iconPlate(a, "xs"), h("div", {}, h("b", {}, a.name),
+      h("small", {}, h("i", { class: `dot ${cls}` }), `${estado}${principal ? ` · ${tagOf(principal.installed_image)}` : ""}`))),
+    novo ? item(`↑ ${t("upgradeTo")(S.upd[novo.unit].there)}`, gerir(() => updateNow("upgrade")), "up")
+      : mudou ? item(`↑ ${t("update")}`, gerir(() => updateNow("update")), "up") : null,
+    url ? item(t("open"), () => { touchRecent(a.id); window.open(url, "_blank", "noopener"); }) : null,
+    item(t("manage"), () => openPanel(a.id)),
+    item(t("customize"), gerir(() => showCustom(current()))),
+    h("div", { class: "sep" }),
+    rodando ? item(t("restart"), () => restartApp(a)) : item(t("ctxStart"), () => control(a, "play")),
+    rodando && !pausado ? item(t("ctxPause"), () => control(a, "pause")) : null,
+    pausado ? item(t("ctxResume"), () => control(a, "play")) : null,
+    rodando ? item(t("stopApp"), () => control(a, "stop")) : null,
+    principal ? item(t("logs"), gerir(() => showLogs(principal.unit))) : null,
+    h("div", { class: "sep" }),
+    item(t("remove"), gerir(() => plan("remove")), "dn"));
+  m.classList.add("open");
+  const w = m.offsetWidth || 280, alt = m.offsetHeight || 360, vw = globalThis.innerWidth || 1200, vh = globalThis.innerHeight || 800;
+  m.style.left = `${Math.max(8, Math.min(x, vw - w - 8))}px`;
+  m.style.top = `${Math.max(8, Math.min(y, vh - alt - 8))}px`;
+}
+document.addEventListener("click", hideCtx);
+document.addEventListener("scroll", hideCtx, true);
+document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") hideCtx(); });
+
 function tile(a) {
-  const st = health(a), url = openUrl(a), [dotCls, dotTxt] = runDot(a), sobe = hasUpdate(a);
-  const silencioso = !st || [t("running"), t("pausedBadge"), t("stoppedBadge"), t("changed")].includes(st[1])
-    || st[1].startsWith(t("newVersion"));
+  const st = health(a), url = openUrl(a);
+  const silencioso = !st || [t("running"), t("pausedBadge"), t("stoppedBadge"), t("changed")].includes(st[1]) || st[1].startsWith(t("newVersion"));
+  let tempo;
   const corpo = [
-    h("span", { class: "ico" }, h("img", { src: a.icon, alt: "", loading: "lazy", referrerpolicy: "no-referrer" }),
-      sobe && h("span", { class: "upd", title: t("updateAvailable"), role: "img", "aria-label": t("updateAvailable") }, "↑")),
+    iconPlate(a),
     h("h3", {}, a.name),
     !silencioso && h("span", { class: `badge ${st[0]}`, title: st[2] || null }, st[1]),
     svcLine(a),
   ];
-  return h("div", { class: "card tile" },
-    h("span", { class: `dot ${dotCls}`, title: dotTxt, role: "img", "aria-label": dotTxt }),
+  const abre = () => touchRecent(a.id);
+  const carta = h("div", { class: "card tile",
+    oncontextmenu: (ev) => { ev.preventDefault(); ev.stopPropagation(); ctxMenu(ev.clientX, ev.clientY, a); },
+    ontouchstart: (ev) => { const p = ev.touches && ev.touches[0]; if (p) tempo = setTimeout(() => ctxMenu(p.clientX, p.clientY, a), 550); },
+    ontouchend: () => clearTimeout(tempo), ontouchmove: () => clearTimeout(tempo) },
     url
-      ? h("a", { class: "tile-open", href: url, target: "_blank", rel: "noopener noreferrer",
-                 "aria-label": `${t("open")} ${a.name}`, title: a.name }, ...corpo)
-      : h("button", { class: "tile-open", type: "button", title: a.name, onclick: () => openPanel(a.id) }, ...corpo),
-    url && h("button", { class: "gear", type: "button", title: t("manage"),
-                         "aria-label": `${t("manage")} ${a.name}`, onclick: () => openPanel(a.id) }, "⚙"));
+      ? h("a", { class: "tile-open", href: url, target: "_blank", rel: "noopener noreferrer", "aria-label": `${t("open")} ${a.name}`, title: a.name, onclick: abre }, ...corpo)
+      : h("button", { class: "tile-open", type: "button", title: a.name, onclick: () => { abre(); openPanel(a.id); } }, ...corpo),
+    h("button", { class: "more", type: "button", title: t("moreActions"), "aria-label": `${t("moreActions")}: ${a.name}`, "aria-haspopup": "menu",
+                  onclick: (ev) => { ev.stopPropagation(); const r = ev.currentTarget.getBoundingClientRect(); ctxMenu(r.left, r.bottom + 4, a); } }, "⋯"));
+  return carta;
 }
 
 function storeCard(a) {
   return h("button", { class: "card", type: "button", onclick: () => openPanel(a.id) },
-    h("span", { class: "ico sm" }, h("img", { src: a.icon, alt: "", loading: "lazy", referrerpolicy: "no-referrer" })),
-    h("div", { class: "top" },
-      h("div", {}, h("h3", {}, a.name),
-        h("p", { class: "version" }, [groupOf(a), a.installed ? tagOf((mainUnit(a) || {}).installed_image) : ""].filter(Boolean).join(" · ")))),
-    h("p", { class: "desc" }, plain(a.description[S.lang] || a.description.en)),
-    a.deprecated
-      ? h("span", { class: "badge warn" }, a.installed ? `${t("deprecatedBadge")} · ${t("installedBadge")}` : t("deprecatedBadge"))
-      : null,
-    a.deprecated ? null : h("span", { class: a.installed ? "get got" : "get", "aria-hidden": "true" },
-      a.installed ? `✓ ${t("installedBadge")}` : t("getApp")));
+    iconPlate(a, "sm"),
+    h("div", { class: "tx" }, h("h3", {}, a.name, a.deprecated ? h("span", { class: "badge warn" }, a.installed ? `${t("deprecatedBadge")} · ${t("installedBadge")}` : t("deprecatedBadge")) : null),
+      h("p", { class: "desc" }, plain(a.description[S.lang] || a.description.en))),
+    a.deprecated ? null : h("span", { class: a.installed ? "get got" : "get", "aria-hidden": "true" }, a.installed ? `✓ ${t("installedBadge")}` : t("getApp")));
+}
+
+// -- home: greeting, the server at a glance, what you used last --------------------------------------
+S.hist = { cpu: [], mem: [], disk: [], net: [] };
+function pushHist(d) {
+  const poe = (k, v) => { if (v === null || v === undefined || Number.isNaN(v)) return; S.hist[k].push(v); if (S.hist[k].length > 24) S.hist[k].shift(); };
+  poe("cpu", d.cpu && d.cpu.pct !== null && d.cpu.pct !== undefined ? d.cpu.pct : (d.load !== null && d.cpus ? Math.min(100, (d.load / d.cpus) * 100) : null));
+  poe("mem", d.mem ? (d.mem.used / d.mem.total) * 100 : null);
+  poe("disk", d.disk ? (d.disk.used / d.disk.total) * 100 : null);
+  poe("net", d.net && d.net.rx_rate !== null && d.net.rx_rate !== undefined ? d.net.rx_rate : null);
+}
+
+function renderHome() {
+  const el = $("home");
+  const filtrando = !!S.search.trim() || !!S.filter;
+  if (S.view !== "apps" || !installed().length || filtrando) { fill(el); return; }
+  const hr = new Date().getHours(), saud = t("hello2")[hr < 12 ? 0 : hr < 18 ? 1 : 2];
+  const d = S.hostData || {}, H = S.hist;
+  const pct = (v) => (v === undefined || v === null ? "—" : `${Math.round(v)}%`);
+  // Heights go through the style object (CSSOM), which the CSP allows; a style attribute it does not.
+  const barras = (arr, escala) => h("div", { class: "spark" }, ...arr.map((v) => {
+    const b = h("i");
+    b.style.height = `${Math.max(4, Math.min(100, escala ? (v / escala) * 100 : v))}%`;
+    return b;
+  }));
+  const ultimo = (arr) => (arr.length ? arr[arr.length - 1] : undefined);
+  const maxRede = Math.max(1, ...H.net);
+  const cartao = (rot, valor, corpo) => h("div", { class: "stat", "data-stat": rot }, h("small", {}, t("hStat")[rot]), h("b", {}, valor), corpo);
+  const mine = installed(), subiu = mine.filter(hasUpdate).length;
+  const recentes = (S.recent || []).map((id) => mine.find((a) => a.id === id)).filter(Boolean).slice(0, 6);
+  fill(el,
+    h("div", { class: "hello" }, h("b", {}, saud), h("span", {}, t("helloLine")(mine.length, subiu))),
+    h("div", { class: "stats" },
+      cartao("cpu", pct(ultimo(H.cpu)), barras(H.cpu)), cartao("mem", pct(ultimo(H.mem)), barras(H.mem)), cartao("disk", pct(ultimo(H.disk)), barras(H.disk)),
+      cartao("net", d.net && d.net.rx_rate !== null && d.net.rx_rate !== undefined ? `↓ ${bytes(d.net.rx_rate)}/s` : "—", barras(H.net, maxRede))),
+    recentes.length ? h("div", {}, h("div", { class: "sect" }, t("recent")), h("div", { class: "grid" }, ...recentes.map(tile))) : null,
+    h("div", { class: "sect" }, t("allApps")));
 }
 
 function renderGrid() {
@@ -768,6 +956,8 @@ function renderGrid() {
   $("grid").className = meus ? (agrupado ? "apps grouped" : "apps") : "";
   fill($("grid"), ...(agrupado || shown.map(meus ? tile : storeCard)));
   renderBookmarks();
+  renderHome();
+  renderHead();
   $("empty").hidden = shown.length > 0;
   if (!shown.length) {
     const semApps = meus && !installed().length && !q;
@@ -880,6 +1070,7 @@ function stateClass(v) {
 function renderPanel() {
   const a = current();
   $("p-icon").src = a.icon || "";
+  decoratePlate($("p-plate"), a, $("p-icon"));
   $("p-name").textContent = a.name;
   $("p-meta").textContent = [a.installed ? runDot(a)[1] : "", (a.group && a.group[S.lang]) || "", a.author].filter(Boolean).join(" · ");
   const sobre = a.about && (a.about[S.lang] || a.about.en);
@@ -2193,7 +2384,7 @@ async function networkSection() {
 // -- appearance -----------------------------------------------------------------------------
 // Theme, accent, card style, density and a background image: kept on the server (/api/ui), applied as
 // data attributes on <html> and CSS variables, so the stylesheet does all the drawing.
-const ACCENT_SWATCH = { orange: "#c2410c", blue: "#1d4ed8", green: "#15803d", teal: "#0f766e", purple: "#7e22ce", pink: "#be185d", red: "#b91c1c", slate: "#334155" };
+const ACCENT_SWATCH = { blue: "#2b59ff", orange: "#c2410c", green: "#15803d", teal: "#0f766e", purple: "#7e22ce", pink: "#be185d", red: "#b91c1c", slate: "#334155" };
 
 function applyUi(u) {
   S.ui = u;
@@ -2202,6 +2393,8 @@ function applyUi(u) {
   raiz.setAttribute("data-accent", u.accent);
   raiz.setAttribute("data-card", u.card);
   raiz.setAttribute("data-density", u.density);
+  raiz.setAttribute("data-isize", u.icon_size || "medium");
+  raiz.setAttribute("data-depth", u.depth || "flat");
   document.body.classList.toggle("has-bg", !!u.background);
   const st = document.body.style;
   if (st.setProperty) {
@@ -2261,7 +2454,9 @@ async function appearanceSection() {
     h("div", { class: "ap-grid" },
       h("label", {}, t("apTheme"), segmento("theme", t("apThemes"))),
       h("label", {}, t("apCard"), segmento("card", t("apCards"))),
-      h("label", {}, t("apDensity"), segmento("density", t("apDensities")))),
+      h("label", {}, t("apDensity"), segmento("density", t("apDensities"))),
+      h("label", {}, t("apIconSize"), segmento("icon_size", t("apIconSizes"))),
+      h("label", {}, t("apDepth"), segmento("depth", t("apDepths")))),
     h("p", { class: "lead-sm" }, t("apAccent")), h("div", { class: "swatches" }, ...cores),
     h("p", { class: "lead-sm" }, t("apBg")),
     h("div", { class: "row" }, arquivo,
@@ -2299,9 +2494,9 @@ function qlRender() {
   QL.itens = qlResults(campo.value);
   QL.sel = Math.min(QL.sel, Math.max(0, QL.itens.length - 1));
   const lista = QL.itens.map((it, i) => h("li", { role: "option", "aria-selected": String(i === QL.sel), class: it.web ? "ql-web" : null,
-    onclick: () => { $("ql").close(); it.ir(); } },
+    onclick: () => { $("ql").close(); if (it.app) touchRecent(it.app.id); it.ir(); } },
     it.web ? h("span", { class: "ico sm ql-g", "aria-hidden": "true" }, "↗")
-      : h("span", { class: "ico sm" }, h("img", { src: it.app.icon, alt: "", referrerpolicy: "no-referrer" })),
+      : iconPlate(it.app, "xs"),
     h("span", { class: "ql-name" }, it.web ? it.rotulo : it.app.name,
       it.web ? null : h("small", {}, plain(it.app.description[S.lang] || it.app.description.en))),
     it.web ? null : h("span", { class: "ql-act" }, it.rotulo)));
@@ -2629,10 +2824,23 @@ function applySide() {
 }
 
 async function pollPerf() {
-  if (document.hidden || !S.sideOpen || !Object.keys(S.live || {}).length) return;
-  try { S.hostData = await api("/api/host"); for (const u of Object.values(S.live)) u(S.hostData); } catch (e) { /* next turn */ }
+  const painel = S.sideOpen && Object.keys(S.live || {}).length;
+  if (document.hidden || !(painel || S.view === "apps")) return;
+  try {
+    S.hostData = await api("/api/host");
+    pushHist(S.hostData);
+    for (const u of Object.values(S.live || {})) u(S.hostData);
+    if (S.view === "apps") renderHome();
+  } catch (e) { /* next turn */ }
 }
 
+// The navigation starts open and folds to icons; the choice is kept.
+document.body.dataset.nav = localStorage.getItem("qh-nav") === "collapsed" ? "collapsed" : "open";
+$("nav-toggle").addEventListener("click", () => {
+  document.body.dataset.nav = document.body.dataset.nav === "collapsed" ? "open" : "collapsed";
+  localStorage.setItem("qh-nav", document.body.dataset.nav);
+  renderChrome();
+});
 $("side-btn").addEventListener("click", () => {
   S.sideOpen = !S.sideOpen;
   localStorage.setItem("qh-side", S.sideOpen ? "1" : "0");
@@ -2647,7 +2855,7 @@ setTimeout(pollSvc, 2000);
 setInterval(pollSvc, 60000);
 setInterval(pollMonitor, 60000);
 S.widgets = loadWidgets();
-S.sideOpen = localStorage.getItem("qh-side") === "1" || (localStorage.getItem("qh-side") === null && (globalThis.innerWidth || 0) >= 1100);
+S.sideOpen = localStorage.getItem("qh-side") === "1";      // the widgets are an extra; the home already shows the server
 renderSide();
 applySide();
 // The rates need two readings: the second comes soon after the first, so the network row does not wait 5 s.

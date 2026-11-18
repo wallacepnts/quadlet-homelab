@@ -40,7 +40,7 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
   const fim = async () => { console.log("\n=== erros e avisos do navegador:", erros.length); [...new Set(erros)].forEach((e) => console.log(" ", e)); ws.close(); chrome.kill(); await esperar(800); fs.rmSync(PERFIL, { recursive: true, force: true, maxRetries: 5 }); process.exit(0); };
   for (const d of ["Page", "Runtime", "Log", "Network"]) await send(d + ".enable");
 
-  const abrir = (nome) => ev(`(() => { const c = [...document.querySelectorAll('.card')].find((x) => x.querySelector('h3').textContent === ${JSON.stringify(nome)}); if (!c) return false; (c.querySelector('.gear') || c.querySelector('.tile-open') || c).click(); return true; })()`);
+  const abrir = (nome) => ev(`(() => { const c = [...document.querySelectorAll('.card')].find((x) => x.querySelector('h3').textContent === ${JSON.stringify(nome)}); if (!c) return false; const m = c.querySelector('.more'); if (m) { m.click(); const g = [...document.querySelectorAll('#ctx .it')].find((x) => x.textContent === 'Gerenciar'); if (g) { g.click(); return true; } } (c.querySelector('.tile-open') || c).click(); return true; })()`);
   const botao = (texto) => ev(`(() => { const b = [...document.querySelectorAll('#panel button')].find((x) => x.textContent === ${JSON.stringify(texto)}); if (!b) return false; b.click(); return true; })()`);
   const tab = async (idt) => { await ev(`document.getElementById('${idt}').click()`); await esperar(500); };
   const grupo = (titulo) => `[...document.querySelectorAll('.cust-group')].find((x) => x.querySelector('h4').textContent.startsWith(${JSON.stringify(titulo)}))`;
@@ -59,6 +59,24 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
   await esperar(800);
   console.log("grade carregou:", await ate("document.querySelectorAll('.card').length > 0"), "| azulejos:", await ev("document.querySelectorAll('.tile').length"));
   await esperar(2500);
+
+  if (MODO === "tema") {
+    // reads only: the Clean theme — the home, the store, the right-click menu, Appearance
+    await ate("document.querySelectorAll('.tile').length > 0", 15000); await esperar(2500);
+    await foto("40-inicio");
+    await ev("(() => { const t = document.querySelectorAll('.tile')[1].getBoundingClientRect(); document.querySelectorAll('.tile')[1].dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: t.left + 40, clientY: t.top + 40 })); })()"); await esperar(400);
+    await foto("41-menu-de-contexto");
+    await ev("document.body.click()"); await esperar(200);
+    await tab("tab-store"); await esperar(800); await foto("42-loja");
+    await tab("tab-apps"); await ev("document.getElementById('nav-toggle').click()"); await esperar(300); await foto("43-barra-recolhida");
+    await ev("document.getElementById('nav-toggle').click()"); await esperar(200);
+    await ev("document.getElementById('settings-btn').click()"); await esperar(1500); await foto("44-configuracoes");
+    await ev("document.getElementById('s-close').click()"); await esperar(200);
+    await send("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 2, mobile: true }); await esperar(800);
+    await foto("45-celular-inicio");
+    console.log("celular: scrollWidth", await ev("document.documentElement.scrollWidth"), "innerWidth", await ev("innerWidth"));
+    return fim();
+  }
 
   // Meus apps: the launcher
   console.log("aba ativa:", await ev("document.querySelector('#tabs [aria-selected=true]').textContent"), "| com link:", await ev("document.querySelectorAll('.tile a.tile-open').length"), "| com engrenagem:", await ev("document.querySelectorAll('.tile .gear').length"));

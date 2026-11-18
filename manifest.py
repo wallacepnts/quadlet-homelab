@@ -70,7 +70,7 @@ def dump(data):
 
 KEY_ORDER = ["title", "short_desc", "description", "author", "website", "source", "docs", "architectures", "category",
              "min_podman", "requires_https", "deprecated", "notes", "secrets", "validate", "config", "vars",
-             "login", "choices", "options", "widgets", "backup", "units", "instance"]
+             "login", "choices", "options", "widgets", "icon", "backup", "units", "instance"]
 
 
 def ordered(data):
@@ -258,6 +258,9 @@ OPTION_KEY = re.compile(r"[a-z][a-z0-9_]{0,30}")
 VALUE_KEY = re.compile(r"[a-z0-9][a-z0-9._-]{0,30}")
 
 
+ICON_TONES = ("light", "color", "dark", "full")
+
+
 def option_problems(data, folder=None):
     """What is wrong with `options`, as a list.
 
@@ -399,6 +402,17 @@ def problems(data, grupos, folder=None):
             isinstance(w, dict) and isinstance(w.get("type"), str) and set(w) <= {"type", "unit"}
             and (w.get("unit") is None or isinstance(w["unit"], str)) for w in ws)):
         erros.append('"widgets" is a list of {"type": "...", "unit": "..."} (unit only in a folder of several)')
+    ic = data.get("icon")
+    if ic is not None:
+        if not isinstance(ic, dict) or not ic or set(ic) - {"bg", "fit", "tone"}:
+            erros.append('"icon" is {"bg": "#rrggbb", "fit": 1.2, "tone": "light|color|dark|full"}, each optional')
+        else:
+            if "bg" in ic and not (isinstance(ic["bg"], str) and re.fullmatch(r"#[0-9a-fA-F]{6}", ic["bg"])):
+                erros.append('"icon.bg" is a #rrggbb colour')
+            if "fit" in ic and not (isinstance(ic["fit"], (int, float)) and not isinstance(ic["fit"], bool) and 0.8 <= ic["fit"] <= 1.4):
+                erros.append('"icon.fit" is a number from 0.8 to 1.4')
+            if "tone" in ic and ic["tone"] not in ICON_TONES:
+                erros.append(f'"icon.tone" is one of: {", ".join(ICON_TONES)}')
     if "instance" in data:
         erros.append('"instance" is written by qh into the folder of an instance, never by hand')
     erros += option_problems(data, folder)
@@ -494,6 +508,8 @@ def selftest():
     assert bad({"database": {**opt["database"], "values": {"a": {"label": "A"}, "b": {"label": "B", "env": {"1x": "y"}}}}})
     assert problems({**d, "widgets": [{"type": "immich"}, {"type": "sonarr", "unit": "x"}]}, ("Tools",)) == []
     assert problems({**d, "widgets": [{"kind": "immich"}]}, ("Tools",)) and problems({**d, "widgets": []}, ("Tools",))
+    assert problems({**d, "icon": {"bg": "#12352a", "fit": 1.2, "tone": "dark"}}, ("Tools",)) == []
+    assert problems({**d, "icon": {"bg": "green"}}, ("Tools",)) and problems({**d, "icon": {"fit": 3}}, ("Tools",)) and problems({**d, "icon": {"tone": "neon"}}, ("Tools",)) and problems({**d, "icon": {}}, ("Tools",))
     assert problems({**d, "wat": 1}, ("Tools",)), "an unknown key is a typo"
     assert problems({**d, "icon": "https://x/y.svg"}, ("Tools",)), "the logo is a file now, not a field"
     assert problems({**d, "license": "MIT"}, ("Tools",)), "no licence field: the project's own repository says"

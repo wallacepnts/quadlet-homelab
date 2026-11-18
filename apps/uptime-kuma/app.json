@@ -16,5 +16,8 @@
     {
       "type": "uptime-kuma"
     }
-  ]
+  ],
+  "icon": {
+    "bg": "#12352a"
+  }
 }

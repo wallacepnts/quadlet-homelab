@@ -12,12 +12,14 @@ const path = require("path");
 class Txt { constructor(s) { this.text = s; } }
 class El {
   constructor(tag) { this.tag = tag; this.kids = []; this.attrs = {}; this.listeners = {}; this.dataset = {};
-    this.hidden = false; this.open = false; this.disabled = false; this.checked = false; this.value = ""; this.id = ""; this.className = ""; this.style = {};
-    const cls = new Set(); this.classList = { toggle: (c, on) => (on ? cls.add(c) : cls.delete(c)), contains: (c) => cls.has(c) }; }
+    this.hidden = false; this.open = false; this.disabled = false; this.checked = false; this.value = ""; this.id = ""; this.className = ""; this.style = { setProperty(k, v) { this[k] = v; }, removeProperty(k) { delete this[k]; } };
+    const cls = new Set(); this.classList = { toggle: (c, on) => (on ? cls.add(c) : cls.delete(c)), contains: (c) => cls.has(c), add: (c) => cls.add(c), remove: (c) => cls.delete(c) }; this.offsetWidth = 280; this.offsetHeight = 360; }
   setAttribute(k, v) { this.attrs[k] = v; if (k === "id") this.id = v;
     if (k === "value") this.value = v; if (k === "checked") this.checked = true; if (k === "disabled") this.disabled = true;
     if (k.startsWith("data-")) this.dataset[k.slice(5).replace(/-(.)/g, (_, c) => c.toUpperCase())] = v; }
   addEventListener(e, f) { this.listeners[e] = f; }
+  removeAttribute(k) { delete this.attrs[k]; if (k === "id") this.id = ""; }
+  getAttribute(k) { return this.attrs[k]; }
   // Like the browser: whatever is not a Node becomes text — a null argument is the word "null".
   append(...k) { for (const x of k) this.kids.push(x instanceof El || x instanceof Txt ? x : new Txt(String(x))); }
   replaceChildren(...k) { this.kids = []; this.append(...k); }
@@ -108,7 +110,7 @@ global.fetch = async (url, opts = {}) => {
 };
 
 const codigo = fs.readFileSync(path.join(__dirname, "..", "app.js"), "utf8");
-const api = new Function(codigo + "; return { S, openPanel, showEnv, current, renderGrid, pollStats, pollHost, openSettings, showLogs, showConsole, termNew, termFeed, termKey, openResources, hintClean, openHistory, setView, renderSide, pollPerf };")();
+const api = new Function(codigo + "; return { S, openPanel, showEnv, current, renderGrid, pollStats, pollHost, openSettings, showLogs, showConsole, termNew, termFeed, termKey, openResources, hintClean, openHistory, setView, renderSide, pollPerf, iconPlate, renderHome, touchRecent };")();
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 let falhas = 0;
 const confere = (cond, msg) => { if (!cond) { falhas++; console.log("FALHOU:", msg); } else console.log("ok   ", msg); };
@@ -123,8 +125,13 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   await esperar(100);
   const azulejo = [...$("grid").walk()].find((e) => e.attrs && e.attrs.class === "card tile");
   confere(azulejo && !/MB|%/.test(azulejo.textContent) && !document.querySelector('[data-res="homebox"]'), `o azulejo não mostra recursos (${azulejo && azulejo.textContent})`);
-  const pontos = (txt) => [...$("grid").walk()].filter((e) => e.attrs && /^dot /.test(e.attrs.class || "") && e.attrs.title === txt).length;
-  confere(pontos("rodando") >= 1 && !/rodando/.test(azulejo.textContent), "rodando é só a bolinha verde, sem texto");
+  // The tile is the icon and the name: no dot, no arrow, no state words. The state and the update live in the right-click menu.
+  const menuCtx = (tileEl) => { tileEl.listeners.contextmenu({ preventDefault() {}, stopPropagation() {}, clientX: 20, clientY: 20 }); return $("ctx"); };
+  const tilesDaGrade = () => [...$("grid").walk()].filter((e) => e.attrs && e.attrs.class === "card tile");
+  confere(azulejo && ![...azulejo.walk()].some((e) => e.attrs && /(^| )(dot|upd)( |$)/.test(e.attrs.class || "")) && !/rodando|parado|pausado|nova versão/.test(azulejo.textContent),
+    `o azulejo não mostra bolinha, seta nem estado (${azulejo && azulejo.textContent})`);
+  const doHomebox = () => tilesDaGrade().find((e) => /Homebox|HomeBox/i.test(e.textContent));
+  confere(/rodando/.test(menuCtx(doHomebox()).textContent), "o botão direito mostra o estado");
 
   // the panel of an installed app: resources, disk, architectures, and no stray "null"
   api.openPanel("homebox"); await esperar(100);
@@ -410,10 +417,10 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   // site monitor: a running app that does not answer is a red dot; one that answers says how fast
   api.S.mon = { homebox: { ok: false, status: null, ms: null } };
   api.setView("apps"); api.renderGrid();
-  confere(pontos("não responde") === 1, "monitor: rodando mas sem resposta vira bolinha vermelha");
+  confere(/não responde/.test(menuCtx(doHomebox()).textContent), "monitor: rodando mas sem resposta, o menu diz que não responde");
   api.S.mon = { homebox: { ok: true, status: 200, ms: 42 } };
   api.renderGrid();
-  confere(pontos("rodando · responde em 42 ms") === 1, "monitor: respondendo, o tempo vai no tooltip");
+  confere(/rodando · responde em 42 ms/.test(menuCtx(doHomebox()).textContent), "monitor: respondendo, o menu diz em quanto tempo");
   api.S.mon = {};
   api.renderGrid();
 
@@ -421,9 +428,9 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   const upAntes = api.S.upd.homebox;
   api.S.upd.homebox = { bucket: "BEHIND", there: "9.9", unit: "homebox" };
   api.setView("apps"); api.renderGrid();
-  const tileHb = [...$("grid").walk()].find((e) => e.attrs && e.attrs.class === "card tile" && /Homebox|HomeBox/i.test(e.textContent));
-  const seta = tileHb && [...tileHb.walk()].find((e) => e.attrs && e.attrs.class === "upd");
-  confere(seta && seta.attrs.title === "Atualização disponível" && !/nova versão|9\.9/.test(tileHb.textContent), "nova versão: só uma setinha no ícone, sem texto");
+  const tileHb = doHomebox();
+  const itemUp = [...menuCtx(tileHb).walk()].find((e) => e.tag === "button" && /(^| )up( |$)/.test(e.attrs.class || ""));
+  confere(itemUp && /9\.9/.test(itemUp.textContent) && !/nova versão|9\.9/.test(tileHb.textContent), `nova versão: nada no azulejo; no menu, "Atualizar para 9.9" em destaque (${itemUp && itemUp.textContent})`);
   if (upAntes === undefined) delete api.S.upd.homebox; else api.S.upd.homebox = upAntes;
   api.renderGrid();
 
@@ -441,7 +448,7 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   confere(estadoBotoes() === "on,off,off", `parado: só iniciar (${estadoBotoes()})`);
   bc.units = [unidade("homebox", { service: "inactive", container: null, stopped: true })];
   api.setView("apps"); api.renderGrid();
-  confere(pontos("parado") === 1 && !/parado|Atenção|atenção/.test($("grid").textContent), "parado de propósito: bolinha neutra, sem texto, não alarme");
+  confere(/parado/.test(menuCtx(doHomebox()).textContent) && !/parado|Atenção|atenção/.test($("grid").textContent), "parado de propósito: o azulejo não alarma, o menu diz parado");
   bc.units = [unidade("homebox")];
   rotas["/api/control"] = { job: "jc" }; rotas["/api/job/jc"] = { output: "", next: 0, rc: 0 };
   api.openPanel("homebox"); await esperar(30);
@@ -585,8 +592,12 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   porTexto($("s-body"), "Compacta")[0].listeners.click(); await esperar(30);
   const raizAttr = document.documentElement.attrs;
   confere(raizAttr["data-accent"] === "teal" && raizAttr["data-theme"] === "dark" && raizAttr["data-density"] === "compact", `aplica na hora, no <html> (${JSON.stringify(raizAttr)})`);
+  rotas["/api/ui"] = { ...rotas["/api/ui"], icon_size: "large", depth: "soft" };
+  porTexto($("s-body"), "Grande")[0].listeners.click(); await esperar(30);
+  porTexto($("s-body"), "Com profundidade e cor")[0].listeners.click(); await esperar(30);
+  confere(document.documentElement.attrs["data-isize"] === "large" && document.documentElement.attrs["data-depth"] === "soft", "tamanho dos ícones e fundo com profundidade aplicam na hora");
   const salvos = posts.slice(antesAp).filter((x) => x.rota === "/api/ui").map((x) => { const { lang, ...resto } = x.corpo; return JSON.stringify(resto); });
-  confere(salvos.join(" ") === '{"accent":"teal"} {"theme":"dark"} {"density":"compact"}', `e salva cada escolha no servidor (${salvos})`);
+  confere(salvos.join(" ") === '{"accent":"teal"} {"theme":"dark"} {"density":"compact"} {"icon_size":"large"} {"depth":"soft"}', `e salva cada escolha no servidor (${salvos})`);
   confere(porTexto($("s-body"), "Escuro")[0].attrs["aria-pressed"] === "true" && porTexto($("s-body"), "Claro")[0].attrs["aria-pressed"] === "false", "o botão escolhido fica marcado");
   rotas["/api/ui"] = { ...rotas["/api/ui"], background: true, bg_version: 5 };
   await api.openSettings(); await esperar(50);
@@ -772,13 +783,15 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   const ancora = [...doMemos.walk()].find((e) => e.tag === "a");
   confere(ancora && ancora.attrs.href === "https://memos.example.ts" && ancora.attrs.target === "_blank" && /noopener/.test(ancora.attrs.rel),
     "azulejo com endereço único: o clique abre o app em outra aba");
-  const engrenagem = [...doMemos.walk()].find((e) => e.tag === "button" && e.attrs.class === "gear");
-  confere(!!engrenagem && /Gerenciar/.test(engrenagem.attrs["aria-label"]), "…e a engrenagem gerencia");
-  engrenagem.listeners.click(); await esperar(50);
-  confere(api.current().id === "memos" && $("panel").open, "a engrenagem abre o painel do app");
+  const maisAcoes = [...doMemos.walk()].find((e) => e.tag === "button" && e.attrs.class === "more");
+  confere(!!maisAcoes && /Mais ações/.test(maisAcoes.attrs["aria-label"]), "…e o botão ⋯ abre o mesmo menu do botão direito");
+  maisAcoes.listeners.click({ stopPropagation() {}, currentTarget: { getBoundingClientRect: () => ({ left: 10, bottom: 10 }) } });
+  const gerenciar = porTexto($("ctx"), "Gerenciar")[0];
+  confere($("ctx").classList.contains("open") && !!gerenciar, "o menu tem Gerenciar");
+  gerenciar.listeners.click(); await esperar(50);
+  confere(api.current().id === "memos" && $("panel").open && !$("ctx").classList.contains("open"), "Gerenciar abre o painel do app e fecha o menu");
   $("panel").open = false;
-  confere(![...doHome.walk()].some((e) => e.tag === "a") && ![...doHome.walk()].some((e) => e.attrs && e.attrs.class === "gear"),
-    "azulejo sem endereço: um botão só, que abre o painel");
+  confere(![...doHome.walk()].some((e) => e.tag === "a"), "azulejo sem endereço: um botão só, que abre o painel");
   api.S.search = "gitea"; api.renderGrid();
   confere(/Nenhum app encontrado\./.test($("empty").textContent), "busca sem resultado diz isso");
   api.S.search = "";
@@ -901,6 +914,40 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   api.renderGrid();
   confere([...$("grid").walk()].some((e) => e.attrs && /svc-line/.test(e.attrs.class || "") && e.attrs.title === "HTTP 401"), "widget: uma chave recusada vira um aviso discreto no azulejo");
   api.S.svc = {}; api.renderGrid(); $("panel").open = false;
+
+  // icon plates: the tone comes from the logo; app.json `icon` (bg, fit, tone) wins over it
+  const doApp = (cfg) => ({ id: "x", icon: "/assets/x/icon.svg", icon_cfg: cfg });
+  let pl = api.iconPlate(doApp({ bg: "#12352a", fit: 1.2 }));
+  confere(pl.attrs["data-custom"] === "1" && pl.style["--bgc"] === "#12352a" && pl.style["--fit"] === "1.2", `icon.bg e icon.fit valem sobre o automático (${JSON.stringify(pl.style)})`);
+  pl = api.iconPlate(doApp({ tone: "full", bg: "#000000" }));
+  confere(pl.attrs["data-tone"] === "full" && !pl.attrs["data-custom"], "tom 'full': o logo preenche, e a cor de fundo não vale");
+  pl = api.iconPlate(doApp({ tone: "dark" }));
+  confere(pl.attrs["data-tone"] === "dark", "icon.tone escolhe a placa");
+  pl = api.iconPlate(doApp(null));
+  confere(!pl.attrs["data-tone"] && /^\d+$/.test(pl.style["--h"]), "sem nada no app.json: placa clara, com um matiz provisório até o logo ser lido");
+
+  // home: greeting, the server at a glance (four cards), and what was used last
+  api.S.view = "apps"; api.S.search = ""; api.S.filter = null;
+  api.S.hostData = { cpus: 4, load: 1, cpu: { pct: 12.4 }, mem: { total: 8, used: 2 }, disk: { total: 100, used: 65 }, net: { rx_rate: 2048, tx_rate: 1 } };
+  api.S.hist = { cpu: [10, 20, 12], mem: [25, 25], disk: [65], net: [1024, 2048] };
+  api.S.recent = [];
+  api.renderHome();
+  confere(/Bom dia|Boa tarde|Boa noite/.test($("home").textContent) && [...$("home").walk()].filter((e) => e.attrs && e.attrs.class === "stat").length === 4, "início: saudação e quatro cartões do servidor");
+  confere(/12%/.test($("home").textContent) && /25%/.test($("home").textContent) && /65%/.test($("home").textContent) && /↓ 2 KB\/s/.test($("home").textContent), `início: os números (${$("home").textContent.slice(0, 120)})`);
+  confere(!/Usados recentemente/.test($("home").textContent), "sem uso ainda: sem a fileira de recentes");
+  api.touchRecent("homebox"); api.renderHome();
+  confere(/Usados recentemente/.test($("home").textContent) && /Homebox|HomeBox/i.test($("home").textContent) && /Todos os apps/.test($("home").textContent), "depois de abrir um app, ele aparece em Usados recentemente");
+  api.S.search = "memos"; api.renderHome();
+  confere($("home").kids.length === 0, "ao buscar, o início some e fica só o resultado");
+  api.S.search = ""; api.renderHome();
+
+  // navigation: open at the start, folds to icons, and remembers
+  const nav = () => document.body.dataset.nav;
+  confere(nav() === "open", "a barra lateral começa aberta");
+  $("nav-toggle").listeners.click();
+  confere(nav() === "collapsed" && guardado.get("qh-nav") === "collapsed", "recolher: fica só nos ícones e guarda a escolha");
+  $("nav-toggle").listeners.click();
+  confere(nav() === "open" && guardado.get("qh-nav") === "open", "e expande de volta");
 
   console.log(falhas ? `\n${falhas} falha(s)` : "\ntudo passou");
   process.exit(falhas ? 1 : 0);

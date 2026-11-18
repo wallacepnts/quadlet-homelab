@@ -4619,6 +4619,7 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude, falhas=None):
                      "values": [{"value": n, "label": v["label"]} for n, v in o["values"].items()]}
                     for k, o in (s.manifest.get("options") or {}).items()],
         "instance_of": (s.manifest.get("instance") or {}).get("of"),
+        "icon_cfg": s.manifest.get("icon") or None,
         "options_locked": bool(instaladas) and bool(saved_options(s.home, d)),
         "permissions": permissions(s.ds),
         "main_unit": principal.stem if principal else None,

@@ -134,16 +134,16 @@ loc = qhui.translator(PT)
 
 STATIC = ROOT / "store"
 ARQUIVOS = {"/": "index.html", "/login": "login.html",
-            "/app.js": "app.js", "/style.css": "style.css"}
+            "/app.js": "app.js", "/style.css": "style.css", "/fonts/jakarta.woff2": "fonts/jakarta.woff2"}
 IMAGENS = {".svg": "image/svg+xml", ".png": "image/png", ".webp": "image/webp", ".jpg": "image/jpeg",
            ".jpeg": "image/jpeg", ".gif": "image/gif"}
 ASSET = re.compile(r"^/assets/([a-z0-9][a-z0-9._-]*)/(icon\.(?:svg|png|webp|jpg)|screenshots/[A-Za-z0-9._-]+)$")
 TIPOS = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
-         ".css": "text/css; charset=utf-8"}
+         ".css": "text/css; charset=utf-8", ".woff2": "font/woff2"}
 # Nothing inline, nothing from elsewhere: the logos and screenshots are served by this very server
 # (/assets/...), and every string the page
 # shows goes in through textContent, and this is the second fence behind that.
-CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
+CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; "
        "connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'")
 ACOES = ("install", "update", "remove", "backup", "restore", "upgrade", "access", "trial-keep")
 COOKIE = "qh_store"
@@ -417,11 +417,12 @@ def alerts_state(home=None):
 
 # -- appearance -------------------------------------------------------------------
 
-UI_DEFAULTS = {"theme": "system", "accent": "orange", "card": "shadow", "density": "comfortable",
-               "bg_blur": 8, "bg_dim": 35}
+UI_DEFAULTS = {"theme": "system", "accent": "blue", "card": "shadow", "density": "comfortable",
+               "bg_blur": 8, "bg_dim": 35, "icon_size": "medium", "depth": "flat"}
 UI_CHOICES = {"theme": ("system", "light", "dark"),
               "accent": ("orange", "blue", "green", "teal", "purple", "pink", "red", "slate"),
-              "card": ("shadow", "hairline"), "density": ("comfortable", "compact")}
+              "card": ("shadow", "hairline"), "density": ("comfortable", "compact"),
+              "icon_size": ("small", "medium", "large"), "depth": ("flat", "soft")}
 UI_RANGES = {"bg_blur": (0, 20), "bg_dim": (0, 80)}
 BG_MAX = 8 * 1024 * 1024
 BG_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".webp": "image/webp"}
@@ -2077,7 +2078,7 @@ class Handler(BaseHTTPRequestHandler):
             html = (STATIC / ARQUIVOS["/login"]).read_text()
             aviso = '<p class="erro" role="alert">Token inválido / Invalid token</p>' if q.get("e") == "1" else ""
             return self._send(200, html.replace("<!--error-->", aviso).encode(), TIPOS[".html"])
-        if url.path == "/style.css":
+        if url.path in ("/style.css", "/fonts/jakarta.woff2"):         # the login page draws with both
             return self._static(ARQUIVOS[url.path])
         if not self._logged():
             if url.path.startswith("/api/"):
@@ -3195,9 +3196,11 @@ def selftest():
 
             # appearance: validated, kept on the server; the background is sniffed by its bytes, served only after login
             u0 = json.loads(pedir("/api/ui", headers=ok)[2])
-            assert u0["theme"] == "system" and u0["accent"] == "orange" and u0["background"] is False, u0
+            assert u0["theme"] == "system" and u0["accent"] == "blue" and u0["icon_size"] == "medium" and u0["depth"] == "flat" and u0["background"] is False, u0
             assert pedir("/api/ui", json.dumps({"theme": "neon"}).encode(), api)[0] == 400
             assert pedir("/api/ui", json.dumps({"bg_blur": 99}).encode(), api)[0] == 400
+            assert pedir("/api/ui", json.dumps({"icon_size": "huge"}).encode(), api)[0] == 400 and pedir("/api/ui", json.dumps({"depth": "x"}).encode(), api)[0] == 400
+            assert pedir("/style.css")[0] == 200 and pedir("/fonts/jakarta.woff2")[2][:4] == b"wOF2", "the login page draws with the stylesheet and the font, signed out"
             assert pedir("/api/ui", json.dumps({"nope": 1}).encode(), api)[0] == 400
             st, _, c = pedir("/api/ui", json.dumps({"theme": "dark", "accent": "teal", "density": "compact", "lang": "pt"}).encode(), api)
             assert st == 200 and json.loads(c)["accent"] == "teal" and json.loads(pedir("/api/ui", headers=ok)[2])["density"] == "compact"
@@ -3209,7 +3212,7 @@ def selftest():
             st, cab, c = pedir("/ui/background", headers=ok)
             assert st == 200 and c == png and cab.get("Content-Type") == "image/png", (st, cab)
             assert json.loads(pedir("/api/ui/background", b"", api)[2])["background"] is False, "an empty body removes it"
-            pedir("/api/ui", json.dumps({"theme": "system", "accent": "orange", "density": "comfortable"}).encode(), api)
+            pedir("/api/ui", json.dumps({"theme": "system", "accent": "blue", "density": "comfortable"}).encode(), api)
 
             # alerts: opt-in, validated, the token never comes back, a test message reaches the ntfy topic
             recebido = []

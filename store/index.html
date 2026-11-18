@@ -10,40 +10,46 @@
 </head>
 <body>
 <a class="skip" href="#grid">Ir para o conteúdo</a>
-<header class="top">
-  <div class="brand"><span class="mark" aria-hidden="true"></span><h1>qh</h1></div>
+<div class="shell">
+<aside id="nav" aria-label="Navegação">
+  <div class="logo"><span class="mark" aria-hidden="true"></span><h1>qh</h1><button id="nav-toggle" type="button" class="icon text" aria-label="Recolher"></button></div>
   <nav id="tabs" role="tablist">
-    <button id="tab-apps" type="button" role="tab"></button>
-    <button id="tab-store" type="button" role="tab"></button>
+    <button id="tab-apps" type="button" role="tab" class="nav"></button>
+    <button id="tab-store" type="button" role="tab" class="nav"></button>
   </nav>
+  <div class="nav-sep"></div>
+  <button id="history-btn" type="button" class="nav"></button>
+  <button id="resources-btn" type="button" class="nav"></button>
+  <button id="settings-btn" type="button" class="nav"></button>
+  <div class="nav-foot"><span id="host" class="muted" title=""></span><span id="checked" class="muted"></span></div>
+</aside>
+<div class="page">
+<header class="pagehead">
+  <h1 id="page-title"></h1><span class="sp"></span>
   <div class="search"><input id="search" type="search" autocomplete="off"></div>
   <div class="tools">
     <button id="side-btn" type="button" class="icon" aria-pressed="false"></button>
-    <button id="history-btn" type="button" class="icon"></button>
-    <button id="resources-btn" type="button" class="icon"></button>
-    <button id="settings-btn" type="button" class="icon"></button>
     <button id="recheck" type="button" class="icon"></button>
     <button id="lang" type="button" class="icon text"></button>
   </div>
 </header>
-<div class="layout">
-<div class="page">
 <nav id="groups" aria-label="Categorias"></nav>
 <p id="summary" class="muted" hidden></p>
+<section id="home" aria-label="Início"></section>
 <div id="toast" role="status" hidden></div>
 <main id="grid"></main>
 <p id="empty" hidden></p>
 <section id="bookmarks" aria-label="Favoritos" hidden></section>
-<footer class="status"><span id="host" class="muted" title=""></span><span id="checked" class="muted"></span></footer>
 </div>
 <aside id="side" aria-labelledby="side-title">
   <div class="side-head"><h2 id="side-title"></h2><span><button id="side-edit" type="button" class="ghost"></button><button id="side-close" type="button" class="icon text" aria-label="Fechar">✕</button></span></div>
   <div id="side-body"></div>
 </aside>
 </div>
+<div class="ctx" id="ctx" role="menu"></div>
 <dialog id="panel" aria-labelledby="p-name">
   <div class="panel-head">
-    <span class="ico lg"><img id="p-icon" alt="" referrerpolicy="no-referrer"></span>
+    <span class="plate lg" id="p-plate"><img id="p-icon" alt="" referrerpolicy="no-referrer"></span>
     <div>
       <h2 id="p-name"></h2>
       <p id="p-meta"></p>
