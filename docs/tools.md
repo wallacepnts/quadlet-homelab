@@ -474,14 +474,11 @@ release is told once per version. The settings are in `~/.config/quadlet-homelab
 hold the token, which the page never receives back); what was sent and when is in
 `~/.cache/quadlet-homelab/alerts-state.json`. Backups scheduled by Zerobyte are not watched.
 
-## The sidebar
+## Server performance
 
-The store has a sidebar of widgets (the button beside the clock in the top bar; open by default on a wide
-screen). It starts with **Server performance**: processor, memory, the disk the apps' data lives on, and the
-network (rate and total since boot, counting the real interfaces and not the container bridges or the tailnet's
-copy of the same traffic), refreshed every five seconds from `/api/host`. **Edit** adds, orders and removes
-widgets — your apps at a glance, notes, quick links — and the choice is kept in this browser (localStorage),
-not on the server.
+The home (My apps) opens with the server at a glance: processor, memory, the disk the apps' data lives on and the
+network (rate; real interfaces only, not the container bridges or the tailnet's copy of the same traffic), each with a
+small history, refreshed every five seconds from `/api/host`. There is no widgets sidebar any more.
 
 ## Quick Launch, appearance, groups, bookmarks and service widgets
 
@@ -499,13 +496,10 @@ not on the server.
   and in its panel. The key is typed in the panel (Set up the widget) and kept in
   `~/.config/quadlet-homelab/widgets.json` (mode 600); the server calls the app, so the key never reaches the
   browser. Numbers that call for attention are coloured (inbox waiting, downloads wanted, monitors down).
-- **More sidebar widgets:** date and time with a greeting, weather (Open-Meteo, looked up by the server with the city
-  you typed) and a search box that opens Quick Launch.
 
 ## The Clean theme
 
-The panel is a navigation on the left (My apps, Store, History, Resources, Settings), the page in the middle, and the
-widgets on the right when you open them (the button beside the refresh one). The navigation starts open and folds to
+The panel is a navigation on the left (My apps, Store, History, Resources, Settings), and the page in the middle. The navigation starts open and folds to
 icons (⇤), and the choice is kept. The font is Plus Jakarta Sans (OFL, served by the panel itself).
 
 - **My apps** is a home: a greeting, four cards with the server (processor, memory, disk, network, each with its last

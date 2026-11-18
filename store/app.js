@@ -65,12 +65,7 @@ const T = {
     apBg: "Imagem de fundo", apBgPick: "Escolher imagem…", apBgRemove: "Tirar o fundo", apBgBlur: "Desfoque", apBgDim: "Véu sobre a imagem",
     apBgHint: "PNG, JPEG ou WebP, até 8 MB. Fica no servidor, para todos os navegadores.", apSaved: "Aparência salva.",
     monDown: "não responde", monStatus: (c) => `responde com erro ${c}`, monMs: (ms) => `responde em ${ms} ms`,
-    wClock: "Data e hora", wWeather: "Clima", wSearch: "Busca", hello: ["Boa noite", "Bom dia", "Boa tarde", "Boa noite"],
-    weatherCity: "Cidade", weatherSet: "Mostrar", weatherHint: "A cidade é consultada na Open-Meteo, pelo servidor.", weatherNone: "Cidade não encontrada.",
-    weatherMaxMin: (a, b) => `máx ${a}° · mín ${b}°`, weatherWind: (v) => `vento ${v} km/h`, searchHint: "Buscar apps ou na web…",
-    wmo: { 0: "céu limpo", 1: "quase limpo", 2: "parcialmente nublado", 3: "nublado", 45: "neblina", 48: "neblina", 51: "garoa", 53: "garoa", 55: "garoa forte",
-      61: "chuva fraca", 63: "chuva", 65: "chuva forte", 71: "neve fraca", 73: "neve", 75: "neve forte", 80: "pancadas", 81: "pancadas", 82: "pancadas fortes", 95: "trovoada", 96: "trovoada", 99: "trovoada" },
-    bookmarks: "Favoritos", bmEdit: "Editar favoritos", bmDone: "Pronto", bmNewGroup: "Novo grupo de favoritos", bmGroupName: "Nome do grupo", bmAdd: "Adicionar",
+        bookmarks: "Favoritos", bmEdit: "Editar favoritos", bmDone: "Pronto", bmNewGroup: "Novo grupo de favoritos", bmGroupName: "Nome do grupo", bmAdd: "Adicionar",
     bmRemoveGroup: "Apagar grupo", bmEmpty: "Guarde aqui atalhos para o que não é app: o roteador, o admin do Tailscale…",
     organize: "Organizar", organizeDone: "Pronto", newGroup: "Novo grupo", groupName: "Nome do grupo", noGroup: "Sem grupo", groupIcons: "Só ícones",
     groupTiles: "Azulejos", groupRemove: "Apagar grupo", moveTo: "Grupo",
@@ -98,11 +93,8 @@ const T = {
     recent: "Usados recentemente", allApps: "Todos os apps", moreActions: "Mais ações", navCollapse: "Recolher a barra lateral", navExpand: "Expandir a barra lateral",
     hStat: { cpu: "Processador", mem: "Memória", disk: "Disco", net: "Rede" }, ctxStart: "Iniciar", ctxResume: "Retomar", ctxPause: "Pausar",
     apIconSize: "Tamanho dos ícones", apIconSizes: { small: "Pequeno", medium: "Médio", large: "Grande" }, apDepth: "Fundo", apDepths: { flat: "Chapado", soft: "Com profundidade e cor" },
-    sideBtn: "Barra lateral", sideTitle: "Painel", sideEdit: "Editar", sideDone: "Pronto", addWidget: "Adicionar widget…", remove: "Remover", moveUp: "Subir", moveDown: "Descer",
-    wPerf: "Desempenho do servidor", wApps: "Seus apps", wNotes: "Notas", wLinks: "Links rápidos",
-    perfCpu: "Processador", perfMem: "Memória", perfDisk: "Disco", perfNet: "Rede", perfLoad: "carga", perfCores: "núcleos", perfSince: "desde o início", perfNone: "sem dados",
-    wRunning: "rodando", wStopped: "parados", wPaused: "pausados", wUpdates: "com atualização", wProblems: "com problema",
-    notesHint: "Escreva aqui. Fica salvo neste navegador.", linkName: "Nome", linkUrl: "https://…", linkAdd: "Adicionar", linkBad: "Use um endereço http:// ou https://",
+    remove: "Remover", 
+    linkName: "Nome", linkUrl: "https://…", linkBad: "Use um endereço http:// ou https://",
     updateAvailable: "Atualização disponível",
     getApp: "Obter", installNow: "Instalar agora", advanced: "Avançado", rolledBack: "voltou à versão anterior", techDetails: "Detalhes técnicos", logTitle: "O que foi feito", closeLabel: "Fechar",
     httpsNeeded: "precisa de HTTPS",
@@ -249,12 +241,7 @@ const T = {
     apBg: "Background image", apBgPick: "Choose an image…", apBgRemove: "Remove the background", apBgBlur: "Blur", apBgDim: "Veil over the image",
     apBgHint: "PNG, JPEG or WebP, up to 8 MB. Kept on the server, for every browser.", apSaved: "Appearance saved.",
     monDown: "not answering", monStatus: (c) => `answers with error ${c}`, monMs: (ms) => `answers in ${ms} ms`,
-    wClock: "Date and time", wWeather: "Weather", wSearch: "Search", hello: ["Good evening", "Good morning", "Good afternoon", "Good evening"],
-    weatherCity: "City", weatherSet: "Show", weatherHint: "The city is looked up on Open-Meteo, by the server.", weatherNone: "City not found.",
-    weatherMaxMin: (a, b) => `high ${a}° · low ${b}°`, weatherWind: (v) => `wind ${v} km/h`, searchHint: "Search apps or the web…",
-    wmo: { 0: "clear sky", 1: "mainly clear", 2: "partly cloudy", 3: "overcast", 45: "fog", 48: "fog", 51: "drizzle", 53: "drizzle", 55: "heavy drizzle",
-      61: "light rain", 63: "rain", 65: "heavy rain", 71: "light snow", 73: "snow", 75: "heavy snow", 80: "showers", 81: "showers", 82: "heavy showers", 95: "thunderstorm", 96: "thunderstorm", 99: "thunderstorm" },
-    bookmarks: "Bookmarks", bmEdit: "Edit bookmarks", bmDone: "Done", bmNewGroup: "New bookmark group", bmGroupName: "Group name", bmAdd: "Add",
+        bookmarks: "Bookmarks", bmEdit: "Edit bookmarks", bmDone: "Done", bmNewGroup: "New bookmark group", bmGroupName: "Group name", bmAdd: "Add",
     bmRemoveGroup: "Delete group", bmEmpty: "Keep shortcuts here to what is not an app: the router, the Tailscale admin…",
     organize: "Organize", organizeDone: "Done", newGroup: "New group", groupName: "Group name", noGroup: "No group", groupIcons: "Icons only",
     groupTiles: "Tiles", groupRemove: "Delete group", moveTo: "Group",
@@ -282,11 +269,8 @@ const T = {
     recent: "Used recently", allApps: "All apps", moreActions: "More actions", navCollapse: "Collapse the sidebar", navExpand: "Expand the sidebar",
     hStat: { cpu: "Processor", mem: "Memory", disk: "Disk", net: "Network" }, ctxStart: "Start", ctxResume: "Resume", ctxPause: "Pause",
     apIconSize: "Icon size", apIconSizes: { small: "Small", medium: "Medium", large: "Large" }, apDepth: "Background", apDepths: { flat: "Flat", soft: "With depth and colour" },
-    sideBtn: "Sidebar", sideTitle: "Dashboard", sideEdit: "Edit", sideDone: "Done", addWidget: "Add a widget…", remove: "Remove", moveUp: "Move up", moveDown: "Move down",
-    wPerf: "Server performance", wApps: "Your apps", wNotes: "Notes", wLinks: "Quick links",
-    perfCpu: "Processor", perfMem: "Memory", perfDisk: "Disk", perfNet: "Network", perfLoad: "load", perfCores: "cores", perfSince: "since boot", perfNone: "no data",
-    wRunning: "running", wStopped: "stopped", wPaused: "paused", wUpdates: "with an update", wProblems: "with a problem",
-    notesHint: "Write here. It is saved in this browser.", linkName: "Name", linkUrl: "https://…", linkAdd: "Add", linkBad: "Use an http:// or https:// address",
+    remove: "Remove", 
+    linkName: "Name", linkUrl: "https://…", linkBad: "Use an http:// or https:// address",
     updateAvailable: "Update available",
     getApp: "Get", installNow: "Install now", advanced: "Advanced", rolledBack: "rolled back to the previous version", techDetails: "Technical details", logTitle: "What was done", closeLabel: "Close",
     httpsNeeded: "needs HTTPS",
@@ -589,7 +573,6 @@ function renderChrome() {
   $("nav-toggle").title = $("nav-toggle").getAttribute && fechada ? t("navExpand") : t("navCollapse");
   $("nav-toggle").setAttribute("aria-label", fechada ? t("navExpand") : t("navCollapse"));
   $("p-close").setAttribute("aria-label", t("closeLabel"));
-  if (S.widgets) renderSide();
   $("p-tech-title").textContent = t("techDetails");
   $("p-log-title").textContent = t("logTitle");
   renderTabs();
@@ -946,7 +929,6 @@ function renderHome() {
 }
 
 function renderGrid() {
-  if (S.live) for (const [id, u] of Object.entries(S.live)) if (!id.includes("perf")) u();
   const q = S.search.trim().toLowerCase();
   const meus = S.view === "apps";
   const pool = meus ? installed().filter(FILTERS[S.filter] || (() => true))
@@ -1887,9 +1869,10 @@ async function jobWindow(titulo, start) {
       await new Promise((r) => setTimeout(r, 900));
       st = await api(`/api/job/${job}?from=${next}`);
       next = st.next;
-      if (st.output) $("b-out").textContent += st.output;
+      if (st.output) { $("b-out").textContent += st.output; $("b-out").scrollTop = $("b-out").scrollHeight; }
     } while (st.rc === null);
     $("b-out").textContent += `\n${st.rc === 0 ? t("done") : `${t("failed")} (${st.rc}).`}\n`;
+    $("b-out").scrollTop = $("b-out").scrollHeight;
   } catch (e) { $("b-out").textContent += e.status === 409 ? t("busy") : String(e.message); }
   await load();
 }
@@ -2534,55 +2517,6 @@ document.addEventListener("keydown", (ev) => {
   else if (ev.key.length === 1 && /\S/.test(ev.key)) { ev.preventDefault(); quickLaunch(ev.key); }
 });
 
-// A greeting, the time and the date; it redraws with the other live widgets.
-function clockWidget() {
-  const ola = h("p", { class: "w-hello" }), hora = h("p", { class: "w-time" }), dia = h("p", { class: "muted" });
-  const update = () => {
-    const agora = new Date(), loc = S.lang === "pt" ? "pt-BR" : "en";
-    ola.textContent = t("hello")[Math.floor(agora.getHours() / 6)];
-    hora.textContent = agora.toLocaleTimeString(loc, { hour: "2-digit", minute: "2-digit" });
-    dia.textContent = agora.toLocaleDateString(loc, { weekday: "long", day: "numeric", month: "long" });
-  };
-  update();
-  return { el: h("div", { class: "w-clock" }, ola, hora, dia), update };
-}
-
-// Weather for a city, through the server (Open-Meteo, no key): the browser never calls out.
-function weatherWidget(w) {
-  const raiz = h("div", { class: "w-weather" });
-  const pedir = async () => {
-    const cidade = dadosDe(w.id).city;
-    if (!cidade) return formulario();
-    try {
-      const { weather: x } = await api(`/api/weather?city=${encodeURIComponent(cidade)}&lang=${S.lang}`);
-      if (!x) return fill(raiz, h("p", { class: "muted" }, t("weatherNone")), formulario(true));
-      fill(raiz, h("p", { class: "w-temp" }, `${Math.round(x.temp)}°`, h("span", {}, t("wmo")[x.code] || "")),
-        h("p", { class: "muted" }, x.place),
-        h("p", { class: "muted" }, [x.max !== null ? t("weatherMaxMin")(Math.round(x.max), Math.round(x.min)) : null,
-          x.wind !== null ? t("weatherWind")(Math.round(x.wind)) : null].filter(Boolean).join(" · ")));
-    } catch (e) { fill(raiz, h("p", { class: "muted" }, String(e.message))); }
-  };
-  const formulario = (so) => {
-    const campo = h("input", { type: "text", placeholder: t("weatherCity"), "aria-label": t("weatherCity"), autocomplete: "off" });
-    const el = h("div", { class: "w-add" }, campo, h("button", { type: "button", class: "ghost", onclick: () => {
-      if (!campo.value.trim()) return;
-      guardaDados(w.id, { city: campo.value.trim() }); pedir(); } }, t("weatherSet")), h("p", { class: "help" }, t("weatherHint")));
-    if (so) return el;
-    fill(raiz, el);
-    return el;
-  };
-  pedir();
-  let ultima = Date.now();
-  return { el: raiz, update: () => { if (Date.now() - ultima > 15 * 60 * 1000) { ultima = Date.now(); pedir(); } } };
-}
-
-// A search box: Enter opens the Quick Launch with what was typed.
-function searchWidget() {
-  const campo = h("input", { type: "search", placeholder: t("searchHint"), "aria-label": t("wSearch"), autocomplete: "off" });
-  campo.addEventListener("keydown", (ev) => { if (ev.key === "Enter" && campo.value.trim()) { ev.preventDefault(); quickLaunch(campo.value.trim()); campo.value = ""; } });
-  return { el: campo };
-}
-
 // -- bookmarks -------------------------------------------------------------------------------
 // Shortcuts to what is not an app (the router, the Tailscale admin), in groups, below My apps.
 // Kept in this browser, like the widgets. A letter in a coloured square stands for the icon:
@@ -2672,165 +2606,16 @@ function groupedTiles(apps) {
   ];
 }
 
-// -- the sidebar: widgets ------------------------------------------------------------------
-// A column of small panels beside the apps. Which ones, and in what order, is kept in this browser
-// (localStorage); the first is the server's performance. Each type is one function that builds its
-// element and, for the live ones, an `update` the poller calls.
-const WIDGETS = {
-  perf: { title: "wPerf", build: perfWidget },
-  apps: { title: "wApps", build: appsWidget },
-  notes: { title: "wNotes", build: notesWidget },
-  links: { title: "wLinks", build: linksWidget },
-  clock: { title: "wClock", build: clockWidget },
-  weather: { title: "wWeather", build: weatherWidget },
-  search: { title: "wSearch", build: searchWidget },
-};
-const MULTI = new Set(["notes", "links", "weather"]);     // the ones that make sense more than once
-
-function loadWidgets() {
-  try {
-    const l = JSON.parse(localStorage.getItem("qh-widgets"));
-    if (Array.isArray(l) && l.every((w) => w && WIDGETS[w.type] && typeof w.id === "string")) return l;
-  } catch (e) { /* the default below */ }
-  return [{ id: "w-perf", type: "perf" }];
-}
-const saveWidgets = () => localStorage.setItem("qh-widgets", JSON.stringify(S.widgets));
-const novoId = (tipo) => `w-${tipo}-${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`;
-const dadosDe = (id) => { try { return JSON.parse(localStorage.getItem(`qh-w-${id}`)) || {}; } catch (e) { return {}; } };
-const guardaDados = (id, d) => localStorage.setItem(`qh-w-${id}`, JSON.stringify(d));
-
 const bytes = (n) => n >= 2 ** 40 ? `${(n / 2 ** 40).toFixed(1)} TB` : n >= 2 ** 30 ? `${(n / 2 ** 30).toFixed(1)} GB`
   : n >= 2 ** 20 ? `${(n / 2 ** 20).toFixed(1)} MB` : `${Math.max(0, Math.round(n / 1024))} KB`;
-const tom = (pct) => (pct >= 90 ? "bad" : pct >= 70 ? "warn" : "ok");
 
-// Server performance: processor, memory, disk and network, from /api/host.
-function perfWidget() {
-  const linha = (chave) => {
-    const valor = h("span", { class: "perf-val" }, "—"), sub = h("span", { class: "perf-sub" });
-    const barra = h("span", { class: "bar-fill" });
-    return { chave, valor, sub, barra,
-      el: h("div", { class: "perf-row", "data-perf": chave },
-        h("div", { class: "perf-head" }, h("span", {}, t(`perf${chave}`)), valor),
-        chave === "Net" ? null : h("div", { class: "bar", role: "presentation" }, barra), sub) };
-  };
-  const L = Object.fromEntries(["Cpu", "Mem", "Disk", "Net"].map((k) => [k, linha(k)]));
-  const extra = h("p", { class: "perf-extra" });
-  const pinta = (x, pct, texto, sub) => {
-    x.valor.textContent = texto;
-    x.sub.textContent = sub || "";
-    x.barra.style.width = `${Math.max(0, Math.min(100, pct ?? 0))}%`;
-    x.barra.className = `bar-fill ${pct === null || pct === undefined ? "" : tom(pct)}`;
-  };
-  const update = (d) => {
-    const c = d.cpu && d.cpu.pct !== null && d.cpu.pct !== undefined ? d.cpu.pct : (d.load !== null && d.cpus ? Math.min(100, (d.load / d.cpus) * 100) : null);
-    pinta(L.Cpu, c, c === null ? t("perfNone") : `${Math.round(c)}%`,
-      d.load === null ? "" : `${t("perfLoad")} ${d.load.toFixed(2)} · ${d.cpus} ${t("perfCores")}`);
-    if (d.mem) { const p = (d.mem.used / d.mem.total) * 100; pinta(L.Mem, p, `${Math.round(p)}%`, `${bytes(d.mem.used)} / ${bytes(d.mem.total)}`); }
-    else pinta(L.Mem, null, t("perfNone"));
-    if (d.disk) { const p = (d.disk.used / d.disk.total) * 100; pinta(L.Disk, p, `${Math.round(p)}%`, `${bytes(d.disk.used)} / ${bytes(d.disk.total)}`); }
-    else pinta(L.Disk, null, t("perfNone"));
-    const n = d.net;
-    L.Net.valor.textContent = n && n.rx_rate !== null ? `↓ ${bytes(n.rx_rate)}/s  ↑ ${bytes(n.tx_rate)}/s` : (n ? "…" : t("perfNone"));
-    L.Net.sub.textContent = n ? `${t("perfSince")}: ↓ ${bytes(n.rx)} ↑ ${bytes(n.tx)}` : "";
-    extra.textContent = [d.temp === null || d.temp === undefined ? null : `${d.temp} °C`, d.uptime === null || d.uptime === undefined ? null
-      : `${t("hostUp")} ${duracao(d.uptime)}`].filter(Boolean).join(" · ");
-  };
-  if (S.hostData) update(S.hostData);
-  return { el: h("div", { class: "perf" }, ...Object.values(L).map((x) => x.el), extra), update };
-}
-
-// The apps at a glance, from the catalog already loaded: no request of its own.
-function appsWidget() {
-  const raiz = h("div", { class: "w-apps" });
-  const update = () => {
-    const mine = installed();
-    const n = (f) => mine.filter(f).length;
-    const linhas = [["ok", n((a) => runState(a) === "running"), "wRunning"], ["off", n((a) => runState(a) === "stopped"), "wStopped"],
-      ["warn", n((a) => runState(a) === "paused"), "wPaused"], ["up", n(hasUpdate), "wUpdates"], ["bad", n(hasProblem), "wProblems"]];
-    fill(raiz, ...linhas.filter(([, v, k]) => v || k === "wRunning").map(([c, v, k]) =>
-      h("div", { class: "w-line" }, h("span", { class: `dot ${c}` }), h("strong", {}, String(v)), ` ${t(k)}`)));
-  };
-  update();
-  return { el: raiz, update };
-}
-
-function notesWidget(w) {
-  const area = h("textarea", { class: "w-notes", rows: 5, placeholder: t("notesHint"), "aria-label": t("wNotes") });
-  area.value = dadosDe(w.id).text || "";
-  area.addEventListener("input", () => guardaDados(w.id, { text: area.value }));
-  return { el: area };
-}
-
-function linksWidget(w) {
-  const lista = h("ul", { class: "w-links" }), aviso = h("p", { class: "muted" });
-  const nome = h("input", { type: "text", placeholder: t("linkName"), "aria-label": t("linkName"), autocomplete: "off" });
-  const url = h("input", { type: "text", placeholder: t("linkUrl"), "aria-label": "URL", autocomplete: "off" });
-  const desenha = () => {
-    const ls = dadosDe(w.id).links || [];
-    fill(lista, ...ls.map((l, i) => h("li", {},
-      h("a", { href: l.url, target: "_blank", rel: "noopener noreferrer" }, l.name),
-      h("button", { type: "button", class: "icon text", title: t("remove"), "aria-label": `${t("remove")} ${l.name}`,
-                    onclick: () => { guardaDados(w.id, { links: ls.filter((_, j) => j !== i) }); desenha(); } }, "✕"))));
-  };
-  const add = () => {
-    const u = url.value.trim();
-    if (!/^https?:\/\/[^\s]+$/i.test(u)) { aviso.textContent = t("linkBad"); return; }
-    aviso.textContent = "";
-    const ls = dadosDe(w.id).links || [];
-    guardaDados(w.id, { links: [...ls, { name: nome.value.trim() || u.replace(/^https?:\/\//i, "").split("/")[0], url: u }] });
-    nome.value = ""; url.value = "";
-    desenha();
-  };
-  desenha();
-  return { el: h("div", {}, lista, h("div", { class: "w-add" }, nome, url, h("button", { type: "button", class: "ghost", onclick: add }, t("linkAdd"))), aviso) };
-}
-
-function renderSide() {
-  S.live = {};
-  const edit = S.sideEdit;
-  const move = (i, d) => { const j = i + d; if (j < 0 || j >= S.widgets.length) return; [S.widgets[i], S.widgets[j]] = [S.widgets[j], S.widgets[i]]; saveWidgets(); renderSide(); };
-  const cartoes = S.widgets.map((w, i) => {
-    const b = WIDGETS[w.type].build(w);
-    if (b.update) S.live[w.id] = b.update;
-    return h("section", { class: "widget", "data-widget": w.type },
-      h("header", {}, h("h3", {}, t(WIDGETS[w.type].title)),
-        edit ? h("span", { class: "w-tools" },
-          h("button", { type: "button", class: "icon text", title: t("moveUp"), "aria-label": `${t("moveUp")} ${t(WIDGETS[w.type].title)}`, disabled: i === 0, onclick: () => move(i, -1) }, "↑"),
-          h("button", { type: "button", class: "icon text", title: t("moveDown"), "aria-label": `${t("moveDown")} ${t(WIDGETS[w.type].title)}`, disabled: i === S.widgets.length - 1, onclick: () => move(i, 1) }, "↓"),
-          h("button", { type: "button", class: "icon text", title: t("remove"), "aria-label": `${t("remove")} ${t(WIDGETS[w.type].title)}`,
-                        onclick: () => { S.widgets.splice(i, 1); localStorage.setItem(`qh-w-${w.id}`, ""); saveWidgets(); renderSide(); } }, "✕")) : null),
-      b.el);
-  });
-  const seletor = h("select", { "aria-label": t("addWidget"), onchange: (ev) => {
-    const tipo = ev.target.value;
-    if (!WIDGETS[tipo]) return;
-    S.widgets.push({ id: novoId(tipo), type: tipo });
-    saveWidgets();
-    renderSide();
-  } }, h("option", { value: "" }, t("addWidget")),
-    ...Object.entries(WIDGETS).filter(([k]) => MULTI.has(k) || !S.widgets.some((w) => w.type === k))
-      .map(([k, v]) => h("option", { value: k }, t(v.title))));
-  fill($("side-body"), ...cartoes, edit ? seletor : null);
-  $("side-edit").textContent = edit ? t("sideDone") : t("sideEdit");
-  $("side-title").textContent = t("sideTitle");
-  $("side-btn").title = t("sideBtn");
-  $("side-btn").setAttribute("aria-label", t("sideBtn"));
-}
-
-function applySide() {
-  $("side").hidden = !S.sideOpen;
-  $("side-btn").setAttribute("aria-pressed", String(S.sideOpen));
-  document.body.classList.toggle("with-side", S.sideOpen);
-}
-
+// Server numbers for the home tiles; the rates need two readings, so the second comes soon after the first.
 async function pollPerf() {
-  const painel = S.sideOpen && Object.keys(S.live || {}).length;
-  if (document.hidden || !(painel || S.view === "apps")) return;
+  if (document.hidden || S.view !== "apps") return;
   try {
     S.hostData = await api("/api/host");
     pushHist(S.hostData);
-    for (const u of Object.values(S.live || {})) u(S.hostData);
-    if (S.view === "apps") renderHome();
+    renderHome();
   } catch (e) { /* next turn */ }
 }
 
@@ -2841,24 +2626,11 @@ $("nav-toggle").addEventListener("click", () => {
   localStorage.setItem("qh-nav", document.body.dataset.nav);
   renderChrome();
 });
-$("side-btn").addEventListener("click", () => {
-  S.sideOpen = !S.sideOpen;
-  localStorage.setItem("qh-side", S.sideOpen ? "1" : "0");
-  applySide();
-  if (S.sideOpen) pollPerf();
-});
-$("side-edit").addEventListener("click", () => { S.sideEdit = !S.sideEdit; renderSide(); });
-$("side-close").addEventListener("click", () => { S.sideOpen = false; localStorage.setItem("qh-side", "0"); applySide(); });
 loadUi();
 setTimeout(pollMonitor, 3000);
 setTimeout(pollSvc, 2000);
 setInterval(pollSvc, 60000);
 setInterval(pollMonitor, 60000);
-S.widgets = loadWidgets();
-S.sideOpen = localStorage.getItem("qh-side") === "1";      // the widgets are an extra; the home already shows the server
-renderSide();
-applySide();
-// The rates need two readings: the second comes soon after the first, so the network row does not wait 5 s.
 pollPerf().then(() => setTimeout(pollPerf, 1200));
 setInterval(pollPerf, 5000);
 

@@ -552,42 +552,6 @@ def monitor(force=False, sondar=probe):
         return res
 
 
-# -- weather (the sidebar's widget) ------------------------------------------------
-
-WEATHER, WEATHER_LOCK, WEATHER_TTL = {}, threading.Lock(), 15 * 60
-
-
-def get_json(url, timeout=10):
-    req = urllib.request.Request(url, headers={"User-Agent": "qh-store"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return json.loads(r.read(1 << 20))
-
-
-def weather(city, lang="en", buscar=get_json):
-    """{place, temp, code, wind, max, min} for a city name, from Open-Meteo (no key), kept for 15 minutes.
-
-    The only thing that leaves the server is the city's name, and only when someone added the widget."""
-    chave = (city.strip().lower(), lang)
-    with WEATHER_LOCK:
-        if chave in WEATHER and time.time() - WEATHER[chave][0] < WEATHER_TTL:
-            return WEATHER[chave][1]
-    from urllib.parse import quote
-    g = buscar(f"https://geocoding-api.open-meteo.com/v1/search?name={quote(city.strip())}&count=1&language={lang}&format=json")
-    lugares = g.get("results") or []
-    if not lugares:
-        return None
-    p = lugares[0]
-    f = buscar("https://api.open-meteo.com/v1/forecast?latitude={}&longitude={}&current=temperature_2m,weather_code,wind_speed_10m"
-               "&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1".format(p["latitude"], p["longitude"]))
-    cur, dia = f.get("current") or {}, f.get("daily") or {}
-    saida = {"place": ", ".join(x for x in (p.get("name"), p.get("admin1"), p.get("country_code")) if x),
-             "temp": cur.get("temperature_2m"), "code": cur.get("weather_code"), "wind": cur.get("wind_speed_10m"),
-             "max": (dia.get("temperature_2m_max") or [None])[0], "min": (dia.get("temperature_2m_min") or [None])[0]}
-    with WEATHER_LOCK:
-        WEATHER[chave] = (time.time(), saida)
-    return saida
-
-
 # -- service widgets ---------------------------------------------------------------
 
 SVC, SVC_LOCK, SVC_TTL = {"at": 0.0, "data": {}}, threading.Lock(), 60
@@ -2157,16 +2121,6 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, N.state(I.network_ctx(Path(PREFIX) if PREFIX else Path.home(), PREFIX)))
         if url.path == "/api/ui":
             return self._json(200, ui_settings())
-        if url.path == "/api/weather":
-            cidade = q.get("city", "").strip()
-            if not cidade or len(cidade) > 80:
-                return self._json(400, {"error": "city"})
-            if PREFIX:
-                return self._json(200, {"weather": None})      # a sandbox does not reach the network
-            try:
-                return self._json(200, {"weather": weather(cidade, "pt" if q.get("lang") == "pt" else "en")})
-            except (urllib.error.URLError, OSError, ValueError, KeyError) as e:
-                return self._json(502, {"error": f"open-meteo: {e}"})
         if url.path == "/api/svc":
             return self._json(200, {"apps": svc_state(force=q.get("refresh") == "1")})
         if url.path == "/api/monitor":
@@ -2402,8 +2356,10 @@ class Handler(BaseHTTPRequestHandler):
             quais = apps_with_update(lang)
             if not quais:
                 return self._json(400, {"error": loc("nothing to update")})
-            cmds = [c for app, tipo in quais for c in
-                    (upgrade_cmds(app) if tipo == "upgrade" else [qh(app, "--update", "--apply")])]
+            # A header before each service says which one is being updated now.
+            cmds = [c for i, (app, tipo) in enumerate(quais, 1) for c in
+                    [["echo", f"\n=== [{i}/{len(quais)}] {app} ==="],
+                     *(upgrade_cmds(app) if tipo == "upgrade" else [qh(app, "--update", "--apply")])]]
             job = start_job("_host", "update-all", cmds, lang, refrescar=[a for a, _ in quais],
                             origem=self.client_address[0], continuar=True)
             if job is None:
@@ -3159,22 +3115,6 @@ def selftest():
             finally:
                 globals()["catalog"] = antes_cat
 
-            # weather: the city's name is all that leaves; the answer is kept for 15 minutes
-            chamadas = []
-            def falso(u):
-                chamadas.append(u)
-                if "geocoding" in u:
-                    return {"results": [{"name": "Recife", "admin1": "Pernambuco", "country_code": "BR", "latitude": -8.05, "longitude": -34.9}]}
-                return {"current": {"temperature_2m": 29.4, "weather_code": 2, "wind_speed_10m": 14.0},
-                        "daily": {"temperature_2m_max": [31.0], "temperature_2m_min": [24.5]}}
-            w = weather("Recife", "pt", falso)
-            assert w == {"place": "Recife, Pernambuco, BR", "temp": 29.4, "code": 2, "wind": 14.0, "max": 31.0, "min": 24.5}, w
-            assert weather(" recife ", "pt", falso) is w and len(chamadas) == 2, "the same city within 15 minutes asks nothing"
-            assert "name=Recife" in chamadas[0] and "latitude=-8.05" in chamadas[1]
-            assert weather("Nowhere", "pt", lambda u: {"results": []}) is None
-            assert pedir("/api/weather?city=", headers=ok)[0] == 400
-            assert json.loads(pedir("/api/weather?city=Recife", headers=ok)[2]) == {"weather": None}, "a sandbox does not reach the network"
-
             # site monitor: up when it answers below a 500 (a 401 login page is up), down when nothing answers
             class Site(BaseHTTPRequestHandler):
                 def do_HEAD(self):
@@ -3244,7 +3184,7 @@ def selftest():
                 st, _, corpo = pedir("/api/update-all", b"{}", api)
                 assert st == 202 and json.loads(corpo)["apps"] == ["homebox"], corpo
                 est = espera_job(corpo)
-                assert est["rc"] == 0 and "homebox" in est["output"], est["output"][-300:]
+                assert est["rc"] == 0 and "=== [1/1] homebox ===" in est["output"], est["output"][-300:]
             finally:
                 globals()["apps_with_update"] = apps_with_update_orig
             # a failing command does not stop the ones after it, and the job still ends as failed
