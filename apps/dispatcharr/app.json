@@ -1,0 +1,16 @@
+{
+  "$schema": "../app-schema.json",
+  "title": "Dispatcharr",
+  "short_desc": {
+    "en": "Manage and proxy your IPTV streams.",
+    "pt": "Gerencie e redirecione seus streams de IPTV."
+  },
+  "description": {
+    "en": "Organizes IPTV playlists and guides in one place and proxies the streams to your players",
+    "pt": "Organiza listas e guias de IPTV num só lugar e redireciona os streams para os seus players"
+  },
+  "author": "Dispatcharr",
+  "source": "https://github.com/Dispatcharr/Dispatcharr",
+  "docs": "https://dispatcharr.github.io/Dispatcharr-Docs",
+  "category": "Media"
+}

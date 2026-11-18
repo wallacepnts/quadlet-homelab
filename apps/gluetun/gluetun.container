@@ -8,7 +8,7 @@ ContainerName=gluetun
 Network=tsdproxy-net.network
 # Deluge runs on its own by default and this container does nothing until you
 # ask for it. To put Deluge behind the VPN, uncomment everything below and
-# comment the ports and the labels in media-stack-deluge.container — the two
+# comment the ports and the labels in deluge.container — the two
 # cannot publish 8112 at the same time.
 #PublishPort=8112:8112
 #PublishPort=6881:6881
@@ -19,7 +19,7 @@ Network=tsdproxy-net.network
 #Label=tsdproxy.port.web=443/https:8112/http
 #Label=tsdproxy.dash.icon=sh/deluge
 
-EnvironmentFile=%h/.config/containers/env/media-stack-gluetun.env
+EnvironmentFile=%h/.config/containers/env/gluetun.env
 
 AddDevice=/dev/net/tun:/dev/net/tun
 PodmanArgs=--privileged

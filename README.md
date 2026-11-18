@@ -2,7 +2,7 @@
 
 **[🇧🇷 Leia em português](./docs/pt-BR/README.md)**
 
-84 self-hosted services as [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)
+96 self-hosted services as [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)
 units, rootless, one service per folder.
 
 ## Quick start
@@ -161,6 +161,7 @@ Leap 15's problem — it publishes no container image and was not measured here.
 | <img src="./apps/any-sync-bundle/icon.svg" width="48" height="48" alt=""> | [any-sync-bundle](./apps/any-sync-bundle) | A sync server for the Anytype app. |
 | <img src="./apps/audiobookshelf/icon.svg" width="48" height="48" alt=""> | [Audiobookshelf](./apps/audiobookshelf) | A server for your audiobooks and podcasts. |
 | <img src="./apps/authentik/icon.svg" width="48" height="48" alt=""> | [Authentik](./apps/authentik) | A login and single sign-on server. |
+| <img src="./apps/bazarr/icon.svg" width="48" height="48" alt=""> | [Bazarr](./apps/bazarr) | Subtitles for your movies and series. |
 | <img src="./apps/beaverhabits/icon.png" width="48" height="48" alt=""> | [Beaver Habits](./apps/beaverhabits) | A simple habit tracker. |
 | <img src="./apps/beszel/icon.svg" width="48" height="48" alt=""> | [Beszel](./apps/beszel) | Shows how busy your server is. |
 | <img src="./apps/calibre-web-automated/icon.svg" width="48" height="48" alt=""> | [Calibre-Web-Automated](./apps/calibre-web-automated) | Read and manage your ebook library in the browser. |
@@ -169,8 +170,11 @@ Leap 15's problem — it publishes no container image and was not measured here.
 | <img src="./apps/collabora/icon.svg" width="48" height="48" alt=""> | [Collabora](./apps/collabora) | Edit documents in your browser. |
 | <img src="./apps/cookcli/icon.svg" width="48" height="48" alt=""> | [CookCLI](./apps/cookcli) | Keep your recipes as plain text files. |
 | <img src="./apps/copyparty/icon.svg" width="48" height="48" alt=""> | [Copyparty](./apps/copyparty) | A file server you can upload to from any device. |
+| <img src="./apps/deluge/icon.svg" width="48" height="48" alt=""> | [Deluge](./apps/deluge) | A torrent client with a web interface. |
+| <img src="./apps/dispatcharr/icon.svg" width="48" height="48" alt=""> | [Dispatcharr](./apps/dispatcharr) | Manage and proxy your IPTV streams. |
 | <img src="./apps/docuseal/icon.svg" width="48" height="48" alt=""> | [DocuSeal](./apps/docuseal) | Sign documents on your own server. |
 | <img src="./apps/donetick/icon.svg" width="48" height="48" alt=""> | [Donetick](./apps/donetick) | Keep track of household chores. |
+| <img src="./apps/downtify/icon.svg" width="48" height="48" alt=""> | [Downtify](./apps/downtify) | Download Spotify songs and playlists. |
 | <img src="./apps/dozzle/icon.svg" width="48" height="48" alt=""> | [Dozzle](./apps/dozzle) | Read your containers' logs in the browser. |
 | <img src="./apps/excalidash/icon.svg" width="48" height="48" alt=""> | [ExcaliDash](./apps/excalidash) | A place to organize and share Excalidraw drawings. |
 | <img src="./apps/faved/icon.svg" width="48" height="48" alt=""> | [Faved](./apps/faved) | A simple place to save bookmarks. |
@@ -182,6 +186,7 @@ Leap 15's problem — it publishes no container image and was not measured here.
 | <img src="./apps/ghost/icon.webp" width="48" height="48" alt=""> | [Ghost](./apps/ghost) | A blog and newsletter platform. |
 | <img src="./apps/gitea/icon.svg" width="48" height="48" alt=""> | [Gitea](./apps/gitea) | A simple Git server for your code. |
 | <img src="./apps/gitea-runner/icon.svg" width="48" height="48" alt=""> | [Gitea Runner](./apps/gitea-runner) | Runs the automated workflows of your Gitea. |
+| <img src="./apps/gluetun/icon.svg" width="48" height="48" alt=""> | [Gluetun](./apps/gluetun) | A VPN client container for other containers. |
 | <img src="./apps/grafana/icon.svg" width="48" height="48" alt=""> | [Grafana](./apps/grafana) | Charts and dashboards for your data. |
 | <img src="./apps/headscale/icon.svg" width="48" height="48" alt=""> | [Headscale](./apps/headscale) | Your own server for a private network. |
 | <img src="./apps/hermes-agent/icon.png" width="48" height="48" alt=""> | [Hermes Agent](./apps/hermes-agent) | A personal AI assistant. |
@@ -191,19 +196,21 @@ Leap 15's problem — it publishes no container image and was not measured here.
 | <img src="./apps/immich/icon.svg" width="48" height="48" alt=""> | [Immich](./apps/immich) | Back up and browse your photos and videos. |
 | <img src="./apps/instagram-monitor/icon.svg" width="48" height="48" alt=""> | [Instagram Monitor](./apps/instagram-monitor) | Watches Instagram profiles and shows their activity. |
 | <img src="./apps/invio/icon.svg" width="48" height="48" alt=""> | [Invio](./apps/invio) | Create and track invoices. |
+| <img src="./apps/jellyfin/icon.svg" width="48" height="48" alt=""> | [Jellyfin](./apps/jellyfin) | A media server for your home collection. |
 | <img src="./apps/karakeep/icon.svg" width="48" height="48" alt=""> | [Karakeep](./apps/karakeep) | Save and search your bookmarks. |
 | <img src="./apps/karaoke-eternal/icon.svg" width="48" height="48" alt=""> | [Karaoke Eternal](./apps/karaoke-eternal) | Run karaoke parties from your own songs. |
 | <img src="./apps/kiwix/icon.svg" width="48" height="48" alt=""> | [Kiwix](./apps/kiwix) | Read Wikipedia and other libraries offline. |
 | <img src="./apps/koffan/icon.png" width="48" height="48" alt=""> | [Koffan](./apps/koffan) | A shared shopping list. |
 | <img src="./apps/komga/icon.svg" width="48" height="48" alt=""> | [Komga](./apps/komga) | Read your comics and manga. |
+| <img src="./apps/lidarr/icon.svg" width="48" height="48" alt=""> | [Lidarr](./apps/lidarr) | Music collection manager. |
 | <img src="./apps/lubelogger/icon.png" width="48" height="48" alt=""> | [LubeLogger](./apps/lubelogger) | Track maintenance for your vehicles. |
 | <img src="./apps/mailpit/icon.svg" width="48" height="48" alt=""> | [Mailpit](./apps/mailpit) | Catches the emails your apps send so you can read them. |
 | <img src="./apps/mdrop/icon.svg" width="48" height="48" alt=""> | [mdrop](./apps/mdrop) | Turn documents into Markdown. |
-| <img src="./apps/media-stack/icon.svg" width="48" height="48" alt=""> | [Media Stack](./apps/media-stack) | A media server and the tools that fill it. |
 | <img src="./apps/memos/icon.svg" width="48" height="48" alt=""> | [Memos](./apps/memos) | A simple place for quick notes. |
 | <img src="./apps/metube/icon.svg" width="48" height="48" alt=""> | [MeTube](./apps/metube) | Download videos from the web. |
 | <img src="./apps/monica/icon.svg" width="48" height="48" alt=""> | [Monica](./apps/monica) | Remember the people in your life. |
 | <img src="./apps/n8n/icon.svg" width="48" height="48" alt=""> | [n8n](./apps/n8n) | Automate tasks between your apps. |
+| <img src="./apps/navidrome/icon.svg" width="48" height="48" alt=""> | [Navidrome](./apps/navidrome) | Your music, streamed to any Subsonic app. |
 | <img src="./apps/neko/icon.svg" width="48" height="48" alt=""> | [neko](./apps/neko) | A shared browser you can use together. |
 | <img src="./apps/netbootxyz/icon.svg" width="48" height="48" alt=""> | [netboot.xyz](./apps/netbootxyz) | Install an operating system over the network. |
 | <img src="./apps/nginx/icon.svg" width="48" height="48" alt=""> | [nginx](./apps/nginx) | A web server for static files. |
@@ -219,11 +226,16 @@ Leap 15's problem — it publishes no container image and was not measured here.
 | <img src="./apps/postfix/icon.svg" width="48" height="48" alt=""> | [Postfix](./apps/postfix) | Sends email on behalf of your other apps. |
 | <img src="./apps/postiz/icon.svg" width="48" height="48" alt=""> | [Postiz](./apps/postiz) | Schedule your social media posts. |
 | <img src="./apps/prometheus/icon.svg" width="48" height="48" alt=""> | [Prometheus](./apps/prometheus) | Collects numbers about how your services run. |
+| <img src="./apps/prowlarr/icon.svg" width="48" height="48" alt=""> | [Prowlarr](./apps/prowlarr) | Indexer manager for Sonarr, Radarr and Lidarr. |
 | <img src="./apps/proxmox/icon.svg" width="48" height="48" alt=""> | [Proxmox VE](./apps/proxmox) | Try the Proxmox virtualization system. |
+| <img src="./apps/radarr/icon.svg" width="48" height="48" alt=""> | [Radarr](./apps/radarr) | Movie collection manager. |
 | <img src="./apps/radicale/icon.svg" width="48" height="48" alt=""> | [Radicale](./apps/radicale) | A calendar and contacts server. |
 | <img src="./apps/rclone/icon.svg" width="48" height="48" alt=""> | [rclone](./apps/rclone) | Move files between your cloud accounts. |
 | <img src="./apps/retrom/icon.webp" width="48" height="48" alt=""> | [Retrom](./apps/retrom) | A library for your retro games. |
+| <img src="./apps/sabnzbd/icon.svg" width="48" height="48" alt=""> | [SABnzbd](./apps/sabnzbd) | A Usenet downloader. |
 | <img src="./apps/searxng/icon.png" width="48" height="48" alt=""> | [SearXNG](./apps/searxng) | Search the web without being tracked. |
+| <img src="./apps/seerr/icon.svg" width="48" height="48" alt=""> | [Seerr](./apps/seerr) | Request movies and series for your media server. |
+| <img src="./apps/sonarr/icon.svg" width="48" height="48" alt=""> | [Sonarr](./apps/sonarr) | TV series collection manager. |
 | <img src="./apps/stirling-pdf/icon.svg" width="48" height="48" alt=""> | [Stirling-PDF](./apps/stirling-pdf) | Edit and convert PDF files. |
 | <img src="./apps/syncthing/icon.svg" width="48" height="48" alt=""> | [Syncthing](./apps/syncthing) | Sync files between your devices. |
 | <img src="./apps/toolbx/icon.png" width="48" height="48" alt=""> | [Toolbx](./apps/toolbx) | Throwaway Linux shells for trying things. |

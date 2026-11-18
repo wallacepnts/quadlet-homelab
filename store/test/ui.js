@@ -455,6 +455,18 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   confere(sk.closed === true, "console: abrir os logs fecha a sessão");
   $("panel").open = false;
 
+  // an install made under media-stack: said above everything, with a button that starts the migration
+  api.S.legacy = [{ from: "media-stack", units: [{ old: "media-stack-sonarr", new: "sonarr" }, { old: "media-stack-jellyfin", new: "jellyfin" }] }];
+  api.setView("apps"); api.renderGrid();
+  confere(!$("legacy").hidden && /Uma instalação antiga do media-stack foi encontrada \(2 apps\)/.test($("legacy").textContent) && /nada é copiado nem apagado/.test($("legacy").textContent), "migração: o aviso de uma instalação antiga");
+  rotas["/api/migrate"] = { job: "jm", apps: ["sonarr", "jellyfin"] }; rotas["/api/job/jm"] = { output: "done\n", next: 1, rc: 0 };
+  const antesMg = posts.length;
+  porTexto($("legacy"), "Migrar")[0].listeners.click(); await esperar(1300);
+  confere(posts.slice(antesMg).some((x) => x.rota === "/api/migrate" && x.corpo.from === "media-stack"), "o botão Migrar pede a migração");
+  api.S.legacy = []; api.renderGrid();
+  confere($("legacy").hidden, "sem instalação antiga, sem aviso");
+  $("bulk").open = false;
+
   // a stopped or paused app greys out: the tile says its state, and the stylesheet does the rest
   const bdTile = api.S.apps.find((x) => x.id === "homebox");
   api.setView("apps");

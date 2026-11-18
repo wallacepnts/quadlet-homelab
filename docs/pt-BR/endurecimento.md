@@ -68,19 +68,19 @@ motivo — e se mantém na mão.
 | `lubelogger` | no | **none** |
 | `mailpit` | yes | **none** + `User=1000` |
 | `mdrop` | yes | **none** |
-| `media-stack-bazarr` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
-| `media-stack-deluge` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
-| `media-stack-dispatcharr` | no | podman default |
-| `media-stack-downtify` | no | podman default |
-| `media-stack-gluetun` | no | podman default |
-| `media-stack-jellyfin` | no | podman default + `UserNS=keep-id` |
-| `media-stack-lidarr` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
-| `media-stack-navidrome` | yes | **none** + `User=1000` |
-| `media-stack-prowlarr` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
-| `media-stack-radarr` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
-| `media-stack-sabnzbd` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
-| `media-stack-seerr` | yes | **none** + `UserNS=keep-id` |
-| `media-stack-sonarr` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
+| `bazarr` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
+| `deluge` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
+| `dispatcharr` | no | podman default |
+| `downtify` | no | podman default |
+| `gluetun` | no | podman default |
+| `jellyfin` | no | podman default + `UserNS=keep-id` |
+| `lidarr` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
+| `navidrome` | yes | **none** + `User=1000` |
+| `prowlarr` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
+| `radarr` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
+| `sabnzbd` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
+| `seerr` | yes | **none** + `UserNS=keep-id` |
+| `sonarr` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
 | `memos` | yes | **none** + `User=1000` |
 | `metube` | yes | **none** + `User=1000` |
 | `monica` | no | podman default |
@@ -209,7 +209,7 @@ mensagem prova por que ele não vai além.
 | `excalidash-backend` | `ReadOnly=true` | `EROFS: read-only file system, utime '/root/.cache/prisma/...'` |
 | `excalidash` | `ReadOnly=true` | o entrypoint gera o `/etc/nginx/nginx.conf` a partir do template a cada start |
 | `neko` | `ReadOnly=true` | sobe mas não serve: o supervisord escreve o socket em `/var/run` |
-| media-stack | um job de backup por unit | o gancho para a stack pelo prefixo (`media-stack-*`), numa chamada só; parar doze leva mais que os 60s padrão, daí o `WEBHOOK_TIMEOUT=180` |
+| uma pasta de várias units (`vm`, `toolbx`) | um job de backup por unit | o gancho para as units pelo prefixo, numa chamada só; parar muitas leva mais que os 60s padrão, daí o `WEBHOOK_TIMEOUT=180` |
 | `vm-windows` | `DISK_TYPE=sata` no Windows XP | ignorado — `writeState "type" "blk"` é fixo para `winxpx*`, e não existe driver virtio para XP |
 | `casa` | `User=1000` | `Script must be executed with root privileges.` (saída 12) — o entrypoint se recusa a rodar sem privilégio e baixa para o uid 1000 sozinho, com `gosu` |
 | `casa` | `ReadOnly=true` | `groupadd: cannot lock /etc/group` — o entrypoint cria o grupo e o usuário a cada start e ainda faz chown em `/var/lib/casaos`, onde mora a UI, então um tmpfs por cima esconderia a UI |

@@ -283,9 +283,9 @@ def scenario_answers(tmp):
           "and a stopped one is down")
 
     # addresses() narrows to the picked unit, like every other accessor.
-    s = I.Service("media-stack", None, "media-stack-jellyfin")
+    s = I.Service("vm", None, "vm-qemu")
     check(len(I.addresses(s, "exemplo")) == 1,
-          "a picked unit gets its own address, not the folder's twelve")
+          "a picked unit gets its own address, not the folder's six")
 
     # ${VAR} volumes reach the branch written for them.
     tipos = dict((f, t) for f, t in
@@ -417,7 +417,7 @@ def scenario_archive_safety(tmp):
     """
     home = str(Path(tmp, "arq"))
     out = str(Path(tmp, "arq-out"))
-    unidade = "media-stack-jellyfin"
+    unidade = "toolbx-ubuntu"
     run(unidade, "--apply", "--prefix", home)
     run(unidade, "--backup", "--apply", "--prefix", home, "--out", out)
     tgz = sorted(Path(out).glob(f"{unidade}-*.tar.gz"))
@@ -430,18 +430,18 @@ def scenario_archive_safety(tmp):
 
     # One matching entry must not license the whole tar.
     mal = Path(tmp, "mal")
-    (mal / "volumes" / "media-stack" / "jellyfin").mkdir(parents=True, exist_ok=True)
+    (mal / "volumes" / "toolbx" / "ubuntu").mkdir(parents=True, exist_ok=True)
     (mal / "secrets" / "vaultwarden").mkdir(parents=True, exist_ok=True)
     (mal / "secrets" / "vaultwarden" / "admin-token.txt").write_text("stolen\n")
     envenenado = Path(tmp, "poison.tar.gz")
     subprocess.run(["tar", "czf", str(envenenado), "-C", str(mal),
-                    "volumes/media-stack", "secrets/vaultwarden"], check=True)
+                    "volumes/toolbx", "secrets/vaultwarden"], check=True)
     r = run(unidade, "--restore", str(envenenado), "--prefix", home, expected=1)
     check("secrets/vaultwarden" in r.stdout,
           "an archive carrying another service's paths is refused, naming them")
 
     # A tar that fails must not have deleted anything first.
-    vivo = path(home, "volumes", "media-stack", "jellyfin")
+    vivo = path(home, "volumes", "toolbx", "ubuntu")
     antes = sorted(x.name for x in vivo.rglob("*"))
     truncado = Path(tmp, "truncado.tar.gz")
     truncado.write_bytes(tgz[0].read_bytes()[:200])
@@ -630,7 +630,7 @@ def scenario_deprecated(tmp):
     import json
     raiz = Path(tmp, "dep-repo")
     raiz.mkdir()
-    for f in ("install.py", "qhui.py", "overrides.py", "trials.py", "imagepin.py", "manifest.py", "instances.py", "network.py"):
+    for f in ("install.py", "qhui.py", "overrides.py", "trials.py", "imagepin.py", "manifest.py", "instances.py", "network.py", "migrate.py"):
         shutil.copy(ROOT / f, raiz / f)
     shutil.copytree(ROOT / "apps", raiz / "apps", ignore_dangling_symlinks=True)   # apps/durockrj may point nowhere
     import manifest as MF
@@ -700,7 +700,7 @@ def scenario_backup_exclude(tmp):
     """`[backup] exclude` leaves rebuildable folders out of the archive, says how much, and the restore brings the folders back."""
     raiz = Path(tmp, "bx-repo")
     raiz.mkdir()
-    for f in ("install.py", "qhui.py", "overrides.py", "trials.py", "imagepin.py", "manifest.py", "instances.py", "network.py"):
+    for f in ("install.py", "qhui.py", "overrides.py", "trials.py", "imagepin.py", "manifest.py", "instances.py", "network.py", "migrate.py"):
         shutil.copy(ROOT / f, raiz / f)
     shutil.copytree(ROOT / "apps", raiz / "apps", ignore_dangling_symlinks=True)
     import manifest as MF

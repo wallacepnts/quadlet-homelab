@@ -69,19 +69,19 @@ and is maintained by hand.
 | `lubelogger` | no | **none** |
 | `mailpit` | yes | **none** + `User=1000` |
 | `mdrop` | yes | **none** |
-| `media-stack-bazarr` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
-| `media-stack-deluge` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
-| `media-stack-dispatcharr` | no | podman default |
-| `media-stack-downtify` | no | podman default |
-| `media-stack-gluetun` | no | podman default |
-| `media-stack-jellyfin` | no | podman default + `UserNS=keep-id` |
-| `media-stack-lidarr` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
-| `media-stack-navidrome` | yes | **none** + `User=1000` |
-| `media-stack-prowlarr` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
-| `media-stack-radarr` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
-| `media-stack-sabnzbd` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
-| `media-stack-seerr` | yes | **none** + `UserNS=keep-id` |
-| `media-stack-sonarr` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
+| `bazarr` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
+| `deluge` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
+| `dispatcharr` | no | podman default |
+| `downtify` | no | podman default |
+| `gluetun` | no | podman default |
+| `jellyfin` | no | podman default + `UserNS=keep-id` |
+| `lidarr` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
+| `navidrome` | yes | **none** + `User=1000` |
+| `prowlarr` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
+| `radarr` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
+| `sabnzbd` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
+| `seerr` | yes | **none** + `UserNS=keep-id` |
+| `sonarr` | no | 4 (`chown`, `net_bind_service`, `setgid`, `setuid`) |
 | `memos` | yes | **none** + `User=1000` |
 | `metube` | yes | **none** + `User=1000` |
 | `monica` | no | podman default |
@@ -211,7 +211,7 @@ works, and only the message proves why it cannot go further.
 | `excalidash-backend` | `ReadOnly=true` | `EROFS: read-only file system, utime '/root/.cache/prisma/...'` |
 | `excalidash` | `ReadOnly=true` | the entrypoint generates `/etc/nginx/nginx.conf` from the template on every start |
 | `neko` | `ReadOnly=true` | comes up but does not serve: supervisord writes its socket in `/var/run` |
-| media-stack | one backup job per unit | the hook stops the stack by prefix (`media-stack-*`) in a single call; stopping twelve takes longer than the default 60s, hence `WEBHOOK_TIMEOUT=180` |
+| a folder of several units (`vm`, `toolbx`) | one backup job per unit | the hook stops the units by prefix in a single call; stopping many takes longer than the default 60s, hence `WEBHOOK_TIMEOUT=180` (the old media-stack, twelve units, was the case that showed it; its apps are independent now) |
 | `vm-windows` | `DISK_TYPE=sata` on Windows XP | ignored — `writeState "type" "blk"` is hardcoded for `winxpx*`, and there is no virtio driver for XP |
 | `casa` | `User=1000` | `Script must be executed with root privileges.` (exit 12) — the entrypoint refuses to run unprivileged, then drops to uid 1000 itself with `gosu` |
 | `casa` | `ReadOnly=true` | `groupadd: cannot lock /etc/group` — the entrypoint creates the group and the user on every start, and also chowns `/var/lib/casaos`, where the UI lives, so a tmpfs over it would hide the UI |

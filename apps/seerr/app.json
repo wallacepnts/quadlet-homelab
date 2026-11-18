@@ -1,0 +1,18 @@
+{
+  "$schema": "../app-schema.json",
+  "title": "Seerr",
+  "short_desc": {
+    "en": "Request movies and series for your media server.",
+    "pt": "Peça filmes e séries para o seu servidor de mídia."
+  },
+  "description": {
+    "en": "A request page for the people who use your media server: they ask, and Sonarr and Radarr fetch",
+    "pt": "Uma página de pedidos para quem usa o seu servidor de mídia: a pessoa pede, e o Sonarr e o Radarr buscam"
+  },
+  "author": "seerr-team",
+  "source": "https://github.com/seerr-team/seerr",
+  "docs": "https://docs.seerr.dev",
+  "category": "Media",
+  "config": { ".env.example": "%h/.config/containers/env/seerr.env" },
+  "units": { "seerr": { "image": "v{version}" } }
+}

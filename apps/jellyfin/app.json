@@ -1,0 +1,31 @@
+{
+  "$schema": "../app-schema.json",
+  "title": "Jellyfin",
+  "short_desc": {
+    "en": "A media server for your home collection.",
+    "pt": "Um servidor de mídia para a sua coleção."
+  },
+  "description": {
+    "en": "Streams your movies, series and music to any device, with no account and nothing sent out",
+    "pt": "Transmite seus filmes, séries e músicas para qualquer dispositivo, sem conta e sem enviar nada para fora"
+  },
+  "author": "jellyfin",
+  "source": "https://github.com/jellyfin/jellyfin",
+  "docs": "https://jellyfin.org/docs",
+  "category": "Media",
+  "vars": { "MEDIA_DATA_DIR": "~/data" },
+  "ask": {
+    "MEDIA_DATA_DIR": {
+      "type": "path",
+      "label": { "en": "Media folder", "pt": "Pasta de mídia" },
+      "hint": {
+        "en": "Where the library lives; every media app reads it.",
+        "pt": "Onde fica a biblioteca; todos os apps de mídia leem dela."
+      },
+      "required": true
+    }
+  },
+  "widgets": [{ "type": "jellyfin" }],
+  "backup": { "exclude": ["cache"] },
+  "units": { "jellyfin": { "image": "{version:2}" } }
+}

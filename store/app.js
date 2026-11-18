@@ -51,6 +51,9 @@ const T = {
     podmanLate: (v, rec) => `O repositório foi verificado no Podman ${rec}. As versões 6.1.1 a 6.1.3 corrigiram falhas de segurança (extração de arquivos fora da pasta, importação de imagens e volumes, imagens de checkpoint). Atualize o pacote do host quando puder: ${v} é mais antiga.`,
     podmanOk: (rec) => `Igual ou mais nova que a ${rec}, com a qual o repositório foi verificado.`,
     driftTitle: (units) => `O .container de ${units} mudou no repositório desde a instalação`, driftHint: "Atualizar escreve o arquivo novo e reinicia o serviço. A diferença (− o que roda agora, + o que o repositório diz):", driftNone: "Sem diferença.",
+    legacyTitle: (velho, n) => `Uma instalação antiga do ${velho} foi encontrada (${n} apps)`,
+    legacyBody: "Cada um deles agora é um app independente, com a própria pasta de dados e as próprias configurações. Migrar move os dados e as configurações para os apps novos (nada é copiado nem apagado, só renomeado), reescreve as units a partir do repositório e liga de novo o que estava rodando.",
+    legacyButton: "Migrar", legacyRunning: "Migrando…", migrateAction: "Migração",
     fGrid: "Grade", fList: "Lista", fColName: "Nome", fColSize: "Tamanho", fColDate: "Modificado", fPlaces: "Locais",
     fUpload: "Enviar", fNewFolder: "Nova pasta", fRename: "Renomear", fCopy: "Copiar", fCut: "Recortar", fPaste: "Colar", fDelete: "Apagar",
     fSure: (n) => `Confirmar: apagar ${n} ${n === 1 ? "item" : "itens"}`, fCancel: "Cancelar", fOk: "OK", fName: "Nome", fSel: (n) => `${n} selecionado${n === 1 ? "" : "s"}`,
@@ -197,7 +200,7 @@ const T = {
     took: "Duração", from: "de", output: "Saída",
     act: { pause: "Pausar", resume: "Retomar", install: "Instalar", update: "Atualizar", upgrade: "Atualizar versão", remove: "Remover", backup: "Backup",
            restore: "Restaurar", access: "Acesso", env: "Configuração", start: "Iniciar", stop: "Parar", restart: "Reiniciar",
-           customize: "Personalizar", revert: "Reverter", prune: "Limpar", "custom-unit": ".container próprio" },
+           customize: "Personalizar", revert: "Reverter", prune: "Limpar", "custom-unit": ".container próprio", migrate: "Migração" },
     link: { repo: "Projeto", docs: "Documentação", issues: "Problemas", releases: "Releases", image: "Imagem", recipe: "Receita neste repositório" },
     shots: "Capturas de tela",
     lang: "English",
@@ -250,6 +253,9 @@ const T = {
     podmanLate: (v, rec) => `The repository was verified on Podman ${rec}. Versions 6.1.1 to 6.1.3 fixed security flaws (files written outside a folder, image and volume imports, checkpoint images). Update the host package when you can: ${v} is older.`,
     podmanOk: (rec) => `The same as or newer than ${rec}, which the repository was verified on.`,
     driftTitle: (units) => `The .container of ${units} changed in the repository since the install`, driftHint: "Updating writes the new file and restarts the service. The difference (− what runs now, + what the repository says):", driftNone: "No difference.",
+    legacyTitle: (velho, n) => `An old install of ${velho} was found (${n} apps)`,
+    legacyBody: "Each of them is now an independent app, with its own data folder and its own settings. Migrating moves the data and the settings to the new apps (nothing is copied or deleted, only renamed), writes the units again from the repository and starts what was running again.",
+    legacyButton: "Migrate", legacyRunning: "Migrating…", migrateAction: "Migration",
     fGrid: "Grid", fList: "List", fColName: "Name", fColSize: "Size", fColDate: "Modified", fPlaces: "Places",
     fUpload: "Upload", fNewFolder: "New folder", fRename: "Rename", fCopy: "Copy", fCut: "Cut", fPaste: "Paste", fDelete: "Delete",
     fSure: (n) => `Confirm: delete ${n} ${n === 1 ? "item" : "items"}`, fCancel: "Cancel", fOk: "OK", fName: "Name", fSel: (n) => `${n} selected`,
@@ -396,7 +402,7 @@ const T = {
     took: "Took", from: "from", output: "Output",
     act: { pause: "Pause", resume: "Resume", install: "Install", update: "Update", upgrade: "Update version", remove: "Remove", backup: "Backup",
            restore: "Restore", access: "Access", env: "Settings", start: "Start", stop: "Stop", restart: "Restart",
-           customize: "Customize", revert: "Revert", prune: "Clean up", "custom-unit": "own .container" },
+           customize: "Customize", revert: "Revert", prune: "Clean up", "custom-unit": "own .container", migrate: "Migration" },
     link: { repo: "Project", docs: "Documentation", issues: "Issues", releases: "Releases", image: "Image", recipe: "Recipe in this repository" },
     shots: "Screenshots",
     lang: "Português",
@@ -970,7 +976,18 @@ function renderHome() {
     h("div", { class: "sect" }, t("allApps")));
 }
 
+// An install made under an app the repository split (media-stack): said above everything, with the way to move it.
+function renderLegacy() {
+  const el = $("legacy"), achados = S.legacy || [];
+  el.hidden = !achados.length;
+  fill(el, ...achados.flatMap((x) => [
+    h("b", {}, t("legacyTitle")(x.from, x.units.length)),
+    h("p", { class: "muted" }, t("legacyBody")),
+    h("button", { type: "button", onclick: () => jobWindow(t("legacyRunning"), () => api("/api/migrate", { from: x.from })) }, t("legacyButton"))]));
+}
+
 function renderGrid() {
+  renderLegacy();
   const q = S.search.trim().toLowerCase();
   const meus = S.view === "apps";
   const pool = meus ? installed().filter(FILTERS[S.filter] || (() => true))
@@ -995,6 +1012,7 @@ async function load() {
   S.podman = cat.podman;
   S.podmanRec = cat.podman_recommended;
   S.podmanOutdated = !!cat.podman_outdated;
+  S.legacy = cat.legacy || [];
   if (!S.view) {
     const hash = (location.hash || "").slice(1);
     S.view = ["apps", "store"].includes(hash) ? hash : (installed().length ? "apps" : "store");

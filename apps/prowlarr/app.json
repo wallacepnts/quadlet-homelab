@@ -1,0 +1,17 @@
+{
+  "$schema": "../app-schema.json",
+  "title": "Prowlarr",
+  "short_desc": {
+    "en": "Indexer manager for Sonarr, Radarr and Lidarr.",
+    "pt": "Gerenciador de indexadores para Sonarr, Radarr e Lidarr."
+  },
+  "description": {
+    "en": "Keeps your torrent and Usenet indexers in one place and syncs them to Sonarr, Radarr and Lidarr",
+    "pt": "Guarda seus indexadores de torrent e Usenet num só lugar e os sincroniza com o Sonarr, Radarr e Lidarr"
+  },
+  "author": "Prowlarr",
+  "source": "https://github.com/Prowlarr/Prowlarr",
+  "docs": "https://wiki.servarr.com/prowlarr",
+  "category": "Downloads",
+  "config": { ".env.example": "%h/.config/containers/env/prowlarr.env" }
+}

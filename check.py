@@ -145,7 +145,7 @@ def check_units(folders):
         # starts: `systemctl start <app>` walks Requires=/Wants=, and a unit
         # outside that walk only comes up at the next login, with an empty
         # journal in the meantime. Three of them hid that way. Only real stacks
-        # are checked — a folder of independent services (media-stack, vm,
+        # are checked — a folder of independent services (vm, toolbx,
         # toolbx) has no main unit to hang them from.
         principal = main_unit(folder)
         if nets and principal and len(conts) > 1:
@@ -551,7 +551,7 @@ def check_shared_labels(folders):
     `:Z` is a private SELinux label: each container that starts relabels the
     path to its own categories, and the one that started before loses it.
     Measured: two containers on one folder with `:Z`, the first reads it, the
-    second starts, the first gets `Permission denied`. media-stack mounted
+    second starts, the first gets `Permission denied`. The old media-stack mounted
     ${MEDIA_DATA_DIR} that way in nine units — only the last one up could see
     the media — and authentik and beszel shared a folder the same way. `:z` is
     the shared label; a container with SecurityLabelDisable (zerobyte, which
@@ -673,7 +673,7 @@ def check_manifest(folders):
         # [vars]: every ${VAR} a Volume= of this folder names needs a default
         # here, because it is what the install offers when it asks — and a
         # variable left unset turns `${MEDIA_DATA_DIR}/downloads` into
-        # `/downloads`, which is how media-stack-downtify failed to start.
+        # `/downloads`, which is how downtify failed to start.
         usadas = set()
         for c in folder.glob("*.container"):
             for k, v in directives_of(c):

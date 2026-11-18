@@ -337,7 +337,7 @@ def format_unit(text):
                 pendente.append(linha.rstrip())
                 anterior_desligada = False
                 continue
-            # Commented-out directives in a row are one switch: media-stack-
+            # Commented-out directives in a row are one switch:
             # gluetun's "uncomment everything below" covers three ports and ten
             # labels, and splitting them between the network and label blocks
             # would leave half of what has to be turned on somewhere else.
@@ -369,7 +369,7 @@ def format_unit(text):
                 sub = prefixos.index(pre)
             # A commented-out switch goes after the active lines of its block:
             # the instruction above one is about those lines ("comment the
-            # four lines above" in media-stack-deluge), and moving it among
+            # four lines above" in deluge), and moving it among
             # them would make it point at the wrong ones.
             desligada = ls[-1].lstrip().startswith(("#", ";"))
             grupos.setdefault((g, sub), []).append((desligada, i, n, ls))
@@ -528,9 +528,9 @@ Restart=always
     assert format_unit(f) == f, "idempotent"
     blocos = f.split("[Container]\n")[1].split("\n\n[Service]")[0].split("\n\n")
     assert blocos[0] == "Image=a/b:1", blocos[0]
-    # the switch stays whole — its label too, as in media-stack-gluetun — and
+    # the switch stays whole — its label too, as in gluetun — and
     # after the active lines it talks about, even though it starts with Network=,
-    # which alone would sort ahead of the ports (media-stack-deluge's case)
+    # which alone would sort ahead of the ports (deluge's case)
     assert blocos[1] == ("Network=n.network\nPublishPort=1:1\n"
                          "# comment ports and the two lines above, then uncomment below\n"
                          "#Network=outra.network\n#Label=tsdproxy.name=y"), blocos[1]

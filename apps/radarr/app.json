@@ -1,0 +1,27 @@
+{
+  "$schema": "../app-schema.json",
+  "title": "Radarr",
+  "short_desc": { "en": "Movie collection manager.", "pt": "Gerenciador de coleção de filmes." },
+  "description": {
+    "en": "Tracks the movies you want and fetches them through your indexers and download client, renaming and filing them in the library",
+    "pt": "Acompanha os filmes que você quer e os busca pelos seus indexadores e cliente de download, renomeando e arquivando na biblioteca"
+  },
+  "author": "Radarr",
+  "source": "https://github.com/Radarr/Radarr",
+  "docs": "https://wiki.servarr.com/radarr",
+  "category": "Downloads",
+  "config": { ".env.example": "%h/.config/containers/env/radarr.env" },
+  "vars": { "MEDIA_DATA_DIR": "~/data" },
+  "ask": {
+    "MEDIA_DATA_DIR": {
+      "type": "path",
+      "label": { "en": "Media folder", "pt": "Pasta de mídia" },
+      "hint": {
+        "en": "Where the library lives; every media app reads it.",
+        "pt": "Onde fica a biblioteca; todos os apps de mídia leem dela."
+      },
+      "required": true
+    }
+  },
+  "widgets": [{ "type": "radarr" }]
+}

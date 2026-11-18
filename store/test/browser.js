@@ -60,6 +60,16 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
   console.log("grade carregou:", await ate("document.querySelectorAll('.card').length > 0"), "| azulejos:", await ev("document.querySelectorAll('.tile').length"));
   await esperar(2500);
 
+  if (MODO === "legado") {
+    // reads only: the banner of an old media-stack install, and what the new apps look like in the store
+    await ate("document.querySelectorAll('.tile').length > 0", 15000); await esperar(2000);
+    console.log("aviso:", await ev("(() => { const e = document.getElementById('legacy'); return e.hidden ? 'oculto' : e.textContent.trim().slice(0, 160); })()"));
+    await foto("90-aviso-migracao");
+    await tab("tab-store"); await esperar(900);
+    console.log("loja tem:", await ev("['Jellyfin','Sonarr','Radarr','Deluge','Gluetun','Seerr'].filter((n) => document.body.textContent.includes(n)).join(', ')"));
+    await foto("91-loja-novos-apps");
+  }
+
   if (MODO === "cinza") {
     // reads only: a stopped or paused app's icon is grey and a little transparent
     await ate("document.querySelectorAll('.tile').length > 0", 15000); await esperar(2500);

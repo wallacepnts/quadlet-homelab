@@ -1,0 +1,18 @@
+{
+  "$schema": "../app-schema.json",
+  "title": "Gluetun",
+  "short_desc": {
+    "en": "A VPN client container for other containers.",
+    "pt": "Um cliente de VPN em container para outros containers."
+  },
+  "description": {
+    "en": "Connects to your VPN provider and lets other containers, such as Deluge, send their traffic through it; it does nothing until you ask for it",
+    "pt": "Conecta ao seu provedor de VPN e deixa outros containers, como o Deluge, passarem o tráfego por ele; não faz nada até você pedir"
+  },
+  "author": "qdm12",
+  "source": "https://github.com/qdm12/gluetun",
+  "docs": "https://github.com/qdm12/gluetun-wiki",
+  "category": "Network & Security",
+  "config": { ".env.example": "%h/.config/containers/env/gluetun.env" },
+  "units": { "gluetun": { "upstream": "passteque/gluetun", "image": "v{version}" } }
+}

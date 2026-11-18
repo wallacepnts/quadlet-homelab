@@ -11,14 +11,14 @@ PublishPort=6881:6881
 PublishPort=6881:6881/udp
 # To send Deluge's traffic through the VPN instead: comment Network= and the
 # three PublishPort= above, uncomment the line below, then do the mirror image
-# in media-stack-gluetun.container, which then publishes and proxies on
+# in gluetun.container, which then publishes and proxies on
 # Deluge's behalf. Deluge cannot keep its own ports in that mode — it stops
 # having an interface of its own.
-#Network=media-stack-gluetun.container
+#Network=gluetun.container
 
-EnvironmentFile=%h/.config/containers/env/media-stack.env
+EnvironmentFile=%h/.config/containers/env/deluge.env
 
-Volume=%h/.config/containers/volumes/media-stack/deluge/config:/config:Z
+Volume=%h/.config/containers/volumes/deluge/config:/config:Z
 Volume=${MEDIA_DATA_DIR}:/data:z
 
 DropCapability=ALL

@@ -2,7 +2,7 @@
 """Service widgets: a few numbers from inside an app, shown on its tile (Homepage calls them service widgets).
 
 An app says which in its `app.json` (`"widgets": [{"type": "immich"}]`, or `{"type": "sonarr", "unit":
-"media-stack-sonarr"}` in a folder of several). The credential each one needs (an API key, a user and a
+"vm-qemu"}` in a folder of several). The credential each one needs (an API key, a user and a
 password, a status page's slug) is typed in the panel and kept on the server in
 `~/.config/quadlet-homelab/widgets.json` (mode 600). The store calls the app's API **from the server**, so the
 key never reaches the browser, and the browser only ever sees the numbers.
@@ -168,7 +168,7 @@ def selftest():
         raise E()
     assert read("immich", "http://x", {"key": "bad"}, nega) == {"error": "HTTP 401"}, "a refused key is an error on the card"
     assert configured("adguard", {"user": "u", "password": ""}) is False and configured("immich", {"key": "k"}) is True
-    assert slot("media-stack", {"type": "sonarr", "unit": "media-stack-sonarr"}) == "media-stack/media-stack-sonarr" and slot("immich", {"type": "immich"}) == "immich"
+    assert slot("vm", {"type": "sonarr", "unit": "vm-qemu"}) == "vm/vm-qemu" and slot("immich", {"type": "immich"}) == "immich"
     assert set(FIELD_LABELS) >= {x for r in (val(read(t, "http://x", {"key": "k", "user": "u", "password": "p", "slug": "home"}, get)) for t in TYPES) for x in r}
     import tempfile
     with tempfile.TemporaryDirectory() as tmp:

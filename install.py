@@ -38,6 +38,7 @@ from pathlib import Path
 import imagepin
 import instances
 import manifest
+import migrate
 import network
 import overrides
 import qhui
@@ -279,6 +280,15 @@ PT = {
     'this service needs Podman': 'este serviço precisa do Podman',
     'the host has': 'o host tem',
     'update Podman before installing': 'atualize o Podman antes',
+    'nothing to migrate for': 'nada a migrar para',
+    'no install of': 'nenhuma instalação de',
+    'found: nothing to do': 'encontrada: nada a fazer',
+    'moving the install of': 'movendo a instalação de',
+    'nothing was changed: add --apply to do it': 'nada foi alterado: acrescente --apply para fazer',
+    'done: the apps are independent now; open the store and look at them': 'pronto: os apps são independentes agora; abra a loja e veja',
+    'move an install made under an app the repository split (media-stack) to the apps that replaced it': 'move uma instalação feita sob um app que o repositório dividiu (media-stack) para os apps que o substituíram',
+    'is installed from the old app it came from: run': 'está instalado pelo app antigo de onde saiu: rode',
+    'first, which moves its data and settings here': 'antes, que traz os dados e as configurações para cá',
     'this service is marked deprecated:': 'este serviço está marcado como descontinuado:',
     'skipped, marked deprecated:': 'ignorado, marcado como descontinuado:',
     'keeps its customization (50-store.conf)': 'mantém a personalização dela (50-store.conf)',
@@ -872,7 +882,7 @@ class Service:
 
         Rule 1 of the root README: the unit name is the file's BASENAME, not
         the folder's. `apps/actual-budget/actual.container` becomes
-        `actual.service`. A stack with no clear main unit (media-stack) returns
+        `actual.service`. A stack with no clear main unit (vm) returns
         None: which one comes up is the user's choice, and `Requires=` pulls
         the chain from there — unless the user already made that choice by
         naming a single unit, which is what `only` is.
@@ -940,7 +950,7 @@ class Service:
 
         `volume_roots()` collapses a folder to `volumes/<app>`, which is right
         for a stack that shares its data and wrong for a folder of independent
-        services: purging one of media-stack's twelve would take the other
+        services: purging one of the old media-stack's twelve would take the other
         eleven with it.
         """
         pares = self._volume_sets()
@@ -949,7 +959,7 @@ class Service:
     def exclusive_envs(self):
         """EnvironmentFile= this unit declares and no sibling of the folder does.
 
-        media-stack's twelve read one shared `.env`; each VM reads its own.
+        the old media-stack's twelve read one shared `.env`; each VM reads its own.
         A per-unit backup carries only the second kind, so restoring one unit
         cannot hand an old shared file back to the other eleven.
         """
@@ -1089,7 +1099,7 @@ class Service:
             elif not self.only:
                 pairs.append((ex, None))
             # With `only`, an unmatched .example belongs to one of the units we
-            # filtered out (media-stack's gluetun env when installing jellyfin).
+            # filtered out (a unit's own env when another unit of the folder is installed).
             # Reporting it as "no obvious destination" would be a false alarm.
 
         # A config the app reads but never writes has no `.example` suffix and no
@@ -1305,6 +1315,10 @@ def plan_install(s, tailnet, force=False, interactive=False, access="tailnet",
         return [], [loc("this service needs Podman") + f" {velho[0]}+, " + loc("the host has") + f" {velho[1]}: "
                     + loc("update Podman before installing")]
 
+    anterior = migrate.legacy_for(s.home, s.name)
+    if anterior:               # the same container name and ports: both cannot be here
+        return [], [f"{anterior} " + loc("is installed from the old app it came from: run") + f" `qh --migrate {anterior.rsplit('-' + s.name, 1)[0]} --apply` "
+                    + loc("first, which moves its data and settings here")]
     dest = s.unit_dest
     steps.append((f"mkdir -p {dest}", lambda: dest.mkdir(parents=True, exist_ok=True)))
     for velha in s.strays():
@@ -1840,7 +1854,7 @@ def plan_update(s, access="tailnet", href_local=False, latest=False, major=False
     for path, is_file in s.volumes():
         if is_file is None:
             # A ${VAR} path too: skipping it made the update that fixed an unset
-            # MEDIA_DATA_DIR restart media-stack-downtify into a downloads/
+            # MEDIA_DATA_DIR restart downtify into a downloads/
             # folder nobody had created — the same statfs, one step later.
             real = resolve_vars(path)
             if real is not None and not Path(real).exists():
@@ -2195,7 +2209,7 @@ def plan_restore(s, archive):
                   (s.exclusive_envs() if proprios is not None else s.env_files())) if r]
     # EVERY entry has to be this service's, not at least one. The old test cut
     # each name to two components before comparing against full-depth expected
-    # paths, so a per-unit backup — `volumes/media-stack/jellyfin/config` — never
+    # paths, so a per-unit backup — `volumes/vm/qemu/storage` — never
     # matched and the tool refused the archive it had just written. And "at
     # least one" is not containment: an archive with one matching directory
     # licensed the rest of the tar, which is extracted into the directory that
@@ -3095,7 +3109,7 @@ def addresses(service, tailnet):
     ip = local_ip()
     out = []
     # service.units, not a fresh glob: every other accessor narrows to the
-    # picked unit and this one did not, so `qh media-stack-jellyfin --apply`
+    # picked unit and this one did not, so `qh vm-qemu --apply`
     # printed twelve URLs and the auto-verify curled the eleven tailnet names
     # that were never registered — eleven red crosses and exit 1 on an install
     # that worked.
@@ -3169,7 +3183,7 @@ def resolve_vars(path):
 def missing_vars(s):
     """[(variable, host path)] for Volume= paths naming a variable nobody set.
 
-    Unset, systemd substitutes an empty string: media-stack-downtify's
+    Unset, systemd substitutes an empty string: downtify's
     `${MEDIA_DATA_DIR}/downloads` became `/downloads`, podman answered
     `statfs /downloads: no such file or directory`, and the install had already
     copied the unit, pulled the image and restarted into that.
@@ -3194,7 +3208,7 @@ def var_default(s, nome):
 def ask_vars(s, faltam):
     """Asks for each missing Volume= variable and writes it to environment.d.
 
-    Where the media lives is the one path decision media-stack leaves to you,
+    Where the media lives is the one path decision the media apps leave to you,
     so it is asked, not assumed — with the default its README already gives
     one Enter away. Written as an absolute path: a Volume= with a space in it
     is cut at the space, and a relative one resolves against nothing useful.
@@ -3330,8 +3344,8 @@ def selftest():
     SANDBOX = False
 
     # find_app: a folder, a unit basename, and something that is neither
-    assert find_app("media-stack") == ("media-stack", None)
-    assert find_app("media-stack-jellyfin") == ("media-stack", "media-stack-jellyfin")
+    assert find_app("toolbx") == ("toolbx", None)
+    assert find_app("toolbx-ubuntu") == ("toolbx", "toolbx-ubuntu")
     assert find_app("nope") == (None, None)
     # the folder wins when a unit shares its name (apps/openwa/openwa.container)
     assert find_app("openwa") == ("openwa", None)
@@ -3339,15 +3353,15 @@ def selftest():
     # picking one unit narrows the volumes to that unit's, and drops the other
     # units' .example files instead of calling them undeclared
     with tempfile.TemporaryDirectory() as d:
-        full = Service("media-stack", prefix=d)
-        one = Service("media-stack", prefix=d, only="media-stack-jellyfin")
+        full = Service("vm", prefix=d)
+        one = Service("vm", prefix=d, only="vm-windows")
         assert len(one.units) < len(full.units), (len(one.units), len(full.units))
-        assert one.main_unit().stem == "media-stack-jellyfin", one.main_unit()
+        assert one.main_unit().stem == "vm-windows", one.main_unit()
         assert one.unit_dest == full.unit_dest, "a picked unit stays in the stack's folder"
-        # The resolved ones are this unit's; the ${VAR} library is shared and
-        # now comes back classified (is_file None) instead of being dropped.
-        assert all("jellyfin" in p for p, t in one.volumes() if t is not None), one.volumes()
-        assert any(t is None for _, t in one.volumes()), "the ${VAR} volume is kept"
+        # The resolved ones are this unit's.
+        assert all("/vm/windows" in p for p, t in one.volumes() if t is not None), one.volumes()
+        # A ${VAR} volume comes back classified (is_file None) instead of being dropped.
+        assert any(t is None for _, t in Service("downtify", prefix=d).volumes()), "the ${VAR} volume is kept"
         assert all(t is not None for _, t in one.examples()), one.examples()
 
     # What --purge may delete is fenced to the volumes directory, the same way
@@ -3495,8 +3509,8 @@ def selftest():
         s = Service("vm", prefix=d, only="vm-windows")
         assert s.exclusive_envs() == [str(Path(d) / ".config/containers/env/vm-windows.env")]
         assert [f.name for f in s.secret_files()] == ["windows-password.txt"]
-        # media-stack's .env is read by the twelve, so it is nobody's alone
-        assert Service("media-stack", prefix=d, only="media-stack-sonarr").exclusive_envs() == []
+        # authentik's .env is read by its worker too, so it is nobody's alone
+        assert Service("authentik", prefix=d, only="authentik-worker").exclusive_envs() == []
         # and a unit that shares a directory is still refused by the caller
         assert Service("authentik", prefix=d, only="authentik-worker").shared_volumes()
         assert Service("vm", prefix=d, only="vm-windows").shared_volumes() == []
@@ -3586,18 +3600,18 @@ def selftest():
     def _um(nome):
         pasta, only = find_app(nome)
         return Service(pasta, None, only)
-    assert [str(x).split("/volumes/")[-1] for x in _um("media-stack-bazarr").exclusive_volumes()] \
-        == ["media-stack/bazarr/config"], "só o diretório da unit"
-    assert _um("media-stack").exclusive_volumes() is None, "pasta inteira não filtra"
-    # sharing is not the inverse of owning: gluetun declares no Volume= at all,
+    assert [str(x).split("/volumes/")[-1] for x in _um("vm-qemu").exclusive_volumes()] \
+        == ["vm/qemu/storage"], "só o diretório da unit"
+    assert _um("vm").exclusive_volumes() is None, "pasta inteira não filtra"
+    # sharing is not the inverse of owning: the tika unit declares no Volume= at all,
     # so both lists are empty and --remove on it alone is safe
-    assert _um("media-stack-gluetun").exclusive_volumes() == []
-    assert _um("media-stack-gluetun").shared_volumes() == []
+    assert _um("paperless-ngx-tika").exclusive_volumes() == []
+    assert _um("paperless-ngx-tika").shared_volumes() == []
     assert [str(x).split("/volumes/")[-1] for x in _um("authentik-worker").shared_volumes()] \
         == ["authentik/data"], "o worker grava no mesmo diretório do authentik"
-    assert _um("media-stack-bazarr").shared_volumes() == []
+    assert _um("vm-qemu").shared_volumes() == []
     # ${MEDIA_DATA_DIR} é a biblioteca compartilhada, nunca alvo de purge
-    assert not any("$" in str(x) for x in _um("media-stack-deluge").exclusive_volumes())
+    assert not any("$" in str(x) for x in Service("downtify").exclusive_volumes() or [])
 
     # the repo column compares against what an install would write, not the raw
     # file: --access tailnet comments the proxied port out, and a byte compare
@@ -4032,7 +4046,7 @@ def selftest():
     # Volume= with a systemd variable: refused when unset, created when set.
     real_mv = globals()["manager_var"]
     try:
-        dl = Service("media-stack", None, "media-stack-downtify")
+        dl = Service("downtify", tempfile.mkdtemp())      # a home of its own: the real one may still carry media-stack-downtify
         globals()["manager_var"] = lambda n: ""
         assert missing_vars(dl) == [("MEDIA_DATA_DIR", "${MEDIA_DATA_DIR}/downloads")], \
             "an unset variable must stop the install, not become /downloads"
@@ -4747,6 +4761,40 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude, falhas=None):
     }
 
 
+def run_migration(old_app, apply, prefix=None):
+    """`qh --migrate OLD`: move an install made under an app the repository split to the apps that replaced it.
+
+    The plan is printed first and nothing is touched without --apply. What was running is started again."""
+    if old_app not in migrate.MIGRATIONS:
+        say(loc("nothing to migrate for") + f" {old_app}: " + ", ".join(sorted(migrate.MIGRATIONS)))
+        return 1
+    home = Path(prefix) if prefix else Path.home()
+    if not any(x["from"] == old_app for x in migrate.legacy(home)):
+        say(loc("no install of") + f" {old_app} " + loc("found: nothing to do"))
+        return 0
+
+    def ativo(unit):
+        if SANDBOX:
+            return False
+        r = subprocess.run(["systemctl", "--user", "is-active", f"{unit}.service"], capture_output=True, text=True)
+        return r.stdout.strip() == "active"
+    passos = migrate.plan(home, old_app, I=sys.modules[__name__], active=ativo, masked=lambda u: unit_masked(home, u), run=run)
+    say(loc("moving the install of") + f" {old_app}:")
+    for descricao, _ in passos:
+        say(f"  -> {descricao}")
+    if not apply:
+        say("\n" + loc("nothing was changed: add --apply to do it"))
+        return 0
+    for descricao, f in passos:
+        try:
+            f()
+        except (OSError, subprocess.CalledProcessError) as e:
+            say(red(f"  x {descricao}: {e}"))
+            return 1
+    say("\n" + loc("done: the apps are independent now; open the store and look at them"))
+    return 0
+
+
 def show_catalog(apps=None, home=None):
     """Every service as JSON on stdout: what a front end needs and nothing it must parse.
 
@@ -4775,6 +4823,8 @@ def show_catalog(apps=None, home=None):
         "access": saved_access(Path(home) if home else None) or "tailnet",
         "tailnet": bool(tailnet),
         "podman": ".".join(map(str, podman_version())) if podman_version() else None,
+        # An install made under an app the repository split (media-stack): found by name, and moved by `qh --migrate`.
+        "legacy": migrate.legacy(home or Path.home()),
         "podman_recommended": RECOMMENDED_PODMAN,
         "podman_outdated": bool(podman_outdated()),
         "apps": [catalog_entry(d, home, tailnet, en, pt, ativos, saude, falhas) for d in pastas],
@@ -5425,12 +5475,14 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("app", nargs="*", metavar="APP",
                     help=loc("one or more services, or a single unit of one "
-                             "(`media-stack-jellyfin`, `toolbx-ubuntu`)"))
+                             "(`vm-qemu`, `toolbx-ubuntu`)"))
     ap.add_argument("--apply", action="store_true", help=loc("execute (without it, only show)"))
     ap.add_argument("--prefix", help=loc("use another home (to test without touching the real one)"))
     ap.add_argument("--selftest", action="store_true", help=loc("test the script's parser"))
     ap.add_argument("--status", action="store_true",
                     help=loc("what is installed, running, and changed in the repository"))
+    ap.add_argument("--migrate", metavar="OLD_APP",
+                    help=loc("move an install made under an app the repository split (media-stack) to the apps that replaced it"))
     ap.add_argument("--catalog", action="store_true",
                     help=loc("the services as JSON, for a front end (the app store)"))
     ap.add_argument("--set-access", choices=ACCESS_MODES + ("default",), metavar="MODE",
@@ -5522,6 +5574,9 @@ def main():
 
     if a.status:
         return show_status(a.app or None, a.prefix)
+
+    if a.migrate:
+        return run_migration(a.migrate, a.apply, a.prefix)
 
     if a.catalog:
         return show_catalog(a.app or None, a.prefix)
@@ -5673,7 +5728,7 @@ def main():
     # Backup and restore always take the folder: the archive is the service's,
     # and restoring one piece of a stack over data the others share is how you
     # corrupt it. Remove is allowed on a single unit when that unit's volumes
-    # are its own — media-stack's twelve each have a directory nobody else
+    # are its own — the old media-stack's twelve each have a directory nobody else
     # touches, and refusing there was protecting nothing.
     picked = [x for x in a.app if find_app(x)[1]]
     if picked and (a.remove or a.backup or a.restore):

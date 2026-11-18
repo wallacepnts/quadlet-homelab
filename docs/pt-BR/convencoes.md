@@ -160,7 +160,7 @@ Trade-off consciente, não usar por padrão.
 privado por container: cada um que sobe reetiqueta o caminho com as próprias
 categorias, e o que subiu antes perde o acesso. Medido — dois containers numa
 pasta com `:Z`, o primeiro lê, o segundo sobe, o primeiro recebe
-`Permission denied`. Foi assim que o media-stack montava `${MEDIA_DATA_DIR}` em
+`Permission denied`. Foi assim que o antigo media-stack (hoje treze apps independentes) montava `${MEDIA_DATA_DIR}` em
 nove units, e só o último a subir enxergava a mídia; as duas units do authentik
 e as duas do beszel compartilhavam uma pasta do mesmo jeito. O `:z` é o rótulo
 compartilhado: continua confinado, legível pelos containers, e não obriga a
@@ -254,7 +254,7 @@ continua vendo `%23`.
 
 Quando vários `.container` diferentes precisam apontar pro **mesmo**
 path variável (ex.: uma raiz de mídia compartilhada entre vários
-serviços — ver [media-stack](../../apps/media-stack)), dá pra evitar editar
+serviços — ver [jellyfin](../../apps/jellyfin) e [sonarr](../../apps/sonarr)), dá pra evitar editar
 cada arquivo com o path hardcoded usando uma variável de ambiente do
 systemd, não um `EnvironmentFile=` comum: `EnvironmentFile=` só injeta
 env var *dentro do container*, tarde demais pra afetar como o Quadlet

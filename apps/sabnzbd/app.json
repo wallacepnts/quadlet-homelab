@@ -1,0 +1,27 @@
+{
+  "$schema": "../app-schema.json",
+  "title": "SABnzbd",
+  "short_desc": { "en": "A Usenet downloader.", "pt": "Um baixador de Usenet." },
+  "description": {
+    "en": "Downloads from Usenet and unpacks and verifies on its own, driven by Sonarr, Radarr and Lidarr or used directly",
+    "pt": "Baixa da Usenet e descompacta e verifica sozinho, comandado pelo Sonarr, Radarr e Lidarr ou usado direto"
+  },
+  "author": "sabnzbd",
+  "source": "https://github.com/sabnzbd/sabnzbd",
+  "docs": "https://sabnzbd.org/wiki",
+  "category": "Downloads",
+  "config": { ".env.example": "%h/.config/containers/env/sabnzbd.env" },
+  "vars": { "MEDIA_DATA_DIR": "~/data" },
+  "ask": {
+    "MEDIA_DATA_DIR": {
+      "type": "path",
+      "label": { "en": "Media folder", "pt": "Pasta de mídia" },
+      "hint": {
+        "en": "Where the library lives; every media app reads it.",
+        "pt": "Onde fica a biblioteca; todos os apps de mídia leem dela."
+      },
+      "required": true
+    }
+  },
+  "units": { "sabnzbd": { "image": "version-{version}" } }
+}

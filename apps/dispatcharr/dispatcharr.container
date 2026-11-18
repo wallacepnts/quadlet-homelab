@@ -11,7 +11,7 @@ PublishPort=9191:9191
 Environment=DISPATCHARR_ENV=aio
 Environment=DISPATCHARR_LOG_LEVEL=info
 
-Volume=%h/.config/containers/volumes/media-stack/dispatcharr/data:/data:Z
+Volume=%h/.config/containers/volumes/dispatcharr/data:/data:Z
 
 PidsLimit=256
 NoNewPrivileges=true

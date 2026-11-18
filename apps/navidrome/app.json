@@ -1,0 +1,29 @@
+{
+  "$schema": "../app-schema.json",
+  "title": "Navidrome",
+  "short_desc": {
+    "en": "Your music, streamed to any Subsonic app.",
+    "pt": "Sua música, para qualquer app Subsonic."
+  },
+  "description": {
+    "en": "A music server compatible with the Subsonic apps, reading the same library folder as the rest",
+    "pt": "Um servidor de música compatível com os apps Subsonic, lendo a mesma pasta de biblioteca dos outros"
+  },
+  "author": "navidrome",
+  "source": "https://github.com/navidrome/navidrome",
+  "docs": "https://www.navidrome.org/docs",
+  "category": "Media",
+  "config": { ".env.example": "%h/.config/containers/env/navidrome.env" },
+  "vars": { "MEDIA_DATA_DIR": "~/data" },
+  "ask": {
+    "MEDIA_DATA_DIR": {
+      "type": "path",
+      "label": { "en": "Media folder", "pt": "Pasta de mídia" },
+      "hint": {
+        "en": "Where the library lives; every media app reads it.",
+        "pt": "Onde fica a biblioteca; todos os apps de mídia leem dela."
+      },
+      "required": true
+    }
+  }
+}

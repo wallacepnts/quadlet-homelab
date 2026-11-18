@@ -92,7 +92,7 @@ python3 check.py --format
 
 rewrites every unit (and `_template/`) into it. Nothing but order and blank
 lines changes — a comment moves with the line under it, a commented-out block
-(a "switch" like the one in `media-stack-gluetun`) moves whole and after the
+(a "switch" like the one in `gluetun`) moves whole and after the
 active lines it talks about, and repeated keys keep their order. It was
 checked against what Quadlet generates for every unit: the podman arguments
 come out the same.

@@ -27,7 +27,7 @@ qh --all --update --apply
 One unit out of a stack — name the unit instead of the folder:
 
 ```bash
-qh media-stack-jellyfin --apply
+qh vm-qemu --apply
 qh immich-postgres --update --apply
 ```
 
@@ -305,7 +305,7 @@ recipe next to it.
 ### Paths the install cannot guess
 
 A `Volume=` can name a variable of the systemd --user manager instead of a path
-— `${MEDIA_DATA_DIR}` in media-stack and komga, `${FRIGATE_MEDIA_DIR}` in
+— `${MEDIA_DATA_DIR}` in jellyfin, sonarr and the other media apps (and komga), `${FRIGATE_MEDIA_DIR}` in
 frigate — because where the media lives is yours to decide. Unset, systemd
 substitutes an empty string: `${MEDIA_DATA_DIR}/downloads` becomes `/downloads`
 and the container does not start.

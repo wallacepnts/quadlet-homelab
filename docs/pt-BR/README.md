@@ -2,7 +2,7 @@
 
 **[🇺🇸 Read in English](../../README.md)**
 
-84 serviços self-hosted como units do [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html),
+96 serviços self-hosted como units do [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html),
 rootless, um serviço por pasta.
 
 ## Início rápido
@@ -162,6 +162,7 @@ aqui.
 | <img src="../../apps/any-sync-bundle/icon.svg" width="48" height="48" alt=""> | [any-sync-bundle](../../apps/any-sync-bundle) | Um servidor de sincronização para o app Anytype. |
 | <img src="../../apps/audiobookshelf/icon.svg" width="48" height="48" alt=""> | [Audiobookshelf](../../apps/audiobookshelf) | Um servidor para seus audiolivros e podcasts. |
 | <img src="../../apps/authentik/icon.svg" width="48" height="48" alt=""> | [Authentik](../../apps/authentik) | Um servidor de login e de login único. |
+| <img src="../../apps/bazarr/icon.svg" width="48" height="48" alt=""> | [Bazarr](../../apps/bazarr) | Legendas para seus filmes e séries. |
 | <img src="../../apps/beaverhabits/icon.png" width="48" height="48" alt=""> | [Beaver Habits](../../apps/beaverhabits) | Um acompanhador de hábitos simples. |
 | <img src="../../apps/beszel/icon.svg" width="48" height="48" alt=""> | [Beszel](../../apps/beszel) | Mostra o quanto o seu servidor está ocupado. |
 | <img src="../../apps/calibre-web-automated/icon.svg" width="48" height="48" alt=""> | [Calibre-Web-Automated](../../apps/calibre-web-automated) | Leia e gerencie sua biblioteca de ebooks no navegador. |
@@ -170,8 +171,11 @@ aqui.
 | <img src="../../apps/collabora/icon.svg" width="48" height="48" alt=""> | [Collabora](../../apps/collabora) | Edite documentos no navegador. |
 | <img src="../../apps/cookcli/icon.svg" width="48" height="48" alt=""> | [CookCLI](../../apps/cookcli) | Guarde suas receitas como arquivos de texto simples. |
 | <img src="../../apps/copyparty/icon.svg" width="48" height="48" alt=""> | [Copyparty](../../apps/copyparty) | Um servidor de arquivos que aceita envios de qualquer aparelho. |
+| <img src="../../apps/deluge/icon.svg" width="48" height="48" alt=""> | [Deluge](../../apps/deluge) | Um cliente de torrent com interface web. |
+| <img src="../../apps/dispatcharr/icon.svg" width="48" height="48" alt=""> | [Dispatcharr](../../apps/dispatcharr) | Gerencie e redirecione seus streams de IPTV. |
 | <img src="../../apps/docuseal/icon.svg" width="48" height="48" alt=""> | [DocuSeal](../../apps/docuseal) | Assine documentos no seu próprio servidor. |
 | <img src="../../apps/donetick/icon.svg" width="48" height="48" alt=""> | [Donetick](../../apps/donetick) | Acompanhe as tarefas de casa. |
+| <img src="../../apps/downtify/icon.svg" width="48" height="48" alt=""> | [Downtify](../../apps/downtify) | Baixe músicas e playlists do Spotify. |
 | <img src="../../apps/dozzle/icon.svg" width="48" height="48" alt=""> | [Dozzle](../../apps/dozzle) | Leia os logs dos seus containers no navegador. |
 | <img src="../../apps/excalidash/icon.svg" width="48" height="48" alt=""> | [ExcaliDash](../../apps/excalidash) | Um lugar para organizar e compartilhar desenhos do Excalidraw. |
 | <img src="../../apps/faved/icon.svg" width="48" height="48" alt=""> | [Faved](../../apps/faved) | Um lugar simples para guardar favoritos. |
@@ -183,6 +187,7 @@ aqui.
 | <img src="../../apps/ghost/icon.webp" width="48" height="48" alt=""> | [Ghost](../../apps/ghost) | Uma plataforma de blog e newsletter. |
 | <img src="../../apps/gitea/icon.svg" width="48" height="48" alt=""> | [Gitea](../../apps/gitea) | Um servidor Git simples para o seu código. |
 | <img src="../../apps/gitea-runner/icon.svg" width="48" height="48" alt=""> | [Gitea Runner](../../apps/gitea-runner) | Executa os fluxos automáticos do seu Gitea. |
+| <img src="../../apps/gluetun/icon.svg" width="48" height="48" alt=""> | [Gluetun](../../apps/gluetun) | Um cliente de VPN em container para outros containers. |
 | <img src="../../apps/grafana/icon.svg" width="48" height="48" alt=""> | [Grafana](../../apps/grafana) | Gráficos e painéis para os seus dados. |
 | <img src="../../apps/headscale/icon.svg" width="48" height="48" alt=""> | [Headscale](../../apps/headscale) | O seu próprio servidor para uma rede privada. |
 | <img src="../../apps/hermes-agent/icon.png" width="48" height="48" alt=""> | [Hermes Agent](../../apps/hermes-agent) | Um assistente de IA pessoal. |
@@ -192,19 +197,21 @@ aqui.
 | <img src="../../apps/immich/icon.svg" width="48" height="48" alt=""> | [Immich](../../apps/immich) | Faça backup e navegue pelas suas fotos e vídeos. |
 | <img src="../../apps/instagram-monitor/icon.svg" width="48" height="48" alt=""> | [Instagram Monitor](../../apps/instagram-monitor) | Acompanha perfis do Instagram e mostra a atividade deles. |
 | <img src="../../apps/invio/icon.svg" width="48" height="48" alt=""> | [Invio](../../apps/invio) | Crie e acompanhe faturas. |
+| <img src="../../apps/jellyfin/icon.svg" width="48" height="48" alt=""> | [Jellyfin](../../apps/jellyfin) | Um servidor de mídia para a sua coleção. |
 | <img src="../../apps/karakeep/icon.svg" width="48" height="48" alt=""> | [Karakeep](../../apps/karakeep) | Guarde e pesquise seus favoritos. |
 | <img src="../../apps/karaoke-eternal/icon.svg" width="48" height="48" alt=""> | [Karaoke Eternal](../../apps/karaoke-eternal) | Faça festas de karaokê com as suas próprias músicas. |
 | <img src="../../apps/kiwix/icon.svg" width="48" height="48" alt=""> | [Kiwix](../../apps/kiwix) | Leia a Wikipédia e outras bibliotecas sem internet. |
 | <img src="../../apps/koffan/icon.png" width="48" height="48" alt=""> | [Koffan](../../apps/koffan) | Uma lista de compras compartilhada. |
 | <img src="../../apps/komga/icon.svg" width="48" height="48" alt=""> | [Komga](../../apps/komga) | Leia seus quadrinhos e mangás. |
+| <img src="../../apps/lidarr/icon.svg" width="48" height="48" alt=""> | [Lidarr](../../apps/lidarr) | Gerenciador de coleção de música. |
 | <img src="../../apps/lubelogger/icon.png" width="48" height="48" alt=""> | [LubeLogger](../../apps/lubelogger) | Acompanhe a manutenção dos seus veículos. |
 | <img src="../../apps/mailpit/icon.svg" width="48" height="48" alt=""> | [Mailpit](../../apps/mailpit) | Captura os e-mails que seus apps enviam para você lê-los. |
 | <img src="../../apps/mdrop/icon.svg" width="48" height="48" alt=""> | [mdrop](../../apps/mdrop) | Transforme documentos em Markdown. |
-| <img src="../../apps/media-stack/icon.svg" width="48" height="48" alt=""> | [Media Stack](../../apps/media-stack) | Um servidor de mídia e as ferramentas que o abastecem. |
 | <img src="../../apps/memos/icon.svg" width="48" height="48" alt=""> | [Memos](../../apps/memos) | Um lugar simples para notas rápidas. |
 | <img src="../../apps/metube/icon.svg" width="48" height="48" alt=""> | [MeTube](../../apps/metube) | Baixe vídeos da web. |
 | <img src="../../apps/monica/icon.svg" width="48" height="48" alt=""> | [Monica](../../apps/monica) | Lembre das pessoas da sua vida. |
 | <img src="../../apps/n8n/icon.svg" width="48" height="48" alt=""> | [n8n](../../apps/n8n) | Automatize tarefas entre os seus apps. |
+| <img src="../../apps/navidrome/icon.svg" width="48" height="48" alt=""> | [Navidrome](../../apps/navidrome) | Sua música, para qualquer app Subsonic. |
 | <img src="../../apps/neko/icon.svg" width="48" height="48" alt=""> | [neko](../../apps/neko) | Um navegador compartilhado para usar em conjunto. |
 | <img src="../../apps/netbootxyz/icon.svg" width="48" height="48" alt=""> | [netboot.xyz](../../apps/netbootxyz) | Instale um sistema operacional pela rede. |
 | <img src="../../apps/nginx/icon.svg" width="48" height="48" alt=""> | [nginx](../../apps/nginx) | Um servidor web para arquivos estáticos. |
@@ -220,11 +227,16 @@ aqui.
 | <img src="../../apps/postfix/icon.svg" width="48" height="48" alt=""> | [Postfix](../../apps/postfix) | Envia e-mail em nome dos seus outros apps. |
 | <img src="../../apps/postiz/icon.svg" width="48" height="48" alt=""> | [Postiz](../../apps/postiz) | Agende as suas publicações nas redes sociais. |
 | <img src="../../apps/prometheus/icon.svg" width="48" height="48" alt=""> | [Prometheus](../../apps/prometheus) | Coleta números sobre como os seus serviços funcionam. |
+| <img src="../../apps/prowlarr/icon.svg" width="48" height="48" alt=""> | [Prowlarr](../../apps/prowlarr) | Gerenciador de indexadores para Sonarr, Radarr e Lidarr. |
 | <img src="../../apps/proxmox/icon.svg" width="48" height="48" alt=""> | [Proxmox VE](../../apps/proxmox) | Experimente o sistema de virtualização Proxmox. |
+| <img src="../../apps/radarr/icon.svg" width="48" height="48" alt=""> | [Radarr](../../apps/radarr) | Gerenciador de coleção de filmes. |
 | <img src="../../apps/radicale/icon.svg" width="48" height="48" alt=""> | [Radicale](../../apps/radicale) | Um servidor de calendários e contatos. |
 | <img src="../../apps/rclone/icon.svg" width="48" height="48" alt=""> | [rclone](../../apps/rclone) | Mova arquivos entre as suas contas na nuvem. |
 | <img src="../../apps/retrom/icon.webp" width="48" height="48" alt=""> | [Retrom](../../apps/retrom) | Uma biblioteca para os seus jogos retrô. |
+| <img src="../../apps/sabnzbd/icon.svg" width="48" height="48" alt=""> | [SABnzbd](../../apps/sabnzbd) | Um baixador de Usenet. |
 | <img src="../../apps/searxng/icon.png" width="48" height="48" alt=""> | [SearXNG](../../apps/searxng) | Pesquise na web sem ser rastreado. |
+| <img src="../../apps/seerr/icon.svg" width="48" height="48" alt=""> | [Seerr](../../apps/seerr) | Peça filmes e séries para o seu servidor de mídia. |
+| <img src="../../apps/sonarr/icon.svg" width="48" height="48" alt=""> | [Sonarr](../../apps/sonarr) | Gerenciador de coleção de séries. |
 | <img src="../../apps/stirling-pdf/icon.svg" width="48" height="48" alt=""> | [Stirling-PDF](../../apps/stirling-pdf) | Edite e converta arquivos PDF. |
 | <img src="../../apps/syncthing/icon.svg" width="48" height="48" alt=""> | [Syncthing](../../apps/syncthing) | Sincronize arquivos entre os seus dispositivos. |
 | <img src="../../apps/toolbx/icon.png" width="48" height="48" alt=""> | [Toolbx](../../apps/toolbx) | Shells Linux descartáveis para experimentar coisas. |

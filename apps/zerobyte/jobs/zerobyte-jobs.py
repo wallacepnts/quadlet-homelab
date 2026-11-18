@@ -3,7 +3,7 @@
 
 Zerobyte backs up directories, and this repository puts one directory per
 service under ~/.config/containers/volumes. So the unit of work is the folder,
-not the unit: media-stack's twelve units share one directory and get one job.
+not the unit: the `vm-*` units share one directory and get one job.
 
 What each job needs beyond the path is the mode its data requires, and that is
 the part worth automating — it is the same decision the hook documents:
@@ -85,8 +85,8 @@ loc = translator(PT)
 def raizes_do_repositorio():
     """Volume folder name -> the app folder that owns it.
 
-    Not the same string: actual-budget writes to volumes/actual, and twelve
-    media-stack units share volumes/media-stack. `Service.volume_roots()`
+    Not the same string: actual-budget writes to volumes/actual, and the
+    vm units share volumes/vm. `Service.volume_roots()`
     already answers this, so it is imported rather than guessed. The mapping
     and not just the names, because app.json lives under the app's folder.
     """

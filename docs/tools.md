@@ -570,6 +570,32 @@ server's clock), between a minute and a week ahead. It is a transient systemd us
 time: a new schedule replaces the old, and **Cancel schedule** stops it. The state is `~/.config/quadlet-homelab/power.json`.
 Unlike the immediate action, a scheduled one does not wait for a running job.
 
+## An app the repository split: `qh --migrate`
+
+`media-stack` was one folder of thirteen units sharing one data folder and one `.env`. Each is an app of its own now:
+`bazarr`, `deluge`, `dispatcharr`, `downtify`, `gluetun`, `jellyfin`, `lidarr`, `navidrome`, `prowlarr`, `radarr`,
+`sabnzbd`, `seerr` and `sonarr`, each with its folder, its logo, its `.env` and the unit named after it (the container
+names and ports did not change). The media folder (`${MEDIA_DATA_DIR}`) is still one folder every media app reads.
+
+A host that installed the old one has units, data and settings under names nothing in the repository owns any more,
+and a new app would collide with them. The store notices (a note above *My apps*) and `qh` does the same from a
+terminal:
+
+```bash
+qh --migrate media-stack            # the plan, nothing touched
+qh --migrate media-stack --apply    # do it
+```
+
+For each old unit it finds: the data folder `volumes/media-stack/<name>` is **renamed** to `volumes/<name>` (nothing is
+copied or deleted; a folder that already has data is left alone, and so is the old one); the shared `env/media-stack.env`
+is **copied** to `env/<name>.env` for each app that read it (and the old one stays), and
+`env/media-stack-gluetun.env` becomes `env/gluetun.env`; the unit is written again from the repository, for the access
+rule it was installed with, under its new name, with its drop-ins (image pin, customization) moved beside it; and the old
+unit goes. **What was running is stopped and started again, what was stopped stays stopped, what was stopped on purpose stays
+masked.** Until it is done, installing one of the new apps is refused, saying to migrate first. History, alerts and backup
+jobs that name the old units (`media-stack-*`) are not rewritten. The table of old names is `MIGRATIONS` in
+[`migrate.py`](../migrate.py).
+
 ## What counts as an update
 
 An installed app has an update when **either** a newer release than the one it runs exists **or** the repository's

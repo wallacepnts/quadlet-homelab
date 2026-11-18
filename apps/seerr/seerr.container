@@ -8,9 +8,9 @@ ContainerName=seerr
 Network=tsdproxy-net.network
 PublishPort=5055:5055
 
-EnvironmentFile=%h/.config/containers/env/media-stack.env
+EnvironmentFile=%h/.config/containers/env/seerr.env
 
-Volume=%h/.config/containers/volumes/media-stack/seerr/config:/app/config:Z
+Volume=%h/.config/containers/volumes/seerr/config:/app/config:Z
 
 ReadOnly=true
 Tmpfs=/tmp:size=64M

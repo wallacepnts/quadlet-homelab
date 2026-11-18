@@ -93,7 +93,7 @@ python3 check.py --format
 
 reescreve todas as units (e o `_template/`) nele. Só muda ordem e linha em
 branco — um comentário viaja com a linha abaixo dele, um bloco comentado (um
-"interruptor" como o do `media-stack-gluetun`) viaja inteiro e depois das linhas
+"interruptor" como o do `gluetun`) viaja inteiro e depois das linhas
 ativas de que fala, e chaves repetidas mantêm a ordem. Foi conferido contra o
 que o Quadlet gera para cada unit: os argumentos do podman saem os mesmos.
 

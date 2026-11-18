@@ -159,7 +159,7 @@ not something to use by default.
 private per container: each one that starts relabels the path to its own
 categories, and the one that started before loses it. Measured — two containers
 on one folder with `:Z`, the first reads it, the second starts, the first gets
-`Permission denied`. That is how media-stack mounted `${MEDIA_DATA_DIR}` in nine
+`Permission denied`. That is how the old media-stack (now thirteen apps of their own) mounted `${MEDIA_DATA_DIR}` in nine
 units, with only the last one up able to see the media; authentik's two units
 and beszel's two shared a folder the same way. `:z` is the shared label: still
 confined, readable by containers, and it does not force a relabel of a whole
@@ -252,7 +252,7 @@ still sees `%23`.
 
 When several different `.container` files need to point at the **same**
 variable path (a media root shared between several services, say — see
-[media-stack](../apps/media-stack/)), you can avoid editing each file with a
+[jellyfin](../apps/jellyfin/) and [sonarr](../apps/sonarr/)), you can avoid editing each file with a
 hardcoded path by using a systemd environment variable rather than an ordinary
 `EnvironmentFile=`: `EnvironmentFile=` only injects env vars *inside the
 container*, far too late to affect how Quadlet resolves `Volume=`. The right

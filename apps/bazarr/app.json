@@ -1,0 +1,26 @@
+{
+  "$schema": "../app-schema.json",
+  "title": "Bazarr",
+  "short_desc": { "en": "Subtitles for your movies and series.", "pt": "Legendas para seus filmes e séries." },
+  "description": {
+    "en": "Finds and downloads subtitles for what Sonarr and Radarr manage, in the languages you choose",
+    "pt": "Encontra e baixa legendas para o que o Sonarr e o Radarr gerenciam, nos idiomas que você escolher"
+  },
+  "author": "morpheus65535",
+  "source": "https://github.com/morpheus65535/bazarr",
+  "docs": "https://wiki.bazarr.media",
+  "category": "Downloads",
+  "config": { ".env.example": "%h/.config/containers/env/bazarr.env" },
+  "vars": { "MEDIA_DATA_DIR": "~/data" },
+  "ask": {
+    "MEDIA_DATA_DIR": {
+      "type": "path",
+      "label": { "en": "Media folder", "pt": "Pasta de mídia" },
+      "hint": {
+        "en": "Where the library lives; every media app reads it.",
+        "pt": "Onde fica a biblioteca; todos os apps de mídia leem dela."
+      },
+      "required": true
+    }
+  }
+}

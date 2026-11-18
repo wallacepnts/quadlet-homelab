@@ -577,3 +577,5 @@ textarea.raw { width: 100%; font-family: ui-monospace, "SF Mono", Menlo, monospa
 .card.tile .plate, .card.tile .ico { transition: filter .2s, opacity .2s; }
 .card.tile:not([data-run=running]) .plate, .card.tile:not([data-run=running]) .ico { filter: grayscale(1); opacity: .5; }
 .card.tile:not([data-run=running]):hover .plate, .card.tile:not([data-run=running]):hover .ico { opacity: .75; }
+
+.legacy { margin: 0 1.5rem 1rem; padding: .9rem 1.1rem; background: var(--accent-soft); border-radius: var(--radius); } .legacy p { margin: .3rem 0 .6rem; max-width: 60rem; }

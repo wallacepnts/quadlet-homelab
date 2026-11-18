@@ -8,9 +8,9 @@ ContainerName=navidrome
 Network=tsdproxy-net.network
 PublishPort=4533:4533
 
-EnvironmentFile=%h/.config/containers/env/media-stack.env
+EnvironmentFile=%h/.config/containers/env/navidrome.env
 
-Volume=%h/.config/containers/volumes/media-stack/navidrome/data:/data:Z
+Volume=%h/.config/containers/volumes/navidrome/data:/data:Z
 Volume=${MEDIA_DATA_DIR}:/music:ro,z
 
 ReadOnly=true

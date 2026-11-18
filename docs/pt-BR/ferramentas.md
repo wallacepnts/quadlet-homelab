@@ -241,7 +241,7 @@ vêm do manifest da imagem no registry e ficam em cache por uma semana.
 A página tem duas telas, como o CasaOS. **Meus apps** é o que está instalado,
 em azulejos com o estado, o selo de versão e CPU e memória: o azulejo abre o app
 em outra aba quando ele tem um endereço só, e a engrenagem ao lado gerencia o
-serviço. Um app com várias interfaces web (a media-stack) ou nenhuma não tem um
+serviço. Um app com várias interfaces web (a `vm`) ou nenhuma não tem um
 lugar único para ir, então o azulejo dele abre o painel. A **Loja** é o catálogo
 inteiro, com categorias e busca, e marca o que já está instalado. A tela fica
 guardada na URL (`#apps` ou `#store`), então um reload ou um favorito volta para

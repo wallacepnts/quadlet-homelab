@@ -57,6 +57,7 @@ import overrides as O  # noqa: E402
 import qhui  # noqa: E402
 import resources  # noqa: E402
 import hostctl  # noqa: E402
+import migrate  # noqa: E402
 import alerts as A  # noqa: E402
 import network as N  # noqa: E402
 import svcwidgets as W  # noqa: E402
@@ -78,6 +79,7 @@ PT = {
     "the token is in": "o token está em",
     "read it with": "leia com",
     "another job is running": "outra tarefa está rodando",
+    "nothing to do": "nada a fazer",
     "your own .container saved": "o seu .container foi guardado",
     "back to the repository's .container": "de volta ao .container do repositório",
     "The service did not come up with this .container. Going back to the previous one:": "O serviço não subiu com este .container. Voltando ao anterior:",
@@ -2839,6 +2841,20 @@ class Handler(BaseHTTPRequestHandler):
             if job is None:
                 return self._json(409, {"error": loc("another job is running")})
             return self._json(202, {"job": job.id})
+        if url.path == "/api/migrate":
+            # An install made under an app the repository split (media-stack): moved to the apps that replaced it.
+            velho = d.get("from", "")
+            if velho not in migrate.MIGRATIONS:
+                return self._json(400, {"error": loc("unknown action")})
+            casa = Path(PREFIX) if PREFIX else Path.home()
+            achados = [x for x in migrate.legacy(casa) if x["from"] == velho]
+            if not achados:
+                return self._json(404, {"error": loc("nothing to do")})
+            novos = [u["new"] for u in achados[0]["units"]]
+            job = start_job("_host", "migrate", [qh("--migrate", velho, "--apply")], lang, origem=self.client_address[0], refrescar=novos)
+            if job is None:
+                return self._json(409, {"error": loc("another job is running")})
+            return self._json(202, {"job": job.id, "apps": novos})
         if url.path == "/api/power":
             # Reboot or power off the machine, now or later (polkit lets the logged-in user do it). Not while a job
             # runs: a restart in the middle of an update leaves a half-written unit. The answer goes out first.
@@ -3660,14 +3676,14 @@ def selftest():
             # service widgets: the address from the catalog, the credential from the panel, never sent back
             falso_cat = [{"id": "immich", "main_unit": "immich", "web": [{"unit": "immich", "local": "http://x:2283", "tailnet": None}],
                           "units": [{"unit": "immich", "installed": True}]},
-                         {"id": "media-stack", "main_unit": None, "web": [{"unit": "media-stack-sonarr", "local": "http://x:8989", "tailnet": "https://sonarr.t"}],
-                          "units": [{"unit": "media-stack-sonarr", "installed": True}, {"unit": "media-stack-jellyfin", "installed": False}]}]
+                         {"id": "sonarr", "main_unit": "sonarr", "web": [{"unit": "sonarr", "local": "http://x:8989", "tailnet": "https://sonarr.t"}],
+                          "units": [{"unit": "sonarr", "installed": True}]}]
             pedidos = []
             def api_falsa(u, h=None):
                 pedidos.append((u, h))
                 return {"photos": 3, "videos": 1, "usage": 10} if "statistics" in u else {"totalRecords": 4} if "pageSize" in u else [{}]
             st0 = svc_state(apps=falso_cat, get=api_falsa)
-            assert [x["type"] for x in st0["immich"]] == ["immich"] and [x["type"] for x in st0["media-stack"]] == ["sonarr"], "only the installed units' widgets"
+            assert [x["type"] for x in st0["immich"]] == ["immich"] and [x["type"] for x in st0["sonarr"]] == ["sonarr"], "the widgets of an installed app"
             assert st0["immich"][0]["configured"] is False and "fields" not in st0["immich"][0] and not pedidos, "nothing is asked without a key"
             antes_cat = catalog
             globals()["catalog"] = lambda lang="en": {"apps": falso_cat}
@@ -3678,7 +3694,7 @@ def selftest():
                 st, _, c = pedir("/api/svc/config", json.dumps({"app": "immich", "slot": "immich", "values": {"key": "segredo-123"}}).encode(), api)
                 assert st == 200 and b"segredo-123" not in c, "the key never comes back"
                 assert W.load(Path(tmp))["immich"] == {"key": "segredo-123"}
-                pedir("/api/svc/config", json.dumps({"app": "media-stack", "slot": "media-stack/media-stack-sonarr", "values": {"key": "k2"}}).encode(), api)
+                pedir("/api/svc/config", json.dumps({"app": "sonarr", "slot": "sonarr", "values": {"key": "k2"}}).encode(), api)
                 lido = svc_state(apps=falso_cat, get=api_falsa)
                 assert {x["key"]: x["value"] for x in lido["immich"][0]["fields"]} == {"photos": 3, "videos": 1, "storage": 10}, lido
                 assert pedidos[0] == ("http://x:2283/api/server/statistics", {"x-api-key": "segredo-123"})
@@ -3817,6 +3833,23 @@ def selftest():
             assert pedir("/api/files/download?path=" + urllib.parse.quote(base_f), headers=ok)[0] == 400, "a folder is not a download"
             cat_p = json.loads(pedir("/api/catalog", headers=ok)[2])
             assert cat_p["podman_recommended"] == I.RECOMMENDED_PODMAN and isinstance(cat_p["podman_outdated"], bool), "the catalog says which Podman it was verified on"
+            # migrate: an install made under media-stack is found, offered and moved to the apps that replaced it
+            assert json.loads(pedir("/api/catalog", headers=ok)[2])["legacy"] == [], "no old install here"
+            assert pedir("/api/migrate", json.dumps({"from": "nope"}).encode(), api)[0] == 400
+            assert pedir("/api/migrate", json.dumps({"from": "media-stack"}).encode(), api)[0] == 404, "nothing to move"
+            velho_d = Path(tmp, ".config/containers/systemd/media-stack"); velho_d.mkdir(parents=True)
+            (velho_d / "media-stack-sonarr.container").write_text("[Container]\nImage=x\nVolume=%h/.config/containers/volumes/media-stack/sonarr/config:/config:Z\n")
+            Path(tmp, ".config/containers/volumes/media-stack/sonarr/config").mkdir(parents=True)
+            Path(tmp, ".config/containers/volumes/media-stack/sonarr/config/db").write_text("data")
+            lg = json.loads(pedir("/api/catalog", headers=ok)[2])["legacy"]
+            assert lg and lg[0]["from"] == "media-stack" and [u["new"] for u in lg[0]["units"]] == ["sonarr"], lg
+            st, _, c = pedir("/api/migrate", json.dumps({"from": "media-stack"}).encode(), api)
+            assert st == 202 and json.loads(c)["apps"] == ["sonarr"], c
+            est_m = espera_job(c)
+            assert est_m["rc"] == 0, est_m["output"][-500:]
+            assert Path(tmp, ".config/containers/volumes/sonarr/config/db").read_text() == "data" and installed_unit("sonarr") is not None
+            assert json.loads(pedir("/api/catalog", headers=ok)[2])["legacy"] == [], "moved: nothing old is left"
+            assert pedir("/api/migrate", json.dumps({"from": "media-stack"}).encode(), ok)[0] == 403, "needs the CSRF header"
             # drift: what the repository changed since the install, as a diff the panel shows before the update
             d_ok = json.loads(pedir("/api/drift?unit=homebox", headers=ok)[2])
             assert d_ok["changed"] is False and d_ok["diff"] == "", d_ok

@@ -1,0 +1,28 @@
+{
+  "$schema": "../app-schema.json",
+  "title": "Downtify",
+  "short_desc": {
+    "en": "Download Spotify songs and playlists.",
+    "pt": "Baixe músicas e playlists do Spotify."
+  },
+  "description": {
+    "en": "Downloads the songs and playlists you paste from Spotify as audio files, with cover art and metadata",
+    "pt": "Baixa como arquivos de áudio as músicas e playlists que você colar do Spotify, com capa e metadados"
+  },
+  "author": "henriquesebastiao",
+  "source": "https://github.com/henriquesebastiao/downtify",
+  "docs": "https://github.com/henriquesebastiao/downtify",
+  "category": "Downloads",
+  "vars": { "MEDIA_DATA_DIR": "~/data" },
+  "ask": {
+    "MEDIA_DATA_DIR": {
+      "type": "path",
+      "label": { "en": "Media folder", "pt": "Pasta de mídia" },
+      "hint": {
+        "en": "Where the library lives; every media app reads it.",
+        "pt": "Onde fica a biblioteca; todos os apps de mídia leem dela."
+      },
+      "required": true
+    }
+  }
+}

@@ -1,17 +1,16 @@
 [Unit]
-Description=Sonarr (TV series automation)
+Description=Prowlarr (indexer manager)
 
 [Container]
-Image=lscr.io/linuxserver/sonarr
-ContainerName=sonarr
+Image=lscr.io/linuxserver/prowlarr
+ContainerName=prowlarr
 
 Network=tsdproxy-net.network
-PublishPort=8989:8989
+PublishPort=9696:9696
 
-EnvironmentFile=%h/.config/containers/env/media-stack.env
+EnvironmentFile=%h/.config/containers/env/prowlarr.env
 
-Volume=%h/.config/containers/volumes/media-stack/sonarr/config:/config:Z
-Volume=${MEDIA_DATA_DIR}:/data:z
+Volume=%h/.config/containers/volumes/prowlarr/config:/config:Z
 
 DropCapability=ALL
 AddCapability=CHOWN
@@ -21,7 +20,7 @@ AddCapability=NET_BIND_SERVICE
 PidsLimit=256
 NoNewPrivileges=true
 
-HealthCmd=CMD-SHELL curl --silent --fail http://127.0.0.1:8989/ || exit 1
+HealthCmd=CMD-SHELL curl --silent --fail http://127.0.0.1:9696/ || exit 1
 HealthInterval=30s
 HealthTimeout=5s
 HealthRetries=3
@@ -30,8 +29,8 @@ Notify=healthy
 
 Label=tsdproxy.enable=true
 Label=tsdproxy.autodetect=true
-Label=tsdproxy.name=sonarr
-Label=tsdproxy.port.web=443/https:8989/http
+Label=tsdproxy.name=prowlarr
+Label=tsdproxy.port.web=443/https:9696/http
 
 [Service]
 Restart=always

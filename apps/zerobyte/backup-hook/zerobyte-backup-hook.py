@@ -74,10 +74,9 @@ def load_token() -> str:
 def units_for(name: str) -> list:
     """The units this name stands for.
 
-    Usually one, of the same name. media-stack is the exception the whole
-    repository is built around: rule 1 makes every unit of a stack start with
-    the app's name, so twelve `media-stack-*` units share one volume folder and
-    there is no `media-stack.service` to stop. Stopping the prefix covers them
+    Usually one, of the same name. A folder of several units (`vm`, `toolbx`, `immich`) is the exception the
+    whole repository is built around: rule 1 makes every unit of a stack start with the app's name, so
+    `vm-*` units share one app and there is no `vm.service` to stop. Stopping the prefix covers them
     without naming each one here, and a name that owns nothing stops nothing.
     """
     name = name[:-len(".service")] if name.endswith(".service") else name
@@ -218,7 +217,7 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(500, {"error": "no unit to stop", "unit": unit})
             return
         # Only what is actually running. A stack has units that are deliberately
-        # off — media-stack's gluetun, the optional VPN — and starting those
+        # off — a stack's optional unit, such as the VM that is only started when wanted — and starting those
         # afterwards puts them in a crash loop until systemd's start limit
         # gives up. What was stopped here is what gets started later.
         ativas = [u for u in alvos
