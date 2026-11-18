@@ -4575,7 +4575,8 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude, falhas=None):
             tipo, _, texto = receita.strip().partition(" ")
             if tipo == "manual" and nome in s.secrets():
                 manuais.append({"secret": nome, "instruction": texto.strip(),
-                                "exists": not SANDBOX and secret_exists(nome)})
+                                "exists": not SANDBOX and secret_exists(nome),
+                                "field": (s.manifest.get("ask") or {}).get(nome)})
     variaveis = sorted({n for p, f in s.volumes() if f is None
                         for n in re.findall(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}", p)})
     instaladas = {p.name: p for p in s.installed()}
@@ -4655,7 +4656,7 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude, falhas=None):
         "asks": {
             "secrets": manuais,
             "vars": [{"name": n, "default": var_default(s, n),
-                      "set": bool(manager_var(n))} for n in variaveis],
+                      "set": bool(manager_var(n)), "field": (s.manifest.get("ask") or {}).get(n)} for n in variaveis],
         },
     }
 

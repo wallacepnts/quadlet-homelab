@@ -20,6 +20,7 @@ carries its metadata, but in JSON of our own, beside the unit files instead of i
       "validate": {"authkey": "shell ..."},           # a value only the far end can judge
       "config": {"nginx.conf": "%h/.config/.../nginx.conf"},
       "vars": {"MEDIA_DATA_DIR": "~/data"},           # systemd variables a Volume= uses, with a default
+      "ask": {"MEDIA_DATA_DIR": {"type": "path", "label": "Media folder", "hint": "…"}},   # how the install asks it
       "login": {"user": "admin", "password": "memos-token"},
       "choices": {"VERSION": {"question": "...", "options": [{"value": "11", "label": "..."}, "10"]}},
       "backup": {"mode": "stop", "exclude": ["upload/thumbs"]},
@@ -99,7 +100,7 @@ def dump(data):
 
 
 KEY_ORDER = ["title", "short_desc", "description", "author", "website", "source", "docs", "architectures", "category",
-             "min_podman", "requires_https", "deprecated", "notes", "secrets", "validate", "config", "vars",
+             "min_podman", "requires_https", "deprecated", "notes", "secrets", "validate", "config", "vars", "ask",
              "login", "choices", "options", "widgets", "icon", "backup", "units", "instance"]
 
 
@@ -393,6 +394,79 @@ def option_secret_env(data, chosen=None):
 
 # -- validation -------------------------------------------------------------------------------
 
+ASK_TYPES = ("text", "password", "email", "number", "url", "path")
+ASK_FIELDS = {"type", "label", "hint", "placeholder", "min", "max", "regex", "pattern_error", "required"}
+ASK_TEXTS = ("label", "hint", "placeholder", "pattern_error")
+
+
+def say(v, lang="en"):
+    """A text that is a string or an {en, pt} pair, in `lang` (English when it has no such one)."""
+    return (v.get(lang) or v.get("en") or "") if isinstance(v, dict) else (v or "")
+
+
+def ask_problems(ask, manuais, variaveis):
+    """What is wrong with `ask`: the form the install shows for a secret typed by hand or a ${VAR}, one line each."""
+    if not isinstance(ask, dict) or not ask:
+        return ['"ask" is an object, one entry per manual secret or `vars` name']
+    erros = []
+    for nome, a in ask.items():
+        if nome not in manuais and nome not in variaveis:
+            erros.append(f'"ask" {nome!r} is neither a `manual` secret nor a `vars` name')
+        if not isinstance(a, dict) or set(a) - ASK_FIELDS:
+            erros.append(f'"ask" {nome!r} takes only: {", ".join(sorted(ASK_FIELDS))}')
+            continue
+        if a.get("type", "text") not in ASK_TYPES:
+            erros.append(f'"ask" {nome!r}: "type" is one of {", ".join(ASK_TYPES)}')
+        for k in ASK_TEXTS:
+            v = a.get(k)
+            if v is not None and not (isinstance(v, str) or (isinstance(v, dict) and set(v) == {"en", "pt"}
+                                                              and all(isinstance(x, str) for x in v.values()))):
+                erros.append(f'"ask" {nome!r}: "{k}" is a text or an {{"en", "pt"}} pair')
+        for k in ("min", "max"):
+            if k in a and (isinstance(a[k], bool) or not isinstance(a[k], int)):
+                erros.append(f'"ask" {nome!r}: "{k}" is a whole number')
+        if "min" in a and "max" in a and isinstance(a["min"], int) and isinstance(a["max"], int) and a["min"] > a["max"]:
+            erros.append(f'"ask" {nome!r}: "min" is above "max"')
+        if "required" in a and not isinstance(a["required"], bool):
+            erros.append(f'"ask" {nome!r}: "required" is true or false')
+        if "regex" in a:
+            try:
+                re.compile(a["regex"])
+            except (re.error, TypeError):
+                erros.append(f'"ask" {nome!r}: "regex" does not compile')
+    return erros
+
+
+def check_value(a, valor, lang="en"):
+    """Why `valor` does not fit the `ask` entry `a`, as a message in `lang`; None when it does."""
+    pt = lang == "pt"
+    tipo = a.get("type", "text")
+    if not valor:
+        return (("obrigatório" if pt else "required") if a.get("required") else None)
+    n = len(valor)
+    if tipo == "number":
+        try:
+            n = int(valor)
+        except ValueError:
+            return "precisa ser um número" if pt else "must be a number"
+        if "min" in a and n < a["min"]:
+            return f"no mínimo {a['min']}" if pt else f"at least {a['min']}"
+        if "max" in a and n > a["max"]:
+            return f"no máximo {a['max']}" if pt else f"at most {a['max']}"
+    else:
+        if "min" in a and n < a["min"]:
+            return f"no mínimo {a['min']} caracteres" if pt else f"at least {a['min']} characters"
+        if "max" in a and n > a["max"]:
+            return f"no máximo {a['max']} caracteres" if pt else f"at most {a['max']} characters"
+    if tipo == "email" and not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", valor):
+        return "e-mail inválido" if pt else "not an email address"
+    if tipo == "url" and not re.match(r"https?://\S+$", valor):
+        return "use um endereço http:// ou https://" if pt else "use an http:// or https:// address"
+    if a.get("regex") and not re.fullmatch(a["regex"], valor):
+        return say(a.get("pattern_error"), lang) or ("formato inválido" if pt else "wrong format")
+    return None
+
+
 def problems(data, grupos, folder=None):
     """What is wrong with a manifest, as a list of messages; empty when it holds.
 
@@ -427,6 +501,10 @@ def problems(data, grupos, folder=None):
             erros.append(f'"{k}" must be an object')
     if "units" in data and not isinstance(data["units"], dict):
         erros.append('"units" must be an object')
+    if "ask" in data:
+        sec = data.get("secrets") if isinstance(data.get("secrets"), dict) else {}
+        manuais = {k for k, v in sec.items() if isinstance(v, str) and v.startswith("manual")}
+        erros.extend(ask_problems(data["ask"], manuais, set(data.get("vars") if isinstance(data.get("vars"), dict) else {})))
     ws = data.get("widgets")
     if ws is not None and (not isinstance(ws, list) or not ws or not all(
             isinstance(w, dict) and isinstance(w.get("type"), str) and set(w) <= {"type", "unit"}
@@ -582,6 +660,22 @@ def selftest():
         assert any("at most 6" in e for e in assets_problems(pasta))
     assert splice("a\n" + TABLE_BEGIN + "\nold\n" + TABLE_END + "\nz", "T").count("T") == 1
     assert splice("no markers", "T") is None
+    # ask: the form of a manual secret or a ${VAR}
+    base = {"title": "x", "short_desc": {"en": "a", "pt": "a"}, "description": {"en": "a", "pt": "a"},
+            "secrets": {"k": "manual paste it", "r": "rand-hex 8"}, "vars": {"V": "~/v"}}
+    ok = {"k": {"type": "password", "label": {"en": "Key", "pt": "Chave"}, "min": 12, "required": True}, "V": {"type": "path"}}
+    assert not [e for e in problems({**base, "ask": ok}, ("Tools",)) if "ask" in e]
+    for ruim in ({"r": {}}, {"k": {"type": "nope"}}, {"k": {"min": "x"}}, {"k": {"regex": "("}}, {"k": {"zzz": 1}},
+                 {"k": {"label": {"en": "only"}}}, {"k": {"min": 9, "max": 3}}, {"nope": {}}, []):
+        assert [e for e in problems({**base, "ask": ruim}, ("Tools",)) if "ask" in e], ruim
+    chave = {"type": "password", "min": 12, "max": 20, "required": True}
+    assert check_value(chave, "") == "required" and check_value(chave, "short") == "at least 12 characters"
+    assert check_value(chave, "x" * 12) is None and check_value(chave, "x" * 21, "pt") == "no máximo 20 caracteres"
+    assert check_value({"type": "number", "min": 1, "max": 10}, "11") == "at most 10"
+    assert check_value({"type": "number"}, "a") == "must be a number" and check_value({"type": "email"}, "a@b.co") is None
+    assert check_value({"type": "url"}, "ftp://x") and check_value({"type": "url"}, "https://x.y") is None
+    assert check_value({"regex": "[a-z]+", "pattern_error": {"en": "letters", "pt": "letras"}}, "A1", "pt") == "letras"
+    assert check_value({}, "") is None, "optional and empty is fine"
     print("manifest selftest: ok")
     return 0
 

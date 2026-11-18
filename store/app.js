@@ -1796,19 +1796,33 @@ function needs(a, vistos = new Set()) {
   return saida;
 }
 
-// What the terminal would have asked for one service: `manual` secrets and unset [vars].
+// What the terminal would have asked for one service: `manual` secrets and unset [vars]. The manifest's `ask`
+// says how: a label, a hint, the kind of input and its limits (the browser checks them; the server checks again).
+const askText = (v) => (v && typeof v === "object" ? (v[S.lang] || v.en || "") : v || "");
+function askInput(id, nome, f, base) {
+  const tipo = { password: "password", email: "email", number: "number", url: "url" }[f.type] || (base || "text");
+  const num = f.type === "number", at = { id, type: tipo, autocomplete: tipo === "password" ? "new-password" : "off" };
+  if (f.placeholder) at.placeholder = askText(f.placeholder);
+  if (f.required) at.required = true;
+  if (f.min !== undefined) at[num ? "min" : "minlength"] = f.min;
+  if (f.max !== undefined) at[num ? "max" : "maxlength"] = f.max;
+  if (f.regex) { at.pattern = f.regex; at.title = askText(f.pattern_error) || f.regex; }
+  return at;
+}
 function asksFields(x) {
   const campos = [];
   for (const s of x.asks.secrets) {
-    campos.push(h("label", { for: `s-${s.secret}` }, s.secret));
-    campos.push(h("input", { id: `s-${s.secret}`, type: "password", "data-secret": s.secret,
-                             autocomplete: "new-password" }));
-    campos.push(h("p", { class: "help" }, plain(s.instruction) + " — " +
+    const f = s.field || {};
+    campos.push(h("label", { for: `s-${s.secret}` }, askText(f.label) || s.secret));
+    campos.push(h("input", { ...askInput(`s-${s.secret}`, s.secret, { ...f, required: f.required && !s.exists }, "password"), "data-secret": s.secret }));
+    campos.push(h("p", { class: "help" }, askText(f.hint) ? `${askText(f.hint)} ` : null, plain(s.instruction) + " — " +
                   (s.exists ? t("exists") : t("secretHint"))));
   }
   for (const v of x.asks.vars.filter((y) => !y.set)) {
-    campos.push(h("label", { for: `v-${v.name}` }, v.name));
-    campos.push(h("input", { id: `v-${v.name}`, type: "text", "data-var": v.name, value: v.default }));
+    const f = v.field || {};
+    campos.push(h("label", { for: `v-${v.name}` }, askText(f.label) || v.name));
+    campos.push(h("input", { ...askInput(`v-${v.name}`, v.name, f), "data-var": v.name, value: v.default }));
+    if (askText(f.hint)) campos.push(h("p", { class: "help" }, askText(f.hint)));
   }
   return campos;
 }

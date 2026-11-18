@@ -491,6 +491,20 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   rotas["/api/run"] = { job: "jr" }; rotas["/api/job/jr"] = { output: "ok\n", next: 1, rc: 0 };
   porTexto($("p-actions"), "Instalar")[0].listeners.click(); await esperar(100);
   confere(/Personalização guardada para gitea/.test($("p-form").textContent), "o formulário de instalação diz que a personalização vai junto");
+  // ask: the manifest's form (label, hint, type, limits) reaches the inputs
+  const giteaApp = api.S.apps.find((x) => x.id === "gitea");
+  giteaApp.asks = { secrets: [{ secret: "gitea-tok", instruction: "paste it", exists: false,
+    field: { type: "password", label: { en: "Token", pt: "Token do runner" }, hint: { en: "From Gitea.", pt: "Do Gitea." }, min: 12, max: 40, required: true, regex: "[a-z]+", pattern_error: { en: "x", pt: "só letras" } } }],
+    vars: [{ name: "MEDIA_DATA_DIR", default: "~/data", set: false, field: { type: "path", label: { en: "Media", pt: "Pasta de mídia" }, hint: { en: "h", pt: "Onde fica a biblioteca." } } }] };
+  api.openPanel("gitea"); await esperar(30);
+  porTexto($("p-actions"), "Instalar")[0].listeners.click(); await esperar(100);
+  const camposAsk = [...$("p-form").walk()].filter((e) => e.tag === "input");
+  const campoTok = camposAsk.find((e) => e.attrs["data-secret"] === "gitea-tok");
+  confere(campoTok && campoTok.attrs.type === "password" && campoTok.attrs.minlength === 12 && campoTok.attrs.maxlength === 40 && campoTok.attrs.required === "" && campoTok.attrs.pattern === "[a-z]+" && campoTok.attrs.title === "só letras", "ask: tipo, limites, obrigatório e padrão viram atributos do campo");
+  confere(/Token do runner/.test($("p-form").textContent) && /Do Gitea\./.test($("p-form").textContent) && /Pasta de mídia/.test($("p-form").textContent) && /Onde fica a biblioteca/.test($("p-form").textContent), "ask: rótulo e dica no idioma da tela");
+  giteaApp.asks = { secrets: [], vars: [] };
+  api.openPanel("gitea"); await esperar(30);
+  porTexto($("p-actions"), "Instalar")[0].listeners.click(); await esperar(100);
   const antesRun = posts.length;
   await $("p-form").onsubmit({ preventDefault() {} }); await esperar(1000);
   const instalou = posts.slice(antesRun).find((x) => x.rota === "/api/run");

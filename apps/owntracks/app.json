@@ -20,6 +20,13 @@
     "mosquitto.conf": "%h/.config/containers/volumes/owntracks/mosquitto/config/mosquitto.conf",
     "frontend-config.js": "%h/.config/containers/volumes/owntracks/frontend-config.js"
   },
+  "ask": {
+    "owntracks-mosquitto-passwd": {
+      "type": "text",
+      "label": { "en": "Mosquitto password line", "pt": "Linha de senha do Mosquitto" },
+      "required": true
+    }
+  },
   "login": { "user": "owntracks", "password": "owntracks-mqtt-password" },
   "units": { "owntracks-mosquitto": { "upstream": "registry" } }
 }

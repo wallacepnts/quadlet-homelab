@@ -16,5 +16,23 @@
     "beszel-agent-key": "manual the SSH public key Beszel shows when adding the system",
     "beszel-agent-token": "manual the token shown on that same Beszel screen"
   },
+  "ask": {
+    "beszel-agent-key": {
+      "type": "text",
+      "label": { "en": "Agent public key", "pt": "Chave pública do agente" },
+      "hint": {
+        "en": "The SSH key Beszel shows when you add the system.",
+        "pt": "A chave SSH que o Beszel mostra ao adicionar o sistema."
+      },
+      "min": 20,
+      "required": true
+    },
+    "beszel-agent-token": {
+      "type": "password",
+      "label": { "en": "Agent token", "pt": "Token do agente" },
+      "min": 8,
+      "required": true
+    }
+  },
   "units": { "beszel-agent": { "upstream": "henrygd/beszel" } }
 }

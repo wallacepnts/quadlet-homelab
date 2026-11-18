@@ -13,5 +13,16 @@
   "docs": "https://frigate.video",
   "category": "Home",
   "notes": "It runs on the CPU by default, and no camera is configured yet.",
-  "vars": { "FRIGATE_MEDIA_DIR": "~/frigate-media" }
+  "vars": { "FRIGATE_MEDIA_DIR": "~/frigate-media" },
+  "ask": {
+    "FRIGATE_MEDIA_DIR": {
+      "type": "path",
+      "label": { "en": "Recordings folder", "pt": "Pasta das gravações" },
+      "hint": {
+        "en": "Clips and recordings can take a lot of space.",
+        "pt": "Clipes e gravações podem ocupar muito espaço."
+      },
+      "required": true
+    }
+  }
 }

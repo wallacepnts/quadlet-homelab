@@ -22,5 +22,16 @@
   "config": {
     "config/tsdproxy.yaml": "%h/.config/containers/volumes/tsdproxy/config/tsdproxy.yaml",
     "config/lists.yaml": "%h/.config/containers/volumes/tsdproxy/config/lists.yaml"
+  },
+  "ask": {
+    "authkey": {
+      "type": "password",
+      "label": { "en": "Tailscale auth key", "pt": "Chave de autenticação do Tailscale" },
+      "hint": {
+        "en": "A reusable key from the Tailscale admin (or a Headscale pre-auth key).",
+        "pt": "Uma chave reutilizável do admin do Tailscale (ou uma chave de pré-autenticação do Headscale)."
+      },
+      "required": true
+    }
   }
 }

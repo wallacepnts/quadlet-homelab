@@ -2412,6 +2412,14 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(400, {"error": f"{', '.join(fora)}: "
                                         + loc("not asked by this service")})
 
+            # What the manifest's `ask` says about each answer (length, format, a number's range).
+            for dono, valores in ((dono_s, segredos), (dono_v, variaveis)):
+                for n, v in valores.items():
+                    campo = (manifest.load(service_dir(dono[n])).get("ask") or {}).get(n)
+                    erro = manifest.check_value(campo, v.strip(), lang) if campo else None
+                    if erro:
+                        return self._json(400, {"error": f"{n}: {erro}"})
+
             def prepare():
                 for x in cadeia:
                     if provision(x, {n: v for n, v in segredos.items() if dono_s[n] == x},
@@ -3203,6 +3211,13 @@ def selftest():
                 assert est["rc"] == 0 and "=== [1/1] homebox ===" in est["output"], est["output"][-300:]
             finally:
                 globals()["apps_with_update"] = apps_with_update_orig
+            # ask: a value that breaks the manifest's rule is refused before anything is installed
+            st, _, corpo = pedir("/api/run", json.dumps({"app": "vaultwarden", "action": "install",
+                                                        "secrets": {"vaultwarden-admin-token": "plain"}, "vars": {}}).encode(), api)
+            assert st == 400 and "vaultwarden-admin-token" in json.loads(corpo)["error"] and "argon2" in json.loads(corpo)["error"].lower(), corpo
+            cat_v = next(a for a in json.loads(pedir("/api/catalog", headers=ok)[2])["apps"] if a["id"] == "vaultwarden")
+            assert cat_v["asks"]["secrets"][0]["field"]["required"] is True, "the catalog carries the ask entry"
+
             # power: only the two known verbs, and not while a job runs (a sandbox never touches the machine)
             assert pedir("/api/power", json.dumps({"action": "halt"}).encode(), api)[0] == 400
             assert pedir("/api/power", json.dumps({"action": "reboot"}).encode(), api)[0] == 202

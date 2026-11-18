@@ -17,5 +17,21 @@
   "secrets": {
     "vaultwarden-admin-token": "manual generate it with `podman run --rm vaultwarden/server:alpine /vaultwarden hash` and paste the hash"
   },
+  "ask": {
+    "vaultwarden-admin-token": {
+      "type": "password",
+      "label": { "en": "Admin token (hash)", "pt": "Token do admin (hash)" },
+      "hint": {
+        "en": "The Argon2 hash printed by the command below, not the plain password.",
+        "pt": "O hash Argon2 que o comando abaixo imprime, não a senha em texto."
+      },
+      "regex": "\\$argon2.*",
+      "pattern_error": {
+        "en": "Paste the hash, it starts with $argon2",
+        "pt": "Cole o hash, que começa com $argon2"
+      },
+      "required": true
+    }
+  },
   "units": { "vaultwarden": { "upstream": "dani-garcia/vaultwarden", "image": "{version}-alpine" } }
 }
