@@ -480,6 +480,13 @@ The home (My apps) opens with the server at a glance: processor, memory, the dis
 network (rate; real interfaces only, not the container bridges or the tailnet's copy of the same traffic), each with a
 small history, refreshed every five seconds from `/api/host`. There is no widgets sidebar any more.
 
+## Restart or shut down the server
+
+**Settings → Server** has **Restart** and **Shut down**, each asking once more before it acts. The panel runs them as
+your user (`systemctl reboot` / `poweroff`; polkit allows it for a logged-in user) and refuses while a job (an install,
+an update) is running. After a restart the panel waits for the server to answer again and reloads by itself; after a
+shutdown, only the machine's own button turns it back on.
+
 ## Quick Launch, appearance and service widgets
 
 - **Quick Launch:** type any letter on the page (or `/`) and a search opens over it: the installed apps first, then the

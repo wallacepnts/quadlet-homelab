@@ -12,6 +12,9 @@ const T = {
     notes: "Notas",
     settings: "Configurações", accessRule: "Como os apps são acessados", saveRule: "Salvar regra", applyRule: "Aplicar aos instalados",
     accessDesc: { local: "Só pela rede local (sem tsdproxy)", tailnet: "Só pela tailnet (fecha a porta da LAN)", both: "Rede local e tailnet" },
+    power: "Servidor", powerDesc: "Reinicia ou desliga a máquina inteira, com todos os apps. Não funciona com uma tarefa em andamento.",
+    powerReboot: "Reiniciar o servidor", powerOff: "Desligar o servidor", powerSure: "Confirmar", powerCancel: "Cancelar",
+    powerRebooting: "Reiniciando… o painel volta sozinho quando o servidor responder.", powerOffDone: "Desligando. Para ligar de novo, só no botão da máquina.",
     ruleDefault: "Ainda não escolhida: vale tailnet.", ruleSaved: "Regra salva.",
     ruleDrift: (n, nomes) => `${n} serviço(s) instalado(s) não seguem esta regra: ${nomes}. Aplicar atualiza e reinicia cada um.`,
     tailnetOn: "Tailnet configurada: os endereços .ts.net aparecem nos apps.", tailnetOff: "Tailnet não configurada: os apps só abrem pelo endereço da rede local.",
@@ -184,6 +187,9 @@ const T = {
     notes: "Notes",
     settings: "Settings", accessRule: "How apps are reached", saveRule: "Save rule", applyRule: "Apply to the installed",
     accessDesc: { local: "Local network only (no tsdproxy)", tailnet: "Tailnet only (closes the LAN port)", both: "Local network and tailnet" },
+    power: "Server", powerDesc: "Restarts or shuts down the whole machine, with every app. It does not work while a task is running.",
+    powerReboot: "Restart the server", powerOff: "Shut down the server", powerSure: "Confirm", powerCancel: "Cancel",
+    powerRebooting: "Restarting… the panel comes back by itself when the server answers.", powerOffDone: "Shutting down. To turn it on again, use the machine's button.",
     ruleDefault: "Not chosen yet: tailnet applies.", ruleSaved: "Rule saved.",
     ruleDrift: (n, nomes) => `${n} installed service(s) do not follow this rule: ${nomes}. Applying updates and restarts each one.`,
     tailnetOn: "Tailnet set: the .ts.net addresses show up on the apps.", tailnetOff: "Tailnet not set: apps open only at their local-network address.",
@@ -1933,7 +1939,37 @@ async function renderSettings() {
     await networkSection(),
     await appearanceSection(),
     await alertsSection(),
+    powerSection(),
     h("section", {}, h("p", { class: "muted" }, c.tailnet ? t("tailnetOn") : t("tailnetOff"))));
+}
+
+// Restart or shut down the machine: each button asks once more, and a restart waits for the panel to answer again.
+function powerSection() {
+  const msg = h("p", { class: "muted" }), linha = h("div", { class: "row" });
+  const botoes = () => {
+    fill(linha,
+      h("button", { type: "button", class: "ghost", onclick: () => pergunta("reboot") }, t("powerReboot")),
+      h("button", { type: "button", class: "ghost", onclick: () => pergunta("poweroff") }, t("powerOff")));
+  };
+  const pergunta = (acao) => fill(linha,
+    h("button", { type: "button", class: "danger", onclick: () => fazer(acao) }, `${t("powerSure")}: ${t(acao === "reboot" ? "powerReboot" : "powerOff")}`),
+    h("button", { type: "button", class: "ghost", onclick: botoes }, t("powerCancel")));
+  const fazer = async (acao) => {
+    try { await api("/api/power", { action: acao }); }
+    catch (e) { msg.textContent = e.status === 409 ? t("busy") : String(e.message); msg.className = "bad"; return botoes(); }
+    fill(linha);
+    msg.className = "muted";
+    if (acao === "poweroff") { msg.textContent = t("powerOffDone"); return; }
+    msg.textContent = t("powerRebooting");
+    let caiu = false;                       // reload once it has gone away and come back
+    const olhar = async () => {
+      try { await api("/api/host"); if (caiu) return location.reload(); } catch (e) { caiu = true; }
+      setTimeout(olhar, 4000);
+    };
+    setTimeout(olhar, 4000);
+  };
+  botoes();
+  return h("section", {}, h("h3", {}, t("power")), h("p", { class: "muted" }, t("powerDesc")), linha, msg);
 }
 
 // Alerts to an ntfy topic: opt-in; the token is write-only (the server never sends it back).

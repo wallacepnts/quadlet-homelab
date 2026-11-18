@@ -548,6 +548,16 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   rotas["/api/alerts/test"] = { ok: true };
   rotas["/api/ui"] = { theme: "system", accent: "orange", card: "shadow", density: "comfortable", bg_blur: 8, bg_dim: 35, background: false, bg_version: null };
   await api.openSettings(); await esperar(50);
+  // power: each button asks again before it sends anything
+  rotas["/api/power"] = { action: "poweroff" };
+  const antesPow = posts.length;
+  porTexto($("s-body"), "Desligar o servidor")[0].listeners.click();
+  confere(posts.length === antesPow && porTexto($("s-body"), "Confirmar: Desligar o servidor").length === 1, "desligar: pede confirmação antes de enviar");
+  porTexto($("s-body"), "Cancelar")[0].listeners.click();
+  confere(posts.length === antesPow && porTexto($("s-body"), "Desligar o servidor").length === 1, "cancelar volta aos botões sem enviar");
+  porTexto($("s-body"), "Desligar o servidor")[0].listeners.click();
+  porTexto($("s-body"), "Confirmar: Desligar o servidor")[0].listeners.click(); await esperar(30);
+  confere(posts.slice(antesPow).some((x) => x.rota === "/api/power" && x.corpo.action === "poweroff") && /Para ligar de novo/.test($("s-body").textContent), "desligar: confirmado, envia e avisa");
   // network: the three choices, the state of each piece, what the host still needs, and Apply starts the qh job
   rotas["/api/network"] = { mode: "tailscale", chosen: false, server_url: "http://192.168.1.10:8093", tailnet: "",
     tailscale: { installed: false, active: false, backend: null, ip: null, domain: null, operator: false },

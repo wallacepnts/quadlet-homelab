@@ -2340,6 +2340,18 @@ class Handler(BaseHTTPRequestHandler):
             if job is None:
                 return self._json(409, {"error": loc("another job is running")})
             return self._json(202, {"job": job.id})
+        if url.path == "/api/power":
+            # Reboot or power off the machine (polkit lets the logged-in user do it). Not while a job runs: a
+            # restart in the middle of an update leaves a half-written unit. The answer goes out first.
+            verbo = {"reboot": "reboot", "poweroff": "poweroff"}.get(d.get("action", ""))
+            if not verbo:
+                return self._json(400, {"error": loc("unknown action")})
+            if JOB_LOCK.locked():
+                return self._json(409, {"error": loc("another job is running")})
+            if not PREFIX:                  # a sandbox does not touch the machine
+                threading.Timer(2.0, lambda: subprocess.run(["systemctl", verbo], check=False)).start()
+            return self._json(202, {"action": verbo})
+
         if url.path == "/api/settings":
             modo = d.get("access", "")
             if modo not in I.ACCESS_MODES:
@@ -3191,6 +3203,14 @@ def selftest():
                 assert est["rc"] == 0 and "=== [1/1] homebox ===" in est["output"], est["output"][-300:]
             finally:
                 globals()["apps_with_update"] = apps_with_update_orig
+            # power: only the two known verbs, and not while a job runs (a sandbox never touches the machine)
+            assert pedir("/api/power", json.dumps({"action": "halt"}).encode(), api)[0] == 400
+            assert pedir("/api/power", json.dumps({"action": "reboot"}).encode(), api)[0] == 202
+            JOB_LOCK.acquire()
+            try:
+                assert pedir("/api/power", json.dumps({"action": "poweroff"}).encode(), api)[0] == 409, "busy: no power action"
+            finally:
+                JOB_LOCK.release()
             # the running job can be found again after its window was closed
             assert json.loads(pedir("/api/jobs/active", headers=ok)[2]) == {"job": None}, "nothing running"
             lento = start_job("_host", "update-all", [["sleep", "1"]], "en")
