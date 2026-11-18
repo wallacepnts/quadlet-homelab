@@ -119,7 +119,17 @@
       "additionalProperties": false
     },
     "notes": {
-      "type": "string"
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
     },
     "secrets": {
       "type": "object",

@@ -50,7 +50,7 @@ apps/memos/
 | `requires_https` | não | `true`: o app quebra em HTTP puro (um cofre, um service worker). O painel avisa quando ele é acessado só pela rede local. |
 | `no_gui` | não | `true`: o app não tem interface web (um runner, um relay de e-mail, uma caixa de ferramentas); a loja não mostra endereço nem o botão Abrir, qualquer que seja a porta que ele publica. |
 | `deprecated` | não | Texto: por que foi descontinuado. A loja não oferece instalar. |
-| `notes` | não | Markdown: o que fazer no primeiro acesso e o que o app tem de estranho. O painel mostra. |
+| `notes` | não | Markdown: o que fazer no primeiro acesso e o que o app tem de estranho. O painel mostra. Um texto com quebras de linha é escrito como lista, uma linha de texto por item (`"notes": ["primeira linha", "", "segundo parágrafo"]`): o `check.py --format` faz isso, e uma string simples continua carregando. |
 | `secrets` | por `Secret=` | `{"<secret>": "rand-hex 32"}`: como cada secret é feito (`rand-hex N`, `rand-base64 N`, `rand-urlsafe N`, `rand-alnum N`, `shell <cmd>`, `manual <texto>`). |
 | `validate` | não | `{"<secret>": "shell <cmd>"}`: uma conferência de um secret `manual` que só o outro lado sabe julgar. O valor chega por stdin. |
 | `config` | não | `{"<arquivo na pasta>": "<onde cai no host>"}`: arquivos auxiliares que o `qh` copia uma vez e nunca sobrescreve. |

@@ -59,7 +59,7 @@ apps/memos/
 | `requires_https` | no | `true`: the app breaks over plain HTTP (a vault, a service worker). The panel warns when it is reached by the local network only. |
 | `no_gui` | no | `true`: the app has no web interface (a runner, a mail relay, a toolbox); the store shows no address and no Open button, whatever port it publishes. |
 | `deprecated` | no | Text: why it is discontinued. The store offers no install. |
-| `notes` | no | Markdown: what to do at the first run and what is odd about the app. The panel shows it. |
+| `notes` | no | Markdown: what to do at the first run and what is odd about the app. The panel shows it. A text with line breaks is written as a list, one line of text per item (`"notes": ["first line", "", "second paragraph"]`): `check.py --format` does it, and a plain string still loads. |
 | `secrets` | per `Secret=` | `{"<secret>": "rand-hex 32"}`: how each secret is made (`rand-hex N`, `rand-base64 N`, `rand-urlsafe N`, `rand-alnum N`, `shell <cmd>`, `manual <text>`). |
 | `validate` | no | `{"<secret>": "shell <cmd>"}`: a check of a `manual` secret that only the far end can judge. The value arrives on stdin. |
 | `config` | no | `{"<file in the folder>": "<where it lands on the host>"}`: auxiliary files `qh` copies once and never overwrites. |

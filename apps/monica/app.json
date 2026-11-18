@@ -10,6 +10,11 @@
   "source": "https://github.com/monicahq/monica",
   "docs": "https://beta.monicahq.com",
   "category": "Personal",
-  "notes": "### Update\n\nBy digest, because `monica-next` publishes no versioned image — only `main` and\n`main-fpm`, rebuilt as the branch moves. The digest freezes one build of it.",
+  "notes": [
+    "### Update",
+    "",
+    "By digest, because `monica-next` publishes no versioned image — only `main` and",
+    "`main-fpm`, rebuilt as the branch moves. The digest freezes one build of it."
+  ],
   "secrets": { "monica-app-key": "shell printf 'base64:%s' \"$(openssl rand -base64 32)\"" }
 }

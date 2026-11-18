@@ -13,6 +13,10 @@
   "source": "https://github.com/netbootxyz/netboot.xyz",
   "docs": "https://netboot.xyz/docs/docker",
   "category": "Network & Security",
-  "notes": "Port\n69 is published too, but it is TFTP over UDP — what the machines booting from it\nspeak, not a page a browser can open.",
+  "notes": [
+    "Port",
+    "69 is published too, but it is TFTP over UDP — what the machines booting from it",
+    "speak, not a page a browser can open."
+  ],
   "units": { "netbootxyz": { "upstream": "registry" } }
 }

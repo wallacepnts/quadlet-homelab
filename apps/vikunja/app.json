@@ -13,6 +13,24 @@
   "source": "https://github.com/go-vikunja/vikunja",
   "docs": "https://vikunja.io/docs/",
   "category": "Productivity",
-  "notes": "Open `https://vikunja.<your-tailnet>.ts.net` and register. Then set\n`VIKUNJA_SERVICE_ENABLEREGISTRATION=false` in the `.env` and restart, or anyone\nwho reaches your tailnet can create an account.\n\n### PUBLICURL is not decoration\n\n`VIKUNJA_SERVICE_PUBLICURL` is the address the frontend calls the API on.\nWrong, and the symptom misleads: the interface loads, looks right, and every\nrequest fails. It is also what invitation and reminder links carry.\n\n### Update\n\nIt migrates the database on start, which is why the release notes are worth a look before a major bump.\n\n### Backup\n\nStops it, packs both volumes and the `.env`, starts it again.",
+  "notes": [
+    "Open `https://vikunja.<your-tailnet>.ts.net` and register. Then set",
+    "`VIKUNJA_SERVICE_ENABLEREGISTRATION=false` in the `.env` and restart, or anyone",
+    "who reaches your tailnet can create an account.",
+    "",
+    "### PUBLICURL is not decoration",
+    "",
+    "`VIKUNJA_SERVICE_PUBLICURL` is the address the frontend calls the API on.",
+    "Wrong, and the symptom misleads: the interface loads, looks right, and every",
+    "request fails. It is also what invitation and reminder links carry.",
+    "",
+    "### Update",
+    "",
+    "It migrates the database on start, which is why the release notes are worth a look before a major bump.",
+    "",
+    "### Backup",
+    "",
+    "Stops it, packs both volumes and the `.env`, starts it again."
+  ],
   "units": { "vikunja": { "upstream": "go-vikunja/vikunja" } }
 }

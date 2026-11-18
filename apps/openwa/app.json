@@ -13,6 +13,13 @@
   "source": "https://github.com/rmyndharis/openwa",
   "docs": "https://www.open-wa.org",
   "category": "Automation",
-  "notes": "### Behaviour change in 0.15.0\n\nWhile WhatsApp Web reloads its own page — measured around five minutes after a\nfresh pairing — every engine route answers `409` instead of the raw `500` it\nused to. A client that retries on 5xx and gives up on 4xx will now fail where\nit used to recover, so check the flows that call this API.",
+  "notes": [
+    "### Behaviour change in 0.15.0",
+    "",
+    "While WhatsApp Web reloads its own page — measured around five minutes after a",
+    "fresh pairing — every engine route answers `409` instead of the raw `500` it",
+    "used to. A client that retries on 5xx and gives up on 4xx will now fail where",
+    "it used to recover, so check the flows that call this API."
+  ],
   "secrets": { "openwa-master-key": "rand-urlsafe 48", "openwa-key-pepper": "rand-hex 32" }
 }

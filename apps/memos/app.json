@@ -10,6 +10,11 @@
   "source": "https://github.com/usememos/memos",
   "docs": "https://www.usememos.com/docs",
   "category": "Productivity",
-  "notes": "Open `http://<host-ip>:5230` or `https://memos.<your-tailnet>.ts.net` and\ncreate the account. **The first user to sign up becomes admin**, with no email\nconfirmation. Right after that, turn signup off in Settings → \"Allow user\nsignup\", or anyone who reaches the URL can create an account.",
+  "notes": [
+    "Open `http://<host-ip>:5230` or `https://memos.<your-tailnet>.ts.net` and",
+    "create the account. **The first user to sign up becomes admin**, with no email",
+    "confirmation. Right after that, turn signup off in Settings → \"Allow user",
+    "signup\", or anyone who reaches the URL can create an account."
+  ],
   "units": { "memos": { "upstream": "usememos/memos" } }
 }

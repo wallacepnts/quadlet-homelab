@@ -15,7 +15,7 @@ carries its metadata, but in JSON of our own, beside the unit files instead of i
       "min_podman": "5.4",
       "requires_https": true,                         # the app breaks over plain HTTP (a vault, a service worker)
       "deprecated": "why it is discontinued",         # no install is offered
-      "notes": "markdown: first run, what is odd about it",
+      "notes": ["markdown: first run, what is odd about it,", "one line of text per item"],
       "secrets": {"memos-token": "rand-hex 32"},      # how each Secret= is made
       "validate": {"authkey": "shell ..."},           # a value only the far end can judge
       "config": {"nginx.conf": "%h/.config/.../nginx.conf"},
@@ -59,12 +59,19 @@ def load(folder):
     if not p.is_file():
         return {}
     try:
-        return json.loads(p.read_text())
+        data = json.loads(p.read_text())
     except ValueError as e:
         raise ValueError(f"{p}: not valid JSON ({e})")
+    if isinstance(data, dict) and isinstance(data.get("notes"), list) and all(isinstance(x, str) for x in data["notes"]):
+        data["notes"] = "\n".join(data["notes"])         # in the file, one line of text per item; in memory, one string
+    return data
 
 
 WIDTH = 110          # a value that fits in this many columns stays on one line
+
+
+class _Linhas(list):
+    """The lines of a text, which dump writes one per line however short they are."""
 
 
 def _inline(v):
@@ -78,7 +85,7 @@ def _inline(v):
 def _render(v, indent, prefix_len):
     """`v` as text: on one line when it fits (like `"categories": ["finance"]`), else one entry per line."""
     linha = _inline(v)
-    if not isinstance(v, (dict, list)) or not v or prefix_len + len(linha) <= WIDTH:
+    if not isinstance(v, (dict, list)) or not v or (prefix_len + len(linha) <= WIDTH and not isinstance(v, _Linhas)):
         return linha
     pad, pad_in = "  " * indent, "  " * (indent + 1)
     if isinstance(v, dict):
@@ -95,6 +102,8 @@ def dump(data):
     d = ordered(data)
     if not d:
         return "{}\n"
+    if isinstance(d.get("notes"), str) and "\n" in d["notes"]:
+        d["notes"] = _Linhas(d["notes"].split("\n"))          # a note that runs over lines is written one per line
     linhas = [f"  {json.dumps(k, ensure_ascii=False)}: " + _render(v, 1, 2 + len(json.dumps(k, ensure_ascii=False)) + 2) for k, v in d.items()]
     return "{\n" + ",\n".join(linhas) + "\n}\n"
 
@@ -490,7 +499,7 @@ def schema(grupos):
         "docs": {"type": "string", "format": "uri"}, "architectures": {"type": "array", "items": texto},
         "category": {"enum": list(grupos)}, "min_podman": {"type": "string"},
         "requires_https": {"type": "boolean"}, "no_gui": {"const": True}, "deprecated": par,
-        "notes": {"type": "string"}, "secrets": mapa(texto), "validate": mapa(texto), "config": mapa(texto),
+        "notes": {"oneOf": [{"type": "string"}, {"type": "array", "items": {"type": "string"}}]}, "secrets": mapa(texto), "validate": mapa(texto), "config": mapa(texto),
         "vars": mapa(texto), "ask": mapa(campo), "login": {"type": "object"}, "choices": {"type": "object"},
         "options": {"type": "object"}, "widgets": {"type": "array", "items": {"type": "object", "required": ["type"]}},
         "icon": {"type": "object", "additionalProperties": False, "properties": {
@@ -535,7 +544,7 @@ def problems(data, grupos, folder=None):
         erros.append('"requires_https" is `true` or left out')
     for k in ("notes", "deprecated"):
         if k in data and not isinstance(data[k], str):
-            erros.append(f'"{k}" must be a string')
+            erros.append(f'"{k}" must be a string' + (' (or, for "notes", a list of lines)' if k == "notes" else ""))
     for k in ("secrets", "validate", "config", "vars"):
         if k in data and not isinstance(data[k], dict):
             erros.append(f'"{k}" must be an object')
@@ -705,6 +714,13 @@ def selftest():
         assert any("at most 6" in e for e in assets_problems(pasta))
     assert splice("a\n" + TABLE_BEGIN + "\nold\n" + TABLE_END + "\nz", "T").count("T") == 1
     assert splice("no markers", "T") is None
+    # notes: a text with line breaks is written as a list of lines and read back as the same string
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        for nota in ("one line", "a\n\nb `c`", "ends\n"):
+            Path(tmp, FILE).write_text(dump({"title": "x", "notes": nota}))
+            assert load(tmp)["notes"] == nota, nota
+        assert '"notes": [' in dump({"notes": "a\nb"}) and '"notes": "one line"' in dump({"notes": "one line"})
     # ask: the form of a manual secret or a ${VAR}
     base = {"title": "x", "short_desc": {"en": "a", "pt": "a"}, "description": {"en": "a", "pt": "a"},
             "secrets": {"k": "manual paste it", "r": "rand-hex 8"}, "vars": {"V": "~/v"}}
