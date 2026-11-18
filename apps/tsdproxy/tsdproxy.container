@@ -15,7 +15,6 @@ PublishPort=8080:8080
 
 Secret=authkey
 
-# `:z` alone is not enough on SELinux: rule 16 of the conventions.
 SecurityLabelType=container_runtime_t
 Volume=%t/podman/podman.sock:/var/run/docker.sock:z
 Volume=%h/.config/containers/volumes/tsdproxy/data:/data:Z

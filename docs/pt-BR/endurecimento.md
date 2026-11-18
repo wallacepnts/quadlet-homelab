@@ -232,6 +232,12 @@ de mídia enviados de uma coleção e baixados em outra.
 podman: todo stop e restart esperava os 10 segundos até o SIGKILL. Com SIGINT ele
 sai limpo, com código 0.
 
+### any-sync-bundle
+
+O `TimeoutStopSec` é longo de propósito: o compose do upstream dá `stop_grace_period: 2m`, e o motivo aparece conforme a loja
+cresce. O MongoDB embutido descarrega e faz checkpoint ao desligar, e o padrão do systemd é 90 s e depois `SIGKILL`, que
+mataria o Mongo no meio de uma escrita, justo no stop que o backup pediu.
+
 ### collabora
 
 Uma capacidade, a `SYS_CHROOT`. O Collabora roda cada documento numa jaula
@@ -254,6 +260,11 @@ todo o `/usr/bin`, então não há o que rodar dentro dela.
 O ladder inteiro: `ReadOnly=true`, todas as capacidades descartadas,
 `User=1000`. Medido com a aplicação servindo — Puma escutando e a interface
 respondendo —, não só com o container de pé.
+
+O mount vai um nível mais fundo do que parece: `Volume=…/docuseal/data:/data/docuseal:Z`, não `:/data`. O app cria
+`/data/docuseal/` sozinho no primeiro início e, como usuário sem root num sistema de arquivos somente leitura, não consegue
+(`Permission denied @ rb_sysopen - /data/docuseal/docuseal.env`). Montar o caminho que ele quer elimina a criação; medido
+das duas formas antes de decidir.
 
 ### dozzle
 
@@ -302,6 +313,10 @@ biblioteca de verdade baixada e servida, não só com o container de pé.
 
 O `ReadOnly=true` não impede o download: o volume é bind mount, e o
 somente-leitura vale para o sistema de arquivos do container.
+
+`Exec=*.zim` não é um truque de shell que por acaso funciona: o `start.sh` da própria imagem monta
+`kiwix-serve --port=$PORT $@` e o roda **sem aspas**, a partir de `/data`. O glob é expandido ali, então todo `.zim` do volume
+é servido e um novo só precisa de reinício.
 
 ### komga
 
@@ -367,6 +382,13 @@ Toda recusa, com o erro, está em
 de desfazer sem querer: o cache do pnpm tem que continuar em tmpfs. Medido com ele
 em volume, o backend nunca abriu a porta 3000 em 2 de 9 partidas, sem nada em log
 nenhum.
+
+### proxmox
+
+O `PodmanArgs=--privileged` fica (`# check: ignore hardening` na unit): o entrypoint do upstream se recusa a iniciar sem ele,
+de propósito, porque o Proxmox roda o systemd como PID 1 e gerencia bridges, armazenamento e KVM por dentro; e o
+`NoNewPrivileges` contradiz o que o `--privileged` existe para conceder. O healthcheck usa `curl -k`: o Proxmox serve o próprio
+certificado autoassinado, e `http` simples responde `301`, o que não prova que a interface está no ar.
 
 ### rclone
 

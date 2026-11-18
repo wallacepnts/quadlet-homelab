@@ -13,7 +13,6 @@ EnvironmentFile=%h/.config/containers/env/beszel.env
 Secret=beszel-agent-key,target=/run/secrets/beszel-key
 Secret=beszel-agent-token,target=/run/secrets/beszel-token
 
-# `:z` alone is not enough on SELinux: rule 16 of the conventions.
 SecurityLabelType=container_runtime_t
 Volume=%h/.config/containers/volumes/beszel/agent-data:/var/lib/beszel-agent:Z
 Volume=%h/.config/containers/volumes/beszel/socket:/beszel_socket:z

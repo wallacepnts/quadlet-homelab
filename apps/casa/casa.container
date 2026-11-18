@@ -13,7 +13,6 @@ PublishPort=8129:8080
 EnvironmentFile=%h/.config/containers/env/casa.env
 Secret=casa-user,type=env,target=USER
 
-# `:z` alone is not enough on SELinux: rule 16 of the conventions.
 SecurityLabelType=container_runtime_t
 Volume=%h/.config/containers/volumes/casa/data:/DATA:Z
 Volume=%t/podman/podman.sock:/var/run/docker.sock:z

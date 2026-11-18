@@ -11,7 +11,6 @@ Environment=CONFIG_FILE=/data/config.yaml
 EnvironmentFile=%h/.config/containers/env/gitea-runner.env
 Secret=gitea-runner-token,type=env,target=GITEA_RUNNER_REGISTRATION_TOKEN
 
-# `:z` alone is not enough on SELinux: rule 16 of the conventions.
 SecurityLabelType=container_runtime_t
 Volume=%h/.config/containers/volumes/gitea-runner/data:/data:Z
 Volume=%t/podman/podman.sock:/var/run/docker.sock:z

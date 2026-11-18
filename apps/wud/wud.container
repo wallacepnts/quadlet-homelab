@@ -14,7 +14,6 @@ Environment=WUD_AUTH_ADMIN_USER=admin
 EnvironmentFile=%h/.config/containers/env/wud.env
 Secret=wud-admin-password,type=env,target=WUD_AUTH_ADMIN_PASSWORD
 
-# `:z` alone is not enough on SELinux: rule 16 of the conventions.
 SecurityLabelType=container_runtime_t
 Volume=%t/podman/podman.sock:/var/run/docker.sock:ro,z
 Volume=%h/.config/containers/volumes/wud/store:/store:Z

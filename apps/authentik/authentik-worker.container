@@ -16,7 +16,6 @@ Environment=AUTHENTIK_POSTGRESQL__USER=authentik
 Secret=authentik-postgres-password,type=env,target=AUTHENTIK_POSTGRESQL__PASSWORD
 Secret=authentik-secret-key,type=env,target=AUTHENTIK_SECRET_KEY
 
-# `:z` alone is not enough on SELinux: rule 16 of the conventions.
 SecurityLabelType=container_runtime_t
 Volume=%h/.config/containers/volumes/authentik/data:/data:z
 Volume=%h/.config/containers/volumes/authentik/certs:/certs:Z

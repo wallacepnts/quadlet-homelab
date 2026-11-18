@@ -9,7 +9,7 @@ PublishPort=1587:587
 
 EnvironmentFile=%h/.config/containers/env/postfix.env
 # The relay's password, when the provider asks for one. Create the secret and
-# uncomment both lines (see the README).
+# uncomment both lines.
 #Secret=postfix-relayhost-password,type=env,target=RELAYHOST_PASSWORD
 
 Volume=%h/.config/containers/volumes/postfix/spool:/var/spool/postfix:Z

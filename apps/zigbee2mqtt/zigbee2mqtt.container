@@ -14,7 +14,7 @@ PublishPort=8097:8080
 Volume=%h/.config/containers/volumes/zigbee2mqtt/data:/app/data:Z
 Volume=/etc/localtime:/etc/localtime:ro
 
-# USB coordinator: uncomment and use a /dev/serial/by-id/ path (see README).
+# USB coordinator: uncomment and use a /dev/serial/by-id/ path.
 #AddDevice=/dev/serial/by-id/usb-XXXX:/dev/ttyACM0
 
 ReadOnly=true

@@ -10,10 +10,6 @@ PublishPort=8120:3000
 
 EnvironmentFile=%h/.config/containers/env/docuseal.env
 
-# Straight at /data/docuseal, not at /data: the app creates that subfolder
-# itself on first start and cannot, running as a non-root user on a read-only
-# filesystem — `Permission denied @ rb_sysopen - /data/docuseal/docuseal.env`.
-# Mounting the path it wants sidesteps the creation entirely.
 Volume=%h/.config/containers/volumes/docuseal/data:/data/docuseal:Z
 
 ReadOnly=true

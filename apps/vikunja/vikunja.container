@@ -20,9 +20,6 @@ User=1000
 PidsLimit=256
 NoNewPrivileges=true
 
-# The binary's own subcommand, in exec form: the image is distroless — the
-# whole of it is /app/vikunja/vikunja and a CA bundle — so CMD-SHELL has no
-# shell to run in.
 HealthCmd=["CMD", "/app/vikunja/vikunja", "healthcheck"]
 HealthInterval=30s
 HealthTimeout=10s

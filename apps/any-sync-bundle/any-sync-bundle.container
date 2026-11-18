@@ -39,10 +39,6 @@ Label=tsdproxy.dash.icon=si/anytype
 [Service]
 Restart=always
 TimeoutStartSec=90
-# Upstream's compose gives it `stop_grace_period: 2m`, and the reason shows
-# up as the store grows: the embedded MongoDB flushes and checkpoints on
-# shutdown. systemd's default is 90s and then SIGKILL — which would kill
-# Mongo mid-write, on the very stop the backup asked for.
 TimeoutStopSec=120
 
 [Install]
