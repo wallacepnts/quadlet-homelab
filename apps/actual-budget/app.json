@@ -1,21 +1,11 @@
 {
   "title": "Actual Budget",
-  "short_desc": {
-    "en": "A simple tool to plan and track your money.",
-    "pt": "Uma ferramenta simples para planejar e acompanhar seu dinheiro."
-  },
-  "description": {
-    "en": "Fast, privacy-focused personal finance management using the envelope budgeting method",
-    "pt": "Rápido e focado em privacidade pra gerenciar finanças pessoais, usando a metodologia de Orçamento de Envelope"
-  },
+  "short_desc": { "en": "A simple tool to plan and track your money.", "pt": "Uma ferramenta simples para planejar e acompanhar seu dinheiro." },
+  "description": { "en": "Fast, privacy-focused personal finance management using the envelope budgeting method", "pt": "Rápido e focado em privacidade pra gerenciar finanças pessoais, usando a metodologia de Orçamento de Envelope" },
   "author": "actualbudget",
   "source": "https://github.com/actualbudget/actual",
   "docs": "https://actualbudget.org",
   "category": "Personal",
   "requires_https": true,
-  "units": {
-    "actual": {
-      "upstream": "actualbudget/actual"
-    }
-  }
+  "units": { "actual": { "upstream": "actualbudget/actual" } }
 }

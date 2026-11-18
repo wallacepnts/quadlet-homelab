@@ -63,9 +63,40 @@ def load(folder):
         raise ValueError(f"{p}: not valid JSON ({e})")
 
 
+WIDTH = 110          # a value that fits in this many columns stays on one line
+
+
+def _inline(v):
+    if isinstance(v, dict):
+        return "{ " + ", ".join(f"{json.dumps(k, ensure_ascii=False)}: {_inline(x)}" for k, x in v.items()) + " }" if v else "{}"
+    if isinstance(v, list):
+        return "[" + ", ".join(_inline(x) for x in v) + "]"
+    return json.dumps(v, ensure_ascii=False)
+
+
+def _render(v, indent, prefix_len):
+    """`v` as text: on one line when it fits (like `"categories": ["finance"]`), else one entry per line."""
+    linha = _inline(v)
+    par = isinstance(v, dict) and set(v) == {"en", "pt"} and all(isinstance(x, str) for x in v.values())
+    if not isinstance(v, (dict, list)) or not v or par or prefix_len + len(linha) <= WIDTH:     # an {en, pt} pair is one line
+        return linha
+    pad, pad_in = "  " * indent, "  " * (indent + 1)
+    if isinstance(v, dict):
+        itens = [f"{pad_in}{json.dumps(k, ensure_ascii=False)}: " + _render(x, indent + 1, len(pad_in) + len(json.dumps(k, ensure_ascii=False)) + 2)
+                 for k, x in v.items()]
+        return "{\n" + ",\n".join(itens) + f"\n{pad}}}"
+    itens = [pad_in + _render(x, indent + 1, len(pad_in)) for x in v]
+    return "[\n" + ",\n".join(itens) + f"\n{pad}]"
+
+
 def dump(data):
-    """The canonical text of a manifest: two-space indent, keys in the order the spec lists them."""
-    return json.dumps(ordered(data), ensure_ascii=False, indent=2) + "\n"
+    """The canonical text of a manifest, the way Runtipi writes its config.json: one key per line, keys in the
+    order the spec lists them, and a short object or list kept on its line."""
+    d = ordered(data)
+    if not d:
+        return "{}\n"
+    linhas = [f"  {json.dumps(k, ensure_ascii=False)}: " + _render(v, 1, 2 + len(json.dumps(k, ensure_ascii=False)) + 2) for k, v in d.items()]
+    return "{\n" + ",\n".join(linhas) + "\n}\n"
 
 
 KEY_ORDER = ["title", "short_desc", "description", "author", "website", "source", "docs", "architectures", "category",

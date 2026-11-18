@@ -1,16 +1,10 @@
 {
   "title": "Beaver Habits",
-  "category": "Personal",
-  "notes": "Open `http://<host-ip>:8015` or `https://habits.<your-tailnet>.ts.net` and\ncreate the account. **Anyone who reaches the address can create one too** —\nset `MAX_USER_COUNT=1` in the `.env` once yours exists, and restart.\n\n### API\n\nThere is a REST API, which is what the Home Assistant switch, the Stream Deck\nplugin and the Apple Shortcut in the project's README talk to. See the\n[API guide](https://github.com/daya0576/beaverhabits/wiki/Beaver-Habit-Tracker-API-How%E2%80%90to-Guide).\n\n### Backup\n\nIt stops the service, packs the data and the `.env`, and starts it again.",
-  "short_desc": {
-    "en": "A simple habit tracker.",
-    "pt": "Um acompanhador de hábitos simples."
-  },
-  "description": {
-    "en": "Habit tracking with no goals and no streak-shaming — you mark the day and move on",
-    "pt": "Acompanhamento de hábitos sem metas e sem cobrança de sequência — você marca o dia e segue"
-  },
-  "docs": "https://github.com/daya0576/beaverhabits/wiki",
+  "short_desc": { "en": "A simple habit tracker.", "pt": "Um acompanhador de hábitos simples." },
+  "description": { "en": "Habit tracking with no goals and no streak-shaming — you mark the day and move on", "pt": "Acompanhamento de hábitos sem metas e sem cobrança de sequência — você marca o dia e segue" },
+  "author": "daya0576",
   "source": "https://github.com/daya0576/beaverhabits",
-  "author": "daya0576"
+  "docs": "https://github.com/daya0576/beaverhabits/wiki",
+  "category": "Personal",
+  "notes": "Open `http://<host-ip>:8015` or `https://habits.<your-tailnet>.ts.net` and\ncreate the account. **Anyone who reaches the address can create one too** —\nset `MAX_USER_COUNT=1` in the `.env` once yours exists, and restart.\n\n### API\n\nThere is a REST API, which is what the Home Assistant switch, the Stream Deck\nplugin and the Apple Shortcut in the project's README talk to. See the\n[API guide](https://github.com/daya0576/beaverhabits/wiki/Beaver-Habit-Tracker-API-How%E2%80%90to-Guide).\n\n### Backup\n\nIt stops the service, packs the data and the `.env`, and starts it again."
 }

@@ -1,24 +1,12 @@
 {
   "title": "Open WebUI",
+  "short_desc": { "en": "A chat interface for AI models.", "pt": "Uma interface de chat para modelos de IA." },
+  "description": { "en": "A web chat interface plus a local LLM server, CPU-only by default (NVIDIA/AMD GPU options are documented)", "pt": "Interface de chat web + servidor de LLMs locais, CPU-only por padrão (opções de GPU NVIDIA/AMD documentadas)" },
+  "author": "open-webui",
+  "source": "https://github.com/open-webui/open-webui",
+  "docs": "https://ollama.com",
   "category": "AI",
   "notes": "### Web search\n\nWith [SearXNG](../searxng) running, the model can answer from pages fetched at\nthe time of the question. Uncomment the three lines in\n`~/.config/containers/env/openwebui.env` and run `qh openwebui --update\n--apply`:\n\n```ini\nENABLE_RAG_WEB_SEARCH=True\nRAG_WEB_SEARCH_ENGINE=searxng\nSEARXNG_QUERY_URL=http://searxng:8080/search?q=<query>\n```\n\nBoth containers are on `tsdproxy-net`, so `searxng` resolves by name.\n\nIt runs on the CPU by default.",
-  "secrets": {
-    "openwebui-secret-key": "rand-hex 32"
-  },
-  "units": {
-    "openwebui": {
-      "image": "v{version}"
-    }
-  },
-  "short_desc": {
-    "en": "A chat interface for AI models.",
-    "pt": "Uma interface de chat para modelos de IA."
-  },
-  "description": {
-    "en": "A web chat interface plus a local LLM server, CPU-only by default (NVIDIA/AMD GPU options are documented)",
-    "pt": "Interface de chat web + servidor de LLMs locais, CPU-only por padrão (opções de GPU NVIDIA/AMD documentadas)"
-  },
-  "docs": "https://ollama.com",
-  "source": "https://github.com/open-webui/open-webui",
-  "author": "open-webui"
+  "secrets": { "openwebui-secret-key": "rand-hex 32" },
+  "units": { "openwebui": { "image": "v{version}" } }
 }

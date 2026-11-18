@@ -1,21 +1,11 @@
 {
   "title": "Stirling-PDF",
+  "short_desc": { "en": "Edit and convert PDF files.", "pt": "Edite e converta arquivos PDF." },
+  "description": { "en": "Local PDF manipulation — merge, split, convert, OCR and sign, in place of the \"online PDF\" sites", "pt": "Manipulação de PDF local — juntar, dividir, converter, OCR e assinar, no lugar dos sites de \"PDF online\"" },
+  "author": "Stirling-Tools",
+  "source": "https://github.com/Stirling-Tools/Stirling-PDF",
+  "docs": "https://stirling.com",
   "category": "Tools",
   "notes": "### What 3.0 changed\n\n**Analytics.** Left unset, 3.0 asks the admin on first login whether to send\nusage data (PostHog and Scarf). The `.env` ships `SYSTEM_ENABLEANALYTICS=false`,\nso it never asks and never sends. An install from before 3.0 keeps its old\n`.env` on `--update` — add that line to `~/.config/containers/env/stirling-pdf.env`\nby hand.\n\n**A usage allowance.** The new batch \"Processor\", the API and the AI features\nare free up to 1,000 PDFs a month. The editor itself — opening a PDF and using\na tool on it — stays free and unlimited, which is what this service is here for.",
-  "units": {
-    "stirling-pdf": {
-      "upstream": "Stirling-Tools/Stirling-PDF"
-    }
-  },
-  "short_desc": {
-    "en": "Edit and convert PDF files.",
-    "pt": "Edite e converta arquivos PDF."
-  },
-  "description": {
-    "en": "Local PDF manipulation — merge, split, convert, OCR and sign, in place of the \"online PDF\" sites",
-    "pt": "Manipulação de PDF local — juntar, dividir, converter, OCR e assinar, no lugar dos sites de \"PDF online\""
-  },
-  "docs": "https://stirling.com",
-  "source": "https://github.com/Stirling-Tools/Stirling-PDF",
-  "author": "Stirling-Tools"
+  "units": { "stirling-pdf": { "upstream": "Stirling-Tools/Stirling-PDF" } }
 }

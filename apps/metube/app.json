@@ -1,15 +1,9 @@
 {
   "title": "MeTube",
-  "category": "Downloads",
-  "short_desc": {
-    "en": "Download videos from the web.",
-    "pt": "Baixe vídeos da web."
-  },
-  "description": {
-    "en": "A web interface for yt-dlp — paste the URL and the video lands on disk",
-    "pt": "Interface web do yt-dlp — cola a URL e o vídeo cai no disco"
-  },
-  "docs": "https://github.com/alexta69/metube#readme",
+  "short_desc": { "en": "Download videos from the web.", "pt": "Baixe vídeos da web." },
+  "description": { "en": "A web interface for yt-dlp — paste the URL and the video lands on disk", "pt": "Interface web do yt-dlp — cola a URL e o vídeo cai no disco" },
+  "author": "alexta69",
   "source": "https://github.com/alexta69/metube",
-  "author": "alexta69"
+  "docs": "https://github.com/alexta69/metube#readme",
+  "category": "Downloads"
 }

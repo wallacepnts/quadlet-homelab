@@ -1,21 +1,10 @@
 {
   "title": "Node-RED",
-  "category": "Automation",
-  "units": {
-    "node-red": {
-      "upstream": "node-red/node-red",
-      "image": "{version}-minimal"
-    }
-  },
-  "short_desc": {
-    "en": "Automate things by connecting blocks.",
-    "pt": "Automatize coisas ligando blocos."
-  },
-  "description": {
-    "en": "Flow automation through a visual node editor",
-    "pt": "Automação de fluxos via editor visual de nós"
-  },
-  "docs": "https://nodered.org",
+  "short_desc": { "en": "Automate things by connecting blocks.", "pt": "Automatize coisas ligando blocos." },
+  "description": { "en": "Flow automation through a visual node editor", "pt": "Automação de fluxos via editor visual de nós" },
+  "author": "node-red",
   "source": "https://github.com/node-red/node-red",
-  "author": "node-red"
+  "docs": "https://nodered.org",
+  "category": "Automation",
+  "units": { "node-red": { "upstream": "node-red/node-red", "image": "{version}-minimal" } }
 }

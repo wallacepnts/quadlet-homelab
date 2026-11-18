@@ -1,31 +1,16 @@
 {
   "title": "Authentik",
+  "short_desc": { "en": "A login and single sign-on server.", "pt": "Um servidor de login e de login único." },
+  "description": { "en": "An identity server (SSO, MFA, OIDC/SAML) — only the core is deployed, no forward-auth via tsdproxy yet", "pt": "Servidor de identidade (SSO, MFA, OIDC/SAML) — só o core implantado, sem forward-auth via tsdproxy ainda" },
+  "author": "goauthentik",
+  "source": "https://github.com/goauthentik/authentik",
+  "docs": "https://goauthentik.io",
   "category": "Network & Security",
   "notes": "Only the core is deployed; forward-auth through tsdproxy is not set up yet.",
-  "secrets": {
-    "authentik-postgres-password": "rand-urlsafe 32",
-    "authentik-secret-key": "rand-urlsafe 48"
-  },
+  "secrets": { "authentik-postgres-password": "rand-urlsafe 32", "authentik-secret-key": "rand-urlsafe 48" },
   "units": {
-    "authentik": {
-      "upstream": "goauthentik/authentik"
-    },
-    "authentik-worker": {
-      "upstream": "goauthentik/authentik"
-    },
-    "authentik-postgres": {
-      "upstream": "compose:https://goauthentik.io/docker-compose.yml"
-    }
-  },
-  "short_desc": {
-    "en": "A login and single sign-on server.",
-    "pt": "Um servidor de login e de login único."
-  },
-  "description": {
-    "en": "An identity server (SSO, MFA, OIDC/SAML) — only the core is deployed, no forward-auth via tsdproxy yet",
-    "pt": "Servidor de identidade (SSO, MFA, OIDC/SAML) — só o core implantado, sem forward-auth via tsdproxy ainda"
-  },
-  "docs": "https://goauthentik.io",
-  "source": "https://github.com/goauthentik/authentik",
-  "author": "goauthentik"
+    "authentik": { "upstream": "goauthentik/authentik" },
+    "authentik-worker": { "upstream": "goauthentik/authentik" },
+    "authentik-postgres": { "upstream": "compose:https://goauthentik.io/docker-compose.yml" }
+  }
 }

@@ -1,19 +1,11 @@
 {
   "title": "Frigate",
+  "short_desc": { "en": "A security camera recorder that spots people and objects.", "pt": "Um gravador de câmeras de segurança que reconhece pessoas e objetos." },
+  "description": { "en": "An NVR with AI object detection — CPU-only by default, no camera configured yet", "pt": "NVR com detecção de objetos por IA — CPU-only por padrão, sem câmera configurada ainda" },
+  "author": "blakeblackshear",
+  "source": "https://github.com/blakeblackshear/frigate",
+  "docs": "https://frigate.video",
   "category": "Home",
   "notes": "It runs on the CPU by default, and no camera is configured yet.",
-  "vars": {
-    "FRIGATE_MEDIA_DIR": "~/frigate-media"
-  },
-  "short_desc": {
-    "en": "A security camera recorder that spots people and objects.",
-    "pt": "Um gravador de câmeras de segurança que reconhece pessoas e objetos."
-  },
-  "description": {
-    "en": "An NVR with AI object detection — CPU-only by default, no camera configured yet",
-    "pt": "NVR com detecção de objetos por IA — CPU-only por padrão, sem câmera configurada ainda"
-  },
-  "docs": "https://frigate.video",
-  "source": "https://github.com/blakeblackshear/frigate",
-  "author": "blakeblackshear"
+  "vars": { "FRIGATE_MEDIA_DIR": "~/frigate-media" }
 }

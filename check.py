@@ -511,6 +511,14 @@ def check_layout(folders):
                             f"run: python3 check.py --format")
 
 
+def check_manifest_format(folders):
+    """Every app.json in the canonical text of `manifest.dump` (one key per line, short values inline)."""
+    for folder in folders:
+        f = manifest.path_of(folder)
+        if f.is_file() and f.read_text() != manifest.dump(manifest.load(folder)):
+            error("layout", f"{f.relative_to(ROOT)} is not in the standard format — run: python3 check.py --format")
+
+
 def check_shared_labels(folders):
     """A host path two units mount — the same one, or one inside the other — is `:z`.
 
@@ -1127,11 +1135,18 @@ def main():
                 c.write_text(novo_texto)
                 print(f"  {c.relative_to(ROOT)}")
                 feitos += 1
+        for pasta in folders:
+            f = manifest.path_of(pasta)
+            if f.is_file() and f.read_text() != manifest.dump(manifest.load(pasta)):
+                f.write_text(manifest.dump(manifest.load(pasta)))
+                print(f"  {f.relative_to(ROOT)}")
+                feitos += 1
         print(loc(f"{feitos} unit(s) reformatted"))
         return 0
     check_units(folders)
     check_quadlet(folders, exigido="--quadlet" in sys.argv)
     check_layout(folders)
+    check_manifest_format(folders)
     uses = check_ports(folders)
     check_manifest(folders)
     check_shared_labels(folders)

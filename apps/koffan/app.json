@@ -1,27 +1,13 @@
 {
   "title": "Koffan",
+  "short_desc": { "en": "A shared shopping list.", "pt": "Uma lista de compras compartilhada." },
+  "description": { "en": "The house's shopping list — one password, no accounts, everyone edits the same list", "pt": "A lista de compras da casa — uma senha, sem contas, todo mundo edita a mesma lista" },
+  "author": "pansalut",
+  "source": "https://github.com/pansalut/koffan",
+  "docs": "https://github.com/PanSalut/Koffan#readme",
   "category": "Home",
   "notes": "`qh` generates the password and prints it once, at the end of the install.\nOpen `https://koffan.<your-tailnet>.ts.net`.\n\n### The password\n\nIt is the only credential, so it is a Podman secret and not a line in the\n`.env` the upstream compose suggests — the shipped default there is\n`shopping123`. `qh` generates it with `rand-base64 18` and shows it once.\n\nTo change it later:\n\n```bash\npodman secret rm koffan-password\nopenssl rand -base64 18 | tr -d '\\n' | podman secret create koffan-password -\nqh koffan --update --apply\n```\n\n### Notifications\n\n`WEBHOOK_URL` in the `.env` is called on every change. Pointed at the\n[ntfy](../ntfy) here, the phone buzzes when someone adds bread on the way home:\n\n```ini\nWEBHOOK_URL=http://ntfy:2586/groceries\n```\n\nBoth containers are on `tsdproxy-net`, so `ntfy` resolves by name.\n\n### Backup\n\nStops it, packs the data folder and the `.env`, starts it again.",
-  "secrets": {
-    "koffan-password": "rand-base64 18"
-  },
-  "login": {
-    "password": "koffan-password"
-  },
-  "units": {
-    "koffan": {
-      "image": "v{version}"
-    }
-  },
-  "short_desc": {
-    "en": "A shared shopping list.",
-    "pt": "Uma lista de compras compartilhada."
-  },
-  "description": {
-    "en": "The house's shopping list — one password, no accounts, everyone edits the same list",
-    "pt": "A lista de compras da casa — uma senha, sem contas, todo mundo edita a mesma lista"
-  },
-  "docs": "https://github.com/PanSalut/Koffan#readme",
-  "source": "https://github.com/pansalut/koffan",
-  "author": "pansalut"
+  "secrets": { "koffan-password": "rand-base64 18" },
+  "login": { "password": "koffan-password" },
+  "units": { "koffan": { "image": "v{version}" } }
 }

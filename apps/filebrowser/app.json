@@ -1,32 +1,14 @@
 {
   "title": "FileBrowser Quantum",
+  "short_desc": { "en": "A file manager in your browser.", "pt": "Um gerenciador de arquivos no navegador." },
+  "description": { "en": "A web file manager — search, thumbnails, WebDAV, and a shell over a directory you pick", "pt": "Gerenciador de arquivos web — busca, miniaturas, WebDAV e um shell sobre um diretório que você escolhe" },
+  "author": "gtsteffaniak",
+  "source": "https://github.com/gtsteffaniak/filebrowser",
+  "docs": "https://filebrowserquantum.com/en/docs/",
   "category": "Files",
   "notes": "Put your files in `~/.config/containers/volumes/filebrowser/files/` and open\n`https://filebrowser.<your-tailnet>.ts.net` or `http://<host-ip>:8014`.\n\nThe user is `admin`. The password is printed at the end of the install, and\nagain by `qh filebrowser`.\n\n### Volumes\n\n| path | holds |\n| --- | --- |\n| `volumes/filebrowser/data` | `config.yaml`, `database.db`, thumbnail cache |\n| `volumes/filebrowser/files` | the files it manages |\n\nHost port **8014** maps to **8080** inside.\n\n### Adding a directory\n\nAdd a `Volume=` to the unit and a matching source in `config.yaml`:\n\n```ini\nVolume=%h/Documents:/docs:Z\n```\n\n```yaml\nserver:\n  sources:\n    - path: \"/srv\"\n    - path: \"/docs\"\n```\n\nEach source gets its own index. A large tree costs memory and a first-run scan.\n\n### Password\n\n```bash\nqh filebrowser        # prints user and password\n```\n\nTo change it:\n\n```bash\npodman secret rm filebrowser-admin-password\npodman secret create filebrowser-admin-password -   # type it, Enter, Ctrl-D\nsystemctl --user restart filebrowser\n```\n\nRotating `filebrowser-jwt-secret` the same way logs every session out without\nchanging the password.\n\n### Update\n\n`config.yaml` is versioned here, so read the release notes for schema changes before a major bump.\n\n### Backup\n\nStopped on purpose: `database.db` is live, and copying it while the app writes\ngives an archive that only fails when you restore it.\n\nMetadata only, without the files:",
-  "secrets": {
-    "filebrowser-admin-password": "rand-alnum 20",
-    "filebrowser-jwt-secret": "rand-hex 32"
-  },
-  "config": {
-    "config.yaml.example": "%h/.config/containers/volumes/filebrowser/data/config.yaml"
-  },
-  "login": {
-    "user": "admin",
-    "password": "filebrowser-admin-password"
-  },
-  "units": {
-    "filebrowser": {
-      "image": "{version}-stable"
-    }
-  },
-  "short_desc": {
-    "en": "A file manager in your browser.",
-    "pt": "Um gerenciador de arquivos no navegador."
-  },
-  "description": {
-    "en": "A web file manager — search, thumbnails, WebDAV, and a shell over a directory you pick",
-    "pt": "Gerenciador de arquivos web — busca, miniaturas, WebDAV e um shell sobre um diretório que você escolhe"
-  },
-  "docs": "https://filebrowserquantum.com/en/docs/",
-  "source": "https://github.com/gtsteffaniak/filebrowser",
-  "author": "gtsteffaniak"
+  "secrets": { "filebrowser-admin-password": "rand-alnum 20", "filebrowser-jwt-secret": "rand-hex 32" },
+  "config": { "config.yaml.example": "%h/.config/containers/volumes/filebrowser/data/config.yaml" },
+  "login": { "user": "admin", "password": "filebrowser-admin-password" },
+  "units": { "filebrowser": { "image": "{version}-stable" } }
 }

@@ -1,25 +1,15 @@
 {
   "title": "Zigbee2MQTT",
+  "short_desc": { "en": "Use Zigbee devices without the maker's hub.", "pt": "Use dispositivos Zigbee sem o hub do fabricante." },
+  "description": { "en": "A bridge between Zigbee devices and MQTT, with no proprietary hub — no coordinator plugged in yet", "pt": "Ponte entre dispositivos Zigbee e MQTT, sem hub proprietário — sem coordenador ligado ainda" },
+  "author": "koenkk",
+  "source": "https://github.com/koenkk/zigbee2mqtt",
+  "docs": "https://www.zigbee2mqtt.io",
   "category": "Home",
   "notes": "No Zigbee coordinator is plugged in yet.",
   "config": {
     "configuration.yaml": "%h/.config/containers/volumes/zigbee2mqtt/data/configuration.yaml",
     "mosquitto.conf": "%h/.config/containers/volumes/zigbee2mqtt/mosquitto/config/mosquitto.conf"
   },
-  "units": {
-    "zigbee2mqtt-mosquitto": {
-      "upstream": "registry"
-    }
-  },
-  "short_desc": {
-    "en": "Use Zigbee devices without the maker's hub.",
-    "pt": "Use dispositivos Zigbee sem o hub do fabricante."
-  },
-  "description": {
-    "en": "A bridge between Zigbee devices and MQTT, with no proprietary hub — no coordinator plugged in yet",
-    "pt": "Ponte entre dispositivos Zigbee e MQTT, sem hub proprietário — sem coordenador ligado ainda"
-  },
-  "docs": "https://www.zigbee2mqtt.io",
-  "source": "https://github.com/koenkk/zigbee2mqtt",
-  "author": "koenkk"
+  "units": { "zigbee2mqtt-mosquitto": { "upstream": "registry" } }
 }

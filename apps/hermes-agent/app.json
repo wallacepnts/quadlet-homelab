@@ -1,5 +1,10 @@
 {
   "title": "Hermes Agent",
+  "short_desc": { "en": "A personal AI assistant.", "pt": "Um assistente de IA pessoal." },
+  "description": { "en": "A personal AI agent with skills and memory, exposing an OpenAI-compatible API for the other services to call", "pt": "Agente de IA pessoal com habilidades e memória, expondo uma API compatível com a da OpenAI pros outros serviços chamarem" },
+  "author": "nousresearch",
+  "source": "https://github.com/nousresearch/hermes-agent",
+  "docs": "https://hermes-agent.nousresearch.com",
   "category": "AI",
   "notes": "### No memory limit\n\nThe unit sets `PidsLimit=`, not `Memory=`. A memory cap in a rootless unit\nneeds the memory controller delegated to the user manager, and on a host where\nit is not, the container cannot be created at all:\n\n```\nmemory.swap.max: no such file or directory\n```\n\nTo check whether your host delegates it:\n\n```bash\nls /sys/fs/cgroup/user.slice/user-$(id -u).slice/user@$(id -u).service/ | grep memory.max\n```",
   "secrets": {
@@ -7,24 +12,6 @@
     "hermes-agent-dashboard-password": "rand-urlsafe 24",
     "hermes-agent-dashboard-secret": "rand-hex 32"
   },
-  "login": {
-    "user": "admin",
-    "password": "hermes-agent-dashboard-password"
-  },
-  "units": {
-    "hermes-agent": {
-      "image": "v{version}"
-    }
-  },
-  "short_desc": {
-    "en": "A personal AI assistant.",
-    "pt": "Um assistente de IA pessoal."
-  },
-  "description": {
-    "en": "A personal AI agent with skills and memory, exposing an OpenAI-compatible API for the other services to call",
-    "pt": "Agente de IA pessoal com habilidades e memória, expondo uma API compatível com a da OpenAI pros outros serviços chamarem"
-  },
-  "docs": "https://hermes-agent.nousresearch.com",
-  "source": "https://github.com/nousresearch/hermes-agent",
-  "author": "nousresearch"
+  "login": { "user": "admin", "password": "hermes-agent-dashboard-password" },
+  "units": { "hermes-agent": { "image": "v{version}" } }
 }

@@ -1,5 +1,10 @@
 {
   "title": "OwnTracks",
+  "short_desc": { "en": "Track your location from your phone.", "pt": "Registre a sua localização pelo celular." },
+  "description": { "en": "Personal location tracking through a phone app, with its own MQTT broker and a position history", "pt": "Rastreamento de localização pessoal via app de celular, com broker MQTT próprio e histórico de posições" },
+  "author": "owntracks",
+  "source": "https://github.com/owntracks/recorder",
+  "docs": "https://owntracks.org/booklet/",
   "category": "Home",
   "secrets": {
     "owntracks-mqtt-password": "rand-base64 24",
@@ -9,24 +14,6 @@
     "mosquitto.conf": "%h/.config/containers/volumes/owntracks/mosquitto/config/mosquitto.conf",
     "frontend-config.js": "%h/.config/containers/volumes/owntracks/frontend-config.js"
   },
-  "login": {
-    "user": "owntracks",
-    "password": "owntracks-mqtt-password"
-  },
-  "units": {
-    "owntracks-mosquitto": {
-      "upstream": "registry"
-    }
-  },
-  "short_desc": {
-    "en": "Track your location from your phone.",
-    "pt": "Registre a sua localização pelo celular."
-  },
-  "description": {
-    "en": "Personal location tracking through a phone app, with its own MQTT broker and a position history",
-    "pt": "Rastreamento de localização pessoal via app de celular, com broker MQTT próprio e histórico de posições"
-  },
-  "docs": "https://owntracks.org/booklet/",
-  "source": "https://github.com/owntracks/recorder",
-  "author": "owntracks"
+  "login": { "user": "owntracks", "password": "owntracks-mqtt-password" },
+  "units": { "owntracks-mosquitto": { "upstream": "registry" } }
 }

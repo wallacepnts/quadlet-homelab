@@ -1,20 +1,10 @@
 {
   "title": "Calibre-Web-Automated",
-  "category": "Media",
-  "units": {
-    "calibre-web-automated": {
-      "image": "v{version}"
-    }
-  },
-  "short_desc": {
-    "en": "Read and manage your ebook library in the browser.",
-    "pt": "Leia e gerencie sua biblioteca de ebooks no navegador."
-  },
-  "description": {
-    "en": "An ebook library with automatic conversion, metadata and covers via Calibre, readable straight in the browser",
-    "pt": "Biblioteca de ebooks com conversão, metadados e capas automáticas via Calibre, com leitura direto no navegador"
-  },
-  "docs": "https://github.com/crocodilestick/Calibre-Web-Automated",
+  "short_desc": { "en": "Read and manage your ebook library in the browser.", "pt": "Leia e gerencie sua biblioteca de ebooks no navegador." },
+  "description": { "en": "An ebook library with automatic conversion, metadata and covers via Calibre, readable straight in the browser", "pt": "Biblioteca de ebooks com conversão, metadados e capas automáticas via Calibre, com leitura direto no navegador" },
+  "author": "crocodilestick",
   "source": "https://github.com/crocodilestick/calibre-web-automated",
-  "author": "crocodilestick"
+  "docs": "https://github.com/crocodilestick/Calibre-Web-Automated",
+  "category": "Media",
+  "units": { "calibre-web-automated": { "image": "v{version}" } }
 }

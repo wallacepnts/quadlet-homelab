@@ -1,28 +1,12 @@
 {
   "title": "Invio",
-  "category": "Personal",
-  "secrets": {
-    "invio-admin-pass": "rand-base64 18",
-    "invio-jwt-secret": "rand-hex 32"
-  },
-  "login": {
-    "user": "admin",
-    "password": "invio-admin-pass"
-  },
-  "units": {
-    "invio": {
-      "image": "v{version}"
-    }
-  },
-  "short_desc": {
-    "en": "Create and track invoices.",
-    "pt": "Crie e acompanhe faturas."
-  },
-  "description": {
-    "en": "Self-hosted invoicing and invoice tracking, on SQLite and with no external service",
-    "pt": "Emissão e controle de faturas self-hosted, com SQLite e sem depender de serviço externo"
-  },
-  "docs": "https://github.com/kittendevv/Invio#readme",
+  "short_desc": { "en": "Create and track invoices.", "pt": "Crie e acompanhe faturas." },
+  "description": { "en": "Self-hosted invoicing and invoice tracking, on SQLite and with no external service", "pt": "Emissão e controle de faturas self-hosted, com SQLite e sem depender de serviço externo" },
+  "author": "kittendevv",
   "source": "https://github.com/kittendevv/invio",
-  "author": "kittendevv"
+  "docs": "https://github.com/kittendevv/Invio#readme",
+  "category": "Personal",
+  "secrets": { "invio-admin-pass": "rand-base64 18", "invio-jwt-secret": "rand-hex 32" },
+  "login": { "user": "admin", "password": "invio-admin-pass" },
+  "units": { "invio": { "image": "v{version}" } }
 }

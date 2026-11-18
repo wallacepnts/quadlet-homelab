@@ -1,21 +1,11 @@
 {
   "title": "Ferdium Server",
+  "short_desc": { "en": "A sync server for the Ferdium app.", "pt": "Um servidor de sincronização para o app Ferdium." },
+  "description": { "en": "Sync for the Ferdium desktop app — your service list on your own server, not Franz's", "pt": "Sincronização do Ferdium desktop — sua lista de serviços no seu servidor, não no do Franz" },
+  "author": "ferdium",
+  "source": "https://github.com/ferdium/ferdium-server",
+  "docs": "https://github.com/ferdium/ferdium-server#readme",
   "category": "Personal",
   "notes": "Then, in the Ferdium desktop app: **Settings → Ferdium account → Use custom\nserver**, pointing at `https://ferdium.<your-tailnet>.ts.net`. Create your\naccount, then set `IS_REGISTRATION_ENABLED=false` in the `.env` and run\n`qh ferdium-server --update --apply` so nobody else can.\n\n### The first start is slow\n\n`TimeoutStartSec=300` is not padding: before serving anything the entrypoint\ninstalls pnpm, clones the recipes and runs the database migrations. Around 90\nseconds on a cold volume, and `HealthStartPeriod=180s` covers it.\n\n### Backup\n\nStops it, packs both volumes and the `.env`, starts it again. The recipes are a\ngit clone and would come back on their own, but the database and the keys are\nthe account itself.",
-  "units": {
-    "ferdium-server": {
-      "upstream": "registry:^[0-9]+\\.[0-9]+\\.[0-9]+$"
-    }
-  },
-  "short_desc": {
-    "en": "A sync server for the Ferdium app.",
-    "pt": "Um servidor de sincronização para o app Ferdium."
-  },
-  "description": {
-    "en": "Sync for the Ferdium desktop app — your service list on your own server, not Franz's",
-    "pt": "Sincronização do Ferdium desktop — sua lista de serviços no seu servidor, não no do Franz"
-  },
-  "docs": "https://github.com/ferdium/ferdium-server#readme",
-  "source": "https://github.com/ferdium/ferdium-server",
-  "author": "ferdium"
+  "units": { "ferdium-server": { "upstream": "registry:^[0-9]+\\.[0-9]+\\.[0-9]+$" } }
 }

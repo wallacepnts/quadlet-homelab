@@ -1,28 +1,15 @@
 {
   "title": "ExcaliDash",
+  "short_desc": { "en": "A place to organize and share Excalidraw drawings.", "pt": "Um lugar para organizar e compartilhar desenhos do Excalidraw." },
+  "description": { "en": "A dashboard for Excalidraw drawings — folders, sharing and multi-user, over your own storage", "pt": "Painel para desenhos do Excalidraw — pastas, compartilhamento e multiusuário, no seu armazenamento" },
+  "author": "ZimengXiong",
+  "source": "https://github.com/ZimengXiong/ExcaliDash",
+  "docs": "https://github.com/ZimengXiong/ExcaliDash#readme",
   "category": "Productivity",
   "notes": "Open `http://<host-ip>:8016` or `https://excalidash.<your-tailnet>.ts.net` and\ncreate the account.\n\n### Signing in with Authentik\n\n`AUTH_MODE=local` ships by default: accounts live in ExcaliDash. To use\n[Authentik](../authentik) instead, set `AUTH_MODE=hybrid` (both) or\n`oidc_enforced` (only Authentik) and fill `OIDC_ISSUER_URL`, `OIDC_CLIENT_ID`,\n`OIDC_CLIENT_SECRET` and `OIDC_REDIRECT_URI` in the `.env`.\n\n### Update\n\nBoth images carry the same tag, and they are bumped together.\n\n### Backup\n\nIt stops both, packs the data, the `.env` and the secrets, and starts them\nagain. The secrets matter here: restoring the database without the same\n`JWT_SECRET` logs everyone out.",
-  "secrets": {
-    "excalidash-jwt-secret": "rand-hex 32",
-    "excalidash-csrf-secret": "rand-hex 32"
-  },
+  "secrets": { "excalidash-jwt-secret": "rand-hex 32", "excalidash-csrf-secret": "rand-hex 32" },
   "units": {
-    "excalidash": {
-      "upstream": "ZimengXiong/ExcaliDash"
-    },
-    "excalidash-backend": {
-      "upstream": "ZimengXiong/ExcaliDash"
-    }
-  },
-  "short_desc": {
-    "en": "A place to organize and share Excalidraw drawings.",
-    "pt": "Um lugar para organizar e compartilhar desenhos do Excalidraw."
-  },
-  "description": {
-    "en": "A dashboard for Excalidraw drawings — folders, sharing and multi-user, over your own storage",
-    "pt": "Painel para desenhos do Excalidraw — pastas, compartilhamento e multiusuário, no seu armazenamento"
-  },
-  "docs": "https://github.com/ZimengXiong/ExcaliDash#readme",
-  "source": "https://github.com/ZimengXiong/ExcaliDash",
-  "author": "ZimengXiong"
+    "excalidash": { "upstream": "ZimengXiong/ExcaliDash" },
+    "excalidash-backend": { "upstream": "ZimengXiong/ExcaliDash" }
+  }
 }

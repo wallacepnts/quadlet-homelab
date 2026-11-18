@@ -1,21 +1,11 @@
 {
   "title": "netboot.xyz",
+  "short_desc": { "en": "Install an operating system over the network.", "pt": "Instale um sistema operacional pela rede." },
+  "description": { "en": "A network boot (PXE) menu for installing or trying distros and tools without writing a USB stick", "pt": "Menu de boot pela rede (PXE) pra instalar ou testar distros e ferramentas sem gravar pendrive" },
+  "author": "netbootxyz",
+  "source": "https://github.com/netbootxyz/netboot.xyz",
+  "docs": "https://netboot.xyz/docs/docker",
   "category": "Network & Security",
   "notes": "Port\n69 is published too, but it is TFTP over UDP — what the machines booting from it\nspeak, not a page a browser can open.",
-  "units": {
-    "netbootxyz": {
-      "upstream": "registry"
-    }
-  },
-  "short_desc": {
-    "en": "Install an operating system over the network.",
-    "pt": "Instale um sistema operacional pela rede."
-  },
-  "description": {
-    "en": "A network boot (PXE) menu for installing or trying distros and tools without writing a USB stick",
-    "pt": "Menu de boot pela rede (PXE) pra instalar ou testar distros e ferramentas sem gravar pendrive"
-  },
-  "docs": "https://netboot.xyz/docs/docker",
-  "source": "https://github.com/netbootxyz/netboot.xyz",
-  "author": "netbootxyz"
+  "units": { "netbootxyz": { "upstream": "registry" } }
 }

@@ -1,22 +1,11 @@
 {
   "title": "Ghost",
+  "short_desc": { "en": "A blog and newsletter platform.", "pt": "Uma plataforma de blog e newsletter." },
+  "description": { "en": "A self-hosted blog/newsletter (SQLite)", "pt": "Blog/newsletter self-hosted (SQLite, modo development — ver README)" },
+  "author": "TryGhost",
+  "source": "https://github.com/TryGhost/Ghost",
+  "docs": "https://ghost.org",
   "category": "Productivity",
   "notes": "It runs on SQLite, in development mode.",
-  "units": {
-    "ghost": {
-      "upstream": "TryGhost/Ghost",
-      "image": "{version}-alpine"
-    }
-  },
-  "short_desc": {
-    "en": "A blog and newsletter platform.",
-    "pt": "Uma plataforma de blog e newsletter."
-  },
-  "description": {
-    "en": "A self-hosted blog/newsletter (SQLite)",
-    "pt": "Blog/newsletter self-hosted (SQLite, modo development — ver README)"
-  },
-  "docs": "https://ghost.org",
-  "source": "https://github.com/TryGhost/Ghost",
-  "author": "TryGhost"
+  "units": { "ghost": { "upstream": "TryGhost/Ghost", "image": "{version}-alpine" } }
 }

@@ -1,19 +1,11 @@
 {
   "title": "Monica",
+  "short_desc": { "en": "Remember the people in your life.", "pt": "Lembre das pessoas da sua vida." },
+  "description": { "en": "A personal CRM — relationship history, contacts, reminders", "pt": "CRM pessoal — histórico de relacionamentos, contatos, lembretes" },
+  "author": "monicahq",
+  "source": "https://github.com/monicahq/monica",
+  "docs": "https://beta.monicahq.com",
   "category": "Personal",
   "notes": "### Update\n\nBy digest, because `monica-next` publishes no versioned image — only `main` and\n`main-fpm`, rebuilt as the branch moves. The digest freezes one build of it.",
-  "secrets": {
-    "monica-app-key": "shell printf 'base64:%s' \"$(openssl rand -base64 32)\""
-  },
-  "short_desc": {
-    "en": "Remember the people in your life.",
-    "pt": "Lembre das pessoas da sua vida."
-  },
-  "description": {
-    "en": "A personal CRM — relationship history, contacts, reminders",
-    "pt": "CRM pessoal — histórico de relacionamentos, contatos, lembretes"
-  },
-  "docs": "https://beta.monicahq.com",
-  "source": "https://github.com/monicahq/monica",
-  "author": "monicahq"
+  "secrets": { "monica-app-key": "shell printf 'base64:%s' \"$(openssl rand -base64 32)\"" }
 }

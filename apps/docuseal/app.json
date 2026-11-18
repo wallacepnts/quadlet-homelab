@@ -1,21 +1,11 @@
 {
   "title": "DocuSeal",
+  "short_desc": { "en": "Sign documents on your own server.", "pt": "Assine documentos no seu próprio servidor." },
+  "description": { "en": "Signing documents at home, without handing them to a company first", "pt": "Assinar documentos em casa, sem entregá-los a uma empresa antes" },
+  "author": "docusealco",
+  "source": "https://github.com/docusealco/docuseal",
+  "docs": "https://www.docuseal.com/docs",
   "category": "Productivity",
   "notes": "Open `https://docuseal.<your-tailnet>.ts.net` and create the first account —\nthat is the setup. Then put your address in `HOST` in the `.env` and restart,\nor the links you send will point at the container's own hostname.\n\n### SQLite, not PostgreSQL\n\nDocuSeal's own default is SQLite, and that is what this unit uses. The official\ncompose shows PostgreSQL in a second container — right for a company, one\ncontainer and one more database to back up for a household. Rule of this\nrepository: SQLite whenever the project offers it.\n\n### The mount goes one level deeper\n\n```ini\nVolume=%h/.config/containers/volumes/docuseal/data:/data/docuseal:Z\n```\n\nNot at `/data`. The app creates `/data/docuseal/` itself on first start, and as\na non-root user on a read-only filesystem it cannot:\n\n```\nPermission denied @ rb_sysopen - /data/docuseal/docuseal.env\n```\n\nMounting the path it wants removes the creation step. Measured both ways\nbefore settling on it.\n\n### HOST is what the other side clicks\n\n`HOST` in the `.env` is what the signing links are built from. Wrong, and the\nperson you sent the document to gets a link that opens nothing — the failure\nlands on them, not on you, which is the worst place for it.\n\n### Backup\n\nStops it, packs the database and the documents, starts it again. A signed\ndocument you cannot produce later is a document you did not sign, so this one\nis worth checking after the first real use.",
-  "units": {
-    "docuseal": {
-      "upstream": "docusealco/docuseal"
-    }
-  },
-  "short_desc": {
-    "en": "Sign documents on your own server.",
-    "pt": "Assine documentos no seu próprio servidor."
-  },
-  "description": {
-    "en": "Signing documents at home, without handing them to a company first",
-    "pt": "Assinar documentos em casa, sem entregá-los a uma empresa antes"
-  },
-  "docs": "https://www.docuseal.com/docs",
-  "source": "https://github.com/docusealco/docuseal",
-  "author": "docusealco"
+  "units": { "docuseal": { "upstream": "docusealco/docuseal" } }
 }

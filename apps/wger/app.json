@@ -1,24 +1,11 @@
 {
   "title": "wger",
-  "category": "Personal",
-  "secrets": {
-    "wger-secret-key": "rand-hex 32"
-  },
-  "units": {
-    "wger": {
-      "upstream": "wger-project/wger",
-      "image": "{version:2}"
-    }
-  },
-  "short_desc": {
-    "en": "Plan and track your workouts.",
-    "pt": "Planeje e acompanhe os seus treinos."
-  },
-  "description": {
-    "en": "Workout planning and tracking, with an exercise database and body measurements",
-    "pt": "Planejamento e acompanhamento de treinos, com banco de exercícios e medidas corporais"
-  },
-  "docs": "https://wger.de",
+  "short_desc": { "en": "Plan and track your workouts.", "pt": "Planeje e acompanhe os seus treinos." },
+  "description": { "en": "Workout planning and tracking, with an exercise database and body measurements", "pt": "Planejamento e acompanhamento de treinos, com banco de exercícios e medidas corporais" },
+  "author": "wger-project",
   "source": "https://github.com/wger-project/wger",
-  "author": "wger-project"
+  "docs": "https://wger.de",
+  "category": "Personal",
+  "secrets": { "wger-secret-key": "rand-hex 32" },
+  "units": { "wger": { "upstream": "wger-project/wger", "image": "{version:2}" } }
 }

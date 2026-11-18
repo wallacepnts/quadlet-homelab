@@ -1,27 +1,14 @@
 {
   "title": "Karakeep",
-  "category": "Productivity",
-  "secrets": {
-    "karakeep-meili-key": "rand-alnum 48",
-    "karakeep-nextauth-secret": "rand-base64 36"
-  },
-  "units": {
-    "karakeep-chrome": {
-      "upstream": "registry"
-    },
-    "karakeep-meilisearch": {
-      "upstream": "compose:karakeep-app/karakeep:docker/docker-compose.yml"
-    }
-  },
-  "short_desc": {
-    "en": "Save and search your bookmarks.",
-    "pt": "Guarde e pesquise seus favoritos."
-  },
-  "description": {
-    "en": "A bookmark manager with full-text search and automatic archiving of every saved page's content",
-    "pt": "Gerenciador de bookmarks com busca full-text e arquivamento automático do conteúdo de cada página salva"
-  },
-  "docs": "https://karakeep.app",
+  "short_desc": { "en": "Save and search your bookmarks.", "pt": "Guarde e pesquise seus favoritos." },
+  "description": { "en": "A bookmark manager with full-text search and automatic archiving of every saved page's content", "pt": "Gerenciador de bookmarks com busca full-text e arquivamento automático do conteúdo de cada página salva" },
+  "author": "karakeep-app",
   "source": "https://github.com/karakeep-app/karakeep",
-  "author": "karakeep-app"
+  "docs": "https://karakeep.app",
+  "category": "Productivity",
+  "secrets": { "karakeep-meili-key": "rand-alnum 48", "karakeep-nextauth-secret": "rand-base64 36" },
+  "units": {
+    "karakeep-chrome": { "upstream": "registry" },
+    "karakeep-meilisearch": { "upstream": "compose:karakeep-app/karakeep:docker/docker-compose.yml" }
+  }
 }

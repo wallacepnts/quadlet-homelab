@@ -1,19 +1,11 @@
 {
   "title": "any-sync-bundle",
+  "short_desc": { "en": "A sync server for the Anytype app.", "pt": "Um servidor de sincronização para o app Anytype." },
+  "description": { "en": "The Any-Sync protocol backend, which syncs Anytype's data across devices without relying on the company's cloud", "pt": "Backend do protocolo Any-Sync, que sincroniza os dados do Anytype entre dispositivos sem depender da nuvem da empresa" },
+  "author": "grishy",
+  "source": "https://github.com/grishy/any-sync-bundle",
+  "docs": "https://github.com/grishy/any-sync-bundle#readme",
   "category": "Productivity",
   "notes": "### Connecting the Anytype app\n\nThe first start writes `client-config.yml` into the data volume — that is what\npoints an Anytype client here instead of at the company's cloud. Import it in\nthe app, following [Anytype's\ninstructions](https://doc.anytype.io/anytype-docs/advanced/data-and-security/self-hosting/self-hosted#how-to-switch-to-a-self-hosted-network).\n\n```bash\ncat ~/.config/containers/volumes/any-sync-bundle/data/client-config.yml\n```\n\nIt is regenerated on every start, so it needs no backup. `bundle-config.yml`,\nnext to it, is the opposite: it carries the private keys, and losing it means\nlosing the network.\n\n### Backup\n\nFor the scheduled copy, Zerobyte has to find this service stopped too — its\nbackup hook does that, with\n`any-sync-bundle` in the allowlist.",
-  "backup": {
-    "mode": "stop"
-  },
-  "short_desc": {
-    "en": "A sync server for the Anytype app.",
-    "pt": "Um servidor de sincronização para o app Anytype."
-  },
-  "description": {
-    "en": "The Any-Sync protocol backend, which syncs Anytype's data across devices without relying on the company's cloud",
-    "pt": "Backend do protocolo Any-Sync, que sincroniza os dados do Anytype entre dispositivos sem depender da nuvem da empresa"
-  },
-  "docs": "https://github.com/grishy/any-sync-bundle#readme",
-  "source": "https://github.com/grishy/any-sync-bundle",
-  "author": "grishy"
+  "backup": { "mode": "stop" }
 }

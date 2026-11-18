@@ -1,21 +1,11 @@
 {
   "title": "Memos",
+  "short_desc": { "en": "A simple place for quick notes.", "pt": "Um lugar simples para notas rápidas." },
+  "description": { "en": "Quick notes, self-hosted and markdown-native", "pt": "Notas rápidas, self-hosted e markdown-nativo" },
+  "author": "usememos",
+  "source": "https://github.com/usememos/memos",
+  "docs": "https://www.usememos.com/docs",
   "category": "Productivity",
   "notes": "Open `http://<host-ip>:5230` or `https://memos.<your-tailnet>.ts.net` and\ncreate the account. **The first user to sign up becomes admin**, with no email\nconfirmation. Right after that, turn signup off in Settings → \"Allow user\nsignup\", or anyone who reaches the URL can create an account.",
-  "units": {
-    "memos": {
-      "upstream": "usememos/memos"
-    }
-  },
-  "short_desc": {
-    "en": "A simple place for quick notes.",
-    "pt": "Um lugar simples para notas rápidas."
-  },
-  "description": {
-    "en": "Quick notes, self-hosted and markdown-native",
-    "pt": "Notas rápidas, self-hosted e markdown-nativo"
-  },
-  "docs": "https://www.usememos.com/docs",
-  "source": "https://github.com/usememos/memos",
-  "author": "usememos"
+  "units": { "memos": { "upstream": "usememos/memos" } }
 }

@@ -1,15 +1,9 @@
 {
   "title": "Traccar",
-  "category": "Home",
-  "short_desc": {
-    "en": "Track vehicles and devices by GPS.",
-    "pt": "Rastreie veículos e dispositivos por GPS."
-  },
-  "description": {
-    "en": "GPS tracking — live map, history, geofences and reports, with a phone app",
-    "pt": "Rastreamento de GPS — mapa ao vivo, histórico, geocercas e relatórios, com app no celular"
-  },
-  "docs": "https://www.traccar.org",
+  "short_desc": { "en": "Track vehicles and devices by GPS.", "pt": "Rastreie veículos e dispositivos por GPS." },
+  "description": { "en": "GPS tracking — live map, history, geofences and reports, with a phone app", "pt": "Rastreamento de GPS — mapa ao vivo, histórico, geocercas e relatórios, com app no celular" },
+  "author": "traccar",
   "source": "https://github.com/traccar/traccar",
-  "author": "traccar"
+  "docs": "https://www.traccar.org",
+  "category": "Home"
 }

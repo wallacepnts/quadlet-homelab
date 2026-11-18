@@ -1,21 +1,11 @@
 {
   "title": "VaultZap",
+  "short_desc": { "en": "Browse your exported WhatsApp chats.", "pt": "Navegue pelas suas conversas exportadas do WhatsApp." },
+  "description": { "en": "A local, browsable archive of exported WhatsApp conversations — search, gallery and calendar, fully offline", "pt": "Arquivo local e navegável de conversas exportadas do WhatsApp — busca, galeria e calendário, 100% offline" },
+  "author": "wallacepnts",
+  "source": "https://github.com/wallacepnts/vaultzap",
+  "docs": "https://github.com/wallacepnts/vaultzap#readme",
   "category": "Personal",
   "notes": "### Update\n\n`AutoUpdate=registry` is on: the image updates on its own.",
-  "units": {
-    "vaultzap": {
-      "upstream": "registry:^v[0-9]+\\.[0-9]+\\.[0-9]+$"
-    }
-  },
-  "short_desc": {
-    "en": "Browse your exported WhatsApp chats.",
-    "pt": "Navegue pelas suas conversas exportadas do WhatsApp."
-  },
-  "description": {
-    "en": "A local, browsable archive of exported WhatsApp conversations — search, gallery and calendar, fully offline",
-    "pt": "Arquivo local e navegável de conversas exportadas do WhatsApp — busca, galeria e calendário, 100% offline"
-  },
-  "docs": "https://github.com/wallacepnts/vaultzap#readme",
-  "source": "https://github.com/wallacepnts/vaultzap",
-  "author": "wallacepnts"
+  "units": { "vaultzap": { "upstream": "registry:^v[0-9]+\\.[0-9]+\\.[0-9]+$" } }
 }

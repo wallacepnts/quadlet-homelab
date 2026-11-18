@@ -1,20 +1,11 @@
 {
   "title": "OpenWA",
+  "short_desc": { "en": "Send WhatsApp messages from your other apps.", "pt": "Envie mensagens de WhatsApp a partir dos seus outros apps." },
+  "description": { "en": "A WhatsApp API gateway — turns the account into REST plus webhooks, for n8n and Home Assistant to use", "pt": "Gateway de API do WhatsApp — transforma a conta em REST + webhooks, pro n8n e o Home Assistant usarem" },
+  "author": "rmyndharis",
+  "source": "https://github.com/rmyndharis/openwa",
+  "docs": "https://www.open-wa.org",
   "category": "Automation",
   "notes": "### Behaviour change in 0.15.0\n\nWhile WhatsApp Web reloads its own page — measured around five minutes after a\nfresh pairing — every engine route answers `409` instead of the raw `500` it\nused to. A client that retries on 5xx and gives up on 4xx will now fail where\nit used to recover, so check the flows that call this API.",
-  "secrets": {
-    "openwa-master-key": "rand-urlsafe 48",
-    "openwa-key-pepper": "rand-hex 32"
-  },
-  "short_desc": {
-    "en": "Send WhatsApp messages from your other apps.",
-    "pt": "Envie mensagens de WhatsApp a partir dos seus outros apps."
-  },
-  "description": {
-    "en": "A WhatsApp API gateway — turns the account into REST plus webhooks, for n8n and Home Assistant to use",
-    "pt": "Gateway de API do WhatsApp — transforma a conta em REST + webhooks, pro n8n e o Home Assistant usarem"
-  },
-  "docs": "https://www.open-wa.org",
-  "source": "https://github.com/rmyndharis/openwa",
-  "author": "rmyndharis"
+  "secrets": { "openwa-master-key": "rand-urlsafe 48", "openwa-key-pepper": "rand-hex 32" }
 }

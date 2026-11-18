@@ -1,23 +1,11 @@
 {
   "title": "nginx",
-  "category": "Network & Security",
-  "config": {
-    "conf.d/default.conf": "%h/.config/containers/volumes/nginx/conf.d/default.conf"
-  },
-  "units": {
-    "nginx": {
-      "upstream": "registry:^1\\.\\d*[02468]\\.\\d+-alpine$"
-    }
-  },
-  "short_desc": {
-    "en": "A web server for static files.",
-    "pt": "Um servidor web para arquivos estáticos."
-  },
-  "description": {
-    "en": "A static file server",
-    "pt": "Servidor de arquivos estáticos"
-  },
-  "docs": "https://nginx.org/en/docs/",
+  "short_desc": { "en": "A web server for static files.", "pt": "Um servidor web para arquivos estáticos." },
+  "description": { "en": "A static file server", "pt": "Servidor de arquivos estáticos" },
+  "author": "nginx",
   "source": "https://github.com/nginx/nginx",
-  "author": "nginx"
+  "docs": "https://nginx.org/en/docs/",
+  "category": "Network & Security",
+  "config": { "conf.d/default.conf": "%h/.config/containers/volumes/nginx/conf.d/default.conf" },
+  "units": { "nginx": { "upstream": "registry:^1\\.\\d*[02468]\\.\\d+-alpine$" } }
 }

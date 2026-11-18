@@ -1,5 +1,10 @@
 {
   "title": "CookCLI",
+  "short_desc": { "en": "Keep your recipes as plain text files.", "pt": "Guarde suas receitas como arquivos de texto simples." },
+  "description": { "en": "Plain-text recipes in the CookLang format — versionable in git, with no database and no forms", "pt": "Receitas em texto puro no formato CookLang — versionáveis em git, sem banco e sem formulário" },
+  "author": "cooklang",
+  "source": "https://github.com/cooklang/cookcli",
+  "docs": "https://demo.cooklang.org",
   "category": "Productivity",
   "config": {
     "aisle.conf.example": "%h/.config/containers/volumes/cookcli/recipes/config/aisle.conf",
@@ -7,16 +12,5 @@
     "bolo-de-cenoura.cook.example": "%h/.config/containers/volumes/cookcli/recipes/bolo-de-cenoura.cook",
     "calda-de-chocolate.cook.example": "%h/.config/containers/volumes/cookcli/recipes/molhos/calda-de-chocolate.cook",
     "semana.menu.example": "%h/.config/containers/volumes/cookcli/recipes/semana.menu"
-  },
-  "short_desc": {
-    "en": "Keep your recipes as plain text files.",
-    "pt": "Guarde suas receitas como arquivos de texto simples."
-  },
-  "description": {
-    "en": "Plain-text recipes in the CookLang format — versionable in git, with no database and no forms",
-    "pt": "Receitas em texto puro no formato CookLang — versionáveis em git, sem banco e sem formulário"
-  },
-  "docs": "https://demo.cooklang.org",
-  "source": "https://github.com/cooklang/cookcli",
-  "author": "cooklang"
+  }
 }

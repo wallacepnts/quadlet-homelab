@@ -1,26 +1,12 @@
 {
   "title": "Gitea Runner",
-  "notes": "It asks for the registration token. Get it from Gitea, either in\n**Site Administration → Actions → Runners → Create new Runner**, or from the\ncommand line:\n\n```bash\npodman exec -u git gitea gitea actions generate-runner-token\n```\n\nThe token is spent on the first registration. After that the runner uses the\n`.runner` file in its volume and never reads the token again.\n\n### The labels decide what a job costs\n\n`runs-on:` in a workflow matches a label, and a label names an image. Register\nwithout choosing and the runner asks for `ubuntu-latest` and its siblings —\nimages built to look like a GitHub worker, measured in gigabytes, pulled on the\nfirst job. The `.env` names small ones instead:\n\n```ini\nGITEA_RUNNER_LABELS=alpine:docker://docker.io/library/alpine:3\n```\n\nA workflow then says `runs-on: alpine`. Labels are read **once**, at\nregistration: changing them later means deleting `.runner` from the volume and\nletting it register again with a fresh token.\n\n### Two settings that are not upstream defaults\n\n`config.yaml` here differs from the shipped example in two places, both\nmeasured rather than guessed:\n\n- **`cache.dir: /data/cache`.** The default is `$HOME/.cache/actcache`, which\n  lives inside the image — and the unit mounts that read-only. The runner then\n  starts, answers its health check, and logs `cannot init cache server, it will\n  be disabled`. Healthy and half working, which is the failure this repository\n  keeps running into. Pointing it at the volume fixes it and keeps the cache\n  across restarts.\n- **`metrics.enabled: true`.** Off upstream. `Notify=healthy` needs a\n  `HealthCmd` (rule 14 of the conventions), and `/healthz` on `127.0.0.1:9101`\n  is the only thing the runner serves. It stays on loopback: the port is not\n  published and there is no authentication in front of it.\n\n### Update\n\nThe project moved: it used to be published as `gitea/act_runner`, which stopped\nat `0.6.1`, and is now `gitea/runner` on its own versioning. It also lives on\n`gitea.com` and not on GitHub, so `install.ini` compares against the registry\ninstead of a release page that does not exist.\n\n### Backup\n\nWorth little: the volume holds a registration you can recreate in a minute and\na cache that exists to be thrown away. Restoring the `.runner` file onto a\ndifferent machine gives two runners claiming one registration.\n\n### Remove\n\nGitea keeps the runner in its list either way — delete it there too, under\nSite Administration → Actions → Runners.",
-  "secrets": {
-    "gitea-runner-token": "manual the runner registration token from Gitea"
-  },
-  "config": {
-    "config.yaml": "%h/.config/containers/volumes/gitea-runner/data/config.yaml"
-  },
-  "units": {
-    "gitea-runner": {
-      "upstream": "registry:^[0-9]+\\.[0-9]+\\.[0-9]+$"
-    }
-  },
-  "short_desc": {
-    "en": "Runs the automated workflows of your Gitea.",
-    "pt": "Executa os fluxos automáticos do seu Gitea."
-  },
-  "description": {
-    "en": "Runs the Actions workflows of the Gitea next door — CI that never leaves the machine",
-    "pt": "Executa os workflows do Actions do Gitea ao lado — CI que não sai da máquina"
-  },
-  "docs": "https://docs.gitea.com/usage/actions/overview",
+  "short_desc": { "en": "Runs the automated workflows of your Gitea.", "pt": "Executa os fluxos automáticos do seu Gitea." },
+  "description": { "en": "Runs the Actions workflows of the Gitea next door — CI that never leaves the machine", "pt": "Executa os workflows do Actions do Gitea ao lado — CI que não sai da máquina" },
+  "author": "gitea",
   "source": "https://gitea.com/gitea/act_runner",
-  "author": "gitea"
+  "docs": "https://docs.gitea.com/usage/actions/overview",
+  "notes": "It asks for the registration token. Get it from Gitea, either in\n**Site Administration → Actions → Runners → Create new Runner**, or from the\ncommand line:\n\n```bash\npodman exec -u git gitea gitea actions generate-runner-token\n```\n\nThe token is spent on the first registration. After that the runner uses the\n`.runner` file in its volume and never reads the token again.\n\n### The labels decide what a job costs\n\n`runs-on:` in a workflow matches a label, and a label names an image. Register\nwithout choosing and the runner asks for `ubuntu-latest` and its siblings —\nimages built to look like a GitHub worker, measured in gigabytes, pulled on the\nfirst job. The `.env` names small ones instead:\n\n```ini\nGITEA_RUNNER_LABELS=alpine:docker://docker.io/library/alpine:3\n```\n\nA workflow then says `runs-on: alpine`. Labels are read **once**, at\nregistration: changing them later means deleting `.runner` from the volume and\nletting it register again with a fresh token.\n\n### Two settings that are not upstream defaults\n\n`config.yaml` here differs from the shipped example in two places, both\nmeasured rather than guessed:\n\n- **`cache.dir: /data/cache`.** The default is `$HOME/.cache/actcache`, which\n  lives inside the image — and the unit mounts that read-only. The runner then\n  starts, answers its health check, and logs `cannot init cache server, it will\n  be disabled`. Healthy and half working, which is the failure this repository\n  keeps running into. Pointing it at the volume fixes it and keeps the cache\n  across restarts.\n- **`metrics.enabled: true`.** Off upstream. `Notify=healthy` needs a\n  `HealthCmd` (rule 14 of the conventions), and `/healthz` on `127.0.0.1:9101`\n  is the only thing the runner serves. It stays on loopback: the port is not\n  published and there is no authentication in front of it.\n\n### Update\n\nThe project moved: it used to be published as `gitea/act_runner`, which stopped\nat `0.6.1`, and is now `gitea/runner` on its own versioning. It also lives on\n`gitea.com` and not on GitHub, so `install.ini` compares against the registry\ninstead of a release page that does not exist.\n\n### Backup\n\nWorth little: the volume holds a registration you can recreate in a minute and\na cache that exists to be thrown away. Restoring the `.runner` file onto a\ndifferent machine gives two runners claiming one registration.\n\n### Remove\n\nGitea keeps the runner in its list either way — delete it there too, under\nSite Administration → Actions → Runners.",
+  "secrets": { "gitea-runner-token": "manual the runner registration token from Gitea" },
+  "config": { "config.yaml": "%h/.config/containers/volumes/gitea-runner/data/config.yaml" },
+  "units": { "gitea-runner": { "upstream": "registry:^[0-9]+\\.[0-9]+\\.[0-9]+$" } }
 }

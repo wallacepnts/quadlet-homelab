@@ -1,28 +1,13 @@
 {
   "title": "Proxmox VE",
+  "short_desc": { "en": "Try the Proxmox virtualization system.", "pt": "Experimente o sistema de virtualização Proxmox." },
+  "description": { "en": "The Proxmox hypervisor in a container, for trying it without dedicating a machine — runs privileged", "pt": "O hypervisor Proxmox num container, pra experimentar sem dedicar uma máquina — roda privileged" },
+  "author": "dockur",
+  "source": "https://github.com/dockur/proxmox",
+  "docs": "https://pve.proxmox.com/pve-docs/",
   "category": "Virtual Machines",
   "notes": "It runs privileged.",
-  "secrets": {
-    "proxmox-root-password": "rand-alnum 20"
-  },
-  "login": {
-    "user": "root",
-    "password": "proxmox-root-password"
-  },
-  "units": {
-    "proxmox": {
-      "upstream": "dockur/proxmox"
-    }
-  },
-  "short_desc": {
-    "en": "Try the Proxmox virtualization system.",
-    "pt": "Experimente o sistema de virtualização Proxmox."
-  },
-  "description": {
-    "en": "The Proxmox hypervisor in a container, for trying it without dedicating a machine — runs privileged",
-    "pt": "O hypervisor Proxmox num container, pra experimentar sem dedicar uma máquina — roda privileged"
-  },
-  "docs": "https://pve.proxmox.com/pve-docs/",
-  "source": "https://github.com/dockur/proxmox",
-  "author": "dockur"
+  "secrets": { "proxmox-root-password": "rand-alnum 20" },
+  "login": { "user": "root", "password": "proxmox-root-password" },
+  "units": { "proxmox": { "upstream": "dockur/proxmox" } }
 }

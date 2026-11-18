@@ -1,5 +1,10 @@
 {
   "title": "Postiz",
+  "short_desc": { "en": "Schedule your social media posts.", "pt": "Agende as suas publicações nas redes sociais." },
+  "description": { "en": "Schedules posts to Instagram and other social networks, with a calendar and one place for every channel", "pt": "Agenda posts no Instagram e em outras redes sociais, com calendário e um só lugar para todos os canais" },
+  "author": "gitroomhq",
+  "source": "https://github.com/gitroomhq/postiz-app",
+  "docs": "https://docs.postiz.com",
   "category": "Productivity",
   "notes": "Then open `https://postiz.<your-tailnet>.ts.net` and create your account. The\nfirst sign-up works and then the page closes: `DISABLE_REGISTRATION=true` is in\nthe `.env` the install writes. Measured: the first account is accepted, a second\nattempt is refused with `400`, and `can-register` turns `false`. To add someone\nlater, set it to `false`, restart, create the account, and set it back.\n\nThe address has to be the tailnet one. Postiz builds its sign-in and OAuth links\nfrom it, and Meta only accepts an HTTPS redirect. Installing with\n`--access local` leaves the link in the unit pointing at the tailnet anyway.\n\n### Signing in\n\n**Postiz does not work behind a `*.ts.net` address as it ships.** It sets the session\ncookie with `Domain=.ts.net`, the registrable domain it computes from `FRONTEND_URL`.\n`ts.net` is on the Public Suffix List, so every browser refuses a cookie for it. What\nyou see: the password is accepted (`POST /api/auth/login` answers `200`) and the page\nreturns to the login form, again and again. Nothing in any log says why.\n\nIt did not show in the tests of this service, which ran on `localhost`.\n\nThe fix is in the `nginx.conf` this folder installs over the image's own: one line,\n`proxy_cookie_domain .ts.net $host;`, in each of the two proxied locations, which\nrewrites that `Domain` to the host the browser used. A cookie for any other domain\npasses untouched. It is the project's `var/docker/nginx.conf` of `v2.24.0` and nothing\nelse, so **on a version bump, compare them** and carry the two lines over:\n\n```bash\ndiff <(curl -s https://raw.githubusercontent.com/gitroomhq/postiz-app/v2.24.0/var/docker/nginx.conf) \\\n     <(sed -n '/^user /,$p' ~/.config/containers/volumes/postiz/config/nginx.conf)\n```\n\n### Instagram needs a public media URL\n\nTo publish an image or a video, Postiz hands Instagram a **URL** and Instagram\ndownloads the file from it (`image_url=...` and `video_url=...` in\n`instagram.provider.ts`). With the default local storage that URL is\n`https://postiz.<your-tailnet>.ts.net/uploads/...`, which Instagram's servers\ncannot reach: it exists only on your tailnet. The Postiz documentation says the\nsame of every provider that pulls media from a URL, and recommends a CDN.\n\nSo the post is created and scheduled, and fails when the hour comes. What the\ncode and the documentation show, **not tested against Meta with a real account**,\nbecause that needs your Meta app.\n\nThe way out the Postiz docs give is **Cloudflare R2**, a bucket with a public URL:\nuncomment the block at the bottom of `~/.config/containers/env/postiz.env`, fill\nin the six values, and `systemctl --user restart postiz`. The app itself stays\nprivate on the tailnet. R2 has a free tier; it needs a Cloudflare account.\n\n### Connecting Instagram\n\nBoth ways use one Meta app, made at [developers.facebook.com](https://developers.facebook.com/apps/creation/)\n(type *Other*). Put the keys in `~/.config/containers/env/postiz.env`, then\n`systemctl --user restart postiz`.\n\n| | Facebook Business | Standalone |\n| --- | --- | --- |\n| Needs | an Instagram account linked to a Facebook page | a **professional** Instagram account |\n| Keys | `FACEBOOK_APP_ID`, `FACEBOOK_APP_SECRET` | `INSTAGRAM_APP_ID`, `INSTAGRAM_APP_SECRET` |\n| Redirect URI | `https://postiz.<your-tailnet>.ts.net/integrations/social/instagram` | `https://postiz.<your-tailnet>.ts.net/integrations/social/instagram-standalone` |\n| Meta product | Facebook Login for Business | Instagram Business Login |\n\nThe Postiz docs ask for business verification only for **public** apps. Until the\napp's advanced permissions are approved, only people with a role on it can connect\nand publish, so add the account under *App Roles → Add People → Instagram Tester*\n**and accept the invitation in Instagram**, at *Settings → Apps and Websites*\n([instagram.com/accounts/manage_access](https://www.instagram.com/accounts/manage_access/)).\nTwo errors this prevents:\n\n- `Insufficient developer role`, when connecting: the account was never added as a tester.\n- A channel that connects, but whose posts fail with permission errors: the permissions\n  are not approved and the account has no role on the app.\n\nThe scopes to request, step by step, are in the\n[official guide](https://docs.postiz.com/self-host/providers/instagram).\n\n### What runs, and why it is five containers\n\nPostiz hands the scheduling to **Temporal**, a workflow engine that keeps each\npending post in a database and runs it at its hour, even across a restart. That\nis why a scheduler needs a second database. The official compose also ships\nElasticsearch for Temporal; this does not.\n\n- **No Elasticsearch.** Measured: Temporal's SQL visibility does the job, and one\n  container less. It takes one setting, `SKIP_ADD_CUSTOM_SEARCH_ATTRIBUTES=true`.\n  Without it the image reserves two `Text` attributes of the three the database\n  allows, Postiz needs two more, and the backend dies on boot with\n  `Unable to create search attributes: cannot have more than 3 search attribute of type Text`.\n- **Valkey in place of Redis 7.2**, like the rest of this repository. Measured\n  working: connected, no errors. The Postgres images are the compose's own.\n- **Left out of the compose:** `spotlight` (Sentry debugging), `temporal-ui` and\n  `temporal-admin-tools`. The compose's `/config` volume is also not mounted:\n  nothing in the code reads it.\n\n### Starting, and what it does every time\n\nThe image alone is 5.5 GB. The first start takes 25 to 50 seconds; the unit allows more. Two things in the\nimage's own start command are worth knowing:\n\n- **It downloads the Prisma CLI from npm on every start** (`pnpm dlx prisma@6.5.0`,\n  about 244 MB). The container needs internet at start, not only to publish.\n- **It then runs `prisma db push --accept-data-loss`.** There is no migration\n  history: an update that changes the schema applies it directly, and can drop\n  columns. Back up before every update.\n\nIt uses about **2 GB of RAM** (the sum of each process's resident set, which counts\nshared pages twice, so a ceiling) and 197 processes at rest, plus about 230 MB of\ntmpfs.\n\n### Update\n\nPostgres follows the compose of the Postiz version you are going to, so a major jump of its image is its own migration.\n\n### Backup\n\nIt stops the five units, packs the four folders and the secrets, and starts them\nagain. Cold on purpose: copying a database in use gives a file that only fails at\nrestore. The scheduled posts live in Temporal's database, so they are in it.",
   "secrets": {
@@ -8,35 +13,12 @@
     "postiz-temporal-db-password": "rand-hex 24",
     "postiz-jwt-secret": "rand-hex 32"
   },
-  "config": {
-    "nginx.conf": "%h/.config/containers/volumes/postiz/config/nginx.conf"
-  },
+  "config": { "nginx.conf": "%h/.config/containers/volumes/postiz/config/nginx.conf" },
   "units": {
-    "postiz": {
-      "image": "v{version}"
-    },
-    "postiz-postgres": {
-      "upstream": "compose:gitroomhq/postiz-app:docker-compose.yaml"
-    },
-    "postiz-temporal": {
-      "upstream": "compose:gitroomhq/postiz-app:docker-compose.yaml"
-    },
-    "postiz-temporal-postgres": {
-      "upstream": "compose:gitroomhq/postiz-app:docker-compose.yaml"
-    },
-    "postiz-redis": {
-      "upstream": "registry:^[0-9]+\\.[0-9]+\\.[0-9]+-alpine[0-9]+\\.[0-9]+$"
-    }
-  },
-  "short_desc": {
-    "en": "Schedule your social media posts.",
-    "pt": "Agende as suas publicações nas redes sociais."
-  },
-  "description": {
-    "en": "Schedules posts to Instagram and other social networks, with a calendar and one place for every channel",
-    "pt": "Agenda posts no Instagram e em outras redes sociais, com calendário e um só lugar para todos os canais"
-  },
-  "docs": "https://docs.postiz.com",
-  "source": "https://github.com/gitroomhq/postiz-app",
-  "author": "gitroomhq"
+    "postiz": { "image": "v{version}" },
+    "postiz-postgres": { "upstream": "compose:gitroomhq/postiz-app:docker-compose.yaml" },
+    "postiz-temporal": { "upstream": "compose:gitroomhq/postiz-app:docker-compose.yaml" },
+    "postiz-temporal-postgres": { "upstream": "compose:gitroomhq/postiz-app:docker-compose.yaml" },
+    "postiz-redis": { "upstream": "registry:^[0-9]+\\.[0-9]+\\.[0-9]+-alpine[0-9]+\\.[0-9]+$" }
+  }
 }

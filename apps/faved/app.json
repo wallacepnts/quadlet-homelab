@@ -1,16 +1,10 @@
 {
   "title": "Faved",
-  "category": "Personal",
-  "notes": "Open `https://faved.<your-tailnet>.ts.net` and create the first account —\nthat is also the setup step, since the SQLite database is written on\nregistration.\n\n### Backup\n\nStops it, packs the storage folder, starts it again. That folder is the whole\nof it — the links, the tags and the accounts.",
-  "short_desc": {
-    "en": "A simple place to save bookmarks.",
-    "pt": "Um lugar simples para guardar favoritos."
-  },
-  "description": {
-    "en": "Bookmarks with nested tags — a lighter shelf than an archiver, kept on your server",
-    "pt": "Favoritos com tags aninhadas — prateleira mais leve que um arquivador, no seu servidor"
-  },
-  "docs": "https://faved.to/",
+  "short_desc": { "en": "A simple place to save bookmarks.", "pt": "Um lugar simples para guardar favoritos." },
+  "description": { "en": "Bookmarks with nested tags — a lighter shelf than an archiver, kept on your server", "pt": "Favoritos com tags aninhadas — prateleira mais leve que um arquivador, no seu servidor" },
+  "author": "denho",
   "source": "https://github.com/denho/faved",
-  "author": "denho"
+  "docs": "https://faved.to/",
+  "category": "Personal",
+  "notes": "Open `https://faved.<your-tailnet>.ts.net` and create the first account —\nthat is also the setup step, since the SQLite database is written on\nregistration.\n\n### Backup\n\nStops it, packs the storage folder, starts it again. That folder is the whole\nof it — the links, the tags and the accounts."
 }

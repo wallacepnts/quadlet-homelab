@@ -1,5 +1,10 @@
 {
   "title": "homepage",
+  "short_desc": { "en": "A start page for your home server.", "pt": "Uma página inicial para o seu servidor doméstico." },
+  "description": { "en": "A dashboard that discovers and organises the other containers by itself through labels, with no config to edit per new service", "pt": "Dashboard que descobre e organiza os outros containers sozinho via labels, sem editar config a cada serviço novo" },
+  "author": "gethomepage",
+  "source": "https://github.com/gethomepage/homepage",
+  "docs": "https://gethomepage.dev",
   "notes": "### Widgets\n\nNone ship configured. To turn a card into a live reading — the queue, the free\nspace — add the labels to the service's own unit:\n\n```ini\nLabel=homepage.widget.type=sonarr\nLabel=homepage.widget.url=http://sonarr:8989\nLabel=homepage.widget.key={{HOMEPAGE_VAR_SONARR_KEY}}\n```\n\nThe URL is the container name: every service joins `tsdproxy-net`, so Homepage\nreaches it without going out to the LAN.\n\n`{{HOMEPAGE_VAR_X}}` is replaced by the environment variable of that name, read\nfrom **this** service's `.env`. Use it for every key: it keeps the secret out\nof a unit file, which in a public repository is the difference between a\npassword and a published password.\n\nThe [list of widgets](https://gethomepage.dev/widgets/) says what each type\nneeds. Most want an API key the app only issues after its first run.\n\n### Update\n\n`AutoUpdate=registry` is on: the image updates on its own.",
   "config": {
     "config/docker.yaml": "%h/.config/containers/volumes/homepage/config/docker.yaml",
@@ -7,20 +12,5 @@
     "config/services.yaml": "%h/.config/containers/volumes/homepage/config/services.yaml",
     "config/bookmarks.yaml": "%h/.config/containers/volumes/homepage/config/bookmarks.yaml"
   },
-  "units": {
-    "homepage": {
-      "image": "v{version}"
-    }
-  },
-  "short_desc": {
-    "en": "A start page for your home server.",
-    "pt": "Uma página inicial para o seu servidor doméstico."
-  },
-  "description": {
-    "en": "A dashboard that discovers and organises the other containers by itself through labels, with no config to edit per new service",
-    "pt": "Dashboard que descobre e organiza os outros containers sozinho via labels, sem editar config a cada serviço novo"
-  },
-  "docs": "https://gethomepage.dev",
-  "source": "https://github.com/gethomepage/homepage",
-  "author": "gethomepage"
+  "units": { "homepage": { "image": "v{version}" } }
 }
