@@ -1,4 +1,5 @@
 {
+  "$schema": "../app-schema.json",
   "title": "Anki",
   "short_desc": {
     "en": "A sync server for your Anki flashcards.",

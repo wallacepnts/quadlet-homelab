@@ -1,4 +1,5 @@
 {
+  "$schema": "../app-schema.json",
   "title": "Toolbx",
   "short_desc": {
     "en": "Throwaway Linux shells for trying things.",
@@ -11,6 +12,7 @@
   "author": "containers",
   "source": "https://github.com/containers/toolbox",
   "docs": "https://containertoolbx.org/",
+  "no_gui": true,
   "notes": "### Update\n\nEach shell carries its own tag — the table above lists them. Arch is the\nexception, pinned by digest because its only tag is `latest`.\n\n### Backup\n\nIt stops the four, packs the four `/work` directories and starts them again.\nThere is no `.env` and no secret here to pack. A single shell can be backed up\non its own — `qh toolbx-fedora --backup --apply` — because none of them shares\na directory with the others.\n\n### Remove\n\n`--purge` asks for the typed name too, and deletes the `/work` of all four.\nThere is no tailnet node to deregister: none of these is published.",
   "units": {
     "toolbx-arch": { "upstream": "-" },

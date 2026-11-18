@@ -1,4 +1,5 @@
 {
+  "$schema": "../app-schema.json",
   "title": "FreshRSS",
   "short_desc": {
     "en": "Read all your news feeds in one place.",

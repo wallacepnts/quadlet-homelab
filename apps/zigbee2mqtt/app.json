@@ -1,4 +1,5 @@
 {
+  "$schema": "../app-schema.json",
   "title": "Zigbee2MQTT",
   "short_desc": {
     "en": "Use Zigbee devices without the maker's hub.",

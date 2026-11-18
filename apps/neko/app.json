@@ -1,4 +1,5 @@
 {
+  "$schema": "../app-schema.json",
   "title": "neko",
   "short_desc": {
     "en": "A shared browser you can use together.",

@@ -1,4 +1,5 @@
 {
+  "$schema": "../app-schema.json",
   "title": "Karaoke Eternal",
   "short_desc": {
     "en": "Run karaoke parties from your own songs.",

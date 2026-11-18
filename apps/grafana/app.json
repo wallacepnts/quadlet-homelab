@@ -1,4 +1,5 @@
 {
+  "$schema": "../app-schema.json",
   "title": "Grafana",
   "short_desc": {
     "en": "Charts and dashboards for your data.",

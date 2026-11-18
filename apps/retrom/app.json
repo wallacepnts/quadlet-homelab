@@ -1,4 +1,5 @@
 {
+  "$schema": "../app-schema.json",
   "title": "Retrom",
   "short_desc": { "en": "A library for your retro games.", "pt": "Uma biblioteca para os seus jogos retrô." },
   "description": {

@@ -511,6 +511,13 @@ def check_layout(folders):
                             f"run: python3 check.py --format")
 
 
+def check_schema():
+    """apps/app-schema.json is what `manifest.schema` builds, so the editor and `check.py` say the same."""
+    f = APPS / "app-schema.json"
+    if not f.is_file() or f.read_text() != manifest.schema_text(tuple(GRUPOS)):
+        error("manifest", f"{f.relative_to(ROOT)} is out of date — run: python3 check.py --schema")
+
+
 def check_manifest_format(folders):
     """Every app.json in the canonical text of `manifest.dump` (one key per line, short values inline)."""
     for folder in folders:
@@ -1126,6 +1133,10 @@ def main():
             print(f"  {path.relative_to(ROOT)}")
         print(loc(f"{len(feitos)} README table(s) regenerated"))
         return 0
+    if "--schema" in sys.argv:
+        (APPS / "app-schema.json").write_text(manifest.schema_text(tuple(GRUPOS)))
+        print("  apps/app-schema.json")
+        return 0
     if "--format" in sys.argv:
         feitos = 0
         for c in layout_targets(folders):
@@ -1147,6 +1158,7 @@ def main():
     check_quadlet(folders, exigido="--quadlet" in sys.argv)
     check_layout(folders)
     check_manifest_format(folders)
+    check_schema()
     uses = check_ports(folders)
     check_manifest(folders)
     check_shared_labels(folders)

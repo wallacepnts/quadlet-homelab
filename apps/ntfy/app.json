@@ -1,4 +1,5 @@
 {
+  "$schema": "../app-schema.json",
   "title": "ntfy",
   "short_desc": { "en": "Send notifications to your phone.", "pt": "Envie notificações para o seu celular." },
   "description": {

@@ -99,8 +99,8 @@ def dump(data):
     return "{\n" + ",\n".join(linhas) + "\n}\n"
 
 
-KEY_ORDER = ["title", "short_desc", "description", "author", "website", "source", "docs", "architectures", "category",
-             "min_podman", "requires_https", "deprecated", "notes", "secrets", "validate", "config", "vars", "ask",
+KEY_ORDER = ["$schema", "title", "short_desc", "description", "author", "website", "source", "docs", "architectures", "category",
+             "min_podman", "requires_https", "no_gui", "deprecated", "notes", "secrets", "validate", "config", "vars", "ask",
              "login", "choices", "options", "widgets", "icon", "backup", "units", "instance"]
 
 
@@ -467,6 +467,46 @@ def check_value(a, valor, lang="en"):
     return None
 
 
+SCHEMA_REF = "../app-schema.json"        # apps/app-schema.json, seen from apps/<app>/app.json
+
+
+def schema(grupos):
+    """The JSON Schema of a manifest, for the editor: completion and a red squiggle while the file is written.
+
+    Built from the same lists `problems` uses, so it cannot drift far; `check.py` fails when the file on disk
+    differs from this, and `check.py --schema` rewrites it. It states the shape, `problems` still states the rules."""
+    texto = {"type": "string", "minLength": 1}
+    par = {"type": "object", "properties": {"en": texto, "pt": texto}, "required": ["en", "pt"], "additionalProperties": False}
+    mapa = lambda v: {"type": "object", "additionalProperties": v}            # noqa: E731
+    ask_texto = {"oneOf": [{"type": "string"}, par]}
+    campo = {"type": "object", "additionalProperties": False, "properties": {
+        "type": {"enum": list(ASK_TYPES)}, "label": ask_texto, "hint": ask_texto, "placeholder": ask_texto,
+        "pattern_error": ask_texto, "min": {"type": "integer"}, "max": {"type": "integer"},
+        "regex": {"type": "string"}, "required": {"type": "boolean"}}}
+    props = {
+        "$schema": {"type": "string"},
+        "title": texto, "short_desc": par, "description": par, "author": texto,
+        "website": {"type": "string", "format": "uri"}, "source": {"type": "string", "format": "uri"},
+        "docs": {"type": "string", "format": "uri"}, "architectures": {"type": "array", "items": texto},
+        "category": {"enum": list(grupos)}, "min_podman": {"type": "string"},
+        "requires_https": {"type": "boolean"}, "no_gui": {"const": True}, "deprecated": par,
+        "notes": {"type": "string"}, "secrets": mapa(texto), "validate": mapa(texto), "config": mapa(texto),
+        "vars": mapa(texto), "ask": mapa(campo), "login": {"type": "object"}, "choices": {"type": "object"},
+        "options": {"type": "object"}, "widgets": {"type": "array", "items": {"type": "object", "required": ["type"]}},
+        "icon": {"type": "object", "additionalProperties": False, "properties": {
+            "bg": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"}, "fit": {"type": "number"}, "tone": {"enum": list(ICON_TONES)}}},
+        "backup": {"type": "object"}, "units": mapa({"type": "object"}), "instance": {"type": "object"},
+    }
+    assert set(props) == set(KEY_ORDER), set(props) ^ set(KEY_ORDER)
+    return {"$schema": "http://json-schema.org/draft-07/schema#", "title": "quadlet-homelab app manifest",
+            "type": "object", "required": ["title", "short_desc", "description"], "additionalProperties": False,
+            "properties": {k: props[k] for k in KEY_ORDER}}
+
+
+def schema_text(grupos):
+    return json.dumps(schema(grupos), ensure_ascii=False, indent=2) + "\n"
+
+
 def problems(data, grupos, folder=None):
     """What is wrong with a manifest, as a list of messages; empty when it holds.
 
@@ -501,6 +541,8 @@ def problems(data, grupos, folder=None):
             erros.append(f'"{k}" must be an object')
     if "units" in data and not isinstance(data["units"], dict):
         erros.append('"units" must be an object')
+    if "no_gui" in data and data["no_gui"] is not True:
+        erros.append('"no_gui" is true (leave it out for an app with a web interface)')
     if "ask" in data:
         sec = data.get("secrets") if isinstance(data.get("secrets"), dict) else {}
         manuais = {k for k, v in sec.items() if isinstance(v, str) and v.startswith("manual")}
@@ -524,6 +566,8 @@ def problems(data, grupos, folder=None):
     if "instance" in data:
         erros.append('"instance" is written by qh into the folder of an instance, never by hand')
     erros += option_problems(data, folder)
+    if "$schema" in data and data["$schema"] != SCHEMA_REF:
+        erros.append(f'"$schema" is {SCHEMA_REF!r}')
     desconhecidas = set(data) - set(KEY_ORDER)
     if desconhecidas:
         erros.append(f"unknown key(s): {', '.join(sorted(desconhecidas))}")
@@ -619,6 +663,7 @@ def selftest():
     assert problems({**d, "icon": {"bg": "#12352a", "fit": 1.2, "tone": "dark"}}, ("Tools",)) == []
     assert problems({**d, "icon": {"bg": "green"}}, ("Tools",)) and problems({**d, "icon": {"fit": 3}}, ("Tools",)) and problems({**d, "icon": {"tone": "neon"}}, ("Tools",)) and problems({**d, "icon": {}}, ("Tools",))
     assert problems({**d, "wat": 1}, ("Tools",)), "an unknown key is a typo"
+    assert not problems({**d, "no_gui": True}, ("Tools",)) and problems({**d, "no_gui": False}, ("Tools",)), "no_gui is true or absent"
     assert problems({**d, "icon": "https://x/y.svg"}, ("Tools",)), "the logo is a file now, not a field"
     assert problems({**d, "license": "MIT"}, ("Tools",)), "no licence field: the project's own repository says"
     tab = services_table([("x", d, "icon.svg"), ("a", {**d, "title": "a-first", "short_desc": {"en": "p", "pt": "q"}}, "icon.png")], "pt")

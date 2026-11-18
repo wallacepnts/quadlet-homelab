@@ -1,0 +1,335 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "quadlet-homelab app manifest",
+  "type": "object",
+  "required": [
+    "title",
+    "short_desc",
+    "description"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "short_desc": {
+      "type": "object",
+      "properties": {
+        "en": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pt": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "en",
+        "pt"
+      ],
+      "additionalProperties": false
+    },
+    "description": {
+      "type": "object",
+      "properties": {
+        "en": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pt": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "en",
+        "pt"
+      ],
+      "additionalProperties": false
+    },
+    "author": {
+      "type": "string",
+      "minLength": 1
+    },
+    "website": {
+      "type": "string",
+      "format": "uri"
+    },
+    "source": {
+      "type": "string",
+      "format": "uri"
+    },
+    "docs": {
+      "type": "string",
+      "format": "uri"
+    },
+    "architectures": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "category": {
+      "enum": [
+        "AI",
+        "Automation",
+        "Downloads",
+        "Files",
+        "Home",
+        "Media",
+        "Monitoring",
+        "Network & Security",
+        "Personal",
+        "Productivity",
+        "Tools",
+        "Virtual Machines"
+      ]
+    },
+    "min_podman": {
+      "type": "string"
+    },
+    "requires_https": {
+      "type": "boolean"
+    },
+    "no_gui": {
+      "const": true
+    },
+    "deprecated": {
+      "type": "object",
+      "properties": {
+        "en": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pt": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "en",
+        "pt"
+      ],
+      "additionalProperties": false
+    },
+    "notes": {
+      "type": "string"
+    },
+    "secrets": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "validate": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "config": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "vars": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "ask": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "enum": [
+              "text",
+              "password",
+              "email",
+              "number",
+              "url",
+              "path"
+            ]
+          },
+          "label": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "en": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "pt": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "en",
+                  "pt"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "hint": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "en": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "pt": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "en",
+                  "pt"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "placeholder": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "en": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "pt": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "en",
+                  "pt"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "pattern_error": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "en": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "pt": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "en",
+                  "pt"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "min": {
+            "type": "integer"
+          },
+          "max": {
+            "type": "integer"
+          },
+          "regex": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "login": {
+      "type": "object"
+    },
+    "choices": {
+      "type": "object"
+    },
+    "options": {
+      "type": "object"
+    },
+    "widgets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "type"
+        ]
+      }
+    },
+    "icon": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "bg": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "fit": {
+          "type": "number"
+        },
+        "tone": {
+          "enum": [
+            "light",
+            "color",
+            "dark",
+            "full"
+          ]
+        }
+      }
+    },
+    "backup": {
+      "type": "object"
+    },
+    "units": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object"
+      }
+    },
+    "instance": {
+      "type": "object"
+    }
+  }
+}

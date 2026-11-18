@@ -1688,6 +1688,10 @@ def provision(app, segredos, variaveis):
     for nome, valor in variaveis.items():
         if not valor.strip() or I.manager_var(nome):
             continue
+        erro = I.var_problem(s, nome, valor)
+        if erro:
+            print(f"  {nome}: {erro}")
+            return False
         conf, valor = I.save_var(s, nome, valor)
         if conf is None:
             print(f"  {nome}: " + loc("no spaces: Volume= would cut the path there"))

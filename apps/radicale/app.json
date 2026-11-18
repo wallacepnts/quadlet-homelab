@@ -1,4 +1,5 @@
 {
+  "$schema": "../app-schema.json",
   "title": "Radicale",
   "short_desc": { "en": "A calendar and contacts server.", "pt": "Um servidor de calendários e contatos." },
   "description": {

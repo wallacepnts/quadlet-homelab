@@ -1,4 +1,5 @@
 {
+  "$schema": "../app-schema.json",
   "title": "Donetick",
   "short_desc": { "en": "Keep track of household chores.", "pt": "Acompanhe as tarefas de casa." },
   "description": {

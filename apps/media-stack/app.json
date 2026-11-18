@@ -1,4 +1,5 @@
 {
+  "$schema": "../app-schema.json",
   "title": "Media Stack",
   "short_desc": {
     "en": "A media server and the tools that fill it.",

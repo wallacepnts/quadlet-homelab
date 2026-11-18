@@ -1,4 +1,5 @@
 {
+  "$schema": "../app-schema.json",
   "title": "n8n",
   "short_desc": { "en": "Automate tasks between your apps.", "pt": "Automatize tarefas entre os seus apps." },
   "description": {

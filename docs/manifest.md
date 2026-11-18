@@ -23,6 +23,10 @@ and the panel shows the notes. The descriptions are written in English and Portu
 }
 ```
 
+Each file starts with `"$schema": "../app-schema.json"`, which makes the editor (Zed, VS Code) complete the keys
+and underline a wrong one while you type. `apps/app-schema.json` is built from `manifest.py`
+(`python3 check.py --schema` rewrites it, and `check.py` fails when it is stale).
+
 The text is canonical, the way Runtipi writes its `config.json`: one key per line, keys in the order of the table
 below, a short object or list kept on its line (`"units": { "memos": { "upstream": "usememos/memos" } }`) and one
 that would pass 110 columns (an `{en, pt}` pair with a long text, say) broken into one entry per line. Do not format it by hand: write it any way and run `python3 check.py --format`, which
@@ -53,6 +57,7 @@ apps/memos/
 | `category` | no | One of the groups in `qhui.GRUPOS` (the store's categories). Infrastructure with no place among them (homepage, postfix, toolbx) has none. |
 | `min_podman` | no | `"5.4"`: a floor above the 5.0 that `Notify=healthy` already needs. |
 | `requires_https` | no | `true`: the app breaks over plain HTTP (a vault, a service worker). The panel warns when it is reached by the local network only. |
+| `no_gui` | no | `true`: the app has no web interface (a runner, a mail relay, a toolbox); the store shows no address and no Open button, whatever port it publishes. |
 | `deprecated` | no | Text: why it is discontinued. The store offers no install. |
 | `notes` | no | Markdown: what to do at the first run and what is odd about the app. The panel shows it. |
 | `secrets` | per `Secret=` | `{"<secret>": "rand-hex 32"}`: how each secret is made (`rand-hex N`, `rand-base64 N`, `rand-urlsafe N`, `rand-alnum N`, `shell <cmd>`, `manual <text>`). |

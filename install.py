@@ -2630,6 +2630,11 @@ def secret_ok(s, name, value):
     """
     import signal
 
+    campo = (s.manifest.get("ask") or {}).get(name)
+    erro = manifest.check_value(campo, value, "pt" if qhui.PTBR else "en") if campo else None
+    if erro:                    # what app.json's `ask` says (length, format): no command needed to know it
+        return False, erro
+
     receita = (s.ini.get("validate", name, fallback=None)
                if s.ini.has_section("validate") else None)
     if not receita:
@@ -3164,6 +3169,10 @@ def ask_vars(s, faltam):
             valor = input(loc("  path") + (f" [{padrao}]" if padrao else "") + ": ").strip() or padrao
             if not valor:
                 return False
+            erro = var_problem(s, nome, valor)
+            if erro:
+                say(f"  {erro}")
+                continue
             conf, valor = save_var(s, nome, valor)
             if conf is None:
                 say(loc("  no spaces: Volume= would cut the path there"))
@@ -3171,6 +3180,12 @@ def ask_vars(s, faltam):
             break
         say(f"  -> {conf}: {nome}={valor}")
     return True
+
+
+def var_problem(s, nome, valor):
+    """Why `valor` does not fit the `ask` entry of the variable `nome` (app.json), or None."""
+    campo = (s.manifest.get("ask") or {}).get(nome)
+    return manifest.check_value(campo, valor.strip(), "pt" if qhui.PTBR else "en") if campo else None
 
 
 def save_var(s, nome, valor):
@@ -3828,13 +3843,22 @@ def selftest():
     # fails refuses and hands back its last line; one that cannot run at all
     # must NOT refuse, or a broken network blocks an install that would work.
     import types as _t
-    def _ini(texto):
+    def _ini(texto, ask=None):
         c = configparser.ConfigParser(interpolation=None); c.optionxform = str
         c.read_string(texto)
-        return _t.SimpleNamespace(ini=c)
+        return _t.SimpleNamespace(ini=c, manifest={"ask": ask} if ask else {})
     assert secret_ok(_ini("[secrets]\nk = manual x\n"), "k", "v") == (True, ""), \
         "no [validate] section means no opinion"
     assert secret_ok(_ini("[validate]\nk = shell true\n"), "k", "v") == (True, "")
+    # `ask` in app.json: the length and format are judged here, before any command, in the terminal and the store alike
+    _pt_antes, qhui.PTBR = qhui.PTBR, False
+    _ask = {"k": {"type": "password", "min": 12, "regex": "[a-z]+", "pattern_error": {"en": "letters only", "pt": "só letras"}}}
+    assert secret_ok(_ini("", _ask), "k", "short") == (False, "at least 12 characters")
+    assert secret_ok(_ini("", _ask), "k", "A" * 12) == (False, "letters only")
+    assert secret_ok(_ini("", _ask), "k", "a" * 12) == (True, "")
+    assert var_problem(_ini("", {"V": {"type": "number", "max": 5}}), "V", "9") == "at most 5"
+    assert var_problem(_ini("", {}), "V", "9") is None
+    qhui.PTBR = _pt_antes
     ok, porque = secret_ok(_ini("[validate]\nk = shell echo nope >&2; exit 1\n"), "k", "v")
     assert (ok, porque) == (False, "nope"), (ok, porque)
     # Exit 1 condemns the value; anything else means the check broke, and a
@@ -4651,8 +4675,10 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude, falhas=None):
         # refuses until they are, so a front end offers them first.
         "requires": sorted({dono for dono, _ in missing_prereqs(s)}),
         "units": units,
-        "web": [{"unit": u, "local": local, "tailnet": rede}
-                for u, local, rede in addresses(s, tailnet)],
+        # An app with no web interface (app.json `no_gui`) has no address to open, whatever port it publishes.
+        "no_gui": bool(s.manifest.get("no_gui")),
+        "web": [] if s.manifest.get("no_gui") else [{"unit": u, "local": local, "tailnet": rede}
+                                                   for u, local, rede in addresses(s, tailnet)],
         "asks": {
             "secrets": manuais,
             "vars": [{"name": n, "default": var_default(s, n),

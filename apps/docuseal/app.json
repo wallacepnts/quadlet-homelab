@@ -1,4 +1,5 @@
 {
+  "$schema": "../app-schema.json",
   "title": "DocuSeal",
   "short_desc": {
     "en": "Sign documents on your own server.",

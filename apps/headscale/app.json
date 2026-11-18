@@ -1,4 +1,5 @@
 {
+  "$schema": "../app-schema.json",
   "title": "Headscale",
   "short_desc": {
     "en": "Your own server for a private network.",
@@ -13,6 +14,7 @@
   "docs": "https://headscale.net/",
   "category": "Network & Security",
   "min_podman": "5.0",
+  "no_gui": true,
   "notes": "This is the control server of the **Headscale** choice in Settings → Network: pick it there and `qh --network headscale` installs this app, fills in `server_url`, makes a user and a pre-authenticated key, and signs the host and tsdproxy in. Installing it by hand only starts the server.\n\n`server_url` has to be an address **your devices can reach**: the LAN address works at home; to join from outside, put a domain or public address in front of port 8093 and set it in Settings → Network. MagicDNS uses `base_domain` (`<your-tailnet>.ts.net`, from the tailnet name you choose) — the names of your apps are `<app>.<your-tailnet>.ts.net`.\n\nHeadscale cannot issue HTTPS certificates for those names, so the apps behind tsdproxy are served over plain HTTP on the tailnet (encrypted by WireGuard anyway). Apps that insist on HTTPS (Vaultwarden, Actual) need the Tailscale choice, or a reverse proxy with a real domain.",
   "config": { "config/config.yaml": "%h/.config/containers/volumes/headscale/config/config.yaml" },
   "units": { "headscale": { "upstream": "juanfont/headscale", "image": "v{version}" } }

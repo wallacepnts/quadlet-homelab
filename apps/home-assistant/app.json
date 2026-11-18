@@ -1,4 +1,5 @@
 {
+  "$schema": "../app-schema.json",
   "title": "Home Assistant",
   "short_desc": {
     "en": "Control all your smart home devices in one place.",
