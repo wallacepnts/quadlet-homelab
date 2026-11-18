@@ -521,6 +521,3 @@ body.has-bg .card, body.has-bg #nav, body.has-bg .stat, body.has-bg nav#groups b
 /* No decorative motion; only what tells you something is happening (the spinner) moves. */
 @media (prefers-reduced-motion: reduce) { * { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 
-.tile .more { position: absolute; top: .35rem; right: .35rem; width: 30px; min-height: 30px; padding: 0; border-radius: 9px; background: transparent; color: var(--muted); font-size: 1.1rem; line-height: 1; opacity: 0; font-weight: 700; }
-.card.tile:hover .more, .card.tile:focus-within .more { opacity: 1; } .tile .more:hover { background: var(--card-2); color: var(--fg); filter: none; }
-@media (hover: none) { .tile .more { opacity: .6; } }

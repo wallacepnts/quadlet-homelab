@@ -769,9 +769,7 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   const ancora = [...doMemos.walk()].find((e) => e.tag === "a");
   confere(ancora && ancora.attrs.href === "https://memos.example.ts" && ancora.attrs.target === "_blank" && /noopener/.test(ancora.attrs.rel),
     "azulejo com endereço único: o clique abre o app em outra aba");
-  const maisAcoes = [...doMemos.walk()].find((e) => e.tag === "button" && e.attrs.class === "more");
-  confere(!!maisAcoes && /Mais ações/.test(maisAcoes.attrs["aria-label"]), "…e o botão ⋯ abre o mesmo menu do botão direito");
-  maisAcoes.listeners.click({ stopPropagation() {}, currentTarget: { getBoundingClientRect: () => ({ left: 10, bottom: 10 }) } });
+  menuCtx(doMemos);
   const gerenciar = porTexto($("ctx"), "Gerenciar")[0];
   confere($("ctx").classList.contains("open") && !!gerenciar, "o menu tem Gerenciar");
   gerenciar.listeners.click(); await esperar(50);

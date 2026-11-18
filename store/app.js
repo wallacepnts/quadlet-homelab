@@ -86,7 +86,7 @@ const T = {
     netApply: "Aplicar", netNeed: "Falta no host (uma vez, com sudo):", netNowTs: "O Tailscale vai fazer o login: se aparecer um link abaixo, abra-o.", netDone: "Rede aplicada.",
     netHttps: "Os apps que exigem HTTPS não funcionam com Headscale:",
     pageApps: "Meus apps", hello2: ["Bom dia", "Boa tarde", "Boa noite"], helloLine: (n, u) => `${n} apps${u ? `, ${u} com atualização` : ""}. Clique com o botão direito num app para ver o estado.`,
-    recent: "Usados recentemente", allApps: "Todos os apps", moreActions: "Mais ações", navCollapse: "Recolher a barra lateral", navExpand: "Expandir a barra lateral",
+    recent: "Usados recentemente", allApps: "Todos os apps", navCollapse: "Recolher a barra lateral", navExpand: "Expandir a barra lateral",
     hStat: { cpu: "Processador", mem: "Memória", disk: "Disco", net: "Rede" }, ctxStart: "Iniciar", ctxResume: "Retomar", ctxPause: "Pausar",
     apIconSize: "Tamanho dos ícones", apIconSizes: { small: "Pequeno", medium: "Médio", large: "Grande" }, apDepth: "Fundo", apDepths: { flat: "Chapado", soft: "Com profundidade e cor" },
     remove: "Remover", 
@@ -258,7 +258,7 @@ const T = {
     netApply: "Apply", netNeed: "What the host still needs (once, with sudo):", netNowTs: "Tailscale will sign in: if a link shows up below, open it.", netDone: "Network applied.",
     netHttps: "Apps that insist on HTTPS do not work with Headscale:",
     pageApps: "My apps", hello2: ["Good morning", "Good afternoon", "Good evening"], helloLine: (n, u) => `${n} apps${u ? `, ${u} with an update` : ""}. Right-click an app to see its state.`,
-    recent: "Used recently", allApps: "All apps", moreActions: "More actions", navCollapse: "Collapse the sidebar", navExpand: "Expand the sidebar",
+    recent: "Used recently", allApps: "All apps", navCollapse: "Collapse the sidebar", navExpand: "Expand the sidebar",
     hStat: { cpu: "Processor", mem: "Memory", disk: "Disk", net: "Network" }, ctxStart: "Start", ctxResume: "Resume", ctxPause: "Pause",
     apIconSize: "Icon size", apIconSizes: { small: "Small", medium: "Medium", large: "Large" }, apDepth: "Background", apDepths: { flat: "Flat", soft: "With depth and colour" },
     remove: "Remove", 
@@ -867,9 +867,7 @@ function tile(a) {
     ontouchend: () => clearTimeout(tempo), ontouchmove: () => clearTimeout(tempo) },
     url
       ? h("a", { class: "tile-open", href: url, target: "_blank", rel: "noopener noreferrer", "aria-label": `${t("open")} ${a.name}`, title: a.name, onclick: abre }, ...corpo)
-      : h("button", { class: "tile-open", type: "button", title: a.name, onclick: () => { abre(); openPanel(a.id); } }, ...corpo),
-    h("button", { class: "more", type: "button", title: t("moreActions"), "aria-label": `${t("moreActions")}: ${a.name}`, "aria-haspopup": "menu",
-                  onclick: (ev) => { ev.stopPropagation(); const r = ev.currentTarget.getBoundingClientRect(); ctxMenu(r.left, r.bottom + 4, a); } }, "⋯"));
+      : h("button", { class: "tile-open", type: "button", title: a.name, onclick: () => { abre(); openPanel(a.id); } }, ...corpo));
   return carta;
 }
 

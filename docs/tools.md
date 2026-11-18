@@ -502,7 +502,7 @@ icons (⇤), and the choice is kept. The font is Plus Jakarta Sans (OFL, served 
 
 - **My apps** is a home: a greeting, four cards with the server (processor, memory, disk, network, each with its last
   readings), what you used recently, and then all your apps. An app is its icon and its name: **right-click it** (or
-  press and hold on a phone, or use the ⋯ that shows on hover) for its state, the update, Open, Manage, Customize,
+  press and hold on a phone) for its state, the update, Open, Manage, Customize,
   restart, pause, stop, logs and remove. A failure still shows on the tile, in words.
 - **Icons** sit on a squircle plate, Samsung One UI style, soft. The panel reads each logo once (its hue, whether it is a
   full square, mostly white, vivid or grey, and how much of its box it fills) and picks the plate and the size, so every
