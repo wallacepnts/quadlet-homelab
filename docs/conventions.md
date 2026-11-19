@@ -454,10 +454,13 @@ forget the part that makes the others reliable. `check.py` fails a unit that lac
   `HealthStartPeriod`, plus `Notify=healthy`, which makes systemd report the start only when the app answers (rule 14).
   A service that cannot have one (an interactive shell, an image with nothing to probe) says why with
   `# check: ignore health <reason>`; a missing probe is a debt that is written down, not a silent one.
-- **`TimeoutStartSec=` is written**, never left at systemd's 90 s, and is **at least 15 s above `HealthStartPeriod`**: the
-  start period is the window in which the app is allowed to still be starting, and systemd must not give up inside it
-  (the same shape as the bug Podman 6.2 fixed for a start period longer than the timeout). 15 s is what the tightest unit
-  here leaves.
+- **`TimeoutStartSec=` is written**, never left at systemd's 90 s, and is **at least 15 s above both `HealthStartPeriod` and
+  `HealthInterval + HealthTimeout`**. The start period is the window in which the app is allowed to still be starting, and
+  systemd must not give up inside it. The second bound is the one that bites: **the first probe runs one interval after the
+  start, not at once**, and `Notify=healthy` waits for it, so a `TimeoutStartSec` that does not outlast the interval times the
+  start out just before the app is reported healthy. Measured on `actual` (interval 60 s, `TimeoutStartSec=60`): the app was
+  listening after 4 s and systemd still killed the start at 60 s (`start operation timed out`), and the store rolled back;
+  with 120 s it comes up healthy at 61 s. The same shape as the bug Podman 6.2 fixed for a start period longer than the timeout.
 
 Not part of the skeleton, because each needs testing per image: `ReadOnly`, `DropCapability`, `User` (rule 20).
 `PidsLimit` and `NoNewPrivileges` are asked of every unit and warned about when missing. The blocks inside `[Container]`

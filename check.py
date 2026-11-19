@@ -538,7 +538,7 @@ def floor_problems(units, declarado):
 
 
 QUADLET_SUFFIXES = (".container", ".network", ".volume", ".image", ".build", ".pod", ".kube")
-START_MARGIN = 15       # seconds: what the tightest unit here leaves between the start period and the start timeout
+START_MARGIN = 15       # seconds: room left between the start timeout and the first probe / the end of the start period
 HEALTH_KEYS = ("HealthCmd", "HealthInterval", "HealthTimeout", "HealthRetries", "HealthStartPeriod")
 
 
@@ -596,9 +596,14 @@ def skeleton_problems(texto, nome):
             erros.append(f"no complete health block, missing {', '.join(faltam)}: a service that cannot have one "
                          "says why with `# check: ignore health <reason>`")
     hp, ts = _seconds(c.get("HealthStartPeriod")), _seconds(srv.get("TimeoutStartSec"))
+    iv, to = _seconds(c.get("HealthInterval")), _seconds(c.get("HealthTimeout"))
     if hp is not None and ts is not None and ts < hp + START_MARGIN:
         erros.append(f"TimeoutStartSec={srv['TimeoutStartSec']} is not at least {START_MARGIN} s above HealthStartPeriod={c['HealthStartPeriod']}: "
                      "systemd would give up while the app is still allowed to be starting")
+    if iv is not None and to is not None and ts is not None and c.get("Notify") == "healthy" and ts < iv + to + START_MARGIN:
+        erros.append(f"TimeoutStartSec={srv['TimeoutStartSec']} is under HealthInterval + HealthTimeout + {START_MARGIN} s ({iv + to + START_MARGIN} s): "
+                     "the first probe only runs one interval after the start, and Notify=healthy waits for it, so systemd times the start out "
+                     "just before the app is reported healthy (measured on actual with 60 s / 60 s)")
     return erros
 
 
@@ -1024,14 +1029,19 @@ def selftest():
     for ruim, trecho in ((ok.replace("Description=x\n", ""), "Description"), (ok.replace("ContainerName=a", "ContainerName=b"), "ContainerName"),
                          (ok.replace("Restart=always", "Restart=on-failure"), "Restart=always"), (ok.replace("WantedBy=default.target", "WantedBy=multi-user.target"), "WantedBy"),
                          (ok.replace("TimeoutStartSec=60\n", ""), "TimeoutStartSec"), (ok.replace("HealthTimeout=5s\n", ""), "HealthTimeout"),
-                         (ok.replace("Notify=healthy\n", ""), "Notify=healthy"), (ok.replace("TimeoutStartSec=60", "TimeoutStartSec=30"), "above HealthStartPeriod")):
+                         (ok.replace("Notify=healthy\n", ""), "Notify=healthy"), (ok.replace("HealthInterval=30s", "HealthInterval=10s").replace("HealthTimeout=5s", "HealthTimeout=2s").replace("HealthStartPeriod=20s", "HealthStartPeriod=40s").replace("TimeoutStartSec=60", "TimeoutStartSec=50"), "above HealthStartPeriod")):
         achado = skeleton_problems(ruim, "a.container")
         assert len(achado) == 1 and trecho in achado[0], (trecho, achado)
     assert skeleton_problems(ok.replace("ContainerName=a", "# check: ignore container-name other containers resolve it\nContainerName=b"), "a.container") == []
     sem_saude = ok.replace("Notify=healthy\n", "").replace("HealthCmd=CMD true\n", "")
     assert skeleton_problems("# check: ignore health a shell\n" + sem_saude, "a.container") == [], "a stated exemption waives only the health block"
     assert skeleton_problems(ok.replace("TimeoutStartSec=60\n", "TimeoutStartSec=3min\n").replace("HealthStartPeriod=20s", "HealthStartPeriod=1min"), "a.container") == []
-    assert skeleton_problems(ok.replace("TimeoutStartSec=60", "TimeoutStartSec=35"), "a.container") == [], "exactly the margin is enough"
+    assert skeleton_problems(ok.replace("TimeoutStartSec=60", "TimeoutStartSec=50"), "a.container") == [], "interval 30 + timeout 5 + 15: exactly enough"
+    slow = ok.replace("HealthInterval=30s", "HealthInterval=60s").replace("HealthTimeout=5s", "HealthTimeout=10s")
+    achado = skeleton_problems(slow.replace("TimeoutStartSec=60", "TimeoutStartSec=60"), "a.container")
+    assert len(achado) == 1 and "first probe" in achado[0], achado
+    assert skeleton_problems(slow.replace("TimeoutStartSec=60", "TimeoutStartSec=85"), "a.container") == []
+    assert skeleton_problems(ok.replace("TimeoutStartSec=60", "TimeoutStartSec=45"), "a.container") != [], "under interval + timeout + 15"
 
     # rule 23: the minimum is 6.0 and nothing declares less; a key newer than it needs min_podman at least that high
     import tempfile

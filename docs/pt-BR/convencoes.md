@@ -455,10 +455,13 @@ torna os outros confiáveis. O `check.py` reprova a unit que não tem algo disso
   mais `Notify=healthy`, que faz o systemd só dar o início por feito quando o app responde (regra 14). Um serviço que não
   pode ter um (um shell interativo, uma imagem sem o que sondar) diz por quê com `# check: ignore health <motivo>`; uma
   sonda que falta é uma dívida escrita, não silenciosa.
-- **`TimeoutStartSec=` é escrito**, nunca deixado nos 90 s do systemd, e fica **pelo menos 15 s acima do
-  `HealthStartPeriod`**: o período de início é a janela em que o app pode ainda estar subindo, e o systemd não pode
-  desistir dentro dela (o mesmo formato do bug que o Podman 6.2 corrigiu para um período maior que o timeout). 15 s é o que
-  a unit mais apertada daqui deixa.
+- **`TimeoutStartSec=` é escrito**, nunca deixado nos 90 s do systemd, e fica **pelo menos 15 s acima do `HealthStartPeriod` e de
+  `HealthInterval + HealthTimeout`**. O período de início é a janela em que o app pode ainda estar subindo, e o systemd não pode
+  desistir dentro dela. O segundo limite é o que pega: **a primeira sonda roda um intervalo depois do início, não na hora**, e o
+  `Notify=healthy` espera por ela, então um `TimeoutStartSec` que não passa do intervalo derruba o início pouco antes de o app ser
+  dado como saudável. Medido no `actual` (intervalo de 60 s, `TimeoutStartSec=60`): o app estava ouvindo em 4 s e o systemd ainda
+  matou o início aos 60 s (`start operation timed out`), e a loja desfez a atualização; com 120 s ele sobe saudável em 61 s. É o
+  mesmo formato do bug que o Podman 6.2 corrigiu para um período de início maior que o timeout.
 
 Fora do esqueleto, porque cada um exige teste por imagem: `ReadOnly`, `DropCapability`, `User` (regra 20). `PidsLimit` e
 `NoNewPrivileges` se pedem a toda unit e avisam quando faltam. Os blocos dentro de `[Container]` já são ordenados pelo

@@ -39,7 +39,7 @@ Label=tsdproxy.dash.icon=sh/radicale
 
 [Service]
 Restart=always
-TimeoutStartSec=30
+TimeoutStartSec=60
 
 [Install]
 WantedBy=default.target
