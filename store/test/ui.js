@@ -248,7 +248,7 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
 
   rotas["/api/arch"] = { host: "amd64", runs: ["amd64", "arm64"], units: [{ unit: "homebox", ok: true }] };
   api.openPanel("gitea"); await esperar(100);
-  confere($("p-actions").textContent === "InstalarPersonalizarNova instânciaHistórico", `app não instalado: Instalar, Personalizar, Nova instância e Histórico (${$("p-actions").textContent})`);
+  confere(botoes($("p-actions")).map((b) => b.textContent).join("") === "InstalarPersonalizarNova instânciaHistórico" && /Categoria/.test($("p-actions").textContent), `app não instalado: Instalar, Personalizar, Nova instância e Histórico, e o cartão com a categoria (${$("p-actions").textContent})`);
   confere(!/null|undefined/.test($("p-info").textContent) && /Roda em amd64, arm64$/.test($("p-info").textContent), "app não instalado: info sem 'null'");
   $("panel").open = false;
 
@@ -263,7 +263,7 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   api.openPanel("gitea"); await esperar(50);
   confere(!$("p-notice").hidden && /Descontinuado: Arquivado no upstream\./.test($("p-notice").textContent) && /Não dá para instalar/.test($("p-notice").textContent),
     "painel: o motivo, em português, e o aviso de que não instala");
-  confere($("p-actions").textContent === "Histórico", `painel: sem botão de instalar (${$("p-actions").textContent})`);
+  confere(botoes($("p-actions")).map((b) => b.textContent).join("") === "Histórico", `painel: sem botão de instalar (${$("p-actions").textContent})`);
   $("panel").open = false;
   api.setView("apps");
   const azulejoMemos = $("grid").kids.find((k) => /Memos/.test(k.textContent));

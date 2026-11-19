@@ -106,6 +106,15 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
     await ev("[...document.querySelectorAll('#p-tabs button')].find((b) => b.textContent.trim() === 'Backups').click()"); await esperar(1500); await foto("99-aba-backups");
   }
 
+  if (MODO === "loja") {
+    // reads only: the store screen of an app that is not installed
+    await esperar(2500);
+    await ev("[...document.querySelectorAll('nav button, aside button, .side button')].find((b) => /^Loja/.test(b.textContent.trim())).click()"); await esperar(1500);
+    console.log("cartões:", await ev("document.querySelectorAll('#grid .card, .card').length"));
+    await ev("(() => { const c = [...document.querySelectorAll('.card')].find((x) => x.querySelector('.get:not(.got)')); c.click(); })()"); await esperar(1500);
+    await foto("97-loja-app");
+  }
+
   if (MODO === "legado") {
     // reads only: the banner of an old media-stack install, and what the new apps look like in the store
     await ate("document.querySelectorAll('.tile').length > 0", 15000); await esperar(2000);

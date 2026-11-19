@@ -623,3 +623,15 @@ dialog.install { width: min(640px, 94vw); }
 .dots i:nth-child(2) { animation-delay: .15s; } .dots i:nth-child(3) { animation-delay: .3s; }
 @keyframes dots { 0%, 80%, 100% { transform: scale(.55); opacity: .5; } 40% { transform: scale(1); opacity: 1; } }
 .install .panel-head { justify-content: space-between; }
+
+/* The store screen of an app (not installed): the content on the left, a card on the right that holds Install. */
+#panel.store[open] { display: grid; grid-template-columns: minmax(0, 1fr) 16.5rem; column-gap: 1.6rem; align-content: start; width: min(62rem, 96vw); }
+#panel.store > * { grid-column: 1; }
+#panel.store > #p-actions { grid-column: 2; grid-row: 1 / span 40; align-self: start; position: sticky; top: 0; flex-direction: column; align-items: stretch;
+  gap: .5rem; margin: 0; padding: 1rem; background: var(--card-2); border-radius: 16px; }
+#panel.store > #p-actions > button, #panel.store > #p-actions > a { width: 100%; justify-content: center; }
+#panel.store .facts { margin-top: .6rem; }
+.facts .kv { display: flex; justify-content: space-between; gap: .8rem; padding: .5rem 0; border-top: 1px solid var(--line); font-size: .85rem; }
+.facts .kv span:first-child { color: var(--muted); }
+#panel.store .shots img { height: 12rem; }
+@media (max-width: 720px) { #panel.store[open] { display: block; } #panel.store > #p-actions { position: static; margin: .8rem 0; } }

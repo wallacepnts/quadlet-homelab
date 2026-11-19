@@ -139,7 +139,7 @@ const T = {
     remove: "Remover", 
     linkName: "Nome", linkUrl: "https://…", linkBad: "Use um endereço http:// ou https://",
     updateAvailable: "Atualização disponível",
-    getApp: "Instalar", installing: (n) => `Instalando ${n}`, inBackground: "Continuar em segundo plano", installNow: "Instalar agora", advanced: "Avançado", rolledBack: "voltou à versão anterior", techDetails: "Detalhes técnicos", logTitle: "O que foi feito", closeLabel: "Fechar",
+    getApp: "Instalar", factCategory: "Categoria", factAuthor: "Desenvolvedor", installing: (n) => `Instalando ${n}`, inBackground: "Continuar em segundo plano", installNow: "Instalar agora", advanced: "Avançado", rolledBack: "voltou à versão anterior", techDetails: "Detalhes técnicos", logTitle: "O que foi feito", closeLabel: "Fechar",
     httpsNeeded: "precisa de HTTPS",
     httpsWarn: "Este app precisa de HTTPS: pela rede local (HTTP) o cofre e o service worker falham sem avisar. Use o acesso pela tailnet.",
     podmanOld: (need, host) => `Este app precisa do Podman ${need}+; o host tem ${host}. Atualize o Podman antes de instalar.`,
@@ -360,7 +360,7 @@ const T = {
     remove: "Remove", 
     linkName: "Name", linkUrl: "https://…", linkBad: "Use an http:// or https:// address",
     updateAvailable: "Update available",
-    getApp: "Install", installing: (n) => `Installing ${n}`, inBackground: "Continue in the background", installNow: "Install now", advanced: "Advanced", rolledBack: "rolled back to the previous version", techDetails: "Technical details", logTitle: "What was done", closeLabel: "Close",
+    getApp: "Install", factCategory: "Category", factAuthor: "Developer", installing: (n) => `Installing ${n}`, inBackground: "Continue in the background", installNow: "Install now", advanced: "Advanced", rolledBack: "rolled back to the previous version", techDetails: "Technical details", logTitle: "What was done", closeLabel: "Close",
     httpsNeeded: "needs HTTPS",
     httpsWarn: "This app needs HTTPS: over the local network (HTTP) the vault and the service worker fail without saying why. Use tailnet access.",
     podmanOld: (need, host) => `This app needs Podman ${need}+; the host has ${host}. Update Podman before installing.`,
@@ -1211,6 +1211,7 @@ function renderPanel() {
   // Two screens for one app. The store's (not installed) is about the app itself and about installing it: the long
   // description and the screenshots. The manager's (installed) is about running it: the short description, no screenshots.
   $("panel").classList.toggle("manage", !!a.installed);
+  $("panel").classList.toggle("store", !a.installed);     // the store screen: content on the left, a card with Install on the right
   const sobre = !a.installed && a.about && (a.about[S.lang] || a.about.en);
   const deInst = a.instance_of ? ` — ${t("instanceOf")(a.instance_of)}` : "";
   $("p-desc").textContent = plain(sobre || a.description[S.lang] || a.description.en)
@@ -1330,7 +1331,9 @@ function renderPanel() {
   // After the others: an app that was removed, or never came up, still has a past worth reading.
   if (!a.installed) acoes.push(h("button", { type: "button", class: "ghost", onclick: () => openHistory(a.id) }, t("history")));
   renderPanelTabs(a);
-  fill($("p-actions"), ...acoes, a.installed && a.web.length ? accessPicker(a) : null);
+  const fato = (k, v) => v ? h("div", { class: "kv" }, h("span", {}, t(k)), h("span", {}, v)) : null;
+  fill($("p-actions"), ...acoes, a.installed && a.web.length ? accessPicker(a) : null,
+    ...(a.installed ? [] : [h("div", { class: "facts" }, fato("factCategory", a.group && (a.group[S.lang] || a.group.en)), fato("factAuthor", a.author))]));
 }
 
 // One plain line says how it is going; the raw output is there for whoever wants it, one click away.
