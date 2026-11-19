@@ -222,6 +222,8 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
     await ev("[...document.querySelectorAll('.split-menu button')].find((b) => /personalizada/i.test(b.textContent)).click()"); await esperar(4000);
     console.log("tags:", await ev("[...document.querySelectorAll('#custom datalist option')].slice(0, 6).map((o) => o.value).join(' ') + ' (' + document.querySelectorAll('#custom datalist option').length + ')'"));
     console.log("campos:", await ev("[...document.querySelectorAll('#custom input[aria-label=\"Imagem Docker\"], #custom input[aria-label=\"Tag\"]')].map((i) => i.value + '|' + i.placeholder + '|' + i.readOnly).join(' ; ')"));
+    await ev("document.querySelector('#custom .combo-arrow').click()"); await esperar(400);
+    console.log("lista:", await ev("document.querySelectorAll('#custom .combo-list li').length + ' versões; campo = ' + document.querySelector('#custom input[aria-label=\"Tag\"]').value"));
     await foto("97-personalizada");
   }
 

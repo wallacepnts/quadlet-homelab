@@ -103,7 +103,7 @@ const T = {
     instanceOf: (b) => `instância de ${b}`,
     readyToInstall: (n) => `Pronto para instalar ${n}. Leva cerca de um minuto.`,
     planTitle: "O que vai acontecer",
-    tagHint: "Escolha uma versão da lista ou escreva a sua. Vazio: a última versão, que a instalação fixa.", dockerImage: "Imagem Docker", dockerTag: "Tag", containerName: "Nome do contêiner", noLimit: "sem limite", latestPinned: "a última versão",
+    tagHint: "Já vem com a última versão. Abra a lista para uma das 15 mais recentes ou escreva a sua.", dockerImage: "Imagem Docker", dockerTag: "Tag", containerName: "Nome do contêiner", noLimit: "sem limite", latestPinned: "a última versão",
     emptyRows: "Clique em “+” para adicionar um.", hHost: "Host", hContainer: "Contêiner", hProto: "Protocolo", hIp: "IP (opcional)", hKey: "Chave", hValue: "Valor", hLabel: "Rótulo",
     qlPlaceholder: "Buscar apps… (Enter abre, Esc fecha)", qlOpen: "Abrir", qlStore: "Ver na loja", qlManage: "Gerenciar", qlWeb: (q) => `Buscar “${q}” na web`, qlNone: "Nenhum app com esse nome.",
     appearance: "Aparência", apTheme: "Tema", apThemes: { system: "Como o sistema", light: "Claro", dark: "Escuro" }, apAccent: "Cor de destaque",
@@ -324,7 +324,7 @@ const T = {
     instanceOf: (b) => `instance of ${b}`,
     readyToInstall: (n) => `Ready to install ${n}. It takes about a minute.`,
     planTitle: "What will happen",
-    tagHint: "Pick a version from the list or write your own. Empty: the latest version, which the install pins.", dockerImage: "Docker image", dockerTag: "Tag", containerName: "Container name", noLimit: "no limit", latestPinned: "the latest version",
+    tagHint: "It opens with the latest version. Open the list for one of the 15 newest, or write your own.", dockerImage: "Docker image", dockerTag: "Tag", containerName: "Container name", noLimit: "no limit", latestPinned: "the latest version",
     emptyRows: "Click “+” to add one.", hHost: "Host", hContainer: "Container", hProto: "Protocol", hIp: "IP (optional)", hKey: "Key", hValue: "Value", hLabel: "Label",
     qlPlaceholder: "Search apps… (Enter opens, Esc closes)", qlOpen: "Open", qlStore: "See in the store", qlManage: "Manage", qlWeb: (q) => `Search the web for “${q}”`, qlNone: "No app by that name.",
     appearance: "Appearance", apTheme: "Theme", apThemes: { system: "Like the system", light: "Light", dark: "Dark" }, apAccent: "Accent colour",
@@ -1736,26 +1736,43 @@ async function formDaUnidade(a, u, pre) {
   const [repoIni, tagIni] = /^(.*?)(?::([^/:]+))?$/.exec(efetiva).slice(1).map((x) => x || "");
   const lerLeitura = (rotulo, valor) => h("label", { class: "field ro" }, rotulo, h("input", { type: "text", value: valor, readonly: true }));
   const campoImagem = h("input", { type: "text", value: repoIni, spellcheck: "false", autocomplete: "off", "aria-label": t("dockerImage") });
-  const listaTags = h("datalist", { id: `tags-${unit}` });
-  const campoTag = h("input", { type: "text", value: tagIni, list: `tags-${unit}`, spellcheck: "false", autocomplete: "off",
+  const campoTag = h("input", { type: "text", value: tagIni, spellcheck: "false", autocomplete: "off", role: "combobox", "aria-expanded": "false",
     placeholder: u.templated || !tagIni ? t("latestPinned") : "", "aria-label": t("dockerTag") });
+  // The versions the registry offers: the newest few in a list of our own (a datalist only shows what matches what is typed,
+  // which hides all but one once a version is in the field). Opening with no version chosen fills in the newest.
+  const lista = h("ul", { class: "combo-list", role: "listbox" });
+  lista.hidden = true;
+  let tagBase = tagIni, automatica = !tagIni;       // `tagBase`: what the field says when untouched, so that is not a change
+  const fecha = () => { lista.hidden = true; campoTag.setAttribute("aria-expanded", "false"); };
+  let quantas = 0;
+  const abre = () => { if (!quantas) return; lista.hidden = false; campoTag.setAttribute("aria-expanded", "true");
+    document.addEventListener("click", fecha, { once: true }); };
+  const seta = h("button", { type: "button", class: "combo-arrow", "aria-label": t("dockerTag"),
+    onclick: (ev) => { ev.stopPropagation(); lista.hidden ? abre() : fecha(); } });
+  campoTag.addEventListener("input", () => { automatica = false; });
   const carregaTags = async () => {
-    try {
-      const r = await api(`/api/tags?image=${encodeURIComponent(campoImagem.value.trim())}`);
-      fill(listaTags, ...(r.tags || []).map((v) => h("option", { value: v })));
-    } catch (e) { /* no list: the tag can still be typed */ }
+    let versoes = [];
+    try { versoes = (await api(`/api/tags?image=${encodeURIComponent(campoImagem.value.trim())}`)).tags || []; }
+    catch (e) { /* no list: the tag can still be typed */ }
+    quantas = versoes.length;
+    fill(lista, ...versoes.map((v) => h("li", { role: "option" }, h("button", { type: "button",
+      onclick: (ev) => { ev.stopPropagation(); campoTag.value = v; automatica = false; fecha(); } }, v))));
+    if (versoes.length && automatica && !campoTag.value.trim() || (versoes.length && automatica && campoImagem.value.trim() !== repoIni)) {
+      campoTag.value = versoes[0];
+      if (campoImagem.value.trim() === repoIni) tagBase = versoes[0];
+    }
   };
   campoImagem.addEventListener("change", carregaTags);
   carregaTags();
   const imagemConfig = () => {
     const ref = campoImagem.value.trim() + (campoTag.value.trim() ? `:${campoTag.value.trim()}` : "");
-    const mudou = campoImagem.value.trim() !== repoIni || campoTag.value.trim() !== tagIni;
+    const mudou = campoImagem.value.trim() !== repoIni || campoTag.value.trim() !== tagBase;
     return mudou || d.image_override ? ref : "";          // untouched: the unit, and its pinned version, are left alone
   };
   const el = h("form", { class: "cust", onsubmit: (ev) => ev.preventDefault() },
     h("div", { class: "cust-two" },
       h("label", { class: "field" }, t("dockerImage"), campoImagem),
-      h("label", { class: "field" }, t("dockerTag"), campoTag, listaTags)),
+      h("label", { class: "field" }, t("dockerTag"), h("div", { class: "combo" }, campoTag, seta, lista))),
     h("p", { class: "cust-note" }, t("tagHint")),
     lerLeitura(t("containerName"), unit),
     d.base_changed ? h("p", { class: "note" }, t("baseChanged")) : null,

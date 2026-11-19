@@ -111,7 +111,7 @@ global.fetch = async (url, opts = {}) => {
 };
 
 const codigo = fs.readFileSync(path.join(__dirname, "..", "app.js"), "utf8");
-const api = new Function(codigo + "; return { S, openPanel, showEnv, current, renderGrid, pollStats, pollHost, openSettings, showLogs, showConsole, termNew, termFeed, termKey, openResources, hintClean, openHistory, setView, openFiles, renderFiles, uploadFiles, jobProgress, stepLabel, instalar, suggestInstanceName, pollJobs, pollPerf, iconPlate, renderHome, touchRecent };")();
+const api = new Function(codigo + "; return { S, openPanel, showEnv, current, renderGrid, pollStats, pollHost, openSettings, showLogs, showConsole, termNew, termFeed, termKey, openResources, hintClean, openHistory, setView, openFiles, renderFiles, uploadFiles, jobProgress, stepLabel, instalar, suggestInstanceName, showCustom, pollJobs, pollPerf, iconPlate, renderHome, touchRecent };")();
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 let falhas = 0;
 const confere = (cond, msg) => { if (!cond) { falhas++; console.log("FALHOU:", msg); } else console.log("ok   ", msg); };
@@ -323,6 +323,24 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
     g.depends = []; g.requires_https = false; api.openPanel("gitea", false, "store"); await esperar(60);
     confere(!/Acesso/.test($("p-actions").textContent), "app comum: sem linha de acesso (seria igual para todos)");
     Object.assign(g, antes); }
+
+  // no tag in the unit: the field opens with the newest version, which is not a change until it is edited
+  { const g = api.S.apps.find((x) => x.id === "gitea"); const u0 = g.units[0]; const antes = { image: u0.image, inst: u0.installed_image, templ: u0.templated, installed: g.installed };
+    Object.assign(u0, { image: "ghcr.io/o/r", installed_image: "", templated: true }); g.installed = false;
+    api.openPanel("gitea", false, "store"); await esperar(30);
+    rotas["/api/tags"] = { tags: ["3.0.1", "3.0.0", "2.9.9"] };
+    const origem = rotas["/api/custom"]; await api.showCustom(g, null, true); await esperar(120);
+    const cs = [...folhaC.walk()].filter((e) => e.tag === "input" && (e.attrs["aria-label"] === "Imagem Docker" || e.attrs["aria-label"] === "Tag"));
+    confere(cs[1].value === "3.0.1", `tag vazia: abre com a última versão (${cs[1].value})`);
+    porTexto(folhaC, "Pré-visualizar")[0].listeners.click(); await esperar(100);
+    const p1 = posts.filter((x) => x.rota === "/api/custom/preview").pop().corpo;
+    confere(p1.config.image === "", `a versão sugerida não conta como mudança (${p1.config.image})`);
+    cs[1].value = "2.9.9"; cs[1].listeners.input && cs[1].listeners.input();
+    porTexto(folhaC, "Pré-visualizar")[0].listeners.click(); await esperar(100);
+    const p2 = posts.filter((x) => x.rota === "/api/custom/preview").pop().corpo;
+    confere(p2.config.image === "ghcr.io/o/r:2.9.9", `escolher outra versão vira Image= (${p2.config.image})`);
+    $("custom").open = false; rotas["/api/tags"] = { tags: ["1.2.0", "1.1.0"] };
+    Object.assign(u0, { image: antes.image, installed_image: antes.inst, templated: antes.templ }); g.installed = antes.installed; }
 
   // the lightbox
   api.S.apps.find((x) => x.id === "homebox").installed = false;
@@ -1223,8 +1241,9 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   // the image and the tag: editable, the tag with the registry's versions to pick from, and untouched they send nothing
   const campos = [...formulario().walk()].filter((e) => e.tag === "input" && (e.attrs["aria-label"] === "Imagem Docker" || e.attrs["aria-label"] === "Tag"));
   confere(campos.length === 2 && campos.every((c) => c.attrs.readonly === undefined), "imagem e tag são campos editáveis");
-  confere(pre.config.image === "", "sem mexer na imagem nem na tag, o payload não leva imagem (a versão fixada fica como está)");
-  const opcoes = [...[...formulario().walk()].find((e) => e.tag === "datalist").walk()].filter((e) => e.tag === "option").map((e) => e.attrs.value);
+  confere(campos[1].value !== "1.2.0" && campos[1].value !== "", `com uma versão já fixada, a tag a mantém (não a troca pela última) (${campos[1].value})`);
+  confere(pre.config.image === "", "sem mexer na imagem nem na tag, o payload não leva imagem (a versão sugerida não é uma mudança)");
+  const opcoes = [...[...formulario().walk()].find((e) => e.attrs.class === "combo-list").walk()].filter((e) => e.tag === "button").map((e) => e.textContent);
   confere(opcoes.join(",") === "1.2.0,1.1.0", `a tag oferece as versões do registry (${opcoes})`);
   campos[1].value = "9.9.9";
   porTexto(folhaC, "Pré-visualizar")[0].listeners.click(); await esperar(100);

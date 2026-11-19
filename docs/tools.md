@@ -427,8 +427,8 @@ Quadlet drop-in, `<unit>.container.d/50-store.conf`, beside the unit. `qh
 --update` leaves it alone and says so (and says it too when the unit changed
 under a customization that resets a list, since that hides what is new),
 `qh --status` marks the service, and `qh --remove` takes it away with the unit.
-The **Docker image** and its **tag** are the first two fields, both editable: the tag has a list of the versions the registry
-publishes (release-shaped tags only, newest first, `/api/tags`) and takes anything you type. Left as it was they write nothing, so
+The **Docker image** and its **tag** are the first two fields, both editable: the tag opens with the latest version and has a list of the 15 newest
+the registry publishes (release-shaped tags only, `/api/tags`), and takes anything you type; the version it opens with is not a change. Left as it was they write nothing, so
 the version `qh` pins on the host stays what it is; changed, they write `Image=` in the same drop-in, which wins over the pin
 (`10-image.conf`). A tag or a digest is required, as in rule 9: `latest` is not accepted.
 **Revert**, or deleting the file, goes back to the unit as published. **Preview**

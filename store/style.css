@@ -701,3 +701,15 @@ dialog.lightbox[open] { display: flex; align-items: center; justify-content: cen
 dialog.win { padding: 0; background: transparent; border: 0; box-shadow: none; border-radius: 0; max-height: none; overflow: visible; }
 dialog.win > .dlg-body { background: var(--card); color: var(--fg); border: 1px solid var(--line); border-radius: 14px; padding: 1.3rem; max-height: 92vh; overflow: auto; box-shadow: 0 24px 80px rgb(0 0 0 / .35); }
 @media (max-width: 720px) { dialog.win { height: 100vh; } dialog.win > .dlg-body { height: 100%; max-height: none; border-radius: 0; padding: 1rem; } }
+
+/* The tag: a field with a list of the newest versions under it, the whole list always (a datalist filters by what is typed). */
+.combo { position: relative; }
+.combo input { width: 100%; padding-right: 2.4rem; }
+.combo-arrow { position: absolute; top: 0; right: 0; bottom: 0; width: 2.4rem; min-height: 0; padding: 0; background: transparent; color: var(--muted); border-radius: 0 var(--radius-sm, 10px) var(--radius-sm, 10px) 0; display: grid; place-items: center; }
+.combo-arrow::after { content: ""; width: .45rem; height: .45rem; border: solid currentColor; border-width: 0 2px 2px 0; transform: translateY(-.15rem) rotate(45deg); }
+.combo-arrow:hover:not(:disabled) { filter: none; color: var(--fg); }
+.combo-list { position: absolute; z-index: 20; top: calc(100% + .25rem); left: 0; right: 0; max-height: 14rem; overflow: auto; margin: 0; padding: .25rem; list-style: none;
+  background: var(--card); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 32px rgb(0 0 0 / .25); }
+.combo-list[hidden] { display: none; }
+.combo-list button { display: block; width: 100%; min-height: 0; text-align: left; background: none; color: var(--fg); border-radius: 8px; padding: .4rem .6rem; font-weight: 500; }
+.combo-list button:hover { background: var(--card-2); filter: none; }

@@ -1047,6 +1047,7 @@ def unit_source(unit, pre=False):
     raise LookupError(loc("not installed"))
 
 
+TAGS_MAX = 15            # versions offered: the newest ones; anything older is typed
 TAGS_CACHE = {}          # image -> (when, [tags]); a registry is not asked again for ten minutes
 TAG_RELEASE = re.compile(r"^v?\d+(?:\.\d+)*(?:-[A-Za-z0-9.]+)*$")
 TAG_PRE = re.compile(r"(?i)(?:^|[-.])(?:rc|alpha|beta|dev|nightly|preview|snapshot|test)\d*(?:$|[-.])")
@@ -1059,7 +1060,7 @@ def tag_key(tag):
 
 def tag_list(image):
     """The versions of an image the registry lists, newest first: release-shaped tags only (no `latest`, no
-    digests-as-tags, no release candidates), at most 60. [] when the registry will not say, or in a sandbox."""
+    digests-as-tags, no release candidates), the newest TAGS_MAX. [] when the registry will not say, or in a sandbox."""
     repo = image.split("@")[0]
     if ":" in repo.rsplit("/", 1)[-1]:
         repo = repo.rsplit(":", 1)[0]
@@ -1069,7 +1070,7 @@ def tag_list(image):
     if repo in TAGS_CACHE and agora - TAGS_CACHE[repo][0] < 600:
         return TAGS_CACHE[repo][1]
     todas = U.registry_tags(repo, paginas=5) or []
-    boas = sorted({t for t in todas if TAG_RELEASE.match(t) and not TAG_PRE.search(t)}, key=tag_key, reverse=True)[:60]
+    boas = sorted({t for t in todas if TAG_RELEASE.match(t) and not TAG_PRE.search(t)}, key=tag_key, reverse=True)[:TAGS_MAX]
     TAGS_CACHE[repo] = (agora, boas)
     return boas
 
