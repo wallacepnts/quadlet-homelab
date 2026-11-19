@@ -60,6 +60,24 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
   console.log("grade carregou:", await ate("document.querySelectorAll('.card').length > 0"), "| azulejos:", await ev("document.querySelectorAll('.tile').length"));
   await esperar(2500);
 
+  if (MODO === "fase15") {
+    // reads only: health tab, what really runs, the list of images
+    await ate("document.querySelectorAll('.tile').length > 0", 15000); await esperar(2000);
+    await ev("(() => { const t = [...document.querySelectorAll('.tile')].find((x) => /Actual/.test(x.textContent)); t.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 300, clientY: 300 })); })()"); await esperar(400);
+    await ev("[...document.querySelectorAll('#ctx button')].find((b) => /Gerenciar/.test(b.textContent)).click()"); await esperar(1200);
+    console.log("botões da unit:", await ev("[...document.querySelectorAll('#p-units button')].map((b) => b.textContent.trim()).join(' | ')"));
+    await ev("[...document.querySelectorAll('#p-units button')].find((b) => b.textContent.trim() === 'Saúde').click()"); await esperar(1200);
+    console.log("saúde:", await ev("document.getElementById('p-section').textContent.replace(/\\s+/g, ' ').slice(0, 260)"));
+    await ev("document.getElementById('p-section').scrollIntoView()"); await esperar(300); await foto("95-saude");
+    await ev("[...document.querySelectorAll('#p-units button')].find((b) => b.textContent.trim() === 'Detalhes').click()"); await esperar(1200);
+    console.log("detalhes:", await ev("document.getElementById('p-section').textContent.replace(/\\s+/g, ' ').slice(0, 300)"));
+    await ev("document.getElementById('p-section').scrollIntoView()"); await esperar(300); await foto("96-detalhes");
+    await ev("document.getElementById('p-close').click()"); await esperar(300);
+    await ev("document.getElementById('resources-btn').click()"); await esperar(3000);
+    console.log("imagens:", await ev("document.querySelectorAll('table.imgs tr').length + ' linhas; ' + [...document.querySelectorAll('table.imgs tr')].slice(1, 4).map((r) => r.textContent.replace(/\\s+/g, ' ').slice(0, 110)).join(' || ')"));
+    await ev("document.querySelector('table.imgs').scrollIntoView()"); await esperar(300); await foto("97-imagens");
+  }
+
   if (MODO === "legado") {
     // reads only: the banner of an old media-stack install, and what the new apps look like in the store
     await ate("document.querySelectorAll('.tile').length > 0", 15000); await esperar(2000);

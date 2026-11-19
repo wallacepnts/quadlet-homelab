@@ -467,3 +467,7 @@ Fora do esqueleto, porque cada um exige teste por imagem: `ReadOnly`, `DropCapab
 Quatro units levam `# check: ignore health` hoje: as quatro `toolbx-*`, um shell parado mantido por `sleep infinity`, sem nada
 para sondar. Toda outra unit tem uma sonda medida dentro da própria imagem: quando a imagem não tem `curl` nem `wget`
 (`cookcli`, Tika) a sonda usa o `/dev/tcp` do bash, e o `collabora` usa o `coolwsd --probe` da própria imagem.
+
+O `HealthOnFailure=kill` (Quadlet, anterior ao mínimo 6.0, então não pede `min_podman`) **não** faz parte do esqueleto: ele
+transforma um container doente num reinício pelo systemd, o que também reinicia todo serviço cuja sonda oscila sob carga ou
+numa migração. É uma escolha por app (*Personalizar → código*), e a aba *Saúde* da loja mostra quando uma unit o tem.

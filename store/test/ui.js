@@ -477,6 +477,68 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   confere(/\.card\.tile:not\(\[data-run=running\]\) \.plate[^}]*grayscale\(1\)[^}]*opacity/.test(fs.readFileSync(path.join(__dirname, "..", "style.css"), "utf8")), "o CSS deixa o ícone preto e branco e com transparência");
   bdTile.units = [unidade("homebox")];
 
+  // per-app CPU and memory: a short history kept while the page is open, drawn as two sparklines in the app's panel
+  const bs = api.S.apps.find((x) => x.id === "homebox");
+  bs.units = [unidade("homebox", { service: "active" })];
+  api.S.rhist = {};
+  for (const cpu of [10, 30, 20, 55]) { rotas["/api/stats"] = { stats: { homebox: { cpu, mem: 100 * 2 ** 20 + cpu * 2 ** 20 } } }; await api.pollStats(); }
+  api.openPanel("homebox"); await esperar(60);
+  const barras = [...$("p-info").walk()].filter((e) => e.tag === "i");
+  confere(api.S.rhist.homebox.cpu.join(",") === "10,30,20,55" && barras.length === 8 && barras[3].style.height === "100%", `CPU e memória: histórico por app e dois sparklines no painel (${barras.length} barras)`);
+  $("panel").open = false;
+  bs.units = [unidade("homebox")];
+
+  // health, what really runs, force verbs: buttons per unit, each opening its view in the panel
+  const bh = api.S.apps.find((x) => x.id === "homebox");
+  bh.units = [unidade("homebox", { service: "active", container: "healthy" })];
+  rotas["/api/health"] = { status: "unhealthy", streak: 3, running: true, config: { test: "node scripts/health-check.js", shell: true, interval: 30, timeout: 5, start_period: 20, retries: 3, on_failure: null },
+    runs: [{ start: "2026-11-18T20:05:00-03:00", end: "x", exit: 1, output: "curl: (7) refused" }, { start: "2026-11-18T20:04:00-03:00", end: "x", exit: 0, output: "" }] };
+  rotas["/api/health/run"] = { rc: 1, output: "boom", health: rotas["/api/health"] };
+  rotas["/api/runtime"] = { name: "homebox", image: "docker.io/x/homebox:1", digest: "sha256:ab", command: "/app serve", user: "1000", workdir: "/app", created: "2026-11-18T00:00:00Z", started: "2026-11-18T00:00:01Z", restarts: 2,
+    networks: [{ name: "tsdproxy-net", ip: "10.89.0.2", gateway: "10.89.0.1", aliases: ["homebox"] }], ports: [], mounts: [{ type: "bind", source: "/h/data", dest: "/data", rw: true }, { type: "bind", source: "/h/lib", dest: "/lib", rw: false }],
+    env: [{ key: "ADMIN_TOKEN", value: "••••••••", secret: true }, { key: "TZ", value: "••••••••", secret: false }], revealed: false,
+    limits: { read_only: true, pids: 256, memory: null, cap_drop: ["CAP_CHOWN"], cap_add: [], security: ["no-new-privileges"] } };
+  rotas["/api/unit"] = { job: "jf" }; rotas["/api/job/jf"] = { output: "ok\n", next: 1, rc: 0 };
+  api.openPanel("homebox"); await esperar(80);
+  confere(["Saúde", "Detalhes", "Reiniciar à força", "Parar à força"].every((x) => porTexto($("p-units"), x).length === 1), "cada unit rodando ganha Saúde, Detalhes e as duas ações à força");
+  porTexto($("p-units"), "Saúde")[0].listeners.click(); await esperar(60);
+  confere(/com problema/.test($("p-section").textContent) && /3 falhas seguidas/.test($("p-section").textContent) && /curl: \(7\) refused/.test($("p-section").textContent) && /node scripts\/health-check\.js/.test($("p-section").textContent) && /A cada 30s/.test($("p-section").textContent), "saúde: status, falhas seguidas, a sonda e o que a última execução imprimiu");
+  const antesH = posts.length;
+  porTexto($("p-section"), "Rodar agora")[0].listeners.click(); await esperar(80);
+  confere(posts.slice(antesH).some((x) => x.rota === "/api/health/run" && x.corpo.unit === "homebox") && /A sonda falhou \(saída 1\)\. boom/.test($("p-section").textContent), "rodar agora: pede e mostra a saída da sonda");
+  porTexto($("p-units"), "Detalhes")[0].listeners.click(); await esperar(60);
+  confere(/docker\.io\/x\/homebox:1/.test($("p-section").textContent) && /tsdproxy-net/.test($("p-section").textContent) && /\/h\/lib/.test($("p-section").textContent) && /só leitura/.test($("p-section").textContent) && /Nenhuma: só se chega por uma rede/.test($("p-section").textContent), "detalhes: imagem, redes, montagens (com somente leitura) e que não há porta publicada");
+  confere(!/hunter2/.test($("p-section").textContent) && (($("p-section").textContent.match(/••••••••/g) || []).length === 2) && /secret/.test($("p-section").textContent), "detalhes: valores mascarados, e a variável de um Secret= marcada");
+  rotas["/api/runtime"] = { ...rotas["/api/runtime"], revealed: true, env: [{ key: "ADMIN_TOKEN", value: "hunter2", secret: true }, { key: "TZ", value: "UTC", secret: false }] };
+  porTexto($("p-section"), "Mostrar os valores")[0].listeners.click(); await esperar(60);
+  confere(/hunter2/.test($("p-section").textContent) && porTexto($("p-section"), "Esconder os valores").length === 1, "mostrar os valores pede de novo, com reveal");
+  // force verbs: asked twice, then the unit verb goes to the server
+  const antesF = posts.length;
+  porTexto($("p-units"), "Parar à força")[0].listeners.click();
+  confere(posts.length === antesF && porTexto($("p-units"), "Confirmar: mata na hora").length === 1, "parar à força: o primeiro clique só pede confirmação");
+  porTexto($("p-units"), "Confirmar: mata na hora")[0].listeners.click(); await esperar(1300);
+  confere(posts.slice(antesF).some((x) => x.rota === "/api/unit" && x.corpo.verb === "force-stop" && x.corpo.unit === "homebox"), "o segundo clique manda force-stop");
+  $("panel").open = false;
+  bh.units = [unidade("homebox")];
+
+  // all the images: who uses each, what it says about itself, and only an unused one can be deleted
+  rotas["/api/images"] = { images: [
+    { id: "a".repeat(64), short: "aaaaaaaaaaaa", names: ["docker.io/x/old:1"], size: 900 * 2 ** 20, created: "2026-01-01T00:00:00Z", used_by: [], in_use: false, wanted: false, removable: true, labels: { version: "1.0", revision: "0123456789abcdef" } },
+    { id: "b".repeat(64), short: "bbbbbbbbbbbb", names: ["docker.io/x/homebox:2", "docker.io/x/homebox:latest"], size: 300 * 2 ** 20, created: "2026-02-01T00:00:00Z", used_by: [{ container: "homebox", unit: "homebox", app: "homebox", state: "running" }], in_use: true, wanted: true, removable: false, labels: {} }] };
+  rotas["/api/images/history"] = { layers: [{ created: "2026-01-01T00:00:00Z", by: "CMD node app.js", size: 0 }] };
+  rotas["/api/images/rm"] = { job: "jr2" }; rotas["/api/job/jr2"] = { output: "removed\n", next: 1, rc: 0 };
+  await api.openResources(); await esperar(60);
+  const corpoI = $("r-body").textContent;
+  confere(/Todas as imagens/.test(corpoI) && /docker\.io\/x\/old:1/.test(corpoI) && /900\.0 MB/.test(corpoI) && /1\.0 · 01234567/.test(corpoI) && /Homebox/.test(corpoI) && /ninguém · sem uso/.test(corpoI), `imagens: tamanho, quem usa, versão e revisão (${corpoI.slice(-260)})`);
+  const apagarI = porTexto($("r-body"), "Apagar").filter((b) => b.attrs.class && /force/.test(b.attrs.class));
+  confere(apagarI.length === 1, "só a imagem sem uso tem Apagar");
+  const antesI = posts.length;
+  apagarI[0].listeners.click();
+  confere(posts.length === antesI && porTexto($("r-body"), "Confirmar").length >= 1, "apagar a imagem: o primeiro clique só pede confirmação");
+  porTexto($("r-body"), "Confirmar").filter((b) => b.attrs.class && /force/.test(b.attrs.class))[0].listeners.click(); await esperar(1400);
+  confere(posts.slice(antesI).some((x) => x.rota === "/api/images/rm" && x.corpo.id === "a".repeat(64)), "o segundo clique apaga pelo id completo");
+  $("bulk").open = false; $("resources").open = false;
+
   // a unit the repository changed since the install: the panel says so, and shows what changed before the update
   const bd = api.S.apps.find((x) => x.id === "homebox");
   bd.units = [unidade("homebox", { drift: "changed" })];

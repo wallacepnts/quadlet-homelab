@@ -466,3 +466,7 @@ are already ordered by `check.py --format` (the layout), and the images are pinn
 Four units carry `# check: ignore health` today: the four `toolbx-*`, an idle shell kept alive by `sleep infinity`, with
 nothing to probe. Every other unit has a probe that was measured inside its image: when the image has no `curl` or `wget`
 (`cookcli`, Tika) the probe uses bash's `/dev/tcp`, and `collabora` uses the image's own `coolwsd --probe`.
+
+`HealthOnFailure=kill` (Quadlet, older than the 6.0 minimum, so it needs no `min_podman`) is **not** part of the skeleton: it
+turns an unhealthy container into a restart by systemd, which also restarts every service whose probe flaps under load or
+during a migration. It is a choice per app (*Customize → code*), and the *Health* tab of the store shows when a unit has it.

@@ -58,6 +58,7 @@ import qhui  # noqa: E402
 import resources  # noqa: E402
 import hostctl  # noqa: E402
 import migrate  # noqa: E402
+import ctrinfo  # noqa: E402
 import alerts as A  # noqa: E402
 import network as N  # noqa: E402
 import svcwidgets as W  # noqa: E402
@@ -80,6 +81,8 @@ PT = {
     "read it with": "leia com",
     "another job is running": "outra tarefa está rodando",
     "nothing to do": "nada a fazer",
+    "not running": "não está rodando",
+    "this image is in use or an installed unit asks for it: not removed": "esta imagem está em uso ou uma unit instalada a pede: não foi removida",
     "your own .container saved": "o seu .container foi guardado",
     "back to the repository's .container": "de volta ao .container do repositório",
     "The service did not come up with this .container. Going back to the previous one:": "O serviço não subiu com este .container. Voltando ao anterior:",
@@ -158,7 +161,7 @@ ACOES = ("install", "update", "remove", "backup", "restore", "upgrade", "access"
 COOKIE = "qh_store"
 NOME = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
 BACKUP = re.compile(r"-\d{8}-\d{6}\.tar\.gz")     # what --backup names its archive after the app
-VERBOS = {"start", "stop", "restart"}
+VERBOS = {"start", "stop", "restart", "force-stop", "force-restart"}
 
 PREFIX = None              # --prefix: the sandbox every qh call is pointed at
 JOBS, JOB_LOCK = {}, threading.Lock()
@@ -1694,6 +1697,100 @@ def files_preview(path):
     return d
 
 
+# -- what Podman says: health, what really runs, the images -----------------------------------------------------
+
+def inspect_unit(unit):
+    """`podman inspect` of the container of `unit`, or None when there is none (not running, or a sandbox)."""
+    if PREFIX and "QH_PODMAN" not in os.environ:
+        return None
+    caminho = next(I.APPS.glob(f"*/{unit}.container"), None)
+    if caminho is None:
+        return None
+    rc, out, _ = ctrinfo.podman("inspect", I.container_name(caminho))
+    if rc != 0:
+        return None
+    try:
+        return (json.loads(out) or [None])[0]
+    except ValueError:
+        return None
+
+
+def health_state(unit):
+    raw = inspect_unit(unit)
+    if raw is None:
+        return {"status": "none", "streak": 0, "runs": [], "config": {}, "running": False}
+    return ctrinfo.health_view(raw)
+
+
+def health_run(unit):
+    """Runs the probe now, as the container's own `podman healthcheck run`. (rc, state after) ; rc 0 is healthy."""
+    caminho = next(I.APPS.glob(f"*/{unit}.container"), None)
+    rc, out, err = ctrinfo.podman("healthcheck", "run", I.container_name(caminho), timeout=60)
+    return rc, (out or err).strip(), health_state(unit)
+
+
+def runtime_state(unit, reveal=False):
+    raw = inspect_unit(unit)
+    if raw is None:
+        return None
+    p = installed_unit(unit)
+    texto = p.read_text() if p is not None else next(I.APPS.glob(f"*/{unit}.container")).read_text()
+    return ctrinfo.runtime_view(raw, ctrinfo.secret_env_keys(texto), reveal)
+
+
+def images_state():
+    """Every image on the disk: size, which apps use it, build date, version labels, and whether it can go."""
+    if PREFIX and "QH_PODMAN" not in os.environ:
+        return []
+    casa = Path(PREFIX or Path.home())
+    nomes, digests = resources.wanted_images(casa)
+    unidades = container_units()
+    def de(nome):
+        u = unidades.get(nome)
+        return {"unit": u, "app": unit_pasta(u)} if u else None
+    vistas = ctrinfo.image_views(resources.podman_json("images"), resources.podman_json("ps", "-a"), nomes, digests, resources.normalize,
+                                 lambda n: (de(n) or {}).get("unit"))
+    for im in vistas:
+        for u in im["used_by"]:
+            u["app"] = unit_pasta(u["unit"]) if u["unit"] else None
+    return vistas
+
+
+def image_history(iid):
+    rc, out, err = ctrinfo.podman("image", "history", "--format", "json", iid)
+    if rc != 0:
+        raise LookupError(err.strip() or "history")
+    return ctrinfo.history_view(json.loads(out or "[]"))
+
+
+def image_remove(iid):
+    """Removes one image that nothing uses and no installed unit asks for. Runs inside a job."""
+    alvo = next((i for i in images_state() if i["id"] == iid), None)
+    if alvo is None or not alvo["removable"]:
+        print(loc("this image is in use or an installed unit asks for it: not removed"))
+        return False
+    rc, out, err = ctrinfo.podman("rmi", "--force", iid, timeout=120)
+    print((out or err).strip())
+    return rc == 0
+
+
+def force_unit(unit, restart):
+    """A container that does not answer to the stop: `podman kill` first, then the unit is stopped (stays so after a reboot, as
+    the Stop button does) or restarted. Runs inside a job."""
+    caminho = next(I.APPS.glob(f"*/{unit}.container"))
+    nome = I.container_name(caminho)
+    if PREFIX:
+        print(f"({loc('sandbox, not executed')}: podman kill {nome}; systemctl --user {'restart' if restart else 'mask --now'} {unit})")
+        return True
+    rc, out, err = ctrinfo.podman("kill", nome)
+    print((f"podman kill {nome}: " + ((out or err).strip() or "ok")))
+    if restart:
+        if I.unit_masked(Path.home(), unit):
+            systemctl("unmask", unit)
+        return systemctl("restart", unit)
+    return systemctl("mask", "--now", unit)
+
+
 USAGE, USAGE_LOCK, USAGE_TTL = {"at": 0.0, "apps": []}, threading.Lock(), 300
 
 
@@ -2559,6 +2656,27 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(e.code, {"error": str(e)})
             except (OSError, subprocess.TimeoutExpired, ValueError) as e:
                 return self._json(502, {"error": str(e)})
+        if url.path in ("/api/health", "/api/runtime"):
+            unit = q.get("unit", "")
+            if not unit_exists(unit):
+                return self._json(400, {"error": loc("unknown unit")})
+            if url.path == "/api/health":
+                return self._json(200, health_state(unit))
+            vista = runtime_state(unit, q.get("reveal") == "1")
+            return self._json(200, vista) if vista else self._json(404, {"error": loc("not installed")})
+        if url.path == "/api/images":
+            try:
+                return self._json(200, {"images": images_state()})
+            except (RuntimeError, OSError, subprocess.TimeoutExpired, ValueError) as e:
+                return self._json(502, {"error": f"podman: {e}"})
+        if url.path == "/api/images/history":
+            iid = q.get("id", "")
+            if not re.fullmatch(r"[0-9a-f]{12,64}", iid):
+                return self._json(400, {"error": "id"})
+            try:
+                return self._json(200, {"layers": image_history(iid)})
+            except (LookupError, ValueError, OSError, subprocess.TimeoutExpired) as e:
+                return self._json(404, {"error": str(e)})
         if url.path == "/api/usage":
             u = disk_usage(q.get("refresh") == "1")
             return self._json(200, {"apps": u["apps"], "at": int(u["at"])})
@@ -2841,6 +2959,29 @@ class Handler(BaseHTTPRequestHandler):
             if job is None:
                 return self._json(409, {"error": loc("another job is running")})
             return self._json(202, {"job": job.id})
+        if url.path == "/api/health/run":
+            unit = d.get("unit", "")
+            if not unit_exists(unit):
+                return self._json(400, {"error": loc("unknown unit")})
+            if PREFIX and "QH_PODMAN" not in os.environ:
+                return self._json(409, {"error": loc("not running")})
+            if not (inspect_unit(unit) or {}).get("State", {}).get("Running"):
+                return self._json(409, {"error": loc("not running")})
+            rc, saida, estado = health_run(unit)
+            return self._json(200, {"rc": rc, "output": saida, "health": estado})
+        if url.path == "/api/images/rm":
+            iid = d.get("id", "")
+            if not isinstance(iid, str) or not re.fullmatch(r"[0-9a-f]{12,64}", iid):
+                return self._json(400, {"error": "id"})
+            alvo = next((i for i in images_state() if i["id"] == iid), None)
+            if alvo is None:
+                return self._json(404, {"error": loc("unknown action")})
+            if not alvo["removable"]:
+                return self._json(400, {"error": loc("this image is in use or an installed unit asks for it: not removed")})
+            job = start_job("_host", "image-rm", [], lang, lambda: image_remove(iid), origem=self.client_address[0])
+            if job is None:
+                return self._json(409, {"error": loc("another job is running")})
+            return self._json(202, {"job": job.id})
         if url.path == "/api/migrate":
             # An install made under an app the repository split (media-stack): moved to the apps that replaced it.
             velho = d.get("from", "")
@@ -3118,6 +3259,12 @@ class Handler(BaseHTTPRequestHandler):
             # Recorded under the service, with the unit beside it, so a service's
             # history holds its restarts as well as its installs.
             pasta = next(I.APPS.glob(f"*/{unit}.container")).parent.name
+            if verbo in ("force-stop", "force-restart"):
+                job = start_job(pasta, verbo, [], lang, lambda: force_unit(unit, verbo == "force-restart"),
+                                origem=self.client_address[0], unit=unit)
+                if job is None:
+                    return self._json(409, {"error": loc("another job is running")})
+                return self._json(202, {"job": job.id})
             cmd_unit = ["systemctl", "--user", verbo, unit]
             if verbo == "stop":
                 cmd_unit = ["systemctl", "--user", "mask", "--now", unit]    # stays stopped after a reboot
@@ -4028,6 +4175,68 @@ esac
                     os.environ.pop("QH_PODMAN", None)
                     resources.PODMAN = "podman"
 
+            # what Podman says: health with the last runs, what really runs (values masked), the images, and the force verbs
+            with tempfile.TemporaryDirectory() as fk2:
+                nome_h = I.container_name(next(I.APPS.glob("*/homebox.container")))
+                alvo_secret = next(iter(ctrinfo.secret_env_keys(installed_unit("homebox").read_text())), "ADMIN_TOKEN")
+                inspecao = {"Id": "f" * 64, "Name": nome_h, "ImageName": "docker.io/x/homebox:1", "Image": "a" * 64, "Created": "2026-11-18T00:00:00Z",
+                            "Path": "/app", "Args": ["serve"], "RestartCount": 1,
+                            "State": {"Status": "running", "Running": True, "StartedAt": "2026-11-18T00:00:01Z",
+                                      "Health": {"Status": "unhealthy", "FailingStreak": 3, "Log": [
+                                          {"Start": "t1", "End": "t1", "ExitCode": 0, "Output": ""}, {"Start": "t2", "End": "t2", "ExitCode": 1, "Output": "boom"}]}},
+                            "Config": {"Env": [f"{alvo_secret}=hunter2", "TZ=UTC"], "Healthcheck": {"Test": ["CMD-SHELL", "true"], "Interval": 30 * 10 ** 9, "Retries": 3},
+                                       "HealthcheckOnFailureAction": "none"},
+                            "HostConfig": {"ReadonlyRootfs": True, "PidsLimit": 256}, "Mounts": [], "NetworkSettings": {"Networks": {}, "Ports": {}}}
+                imagens_j = [{"Id": "1" * 12 + "aa", "Names": ["docker.io/x/old:1"], "Size": 900, "Containers": 0, "CreatedAt": "2026-01-01T00:00:00Z",
+                              "Labels": {"org.opencontainers.image.version": "1.0"}},
+                             {"Id": "2" * 12 + "bb", "Names": ["docker.io/x/homebox:1"], "Size": 500, "Containers": 1, "CreatedAt": "2026-02-01T00:00:00Z"}]
+                ctrs_j = [{"Names": [nome_h], "ImageID": "2" * 12 + "bb", "State": "running"}]
+                falso2 = Path(fk2, "podman")
+                falso2.write_text(f"""#!/bin/sh
+case "$*" in
+  "inspect {nome_h}") echo '{json.dumps([inspecao])}';;
+  "healthcheck run {nome_h}") echo healthy; exit 0;;
+  "images --format json") echo '{json.dumps(imagens_j)}';;
+  "ps -a --format json") echo '{json.dumps(ctrs_j)}';;
+  "image history --format json {'1' * 12 + 'aa'}") echo '[{{"created":"t","CreatedBy":"/bin/sh -c #(nop) CMD x","size":3}}]';;
+  "rmi --force {'1' * 12 + 'aa'}") echo removed;;
+  *) echo "unexpected: $*" >&2; exit 1;;
+esac
+""")
+                falso2.chmod(0o755)
+                os.environ["QH_PODMAN"], resources.PODMAN, ctrinfo.PODMAN = str(falso2), str(falso2), str(falso2)
+                try:
+                    h = json.loads(pedir("/api/health?unit=homebox", headers=ok)[2])
+                    assert h["status"] == "unhealthy" and h["streak"] == 3 and [x["exit"] for x in h["runs"]] == [1, 0] and h["runs"][0]["output"] == "boom", h
+                    assert h["config"]["test"] == "true" and h["config"]["interval"] == 30.0 and h["config"]["on_failure"] is None
+                    assert pedir("/api/health?unit=nope", headers=ok)[0] == 400
+                    st, _, c = pedir("/api/health/run", json.dumps({"unit": "homebox"}).encode(), api)
+                    assert st == 200 and json.loads(c)["rc"] == 0 and json.loads(c)["output"] == "healthy" and json.loads(c)["health"]["status"] == "unhealthy", c
+                    assert pedir("/api/health/run", json.dumps({"unit": "homebox"}).encode(), ok)[0] == 403
+                    rt = json.loads(pedir("/api/runtime?unit=homebox", headers=ok)[2])
+                    assert all(e["value"] != "hunter2" for e in rt["env"]) and rt["revealed"] is False and rt["command"] == "/app serve", rt["env"]
+                    assert any(e["key"] == alvo_secret and e["secret"] for e in rt["env"]) or alvo_secret == "ADMIN_TOKEN", "a Secret= variable is flagged"
+                    rt2 = json.loads(pedir("/api/runtime?unit=homebox&reveal=1", headers=ok)[2])
+                    assert {e["key"]: e["value"] for e in rt2["env"]}[alvo_secret] == "hunter2" and rt2["revealed"] is True
+                    im = json.loads(pedir("/api/images", headers=ok)[2])["images"]
+                    por = {i["id"]: i for i in im}
+                    assert [i["id"] for i in im] == ["1" * 12 + "aa", "2" * 12 + "bb"] and por["1" * 12 + "aa"]["removable"] and por["1" * 12 + "aa"]["labels"] == {"version": "1.0"}
+                    assert not por["2" * 12 + "bb"]["removable"] and por["2" * 12 + "bb"]["used_by"][0]["unit"] == "homebox" and por["2" * 12 + "bb"]["used_by"][0]["app"] == "homebox"
+                    assert json.loads(pedir(f"/api/images/history?id={'1' * 12 + 'aa'}", headers=ok)[2])["layers"][0]["by"] == "CMD x"
+                    assert pedir("/api/images/history?id=zz", headers=ok)[0] == 400
+                    for ruim in ("zz", "2" * 12 + "bb", "3" * 12 + "cc"):
+                        assert pedir("/api/images/rm", json.dumps({"id": ruim}).encode(), api)[0] in (400, 404), ruim
+                    st, _, c = pedir("/api/images/rm", json.dumps({"id": "1" * 12 + "aa"}).encode(), api)
+                    assert st == 202 and esperar(c)["rc"] == 0, c
+                finally:
+                    os.environ.pop("QH_PODMAN", None)
+                    resources.PODMAN, ctrinfo.PODMAN = "podman", "podman"
+            assert json.loads(pedir("/api/images", headers=ok)[2])["images"] == [] and pedir("/api/health/run", json.dumps({"unit": "homebox"}).encode(), api)[0] == 409, "a sandbox touches no real podman"
+            for verbo_f in ("force-stop", "force-restart"):
+                st, _, c = pedir("/api/unit", json.dumps({"unit": "homebox", "verb": verbo_f}).encode(), api)
+                assert st == 202, (verbo_f, c)
+                assert esperar(c)["rc"] == 0 and any(e["action"] == verbo_f for e in json.loads(pedir("/api/history?app=homebox", headers=ok)[2])["entries"]), verbo_f
+
             # console: a WebSocket to `podman exec -it`; refused unless it is this server's own page asking
             global PODMAN
             import socket as _s
@@ -4137,7 +4346,7 @@ esac
 
             # history: every job is on disk, newest first, with who asked and how it ended
             lista = [e for e in json.loads(pedir("/api/history?app=homebox", headers=ok)[2])["entries"]
-                     if e["action"] not in ("shell", "custom-unit")]     # a console and a rewritten .container are recorded too
+                     if e["action"] not in ("shell", "custom-unit", "force-stop", "force-restart")]     # a console and a rewritten .container are recorded too
             acoes = [e["action"] for e in lista]
             assert acoes[:2] == ["revert", "customize"], "the customization and its revert are in the history"
             assert "env" in acoes and "install" in acoes and "backup" in acoes, acoes

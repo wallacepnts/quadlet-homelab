@@ -570,6 +570,26 @@ server's clock), between a minute and a week ahead. It is a transient systemd us
 time: a new schedule replaces the old, and **Cancel schedule** stops it. The state is `~/.config/quadlet-homelab/power.json`.
 Unlike the immediate action, a scheduled one does not wait for a running job.
 
+## What Podman says: health, what runs, the images
+
+Ideas taken from cockpit-podman, kept read-only except where said. In an app's panel, each running unit has:
+
+- **Health**: the status, the failing streak, the probe's own settings (command, interval, timeout, retries, start period,
+  what it does when unhealthy), the **last runs with what each one printed** (the answer to "why is it unhealthy"), and
+  **Run now** (`podman healthcheck run`). `HealthOnFailure=kill` is not part of the skeleton of rule 24: it would restart
+  every service whose probe flaps under load. A unit can ask for it in *Customize → code*, and the tab says when it does.
+- **Details**: what really runs, as Podman has it (`/api/runtime`): command, image and digest, user, networks with their
+  addresses, published ports (usually none), mounts with read-only or read-write, the limits and permissions, the restarts,
+  and the **environment variables with the values masked** (a `Secret=` of type env lands in the container's environment, and
+  the ones a unit fills from a secret are marked). *Show the values* asks again with `reveal`.
+- **Force stop / Force restart**, asked twice: `podman kill` (SIGKILL) first, then the unit is stopped (and stays so, as with
+  Stop) or restarted. For a container that does not answer the stop; what was not written is lost.
+
+In **Resources**, *All images* lists every image on the disk: size, which apps use it, when it was built, the
+`org.opencontainers.image.version` and `revision` labels, the layers, and **Delete** for one that nothing uses and no
+installed unit asks for (the same "unused" as the prune; the id is checked again on the server). The panel of an app also draws
+a short CPU and memory history while the page is open.
+
 ## An app the repository split: `qh --migrate`
 
 `media-stack` was one folder of thirteen units sharing one data folder and one `.env`. Each is an app of its own now:

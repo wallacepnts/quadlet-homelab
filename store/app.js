@@ -63,6 +63,18 @@ const T = {
     resUsageRefresh: "Recalcular", resUsageLoading: "Calculando…", resUsageNone: "Nenhum app com dados próprios.", resUsageTotal: "Total",
     powerLater: "Agendar", powerWhen: { "15": "em 15 minutos", "60": "em 1 hora", "240": "em 4 horas", at: "num horário…" },
     powerAction: "O quê", powerSchedule: "Agendar", powerScheduled: (acao, quando) => `${acao === "reboot" ? "Reiniciar" : "Desligar"} agendado para ${quando}.`, powerUnschedule: "Cancelar agendamento",
+    hTab: "Saúde", hStatus: { healthy: "saudável", unhealthy: "com problema", starting: "iniciando", none: "sem sonda" }, hNotRunning: "O container não está rodando.",
+    hStreak: (n) => `${n} ${n === 1 ? "falha seguida" : "falhas seguidas"}`, hEvery: "A cada", hTimeout: "tempo máximo", hRetries: "tentativas", hStartPeriod: "janela de início", hCommand: "Comando",
+    hOnFail: "Quando fica doente", hOnFailNone: "nada: o systemd não age (a unit pode pedir `HealthOnFailure=kill` em Personalizar → código)", hRun: "Rodar agora", hRunning: "Rodando…",
+    hResult: (rc) => (rc === 0 ? "A sonda passou." : `A sonda falhou (saída ${rc}).`), hRuns: "Últimas execuções", hStartedAt: "Início", hExit: "Saída", hOutput: "O que imprimiu", hNoRuns: "Nenhuma execução ainda.",
+    rtTab: "Detalhes", rtIntro: "O que roda de verdade, como o Podman o vê. O Personalizar mostra o que a unit diz; aqui está o resultado.", rtImage: "Imagem", rtDigest: "Digest", rtCommand: "Comando", rtUser: "Usuário", rtWorkdir: "Pasta de trabalho",
+    rtCreated: "Criado", rtStarted: "Iniciado", rtRestarts: "Reinícios", rtNetworks: "Redes", rtPorts: "Portas publicadas", rtNoPorts: "Nenhuma: só se chega por uma rede.", rtMounts: "Montagens", rtRW: "leitura e escrita", rtRO: "só leitura",
+    rtEnv: "Variáveis de ambiente", rtShow: "Mostrar os valores", rtHide: "Esconder os valores", rtSecret: "secret", rtRevealNote: "Os valores aparecem mascarados: um `Secret=` do tipo env fica no ambiente do container.",
+    rtLimits: "Limites e permissões", rtReadOnly: "sistema de arquivos somente leitura", rtPids: "processos", rtMemory: "memória", rtCapsDrop: "capacidades removidas", rtCapsAdd: "capacidades acrescentadas", rtSecurity: "segurança",
+    forceStop: "Parar à força", forceRestart: "Reiniciar à força", forceSure: "Confirmar: mata na hora", forceHint: "Mata o container na hora (SIGKILL) e depois para ou reinicia a unit. Serve para quando ele não responde ao stop; pode perder o que não foi gravado.",
+    imgTitle: "Todas as imagens", imgNote: "Tamanho em disco, quem usa, quando foi construída e o que a própria imagem diz de si. Só se apaga a que ninguém usa e nenhuma unit instalada pede.",
+    imgName: "Imagem", imgUsedBy: "Usada por", imgBuilt: "Criada", imgVersion: "Versão", imgRevision: "Revisão", imgNoUse: "ninguém", imgWanted: "uma unit pede", imgInUse: "em uso", imgFree: "sem uso",
+    imgDetails: "Detalhes", imgHistory: "Camadas", imgRemove: "Apagar", imgSure: "Confirmar", imgRemoving: "Apagando…", imgNone: "Nenhuma imagem.",
     resImages: "Imagens sem uso", resNetworks: "Redes sem uso", resVolumes: "Volumes sem uso",
     resImagesNote: (n, s) => `${n} imagem(ns) que nenhuma unit instalada nem container usa, até ${s}. Cada atualização deixa a anterior aqui. O espaço real pode ser menor: camadas são compartilhadas entre imagens.`,
     resNone: "Nada sobrando.", resRemove: "Apagar", resSure: "Confirmar", resVolumesWarn: "Volume guarda dados. Digite volumes para apagar:",
@@ -200,7 +212,7 @@ const T = {
     took: "Duração", from: "de", output: "Saída",
     act: { pause: "Pausar", resume: "Retomar", install: "Instalar", update: "Atualizar", upgrade: "Atualizar versão", remove: "Remover", backup: "Backup",
            restore: "Restaurar", access: "Acesso", env: "Configuração", start: "Iniciar", stop: "Parar", restart: "Reiniciar",
-           customize: "Personalizar", revert: "Reverter", prune: "Limpar", "custom-unit": ".container próprio", migrate: "Migração" },
+           customize: "Personalizar", revert: "Reverter", prune: "Limpar", "custom-unit": ".container próprio", migrate: "Migração", "force-stop": "Parada à força", "force-restart": "Reinício à força", "image-rm": "Imagem apagada" },
     link: { repo: "Projeto", docs: "Documentação", issues: "Problemas", releases: "Releases", image: "Imagem", recipe: "Receita neste repositório" },
     shots: "Capturas de tela",
     lang: "English",
@@ -265,6 +277,18 @@ const T = {
     resUsageRefresh: "Recalculate", resUsageLoading: "Calculating…", resUsageNone: "No app with data of its own.", resUsageTotal: "Total",
     powerLater: "Schedule", powerWhen: { "15": "in 15 minutes", "60": "in 1 hour", "240": "in 4 hours", at: "at a time…" },
     powerAction: "What", powerSchedule: "Schedule", powerScheduled: (acao, quando) => `${acao === "reboot" ? "Restart" : "Shutdown"} scheduled for ${quando}.`, powerUnschedule: "Cancel the schedule",
+    hTab: "Health", hStatus: { healthy: "healthy", unhealthy: "unhealthy", starting: "starting", none: "no probe" }, hNotRunning: "The container is not running.",
+    hStreak: (n) => `${n} failing in a row`, hEvery: "Every", hTimeout: "timeout", hRetries: "retries", hStartPeriod: "start period", hCommand: "Command",
+    hOnFail: "When it turns unhealthy", hOnFailNone: "nothing: systemd does not act (the unit can ask for `HealthOnFailure=kill` in Customize → code)", hRun: "Run now", hRunning: "Running…",
+    hResult: (rc) => (rc === 0 ? "The probe passed." : `The probe failed (exit ${rc}).`), hRuns: "Last runs", hStartedAt: "Started", hExit: "Exit", hOutput: "What it printed", hNoRuns: "No run yet.",
+    rtTab: "Details", rtIntro: "What really runs, as Podman has it. Customize shows what the unit says; this is the result.", rtImage: "Image", rtDigest: "Digest", rtCommand: "Command", rtUser: "User", rtWorkdir: "Working folder",
+    rtCreated: "Created", rtStarted: "Started", rtRestarts: "Restarts", rtNetworks: "Networks", rtPorts: "Published ports", rtNoPorts: "None: it is reached over a network only.", rtMounts: "Mounts", rtRW: "read and write", rtRO: "read only",
+    rtEnv: "Environment variables", rtShow: "Show the values", rtHide: "Hide the values", rtSecret: "secret", rtRevealNote: "Values are masked: a `Secret=` of type env ends up in the container's environment.",
+    rtLimits: "Limits and permissions", rtReadOnly: "read-only filesystem", rtPids: "processes", rtMemory: "memory", rtCapsDrop: "capabilities dropped", rtCapsAdd: "capabilities added", rtSecurity: "security",
+    forceStop: "Force stop", forceRestart: "Force restart", forceSure: "Confirm: kills at once", forceHint: "Kills the container at once (SIGKILL), then stops or restarts the unit. For when it does not answer the stop; what was not written is lost.",
+    imgTitle: "All images", imgNote: "Disk size, who uses it, when it was built and what the image says about itself. Only an image that nobody uses and no installed unit asks for can be deleted.",
+    imgName: "Image", imgUsedBy: "Used by", imgBuilt: "Created", imgVersion: "Version", imgRevision: "Revision", imgNoUse: "nobody", imgWanted: "a unit asks for it", imgInUse: "in use", imgFree: "unused",
+    imgDetails: "Details", imgHistory: "Layers", imgRemove: "Delete", imgSure: "Confirm", imgRemoving: "Deleting…", imgNone: "No images.",
     resImages: "Unused images", resNetworks: "Unused networks", resVolumes: "Unused volumes",
     resImagesNote: (n, s) => `${n} image(s) that no installed unit or container uses, up to ${s}. Every update leaves the previous one here. The real space may be less: layers are shared between images.`,
     resNone: "Nothing left over.", resRemove: "Delete", resSure: "Confirm", resVolumesWarn: "A volume holds data. Type volumes to delete:",
@@ -402,7 +426,7 @@ const T = {
     took: "Took", from: "from", output: "Output",
     act: { pause: "Pause", resume: "Resume", install: "Install", update: "Update", upgrade: "Update version", remove: "Remove", backup: "Backup",
            restore: "Restore", access: "Access", env: "Settings", start: "Start", stop: "Stop", restart: "Restart",
-           customize: "Customize", revert: "Revert", prune: "Clean up", "custom-unit": "own .container", migrate: "Migration" },
+           customize: "Customize", revert: "Revert", prune: "Clean up", "custom-unit": "own .container", migrate: "Migration", "force-stop": "Force stop", "force-restart": "Force restart", "image-rm": "Image deleted" },
     link: { repo: "Project", docs: "Documentation", issues: "Issues", releases: "Releases", image: "Image", recipe: "Recipe in this repository" },
     shots: "Screenshots",
     lang: "Português",
@@ -413,7 +437,7 @@ const S = {
   lang: localStorage.getItem("qh-lang") || (navigator.language.startsWith("pt") ? "pt" : "en"),
   backupFirst: localStorage.getItem("qh-backup-first") === "1",   // the box next to Update, remembered
   rule: "tailnet",          // the host's access rule (qh --set-access)
-  apps: [], group: null, filter: null, search: "", current: null, preCustom: {}, preUnit: {}, preUnitAck: {},
+  apps: [], group: null, filter: null, search: "", current: null, rhist: {}, preCustom: {}, preUnit: {}, preUnitAck: {},
   view: null,               // "apps" (what is installed) or "store" (the catalog); kept in the URL hash
   stats: {},                // unit -> {cpu, mem}, from /api/stats
   upd: {}, checked: null,   // unit -> qh-updates --host row; when it was asked
@@ -1096,8 +1120,15 @@ function renderInfo() {
   const arq = info.arch;
   if (arq && arq.runs && arq.runs.length) partes.push(`${t("runsOn")} ${arq.runs.join(", ")}`);
   const sem = arq ? arq.units.filter((u) => u.ok === false).map((u) => u.unit) : [];
+  const hist = S.rhist[a.id];
+  const mini = (serie, teto) => {            // heights through the CSSOM: the CSP forbids a style attribute
+    const el = h("div", { class: "spark mini" }, ...serie.map((v) => { const b = h("i"); b.style.height = `${Math.max(6, Math.min(100, (v / teto) * 100))}%`; return b; }));
+    return el;
+  };
   fill($("p-info"), 
     partes.join(" · "),
+    hist && hist.cpu.length > 1 ? h("div", { class: "rsparks" }, h("div", {}, h("small", {}, t("cpu")), mini(hist.cpu, Math.max(10, ...hist.cpu))),
+      h("div", {}, h("small", {}, t("mem")), mini(hist.mem, Math.max(1, ...hist.mem)))) : null,
     sem.length ? h("span", { class: "note" }, " ", t("noArm")(arq.host, sem.join(", "))) : null);
 }
 
@@ -1151,7 +1182,11 @@ function renderPanel() {
           h("button", { type: "button", class: "ghost", onclick: () => unitVerb(u.unit, v) }, t(v))),
         h("button", { type: "button", class: "ghost", onclick: () => showLogs(u.unit) }, t("logs")),
         u.service === "active" && (u.container || "—") !== "—"
-          ? h("button", { type: "button", class: "ghost", onclick: () => showConsole(u.unit) }, t("console")) : null))));
+          ? h("button", { type: "button", class: "ghost", onclick: () => showConsole(u.unit) }, t("console")) : null,
+        (u.container || "—") !== "—" ? h("button", { type: "button", class: "ghost", onclick: () => showHealth(u.unit) }, t("hTab")) : null,
+        (u.container || "—") !== "—" ? h("button", { type: "button", class: "ghost", onclick: () => showRuntime(u.unit) }, t("rtTab")) : null,
+        u.service === "active" ? forceButton(u.unit, "force-restart", "forceRestart") : null,
+        u.service === "active" ? forceButton(u.unit, "force-stop", "forceStop") : null))));
 
   // The reason, where it is read; and a service that is discontinued is not offered for install.
   const motivo = depReason(a);
@@ -1823,7 +1858,17 @@ function updateResources() {
 
 async function pollStats() {
   if (document.hidden || !S.apps.some((a) => a.installed)) return;
-  try { S.stats = (await api("/api/stats")).stats; updateResources(); } catch (e) { /* next turn */ }
+  try {
+    S.stats = (await api("/api/stats")).stats;
+    for (const a of S.apps) {                       // a short history per app, for the sparklines in its panel
+      const r = a.installed && resources(a);
+      if (!r) continue;
+      const h2 = (S.rhist[a.id] = S.rhist[a.id] || { cpu: [], mem: [] });
+      h2.cpu.push(r.cpu); h2.mem.push(r.mem);
+      if (h2.cpu.length > 30) { h2.cpu.shift(); h2.mem.shift(); }
+    }
+    updateResources();
+  } catch (e) { /* next turn */ }
 }
 
 const tamanho = (n) => n > 1 << 30 ? `${(n / (1 << 30)).toFixed(1)} GB`
@@ -2262,7 +2307,51 @@ async function renderResources() {
     secao("images", t("resImages"), r.images, t("resImagesNote")(r.images.length, sizeOf(r.reclaimable)), img),
     secao("networks", t("resNetworks"), r.networks, null, r.networks.map((n) => h("tr", {}, h("td", {}, n.name)))),
     secao("volumes", t("resVolumes"), r.volumes, null, r.volumes.map((v) => h("tr", {}, h("td", {}, v.name)))),
-    usageSection());
+    usageSection(), imagesSection());
+}
+
+// Every image on the disk (not only the unused ones): who uses it, when it was built, what it says about itself.
+function imagesSection() {
+  const corpo = h("div", {}, h("p", { class: "muted" }, t("resUsageLoading")));
+  const nomeApp = (id) => (S.apps.find((a) => a.id === id) || {}).name || id;
+  const abrir = new Set();
+  const carregar = async () => {
+    let r;
+    try { r = await api("/api/images"); } catch (e) { fill(corpo, h("p", { class: "bad" }, String(e.message))); return; }
+    const detalhe = async (im, cel) => {
+      const rot = im.labels || {};
+      const linhas = Object.entries(rot).map(([k, v]) => h("tr", {}, h("th", {}, k), h("td", {}, v)));
+      fill(cel, h("table", { class: "hist kv" }, h("tr", {}, h("th", {}, "id"), h("td", {}, im.id)), ...linhas), h("p", { class: "muted" }, t("resUsageLoading")));
+      try {
+        const hs = await api(`/api/images/history?id=${im.id}`);
+        fill(cel, h("table", { class: "hist kv" }, h("tr", {}, h("th", {}, "id"), h("td", {}, im.id)), ...linhas),
+          h("h4", {}, t("imgHistory")), h("table", { class: "hist" }, ...hs.layers.map((c) => h("tr", {}, h("td", { class: "muted" }, fsTime(c.created)), h("td", {}, h("code", {}, c.by || "—")), h("td", { class: "num" }, c.size ? bytes(c.size) : "")))));
+      } catch (e) { fill(cel, h("p", { class: "bad" }, String(e.message))); }
+    };
+    const linhas = r.images.flatMap((im) => {
+      const cel = h("td", { colspan: "6" });
+      const detalhes = h("tr", { hidden: !abrir.has(im.id) }, cel);
+      let pediu = false;
+      const apagar = im.removable ? h("button", { type: "button", class: "ghost force", onclick: async () => {
+        if (!pediu) { pediu = true; apagar.textContent = t("imgSure"); return; }
+        apagar.textContent = t("imgRemoving");
+        await jobWindow(t("imgRemove"), () => api("/api/images/rm", { id: im.id }));
+        carregar();
+      } }, t("imgRemove")) : null;
+      const estado = im.removable ? t("imgFree") : im.in_use ? t("imgInUse") : t("imgWanted");
+      const quem = [...new Set(im.used_by.map((u) => (u.app ? nomeApp(u.app) : u.container)))];
+      return [h("tr", {},
+        h("td", {}, im.names.map((n) => h("div", {}, n))), h("td", { class: "num" }, bytes(im.size)),
+        h("td", {}, quem.length ? quem.join(", ") : h("span", { class: "muted" }, `${t("imgNoUse")} · ${estado}`)),
+        h("td", { class: "num" }, (im.created || "").slice(0, 10)), h("td", {}, [im.labels.version, im.labels.revision && im.labels.revision.slice(0, 8)].filter(Boolean).join(" · ")),
+        h("td", {}, h("button", { type: "button", class: "ghost", onclick: () => { detalhes.hidden = !detalhes.hidden; if (!detalhes.hidden) { abrir.add(im.id); detalhe(im, cel); } else abrir.delete(im.id); } }, t("imgDetails")), apagar)),
+        detalhes];
+    });
+    fill(corpo, r.images.length ? h("table", { class: "hist imgs" }, h("tr", {}, h("th", {}, t("imgName")), h("th", { class: "num" }, t("fColSize")), h("th", {}, t("imgUsedBy")),
+      h("th", { class: "num" }, t("imgBuilt")), h("th", {}, t("imgVersion")), h("th", {})), ...linhas) : h("p", { class: "muted" }, t("imgNone")));
+  };
+  carregar();
+  return h("section", {}, h("h3", {}, t("imgTitle")), h("p", { class: "muted" }, t("imgNote")), corpo);
 }
 
 // What each app's data takes on disk: asked after the rest of the page (walking a library is slow).
@@ -2304,6 +2393,74 @@ async function pruneRun(kind, confirm) {
   pre.hidden = false;
   pre.textContent = texto;
   $("p-clean").hidden = true;
+}
+
+// Kill the container at once, then stop or restart the unit: asked twice, since what was not written is lost.
+function forceButton(unit, verbo, rotulo) {
+  let pediu = false;
+  const b = h("button", { type: "button", class: "ghost force", title: t("forceHint"), onclick: () => {
+    if (!pediu) { pediu = true; b.textContent = t("forceSure"); return; }
+    unitVerb(unit, verbo);
+  } }, t(rotulo));
+  return b;
+}
+
+const fsTime = (iso) => (iso ? new Date(iso).toLocaleString(S.lang === "pt" ? "pt-BR" : "en-GB") : "—");
+
+// Health: the status, the probe's own settings and what the last runs printed (the answer to "why is it unhealthy").
+async function showHealth(unit, resultado = null) {
+  if (!resultado) section(h("p", { class: "muted" }, t("checking")));
+  let d;
+  try { d = await api(`/api/health?unit=${encodeURIComponent(unit)}`); }
+  catch (e) { return section(h("p", { class: "bad" }, String(e.message))); }
+  const msg = h("p", { class: "muted" }, resultado ? resultado.texto : "");
+  if (resultado) msg.className = resultado.rc === 0 ? "ok" : "bad";
+  const cfg = d.config || {};
+  const rodar = h("button", { type: "button", disabled: !d.running, onclick: async () => {
+    rodar.textContent = t("hRunning");
+    try {
+      const r = await api("/api/health/run", { unit });
+      return showHealth(unit, { rc: r.rc, texto: `${t("hResult")(r.rc)} ${r.output || ""}`.trim() });
+    } catch (e) { msg.textContent = String(e.message); msg.className = "bad"; rodar.textContent = t("hRun"); }
+  } }, t("hRun"));
+  const linhas = (d.runs || []).map((r) => h("tr", {}, h("td", {}, fsTime(r.start)), h("td", { class: r.exit === 0 ? "ok" : "bad" }, String(r.exit)), h("td", {}, h("pre", { class: "mini" }, r.output || "—"))));
+  const ok = d.status === "healthy" ? "ok" : d.status === "unhealthy" ? "bad" : "muted";
+  section(h("h3", {}, `${unit} · ${t("hTab")}`),
+    h("p", {}, h("span", { class: `badge ${ok}` }, t("hStatus")[d.status] || d.status), d.streak ? ` ${t("hStreak")(d.streak)}` : "", !d.running ? ` · ${t("hNotRunning")}` : ""),
+    cfg.test ? h("p", { class: "muted" }, `${t("hEvery")} ${cfg.interval}s · ${t("hTimeout")} ${cfg.timeout}s · ${cfg.retries} ${t("hRetries")} · ${t("hStartPeriod")} ${cfg.start_period || 0}s`) : null,
+    cfg.test ? h("p", {}, h("b", {}, `${t("hCommand")}: `), h("code", {}, cfg.test)) : null,
+    cfg.test ? h("p", { class: "muted" }, `${t("hOnFail")}: ${cfg.on_failure || t("hOnFailNone")}`) : null,
+    cfg.test ? h("div", { class: "row" }, rodar) : null, msg,
+    linhas.length ? h("div", {}, h("h4", {}, t("hRuns")), h("table", { class: "hist" }, h("tr", {}, h("th", {}, t("hStartedAt")), h("th", {}, t("hExit")), h("th", {}, t("hOutput"))), ...linhas))
+      : h("p", { class: "muted" }, t("hNoRuns")));
+}
+
+// What really runs: the container as Podman has it, variables masked until asked for.
+async function showRuntime(unit, reveal = false) {
+  section(h("p", { class: "muted" }, t("checking")));
+  let d;
+  try { d = await api(`/api/runtime?unit=${encodeURIComponent(unit)}${reveal ? "&reveal=1" : ""}`); }
+  catch (e) { return section(h("p", { class: "bad" }, e.status === 404 ? t("hNotRunning") : String(e.message))); }
+  const linha = (rotulo, v) => (v === null || v === undefined || v === "" ? null : h("tr", {}, h("th", {}, rotulo), h("td", {}, String(v))));
+  const L = d.limits || {};
+  section(h("h3", {}, `${unit} · ${t("rtTab")}`), h("p", { class: "muted" }, t("rtIntro")),
+    h("table", { class: "hist kv" },
+      linha(t("rtImage"), d.image), linha(t("rtDigest"), d.digest), linha(t("rtCommand"), d.command), linha(t("rtUser"), d.user), linha(t("rtWorkdir"), d.workdir),
+      linha(t("rtCreated"), fsTime(d.created)), linha(t("rtStarted"), fsTime(d.started)), linha(t("rtRestarts"), d.restarts)),
+    h("h4", {}, t("rtNetworks")),
+    d.networks.length ? h("table", { class: "hist" }, ...d.networks.map((n) => h("tr", {}, h("td", {}, n.name), h("td", {}, n.ip || "—"), h("td", { class: "muted" }, (n.aliases || []).join(", ")))))
+      : h("p", { class: "muted" }, "—"),
+    h("h4", {}, t("rtPorts")),
+    d.ports.length ? h("table", { class: "hist" }, ...d.ports.map((p) => h("tr", {}, h("td", {}, `${p.host_ip}:${p.host}`), h("td", {}, `→ ${p.container}/${p.proto}`)))) : h("p", { class: "muted" }, t("rtNoPorts")),
+    h("h4", {}, t("rtMounts")),
+    d.mounts.length ? h("table", { class: "hist" }, ...d.mounts.map((m) => h("tr", {}, h("td", {}, m.source || "—"), h("td", {}, `→ ${m.dest}`), h("td", { class: m.rw ? "" : "muted" }, m.rw ? t("rtRW") : t("rtRO"))))) : h("p", { class: "muted" }, "—"),
+    h("h4", {}, t("rtLimits")),
+    h("table", { class: "hist kv" },
+      linha(t("rtReadOnly"), L.read_only ? "✓" : null), linha(t("rtPids"), L.pids), linha(t("rtMemory"), L.memory ? bytes(L.memory) : null),
+      linha(t("rtCapsDrop"), (L.cap_drop || []).join(", ")), linha(t("rtCapsAdd"), (L.cap_add || []).join(", ")), linha(t("rtSecurity"), (L.security || []).join(", "))),
+    h("h4", {}, t("rtEnv")), h("p", { class: "muted" }, t("rtRevealNote")),
+    d.env.length ? h("table", { class: "hist" }, ...d.env.map((e) => h("tr", {}, h("td", {}, e.key), h("td", { class: "muted" }, e.value), h("td", {}, e.secret ? h("span", { class: "badge warn" }, t("rtSecret")) : null)))) : h("p", { class: "muted" }, "—"),
+    h("button", { type: "button", class: "ghost", onclick: () => showRuntime(unit, !d.revealed) }, d.revealed ? t("rtHide") : t("rtShow")));
 }
 
 async function unitVerb(unit, verb) {
