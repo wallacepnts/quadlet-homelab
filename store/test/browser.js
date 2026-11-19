@@ -167,6 +167,13 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
     await ev("(() => { const c = [...document.querySelectorAll('.card')].find((x) => x.querySelector('.get.got') && /Actual/.test(x.textContent)); c.click(); })()"); await esperar(2500);
     console.log("acoes:", await ev("[...document.querySelectorAll('#p-actions button, #p-actions a')].map((b) => b.textContent.trim()).join(' | ')"));
     await foto("97-loja-instalado");
+    console.log("cartao:", await ev("document.getElementById('p-actions').textContent.replace(/\\s+/g, ' ').slice(-170)"));
+    await ev("document.getElementById('p-close').click()"); await esperar(300);
+    await ev("(() => { const c = [...document.querySelectorAll('.card')].find((x) => /Vaultwarden|Immich/i.test(x.textContent)); c.click(); })()"); await esperar(3500);
+    console.log("cartao2:", await ev("document.getElementById('p-name').textContent + ' | ' + document.getElementById('p-actions').textContent.replace(/\\s+/g, ' ').slice(-190)"));
+    await foto("97-loja-requer");
+    await ev("document.getElementById('p-close').click()"); await esperar(300);
+    await ev("(() => { const c = [...document.querySelectorAll('.card')].find((x) => /Actual/.test(x.textContent)); c.click(); })()"); await esperar(1500);
     await ev("document.querySelector('#p-actions .split-arrow').click()"); await esperar(400);
     await ev("[...document.querySelectorAll('.split-menu button')].find((b) => /^Nova inst/.test(b.textContent)).click()"); await esperar(500);
     console.log("instancia:", await ev("(() => { const i = document.querySelector('#p-section input'); return i.value + ' | ' + document.querySelector('#p-section .help').textContent; })()"));
