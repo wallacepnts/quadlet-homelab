@@ -1091,6 +1091,7 @@ function openPanel(id) {
   $("p-out").hidden = true;
   $("p-log").hidden = true;
   $("p-log").open = false;
+  $("p-progress").hidden = true;             // the previous app's steps must not show on this one
   setStatus(null);
   $("p-tech").open = false;
   $("p-clean").hidden = true;
@@ -2619,6 +2620,8 @@ async function follow(start) {
   out(`${t("working")}\n`);
   const prog = jobProgress($("p-progress"), { onmode: (m) => { $("p-log").open = m !== "terminal"; } });
   prog.reset();
+  const dono = S.current;                    // the panel may be closed or reopened on another app meanwhile
+  const aqui = () => S.current === dono;
   try {
     const { job } = await start();
     $("p-log").open = prog.mode() !== "terminal";   // the log is open while it runs, unless the terminal view already shows it
@@ -2627,13 +2630,15 @@ async function follow(start) {
       await new Promise((r) => setTimeout(r, 700));
       st = await api(`/api/job/${job}?from=${next}`);
       next = st.next;
-      if (st.output) { out(st.output, true); prog.feed(st.output); }
+      if (st.output && aqui()) { out(st.output, true); prog.feed(st.output); }
     } while (st.rc === null);
+    if (!aqui()) return;
     prog.finish(st.rc);
     out(`\n${st.rc === 0 ? t("done") : `${t("failed")} (${st.rc}).`}\n`, true);
     setStatus(st.rc === 0 ? "ok" : "bad", st.rc === 0 ? t("done") : `${t("failed")} (${st.rc})`);
     if (st.rc !== 0) $("p-log").open = true;
   } catch (e) {
+    if (!aqui()) return;
     prog.finish(1);
     out(e.status === 409 ? t("busy") : String(e.message), true);
     setStatus("bad", e.status === 409 ? t("busy") : String(e.message));
