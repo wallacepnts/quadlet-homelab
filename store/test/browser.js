@@ -167,6 +167,7 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
     await ev("(() => { const c = [...document.querySelectorAll('.card')].find((x) => x.querySelector('.get.got') && /Actual/.test(x.textContent)); c.click(); })()"); await esperar(2500);
     console.log("acoes:", await ev("[...document.querySelectorAll('#p-actions button, #p-actions a')].map((b) => b.textContent.trim()).join(' | ')"));
     await foto("97-loja-instalado");
+    console.log("alinhamento:", await ev("(() => { const k = [...document.querySelectorAll('#p-actions .facts .kv')]; return k.map((r) => getComputedStyle(r.lastChild).textAlign + ':' + Math.round(r.lastChild.getBoundingClientRect().right)).join(' '); })()"));
     console.log("cartao:", await ev("document.getElementById('p-actions').textContent.replace(/\\s+/g, ' ').slice(-170)"));
     await ev("document.getElementById('p-close').click()"); await esperar(300);
     await ev("(() => { const c = [...document.querySelectorAll('.card')].find((x) => /Vaultwarden|Immich/i.test(x.textContent)); c.click(); })()"); await esperar(3500);

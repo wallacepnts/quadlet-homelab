@@ -633,6 +633,7 @@ dialog.install { width: min(640px, 94vw); }
 #panel.store .facts { margin-top: .6rem; }
 .facts .kv { display: flex; justify-content: space-between; gap: .8rem; padding: .5rem 0; border-top: 1px solid var(--line); font-size: .85rem; }
 .facts .kv span:first-child { color: var(--muted); }
+.facts .kv span:last-child { text-align: right; min-width: 0; overflow-wrap: anywhere; }       /* a value that wraps (the architectures) stays against the right edge */
 #panel.store .shots img { height: 12rem; }
 @media (max-width: 720px) { #panel.store[open] { display: block; } #panel.store > #p-actions { position: static; margin: .8rem 0; } }
 
