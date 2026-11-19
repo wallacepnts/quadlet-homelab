@@ -12,6 +12,7 @@
   "author": "actualbudget",
   "source": "https://github.com/actualbudget/actual",
   "docs": "https://actualbudget.org",
+  "architectures": ["amd64", "arm64"],
   "category": "Personal",
   "requires_https": true,
   "units": { "actual": { "upstream": "actualbudget/actual" } }

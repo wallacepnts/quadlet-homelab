@@ -12,6 +12,7 @@
   "author": "almeidapaulopt",
   "source": "https://github.com/almeidapaulopt/tsdproxy",
   "docs": "https://almeidapaulopt.github.io/tsdproxy/",
+  "architectures": ["amd64", "arm64", "arm"],
   "category": "Network & Security",
   "secrets": {
     "authkey": "manual a REUSABLE auth key from https://login.tailscale.com/admin/settings/keys (one-off does not work: tsdproxy registers a node per proxy, and the check below spends one use)"

@@ -9,5 +9,6 @@
   "author": "samapriya",
   "source": "https://github.com/samapriya/mdrop",
   "docs": "https://mdrop.remotelab.dev",
+  "architectures": ["amd64", "arm64"],
   "category": "Tools"
 }

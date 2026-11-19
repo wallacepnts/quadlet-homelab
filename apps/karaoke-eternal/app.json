@@ -12,6 +12,7 @@
   "author": "bhj",
   "source": "https://github.com/bhj/KaraokeEternal",
   "docs": "https://www.karaoke-eternal.com/docs/",
+  "architectures": ["amd64", "arm64"],
   "category": "Media",
   "units": { "karaoke-eternal": { "upstream": "bhj/KaraokeEternal" } }
 }

@@ -9,6 +9,7 @@
   "author": "owncloud",
   "source": "https://github.com/owncloud/ocis",
   "docs": "https://owncloud.com",
+  "architectures": ["amd64", "arm64"],
   "category": "Files",
   "secrets": { "owncloud-admin-password": "rand-base64 18" },
   "login": { "user": "admin", "password": "owncloud-admin-password" },

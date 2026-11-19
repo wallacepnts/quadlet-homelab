@@ -12,6 +12,7 @@
   "author": "ZimengXiong",
   "source": "https://github.com/ZimengXiong/ExcaliDash",
   "docs": "https://github.com/ZimengXiong/ExcaliDash#readme",
+  "architectures": ["amd64", "arm64"],
   "category": "Productivity",
   "secrets": { "excalidash-jwt-secret": "rand-hex 32", "excalidash-csrf-secret": "rand-hex 32" },
   "units": {

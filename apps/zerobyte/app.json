@@ -9,6 +9,7 @@
   "author": "nicotsx",
   "source": "https://github.com/nicotsx/zerobyte",
   "docs": "https://zerobyte.app",
+  "architectures": ["amd64", "arm64"],
   "category": "Monitoring",
   "secrets": { "zerobyte-app-secret": "rand-hex 32" },
   "config": {

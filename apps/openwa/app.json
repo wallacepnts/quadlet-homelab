@@ -12,6 +12,7 @@
   "author": "rmyndharis",
   "source": "https://github.com/rmyndharis/openwa",
   "docs": "https://www.open-wa.org",
+  "architectures": ["amd64", "arm64"],
   "category": "Automation",
   "secrets": { "openwa-master-key": "rand-urlsafe 48", "openwa-key-pepper": "rand-hex 32" }
 }

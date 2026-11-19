@@ -9,6 +9,7 @@
   "author": "usememos",
   "source": "https://github.com/usememos/memos",
   "docs": "https://www.usememos.com/docs",
+  "architectures": ["amd64", "arm64", "arm"],
   "category": "Productivity",
   "units": { "memos": { "upstream": "usememos/memos" } }
 }

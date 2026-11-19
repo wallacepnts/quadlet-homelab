@@ -12,6 +12,7 @@
   "author": "jellyfin",
   "source": "https://github.com/jellyfin/jellyfin",
   "docs": "https://jellyfin.org/docs",
+  "architectures": ["amd64", "arm64"],
   "category": "Media",
   "vars": { "MEDIA_DATA_DIR": "~/data" },
   "ask": {

@@ -9,6 +9,7 @@
   "author": "n8n-io",
   "source": "https://github.com/n8n-io/n8n",
   "docs": "https://n8n.io",
+  "architectures": ["amd64", "arm64"],
   "category": "Automation",
   "secrets": { "n8n-encryption-key": "rand-hex 32" },
   "units": { "n8n": { "upstream": "n8n-io/n8n" } }

@@ -12,6 +12,7 @@
   "author": "blakeblackshear",
   "source": "https://github.com/blakeblackshear/frigate",
   "docs": "https://frigate.video",
+  "architectures": ["amd64", "arm64"],
   "category": "Home",
   "vars": { "FRIGATE_MEDIA_DIR": "~/frigate-media" },
   "ask": {

@@ -9,5 +9,6 @@
   "author": "alexta69",
   "source": "https://github.com/alexta69/metube",
   "docs": "https://github.com/alexta69/metube#readme",
+  "architectures": ["amd64", "arm64"],
   "category": "Downloads"
 }

@@ -9,6 +9,7 @@
   "author": "louislam",
   "source": "https://github.com/louislam/uptime-kuma",
   "docs": "https://uptime.kuma.pet",
+  "architectures": ["amd64", "arm64", "arm"],
   "category": "Monitoring",
   "widgets": [{ "type": "uptime-kuma" }],
   "icon": { "bg": "#12352a" }

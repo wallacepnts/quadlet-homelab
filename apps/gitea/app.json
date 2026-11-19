@@ -12,6 +12,7 @@
   "author": "go-gitea",
   "source": "https://github.com/go-gitea/gitea",
   "docs": "https://gitea.com",
+  "architectures": ["amd64", "arm64", "riscv64"],
   "category": "Tools",
   "secrets": { "gitea-secret-key": "rand-base64 32", "gitea-internal-token": "rand-base64 48" },
   "units": { "gitea": { "upstream": "go-gitea/gitea" } }

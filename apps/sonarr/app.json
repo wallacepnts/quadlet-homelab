@@ -9,6 +9,7 @@
   "author": "Sonarr",
   "source": "https://github.com/Sonarr/Sonarr",
   "docs": "https://wiki.servarr.com/sonarr",
+  "architectures": ["amd64", "arm64"],
   "category": "Downloads",
   "config": { ".env.example": "%h/.config/containers/env/sonarr.env" },
   "vars": { "MEDIA_DATA_DIR": "~/data" },

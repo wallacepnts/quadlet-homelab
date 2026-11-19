@@ -9,6 +9,7 @@
   "author": "JMBeresford",
   "source": "https://github.com/JMBeresford/retrom",
   "docs": "https://github.com/JMBeresford/retrom/wiki",
+  "architectures": ["amd64", "arm64"],
   "category": "Media",
   "backup": { "mode": "stop" },
   "units": { "retrom": { "upstream": "JMBeresford/retrom" } }

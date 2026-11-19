@@ -9,6 +9,7 @@
   "author": "Kozea",
   "source": "https://github.com/Kozea/Radicale",
   "docs": "https://radicale.org/v3.html",
+  "architectures": ["amd64", "arm64"],
   "category": "Productivity",
   "config": {
     "config/config": "%h/.config/containers/volumes/radicale/config/config",

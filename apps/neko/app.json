@@ -12,6 +12,7 @@
   "author": "m1k1o",
   "source": "https://github.com/m1k1o/neko",
   "docs": "https://neko.m1k1o.net/",
+  "architectures": ["amd64", "arm64"],
   "category": "Tools",
   "secrets": { "neko-user-password": "rand-alnum 20", "neko-admin-password": "rand-alnum 20" },
   "login": { "user": "neko", "password": "neko-user-password" }

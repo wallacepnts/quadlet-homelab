@@ -12,6 +12,7 @@
   "author": "qdm12",
   "source": "https://github.com/qdm12/gluetun",
   "docs": "https://github.com/qdm12/gluetun-wiki",
+  "architectures": ["amd64", "arm64", "arm", "386", "ppc64le"],
   "category": "Network & Security",
   "config": { ".env.example": "%h/.config/containers/env/gluetun.env" },
   "units": { "gluetun": { "upstream": "passteque/gluetun", "image": "v{version}" } }

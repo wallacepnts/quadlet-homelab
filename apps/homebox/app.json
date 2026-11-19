@@ -12,6 +12,7 @@
   "author": "sysadminsmedia",
   "source": "https://github.com/sysadminsmedia/homebox",
   "docs": "https://homebox.software",
+  "architectures": ["amd64", "arm64"],
   "category": "Personal",
   "secrets": { "homebox-api-key-pepper": "rand-base64 48" }
 }

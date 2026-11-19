@@ -12,6 +12,7 @@
   "author": "henrygd",
   "source": "https://github.com/henrygd/beszel",
   "docs": "https://beszel.dev",
+  "architectures": ["amd64", "arm64", "arm"],
   "category": "Monitoring",
   "secrets": {
     "beszel-agent-key": "manual the SSH public key Beszel shows when adding the system",

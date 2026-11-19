@@ -9,6 +9,7 @@
   "author": "karakeep-app",
   "source": "https://github.com/karakeep-app/karakeep",
   "docs": "https://karakeep.app",
+  "architectures": ["amd64", "arm64"],
   "category": "Productivity",
   "secrets": { "karakeep-meili-key": "rand-alnum 48", "karakeep-nextauth-secret": "rand-base64 36" },
   "units": {

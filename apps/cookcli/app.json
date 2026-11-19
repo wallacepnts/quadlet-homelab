@@ -12,6 +12,7 @@
   "author": "cooklang",
   "source": "https://github.com/cooklang/cookcli",
   "docs": "https://demo.cooklang.org",
+  "architectures": ["amd64", "arm64"],
   "category": "Productivity",
   "config": {
     "aisle.conf.example": "%h/.config/containers/volumes/cookcli/recipes/config/aisle.conf",

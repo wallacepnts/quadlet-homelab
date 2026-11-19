@@ -12,6 +12,7 @@
   "author": "deluge-torrent",
   "source": "https://github.com/deluge-torrent/deluge",
   "docs": "https://deluge-torrent.org",
+  "architectures": ["amd64", "arm64"],
   "category": "Downloads",
   "config": { ".env.example": "%h/.config/containers/env/deluge.env" },
   "vars": { "MEDIA_DATA_DIR": "~/data" },

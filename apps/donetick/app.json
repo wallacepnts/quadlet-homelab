@@ -9,6 +9,7 @@
   "author": "donetick",
   "source": "https://github.com/donetick/donetick",
   "docs": "https://donetick.com",
+  "architectures": ["amd64", "arm64", "arm"],
   "category": "Personal",
   "config": { "selfhosted.yaml.example": "%h/.config/containers/volumes/donetick/config/selfhosted.yaml" },
   "units": { "donetick": { "image": "v{version}" } }

@@ -9,6 +9,7 @@
   "author": "kittendevv",
   "source": "https://github.com/kittendevv/invio",
   "docs": "https://github.com/kittendevv/Invio#readme",
+  "architectures": ["amd64", "arm64"],
   "category": "Personal",
   "secrets": { "invio-admin-pass": "rand-base64 18", "invio-jwt-secret": "rand-hex 32" },
   "login": { "user": "admin", "password": "invio-admin-pass" },

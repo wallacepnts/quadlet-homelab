@@ -9,6 +9,7 @@
   "author": "wger-project",
   "source": "https://github.com/wger-project/wger",
   "docs": "https://wger.de",
+  "architectures": ["amd64", "arm64"],
   "category": "Personal",
   "secrets": { "wger-secret-key": "rand-hex 32" },
   "units": { "wger": { "upstream": "wger-project/wger", "image": "{version:2}" } }

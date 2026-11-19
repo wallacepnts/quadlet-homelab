@@ -12,5 +12,6 @@
   "author": "Dispatcharr",
   "source": "https://github.com/Dispatcharr/Dispatcharr",
   "docs": "https://dispatcharr.github.io/Dispatcharr-Docs",
+  "architectures": ["amd64", "arm64"],
   "category": "Media"
 }

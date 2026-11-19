@@ -12,6 +12,7 @@
   "author": "dani-garcia",
   "source": "https://github.com/dani-garcia/vaultwarden",
   "docs": "https://github.com/dani-garcia/vaultwarden/wiki",
+  "architectures": ["amd64", "arm64", "arm"],
   "category": "Network & Security",
   "requires_https": true,
   "secrets": {

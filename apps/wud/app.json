@@ -12,6 +12,7 @@
   "author": "getwud",
   "source": "https://github.com/getwud/wud",
   "docs": "https://getwud.github.io/wud/",
+  "architectures": ["amd64", "arm64"],
   "category": "Monitoring",
   "secrets": { "wud-admin-password": "rand-alnum 20" },
   "login": { "user": "admin", "password": "wud-admin-password" }

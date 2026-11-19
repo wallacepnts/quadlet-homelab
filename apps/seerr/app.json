@@ -12,6 +12,7 @@
   "author": "seerr-team",
   "source": "https://github.com/seerr-team/seerr",
   "docs": "https://docs.seerr.dev",
+  "architectures": ["amd64", "arm64"],
   "category": "Media",
   "config": { ".env.example": "%h/.config/containers/env/seerr.env" },
   "units": { "seerr": { "image": "v{version}" } }

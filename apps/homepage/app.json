@@ -12,6 +12,7 @@
   "author": "gethomepage",
   "source": "https://github.com/gethomepage/homepage",
   "docs": "https://gethomepage.dev",
+  "architectures": ["amd64", "arm64"],
   "config": {
     "config/docker.yaml": "%h/.config/containers/volumes/homepage/config/docker.yaml",
     "config/settings.yaml": "%h/.config/containers/volumes/homepage/config/settings.yaml",

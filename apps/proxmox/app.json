@@ -12,6 +12,7 @@
   "author": "dockur",
   "source": "https://github.com/dockur/proxmox",
   "docs": "https://pve.proxmox.com/pve-docs/",
+  "architectures": ["amd64", "arm64"],
   "category": "Virtual Machines",
   "secrets": { "proxmox-root-password": "rand-alnum 20" },
   "login": { "user": "root", "password": "proxmox-root-password" },

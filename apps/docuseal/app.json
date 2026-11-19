@@ -12,6 +12,7 @@
   "author": "docusealco",
   "source": "https://github.com/docusealco/docuseal",
   "docs": "https://www.docuseal.com/docs",
+  "architectures": ["amd64", "arm64"],
   "category": "Productivity",
   "units": { "docuseal": { "upstream": "docusealco/docuseal" } }
 }

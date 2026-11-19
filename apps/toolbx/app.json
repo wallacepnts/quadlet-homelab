@@ -12,6 +12,7 @@
   "author": "containers",
   "source": "https://github.com/containers/toolbox",
   "docs": "https://containertoolbx.org/",
+  "architectures": ["amd64"],
   "no_gui": true,
   "units": {
     "toolbx-arch": { "upstream": "-" },

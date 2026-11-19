@@ -9,6 +9,7 @@
   "author": "pansalut",
   "source": "https://github.com/pansalut/koffan",
   "docs": "https://github.com/PanSalut/Koffan#readme",
+  "architectures": ["amd64", "arm64"],
   "category": "Home",
   "secrets": { "koffan-password": "rand-base64 18" },
   "login": { "password": "koffan-password" },

@@ -12,6 +12,7 @@
   "author": "axllent",
   "source": "https://github.com/axllent/mailpit",
   "docs": "https://mailpit.axllent.org/docs/",
+  "architectures": ["amd64", "arm64", "386"],
   "category": "Tools",
   "secrets": { "mailpit-ui-auth": "shell printf 'admin:%s' \"$(openssl rand -hex 12)\"" },
   "login": { "credentials": "mailpit-ui-auth" },

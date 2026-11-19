@@ -12,5 +12,6 @@
   "author": "denho",
   "source": "https://github.com/denho/faved",
   "docs": "https://faved.to/",
+  "architectures": ["amd64", "arm64"],
   "category": "Personal"
 }

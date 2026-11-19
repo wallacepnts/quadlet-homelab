@@ -12,6 +12,7 @@
   "author": "juanfont",
   "source": "https://github.com/juanfont/headscale",
   "docs": "https://headscale.net/",
+  "architectures": ["amd64", "arm64"],
   "category": "Network & Security",
   "no_gui": true,
   "config": { "config/config.yaml": "%h/.config/containers/volumes/headscale/config/config.yaml" },

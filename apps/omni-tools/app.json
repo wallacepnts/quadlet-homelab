@@ -12,5 +12,6 @@
   "author": "iib0011",
   "source": "https://github.com/iib0011/omni-tools",
   "docs": "https://omnitools.app",
+  "architectures": ["amd64", "arm64"],
   "category": "Tools"
 }

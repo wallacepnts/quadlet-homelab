@@ -12,6 +12,7 @@
   "author": "grishy",
   "source": "https://github.com/grishy/any-sync-bundle",
   "docs": "https://github.com/grishy/any-sync-bundle#readme",
+  "architectures": ["amd64", "arm64"],
   "category": "Productivity",
   "no_gui": true,
   "backup": { "mode": "stop" }

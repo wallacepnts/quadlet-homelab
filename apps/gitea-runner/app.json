@@ -12,6 +12,7 @@
   "author": "gitea",
   "source": "https://gitea.com/gitea/act_runner",
   "docs": "https://docs.gitea.com/usage/actions/overview",
+  "architectures": ["amd64", "arm64", "riscv64", "s390x"],
   "no_gui": true,
   "secrets": { "gitea-runner-token": "manual the runner registration token from Gitea" },
   "config": { "config.yaml": "%h/.config/containers/volumes/gitea-runner/data/config.yaml" },

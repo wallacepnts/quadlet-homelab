@@ -12,5 +12,6 @@
   "author": "traccar",
   "source": "https://github.com/traccar/traccar",
   "docs": "https://www.traccar.org",
+  "architectures": ["amd64", "arm64"],
   "category": "Home"
 }

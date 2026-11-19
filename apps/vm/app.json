@@ -12,6 +12,7 @@
   "author": "dockur",
   "source": "https://github.com/dockur/windows",
   "docs": "https://github.com/dockur/windows#readme",
+  "architectures": ["amd64"],
   "category": "Virtual Machines",
   "secrets": {
     "vm-windows-password": "rand-alnum 20",

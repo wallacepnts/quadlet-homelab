@@ -12,6 +12,7 @@
   "author": "Nulide",
   "source": "https://gitlab.com/Nulide/findmydeviceserver",
   "docs": "https://fmd-foss.org/docs/fmd-server/overview",
+  "architectures": ["amd64", "arm64", "arm"],
   "category": "Home",
   "secrets": { "fmd-server-registration-token": "rand-urlsafe 32" },
   "login": { "password": "fmd-server-registration-token" },

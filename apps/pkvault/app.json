@@ -12,6 +12,7 @@
   "author": "Chnapy",
   "source": "https://github.com/Chnapy/PKVault",
   "docs": "https://github.com/Chnapy/PKVault/blob/main/docs/functional/en/README.md",
+  "architectures": ["amd64", "arm64"],
   "category": "Personal",
   "units": { "pkvault": { "upstream": "Chnapy/PKVault" } }
 }

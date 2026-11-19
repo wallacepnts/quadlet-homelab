@@ -12,5 +12,6 @@
   "author": "syncthing",
   "source": "https://github.com/syncthing/syncthing",
   "docs": "https://syncthing.net/",
+  "architectures": ["amd64", "arm64", "arm"],
   "category": "Files"
 }

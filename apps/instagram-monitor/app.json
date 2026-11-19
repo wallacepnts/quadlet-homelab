@@ -11,6 +11,7 @@
   },
   "author": "misiektoja",
   "source": "https://github.com/misiektoja/instagram_monitor",
+  "architectures": ["amd64", "arm64"],
   "category": "Monitoring",
   "config": {
     "instagram_monitor.conf": "%h/.config/containers/volumes/instagram-monitor/data/instagram_monitor.conf"

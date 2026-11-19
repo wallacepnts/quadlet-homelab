@@ -9,6 +9,7 @@
   "author": "Stirling-Tools",
   "source": "https://github.com/Stirling-Tools/Stirling-PDF",
   "docs": "https://stirling.com",
+  "architectures": ["amd64", "arm64"],
   "category": "Tools",
   "units": { "stirling-pdf": { "upstream": "Stirling-Tools/Stirling-PDF" } }
 }

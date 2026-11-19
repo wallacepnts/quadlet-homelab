@@ -12,6 +12,7 @@
   "author": "navidrome",
   "source": "https://github.com/navidrome/navidrome",
   "docs": "https://www.navidrome.org/docs",
+  "architectures": ["amd64", "arm64", "arm", "riscv64", "386"],
   "category": "Media",
   "config": { ".env.example": "%h/.config/containers/env/navidrome.env" },
   "vars": { "MEDIA_DATA_DIR": "~/data" },

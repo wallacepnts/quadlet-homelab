@@ -12,6 +12,7 @@
   "author": "zabbix",
   "source": "https://github.com/zabbix/zabbix",
   "docs": "https://www.zabbix.com/documentation/current/en/manual/installation/containers",
+  "architectures": ["amd64", "arm64", "riscv64", "ppc64le", "s390x"],
   "category": "Monitoring",
   "secrets": { "zabbix-postgres-password": "rand-hex 24" },
   "units": {

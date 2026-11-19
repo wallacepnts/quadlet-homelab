@@ -9,6 +9,7 @@
   "author": "gtsteffaniak",
   "source": "https://github.com/gtsteffaniak/filebrowser",
   "docs": "https://filebrowserquantum.com/en/docs/",
+  "architectures": ["amd64", "arm64"],
   "category": "Files",
   "secrets": { "filebrowser-admin-password": "rand-alnum 20", "filebrowser-jwt-secret": "rand-hex 32" },
   "config": { "config.yaml.example": "%h/.config/containers/volumes/filebrowser/data/config.yaml" },

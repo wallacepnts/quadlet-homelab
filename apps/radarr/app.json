@@ -9,6 +9,7 @@
   "author": "Radarr",
   "source": "https://github.com/Radarr/Radarr",
   "docs": "https://wiki.servarr.com/radarr",
+  "architectures": ["amd64", "arm64"],
   "category": "Downloads",
   "config": { ".env.example": "%h/.config/containers/env/radarr.env" },
   "vars": { "MEDIA_DATA_DIR": "~/data" },

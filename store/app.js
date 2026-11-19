@@ -1148,7 +1148,7 @@ function renderFacts() {
   if (!a || !caixa || a.installed) return;
   const info = S.info || {}, arq = info.arch || {};
   const ordem = ["amd64", "arm64", "arm", "386"];
-  const roda = (arq.runs || []).map((x) => x.replace(/^linux\//, ""));
+  const roda = (arq.runs || a.architectures || []).map((x) => x.replace(/^linux\//, ""));   // the registry's answer, else what the manifest says
   const todas = [...ordem.filter((x) => roda.includes(x)), ...roda.filter((x) => !ordem.includes(x)).sort()];   // the usual ones first, then the rest
   const principal = a.units.find((u) => u.unit === a.main_unit) || a.units[0];
   const v = principal && tagOf(principal.image), versao = arq.version || (v && v !== "latest" ? v : null);   // the project's latest release, else the tag the unit pins
