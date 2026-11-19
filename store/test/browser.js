@@ -227,6 +227,21 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
     await foto("97-personalizada");
   }
 
+  if (MODO === "aparencia") {
+    // reads only: the Appearance tab of an installed app (nothing is saved)
+    await esperar(2500);
+    await ev("(() => { const t = [...document.querySelectorAll('.tile')].find((x) => /Actual/.test(x.textContent)); t.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 300, clientY: 300 })); })()"); await esperar(400);
+    await ev("[...document.querySelectorAll('#ctx button')].find((b) => /Gerenciar/.test(b.textContent)).click()"); await esperar(1200);
+    await ev("[...document.querySelectorAll('#p-tabs button')].find((b) => b.textContent.trim() === 'Configurar').click()"); await esperar(500);
+    await ev("[...document.querySelectorAll('#p-section button')].find((b) => /^Personalizar/.test(b.textContent)).click()"); await esperar(2500);
+    console.log("abas:", await ev("[...document.querySelectorAll('#c-tabs button')].map((b) => b.textContent).join(' | ')"));
+    await ev("[...document.querySelectorAll('#c-tabs button')].find((b) => b.textContent === 'Aparência').click()"); await esperar(600);
+    await foto("97-aparencia");
+    await ev("[...document.querySelectorAll('#c-tabs button')][1].click()"); await esperar(600);
+    console.log("rede:", await ev("(() => { const s = document.querySelector('#c-body select[aria-label=\"Rede\"]'); return s ? s.value + ' (' + s.options.length + ' redes)' : 'sem seletor'; })()"));
+    await ev("document.getElementById('c-body').scrollTo(0, 0)"); await foto("97-rede");
+  }
+
   if (MODO === "legado") {
     // reads only: the banner of an old media-stack install, and what the new apps look like in the store
     await ate("document.querySelectorAll('.tile').length > 0", 15000); await esperar(2000);

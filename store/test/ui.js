@@ -90,7 +90,7 @@ const rotas = {
     { key: "TZ", value: "UTC", active: true, help: "Time zone", sensitive: false },
     { key: "PORT", value: "8080", active: false, help: "", sensitive: false },
     { key: "API_TOKEN", value: "s3cret", active: true, help: "", sensitive: true }] }] },
-  "/api/custom": { unit: "homebox", file: "~/x/homebox.container.d/50-store.conf", override: false, text: null, base_changed: false,
+  "/api/custom": { unit: "homebox", networks: ["a-net.network", "tsdproxy-net.network"], network_base: "tsdproxy-net.network", network_override: "", file: "~/x/homebox.container.d/50-store.conf", override: false, text: null, base_changed: false,
     base: {}, base_restart: "always", restart: "always", restarts: ["always", "on-failure", "no"], roots: ["~/.config/containers/volumes"],
     caps_ok: ["CHOWN", "KILL", "NET_RAW"], quadlet: true, limits: { memory: false, cpu: false },
     effective: { ports: [{ bind: "", host: 8085, container: 3000, proto: "tcp" }, { raw: "${DNS}:53:53/udp", opaque: true }],
@@ -111,7 +111,7 @@ global.fetch = async (url, opts = {}) => {
 };
 
 const codigo = fs.readFileSync(path.join(__dirname, "..", "app.js"), "utf8");
-const api = new Function(codigo + "; return { S, openPanel, showEnv, current, renderGrid, pollStats, pollHost, openSettings, showLogs, showConsole, termNew, termFeed, termKey, openResources, hintClean, openHistory, setView, openFiles, renderFiles, uploadFiles, jobProgress, stepLabel, instalar, suggestInstanceName, showCustom, pollJobs, pollPerf, iconPlate, renderHome, touchRecent };")();
+const api = new Function(codigo + "; return { S, openPanel, showEnv, current, renderGrid, pollStats, pollHost, openSettings, showLogs, showConsole, termNew, termFeed, termKey, openResources, hintClean, openHistory, setView, openFiles, renderFiles, uploadFiles, jobProgress, stepLabel, instalar, suggestInstanceName, showCustom, openUrl, pollJobs, pollPerf, iconPlate, renderHome, touchRecent };")();
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 let falhas = 0;
 const confere = (cond, msg) => { if (!cond) { falhas++; console.log("FALHOU:", msg); } else console.log("ok   ", msg); };
@@ -341,6 +341,22 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
     confere(p2.config.image === "ghcr.io/o/r:2.9.9", `escolher outra versão vira Image= (${p2.config.image})`);
     $("custom").open = false; rotas["/api/tags"] = { tags: ["1.2.0", "1.1.0"] };
     Object.assign(u0, { image: antes.image, installed_image: antes.inst, templated: antes.templ }); g.installed = antes.installed; }
+
+  // the Appearance tab saves on its own: the title and the Web UI go to /api/look, and nothing of the unit is applied
+  { const hbx = api.S.apps.find((x) => x.id === "homebox");
+    await api.showCustom(hbx); await esperar(100);
+    porTexto($("c-tabs"), "Aparência")[0].listeners.click(); await esperar(20);
+    const rotulo = (r) => [...folhaC.walk()].find((e) => e.attrs && e.attrs["aria-label"] === r);
+    rotulo("Título").value = "Minha caixa"; rotulo("Porta").value = "8443"; rotulo("Protocolo").value = "https";
+    rotas["/api/look"] = { look: { title: "Minha caixa" } };
+    const previaL = rotas["/api/custom/preview"]; rotas["/api/custom/preview"] = { text: null, errors: [], warnings: [], generated: "", changed: false };
+    const antesL = posts.length;
+    porTexto(folhaC, "Salvar e aplicar")[0].listeners.click(); await esperar(200);
+    if (previaL === undefined) delete rotas["/api/custom/preview"]; else rotas["/api/custom/preview"] = previaL;
+    const postLook = posts.slice(antesL).find((x) => x.rota === "/api/look");
+    confere(postLook && postLook.corpo.app === "homebox" && postLook.corpo.title === "Minha caixa" && postLook.corpo.webui.port === "8443" && postLook.corpo.webui.scheme === "https", `Salvar envia o título e a Web UI (${JSON.stringify(postLook && postLook.corpo)})`);
+    confere(!posts.slice(antesL).some((x) => x.rota === "/api/custom/apply") && !$("custom").open, "só a aparência mudou: nada da unit é aplicado, e a tela fecha");
+    delete rotas["/api/look"]; }
 
   // the lightbox
   api.S.apps.find((x) => x.id === "homebox").installed = false;
@@ -1250,6 +1266,30 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   const preI = posts.filter((x) => x.rota === "/api/custom/preview").pop().corpo;
   confere(/:9\.9\.9$/.test(preI.config.image), `com a tag mudada, o payload leva a imagem completa (${preI.config.image})`);
   campos[1].value = "";
+  // the network: a choice among the .network units, untouched it writes nothing
+  const seletorRede = [...formulario().walk()].find((e) => e.tag === "select" && e.attrs["aria-label"] === "Rede");
+  confere(!!seletorRede && seletorRede.value === "tsdproxy-net.network" && pre.config.network === "", "a rede vem escolhida e, sem mexer, não vai no payload");
+  seletorRede.value = "a-net.network";
+  porTexto(folhaC, "Pré-visualizar")[0].listeners.click(); await esperar(100);
+  const preR = posts.filter((x) => x.rota === "/api/custom/preview").pop().corpo;
+  confere(preR.config.network === "a-net.network", `escolhida outra rede, o payload a leva (${preR.config.network})`);
+  seletorRede.value = "tsdproxy-net.network";
+  // the Appearance tab: first, with the title, icon, colour and Web UI; saving sends only the look, and the Open button follows the Web UI
+  const abasC = [...$("c-tabs").walk()].filter((e) => e.tag === "button").map((e) => e.textContent);
+  confere(abasC[0] === "Aparência", `a primeira aba é a Aparência (${abasC})`);
+  porTexto($("c-tabs"), "Aparência")[0].listeners.click(); await esperar(20);
+  const rot = (r) => [...folhaC.walk()].find((e) => e.attrs && e.attrs["aria-label"] === r);
+  confere(!!rot("Título") && !!rot("URL do ícone") && !!rot("Cor de fundo do ícone") && !!rot("Endereço") && !!rot("Porta") && !!rot("Caminho") && !!rot("Protocolo"), "a aba tem título, ícone, cor e Web UI");
+  // back to the unit's tab, with its preview as it was, for what follows
+  porTexto($("c-tabs"), "homebox")[0].listeners.click(); await esperar(20);
+  porTexto(folhaC, "Pré-visualizar")[0].listeners.click(); await esperar(100);
+  { const hbx = api.S.apps.find((x) => x.id === "homebox"); const antesW = { look: hbx.look, web: hbx.web };
+    hbx.web = [{ unit: "homebox", local: "http://srv:1234/", tailnet: null }]; hbx.look = { webui: { scheme: "https", port: 8443, path: "/ui" } };
+    confere(api.openUrl(hbx) === "https://srv:8443/ui", `Abrir segue a Web UI escolhida (${api.openUrl(hbx)})`);
+    hbx.look = { webui: { host: "casa.lan" } };
+    confere(api.openUrl(hbx) === "http://casa.lan:1234/", `o que fica vazio segue o padrão (${api.openUrl(hbx)})`);
+    hbx.look = {}; confere(api.openUrl(hbx) === "http://srv:1234/", "sem Web UI própria, o endereço padrão");
+    Object.assign(hbx, antesW); }
   confere(!/null|undefined/.test(folhaC.textContent), "nenhum 'null' solto na tela");
   confere(/rede local/.test(formulario().textContent) && /PublishPort=/.test(formulario().textContent) && /podman run x/.test(formulario().textContent),
     "a pré-visualização mostra o aviso, o arquivo e o comando gerado");

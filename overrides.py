@@ -365,7 +365,7 @@ def _chave_dup(grupo, item, linha):
             "env": item.get("key")}.get(grupo, linha)
 
 
-def validate_and_render(base, desejado, restart, ctx, propria="", base_limits=None, base_image=""):
+def validate_and_render(base, desejado, restart, ctx, propria="", base_limits=None, base_image="", base_network="", redes=None):
     """(text or None, errors, warnings).
 
     `desejado` is {group: [item]} — the whole list the person wants for each group.
@@ -435,6 +435,15 @@ def validate_and_render(base, desejado, restart, ctx, propria="", base_limits=No
             erros.append("imagem: sem tag nem digest o Podman usa :latest; escreva a versão (a regra 9 não aceita tag flutuante)")
         else:
             linhas.append(("Image", imagem))
+    # The network: one of the networks that exist (a `.network` unit), when it is not the one the unit joins. Quadlet's list key is reset
+    # first, so it replaces the unit's own rather than adding to it.
+    rede = str(desejado.get("network") or "").strip()
+    if rede and rede != (base_network or "").strip():
+        if redes is None or rede not in redes:
+            erros.append(f"rede {rede!r}: use uma das redes que existem ({', '.join(sorted(redes or [])) or 'nenhuma encontrada'})")
+        else:
+            linhas += [("Network", ""), ("Network", rede)]
+            avisos.append("trocar a rede tira o app da rede do tsdproxy, se estava nela: o endereço da tailnet deixa de funcionar")
     if restart is not None and restart != (b_restart or ""):
         if restart not in RESTARTS:
             erros.append(f"reinício {restart!r}: use {', '.join(RESTARTS)}")
@@ -607,6 +616,13 @@ def selftest():
     assert t is None and "imagem" in e[0], e
     t, e, _ = validate_and_render(base, img("ghcr.io/o/r@sha256:" + "a" * 64), None, livre, base_limits=sem, base_image="")
     assert not e and "@sha256:" in t, (e, t)
+    # the network: only one that exists, and only when it differs from the unit's; the list is reset first
+    net = lambda v: {**nada, "network": v}
+    t, e, av = validate_and_render(base, net("casa-net.network"), None, livre, base_limits=sem, base_network="tsdproxy-net.network", redes={"casa-net.network", "tsdproxy-net.network"})
+    assert not e and "Network=\nNetwork=casa-net.network" in t and av, (e, t)
+    assert validate_and_render(base, net("tsdproxy-net.network"), None, livre, base_limits=sem, base_network="tsdproxy-net.network", redes={"tsdproxy-net.network"}) == (None, [], []), "the unit's own network is not a change"
+    t, e, _ = validate_and_render(base, net("naoexiste.network"), None, livre, base_limits=sem, base_network="x.network", redes={"x.network"})
+    assert t is None and "rede" in e[0], e
     # where the controllers are not delegated, saving a limit is refused with the reason, and a form with none is untouched
     t, e, _ = validate_and_render(base, quer(memory="512m"), None, ctx, base_limits=sem)
     assert t is None and "não delega o controlador memory" in e[0], e

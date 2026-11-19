@@ -1,6 +1,6 @@
 {
   "$schema": "../app-schema.json",
-  "title": "Copyparty",
+  "title": "CopyParty",
   "short_desc": {
     "en": "A file server you can upload to from any device.",
     "pt": "Um servidor de arquivos que aceita envios de qualquer aparelho."

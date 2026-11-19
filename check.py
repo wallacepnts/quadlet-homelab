@@ -884,7 +884,7 @@ def check_counts(folders):
     becomes a lie, and the next person to add a service does not think to look.
     Both languages carry the same two claims, so both are checked.
     """
-    conts = sorted(ROOT.glob("apps/*/*.container"))
+    conts = sorted(f for f in ROOT.glob("apps/*/*.container") if not instances.is_instance(f.parent))     # an instance is a copy, not a unit of the repository
     notify = [u for u in conts if "Notify=healthy" in u.read_text()]
     esperado = {
         "README.md": [

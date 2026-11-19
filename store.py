@@ -41,6 +41,7 @@ import re
 import secrets
 import signal
 import shutil
+import socket
 import subprocess
 import sys
 import tempfile
@@ -201,7 +202,167 @@ def qh_env(lang):
 def catalog(lang="en"):
     r = subprocess.run(qh("--catalog"), capture_output=True, text=True,
                        env=qh_env(lang), cwd=ROOT, timeout=120)
-    return json.loads(r.stdout)
+    return apply_look(json.loads(r.stdout))
+
+
+# -- how an app looks: its name, icon, icon colour and the address "Open" goes to ------------------------------------
+# Kept beside the panel's own settings (store-apps.json, icons/), so a reinstall or a repository update never loses it.
+ICON_MAX = 1024 * 1024
+ICON_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".webp": "image/webp", ".gif": "image/gif", ".svg": "image/svg+xml"}
+HEX_COLOR = re.compile(r"^#[0-9a-fA-F]{6}$")
+HOST_NAME = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9.-]{0,251}[A-Za-z0-9])?$")
+URL_PATH = re.compile(r"^/[A-Za-z0-9._~!$&'()*+,;=:@%/-]{0,199}$")
+SVG_BAD = re.compile(r"(?is)<\s*(script|foreignobject|iframe|embed|object)|\son[a-z]+\s*=|javascript:|<!entity")
+
+
+def look_file():
+    return ui_dir() / "store-apps.json"
+
+
+def look_load():
+    try:
+        d = json.loads(look_file().read_text())
+    except (OSError, ValueError):
+        return {}
+    return d if isinstance(d, dict) else {}
+
+
+def look_icon(app):
+    return next((ui_dir() / "icons" / f"{app}{e}" for e in ICON_TYPES if (ui_dir() / "icons" / f"{app}{e}").is_file()), None)
+
+
+def icon_kind(dados):
+    """The extension of an icon by its bytes (never by what the sender claims), or None. An SVG must carry no script."""
+    if dados.startswith(b"\x89PNG\r\n\x1a\n"):
+        return ".png"
+    if dados.startswith(b"\xff\xd8\xff"):
+        return ".jpg"
+    if dados[:4] == b"RIFF" and dados[8:12] == b"WEBP":
+        return ".webp"
+    if dados[:6] in (b"GIF87a", b"GIF89a"):
+        return ".gif"
+    try:
+        txt = dados.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+    if "<svg" in txt[:4096].lower() and not SVG_BAD.search(txt):
+        return ".svg"
+    return None
+
+
+def look_clean(d):
+    """(what is kept of a look, errors). An empty value means "back to the default" and is dropped."""
+    ok, erros = {}, []
+    titulo = d.get("title")
+    if titulo is not None:
+        titulo = str(titulo).strip()
+        if len(titulo) > 60 or "\n" in titulo:
+            erros.append("title: up to 60 characters, one line")
+        elif titulo:
+            ok["title"] = titulo
+    cor = d.get("icon_bg")
+    if cor is not None:
+        if cor and not HEX_COLOR.match(str(cor)):
+            erros.append("icon_bg: a colour like #1a73e8")
+        elif cor:
+            ok["icon_bg"] = str(cor).lower()
+    w = d.get("webui")
+    if w:
+        if not isinstance(w, dict):
+            erros.append("webui")
+        else:
+            esquema, host, porta, caminho = (str(w.get(k) or "").strip() for k in ("scheme", "host", "port", "path"))
+            novo = {}
+            if esquema and esquema not in ("http", "https"):
+                erros.append("webui: scheme is http or https")
+            elif esquema:
+                novo["scheme"] = esquema
+            if host and not HOST_NAME.match(host):
+                erros.append("webui: the host is a name or an address, without a path")
+            elif host:
+                novo["host"] = host
+            if porta and not (porta.isdigit() and 1 <= int(porta) <= 65535):
+                erros.append("webui: the port is a number from 1 to 65535")
+            elif porta:
+                novo["port"] = int(porta)
+            if caminho and not URL_PATH.match(caminho):
+                erros.append("webui: the path starts with / and has no spaces")
+            elif caminho and caminho != "/":
+                novo["path"] = caminho
+            if novo:
+                ok["webui"] = novo
+    return ok, erros
+
+
+def look_save(app, d):
+    """Writes the look of `app` (title, icon_bg, webui); the icon has its own calls. Returns the errors."""
+    ok, erros = look_clean(d)
+    if erros:
+        return erros
+    todos = look_load()
+    atual = {k: v for k, v in todos.get(app, {}).items() if k not in ("title", "icon_bg", "webui")}
+    atual.update(ok)
+    if atual:
+        todos[app] = atual
+    else:
+        todos.pop(app, None)
+    ui_dir().mkdir(parents=True, exist_ok=True)
+    look_file().write_text(json.dumps(todos, indent=2) + "\n")
+    return []
+
+
+def look_set_icon(app, dados):
+    """Saves the icon of `app` (an empty body removes it). Returns an error, or None."""
+    for e in ICON_TYPES:
+        (ui_dir() / "icons" / f"{app}{e}").unlink(missing_ok=True)
+    if not dados:
+        return None
+    tipo = icon_kind(dados)
+    if not tipo:
+        return "not a PNG, JPEG, WebP, GIF or SVG image (an SVG with a script is refused)"
+    (ui_dir() / "icons").mkdir(parents=True, exist_ok=True)
+    (ui_dir() / "icons" / f"{app}{tipo}").write_bytes(dados)
+    return None
+
+
+def fetch_icon(url):
+    """(bytes, error) of an icon taken from the internet: https only, never an address inside this network, at most 1 MB."""
+    import ipaddress
+    u = urllib.parse.urlparse(url)
+    if u.scheme != "https" or not u.hostname:
+        return None, "the icon address must start with https://"
+    try:
+        for fam, _t, _p, _c, ender in socket.getaddrinfo(u.hostname, u.port or 443, proto=socket.IPPROTO_TCP):
+            ip = ipaddress.ip_address(ender[0])
+            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
+                return None, "that address points inside this network"
+    except OSError:
+        return None, "that address does not resolve"
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "qh-store"})
+        with urllib.request.urlopen(req, timeout=10) as f:
+            dados = f.read(ICON_MAX + 1)
+    except (OSError, ValueError) as e:
+        return None, f"could not fetch it: {e}"
+    return (dados, None) if len(dados) <= ICON_MAX else (None, "the icon is over 1 MB")
+
+
+def apply_look(cat):
+    """The catalog with each app's own name, icon, icon colour and web address laid over what the manifest says."""
+    looks = look_load()
+    for a in cat.get("apps", []):
+        lk = looks.get(a.get("id"))
+        arq = look_icon(a.get("id", ""))
+        a["name_default"], a["icon_default"] = a.get("name"), a.get("icon")
+        if arq:
+            a["icon"] = f"/ui/icon/{a['id']}?v={int(arq.stat().st_mtime)}"
+        if lk:
+            if lk.get("title"):
+                a["name"] = lk["title"]
+            if lk.get("icon_bg"):
+                a["icon_cfg"] = {**(a.get("icon_cfg") or {}), "bg": lk["icon_bg"], "tone": "light"}
+        a["look"] = {**(lk or {}), "own_icon": bool(arq)}
+    return cat
 
 
 def updates_file():
@@ -1075,6 +1236,22 @@ def tag_list(image):
     return boas
 
 
+def network_of(texto, drop_in=False):
+    """The first `Network=` of a unit text; the last one that is not a reset in a drop-in (which resets, then sets). Or ''."""
+    valores = [v.strip() for k, v in O.parse_sections(texto or "").get("Container", []) if k == "Network" and v.strip()]
+    return (valores[-1] if drop_in else valores[0]) if valores else ''
+
+
+def network_choices(unit_texto):
+    """The networks a container can be put on: every `.network` unit, on the host and in the repository, as Quadlet names them
+    (`name.network`), plus the one the unit already joins."""
+    nomes = {p.name for p in systemd_dir().rglob("*.network")} | {p.name for p in I.APPS.glob("*/*.network")}
+    atual = network_of(unit_texto)
+    if atual:
+        nomes.add(atual)
+    return sorted(nomes)
+
+
 def image_of(texto):
     """The `Image=` a unit text (or a drop-in) carries, or ''."""
     return next((v.strip() for k, v in O.parse_sections(texto or "").get("Container", []) if k == "Image"), "")
@@ -1100,7 +1277,8 @@ def custom_state(unit, pre=False):
             "repo_text": unit_repo_text(unit), "custom_unit": bool(unit_custom_file(unit) and unit_custom_file(unit).is_file()),
             "installed_text": unit_texto if p is not None else None,
             "limits": cgroup_limits(), "limit_values": O.merged_limits(unit_texto, texto),
-            "image_base": image_of(unit_texto), "image_override": image_of(texto)}
+            "image_base": image_of(unit_texto), "image_override": image_of(texto),
+            "network_base": network_of(unit_texto), "network_override": network_of(texto, True), "networks": network_choices(unit_texto)}
 
 
 # -- the unit as text: see it, rewrite it, or install the person's own -------------------------------
@@ -1290,6 +1468,11 @@ def clean_config(config):
         if not isinstance(imagem, str):
             raise ValueError("image")
         saida["image"] = imagem
+    rede = config.get("network")
+    if rede is not None:
+        if not isinstance(rede, str):
+            raise ValueError("network")
+        saida["network"] = rede
     return saida, (restart or None)
 
 
@@ -1327,7 +1510,8 @@ def custom_plan(unit, config, pre=False):
     ctx = custom_context(unit, O.merged(base, drop))
     texto, erros, avisos = O.validate_and_render(base, desejado, restart, ctx, propria=unit,
                                                  base_limits=O.limits_in(O.parse_sections(unit_texto)),
-                                                 base_image=image_of(unit_texto))
+                                                 base_image=image_of(unit_texto), base_network=network_of(unit_texto),
+                                                 redes=set(network_choices(unit_texto)))
     gerado = ""
     if not erros:
         ok, mensagens, gerado = (O.quadlet_check(systemd_dir(), p, texto) if p is not None
@@ -2808,6 +2992,21 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(corpo)
             return
+        if url.path.startswith("/ui/icon/"):
+            app = url.path.rsplit("/", 1)[1]
+            f = look_icon(app) if service_dir(app) else None
+            if not f:
+                return self._json(404, {"error": "not found"})
+            corpo = f.read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", ICON_TYPES[f.suffix])
+            self.send_header("Content-Length", str(len(corpo)))
+            self.send_header("Cache-Control", "private, max-age=86400")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; sandbox")   # an SVG opened by itself runs nothing
+            self.end_headers()
+            self.wfile.write(corpo)
+            return
         if url.path == "/api/alerts":
             return self._json(200, {"config": A.public(A.load(alert_home())), "kinds": list(A.KINDS),
                                     "sent": len(alerts_state())})
@@ -2920,6 +3119,16 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(413, {"error": "the image is over 8 MB"})
             erro = ui_set_background(dados)
             return self._json(400, {"error": erro}) if erro else self._json(200, ui_settings())
+        if url.path == "/api/look/icon-upload":
+            app = parse_qs(url.query).get("app", [""])[0]
+            if not service_dir(app):
+                return self._json(400, {"error": loc("unknown service")})
+            try:
+                dados = self._body(ICON_MAX)
+            except ValueError:
+                return self._json(413, {"error": "the icon is over 1 MB"})
+            erro = look_set_icon(app, dados)
+            return self._json(400, {"error": erro}) if erro else self._json(200, {"look": look_load().get(app, {}), "icon": bool(dados)})
         if url.path.startswith("/api/files/"):
             try:
                 if url.path == "/api/files/upload":
@@ -2942,6 +3151,21 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(400, {"error": "json"})
         lang = "pt" if d.get("lang") == "pt" else "en"
 
+        if url.path in ("/api/look", "/api/look/icon"):
+            app = d.get("app", "")
+            if not isinstance(app, str) or not service_dir(app):
+                return self._json(400, {"error": loc("unknown service")})
+            if url.path == "/api/look/icon":
+                if d.get("remove"):
+                    look_set_icon(app, b"")
+                    return self._json(200, {"look": look_load().get(app, {}), "icon": False})
+                if PREFIX and "QH_ICON_FETCH" not in os.environ:
+                    return self._json(400, {"error": loc("a sandbox does not reach the network")})
+                dados, erro = fetch_icon(str(d.get("url") or ""))
+                erro = erro or look_set_icon(app, dados)
+                return self._json(400, {"error": erro}) if erro else self._json(200, {"look": look_load().get(app, {}), "icon": True})
+            erros = look_save(app, {k: d[k] for k in ("title", "icon_bg", "webui") if k in d})
+            return self._json(400, {"error": "; ".join(erros)}) if erros else self._json(200, {"look": look_load().get(app, {})})
         if url.path in ("/api/custom/preview", "/api/custom/apply", "/api/custom/reset"):
             unit = d.get("unit", "")
             if not unit_exists(unit):
@@ -3995,6 +4219,27 @@ def selftest():
             st, cab, c = pedir("/ui/background", headers=ok)
             assert st == 200 and c == png and cab.get("Content-Type") == "image/png", (st, cab)
             assert json.loads(pedir("/api/ui/background", b"", api)[2])["background"] is False, "an empty body removes it"
+            # how an app looks: title, colour and web address saved, the icon uploaded and served, all through the login
+            st, _, c = pedir("/api/look", json.dumps({"app": "homebox", "title": "Minha Caixa", "icon_bg": "#112233",
+                                                      "webui": {"scheme": "https", "host": "caixa.lan", "port": "8443", "path": "/x"}}).encode(), api)
+            assert st == 200 and json.loads(c)["look"]["title"] == "Minha Caixa", (st, c)
+            assert pedir("/api/look", json.dumps({"app": "homebox", "icon_bg": "azul"}).encode(), api)[0] == 400
+            assert pedir("/api/look", json.dumps({"app": "nao-existe", "title": "x"}).encode(), api)[0] == 400
+            hb = next(a for a in json.loads(pedir("/api/catalog?lang=en", headers=ok)[2])["apps"] if a["id"] == "homebox")
+            assert hb["name"] == "Minha Caixa" and hb["icon_cfg"]["bg"] == "#112233" and hb["look"]["webui"]["port"] == 8443 and hb["name_default"] == "HomeBox", hb["name"]
+            assert pedir("/api/look/icon-upload?app=homebox", b"<svg onload=alert(1)></svg>", api)[0] == 400
+            st, _, c = pedir("/api/look/icon-upload?app=homebox", b"<svg xmlns='http://www.w3.org/2000/svg'><circle r='4'/></svg>", api)
+            assert st == 200 and json.loads(c)["icon"] is True
+            st, cab, c = pedir("/ui/icon/homebox", headers=ok)
+            assert st == 200 and c.startswith(b"<svg") and cab.get("Content-Type") == "image/svg+xml" and "sandbox" in cab.get("Content-Security-Policy", ""), (st, cab)
+            assert pedir("/ui/icon/homebox")[0] in (303, 401), "the icon needs the login too"
+            hb = next(a for a in json.loads(pedir("/api/catalog?lang=en", headers=ok)[2])["apps"] if a["id"] == "homebox")
+            assert hb["icon"].startswith("/ui/icon/homebox?v=") and hb["look"]["own_icon"] is True
+            assert json.loads(pedir("/api/look/icon", json.dumps({"app": "homebox", "remove": True}).encode(), api)[2])["icon"] is False
+            assert pedir("/api/look/icon", json.dumps({"app": "homebox", "url": "https://example.com/a.png"}).encode(), api)[0] == 400, "a sandbox does not fetch"
+            pedir("/api/look", json.dumps({"app": "homebox", "title": "", "icon_bg": "", "webui": {}}).encode(), api)
+            hb = next(a for a in json.loads(pedir("/api/catalog?lang=en", headers=ok)[2])["apps"] if a["id"] == "homebox")
+            assert hb["name"] == "HomeBox" and "webui" not in hb["look"], "empty fields put the defaults back"
             pedir("/api/ui", json.dumps({"theme": "system", "accent": "blue", "density": "comfortable"}).encode(), api)
 
             # alerts: opt-in, validated, the token never comes back, a test message reaches the ntfy topic
@@ -4550,6 +4795,14 @@ esac
     assert [x["ok"] for x in r] == [False, True, None], "an unknown answer is not a warning"
     assert r[0]["platforms"] == ["amd64", "unknown"] and r[2]["platforms"] is None
     assert ARCH_NOMES["x86_64"] == "amd64" and ARCH_NOMES["aarch64"] == "arm64"
+    # how an app looks: validated, merged into the catalog, the icon kept by its bytes
+    assert look_clean({"title": "  Meu app ", "icon_bg": "#ABCDEF", "webui": {"scheme": "https", "host": "x.y", "port": "8080", "path": "/a"}}) == (
+        {"title": "Meu app", "icon_bg": "#abcdef", "webui": {"scheme": "https", "host": "x.y", "port": 8080, "path": "/a"}}, [])
+    for ruim in ({"title": "x" * 61}, {"icon_bg": "red"}, {"webui": {"port": "99999"}}, {"webui": {"scheme": "ftp"}}, {"webui": {"path": "a b"}}, {"webui": {"host": "a/b"}}):
+        assert look_clean(ruim)[1], ruim
+    assert icon_kind(b"\x89PNG\r\n\x1a\n....") == ".png" and icon_kind(b"<svg xmlns='x'></svg>") == ".svg"
+    assert icon_kind(b"<svg onload=alert(1)></svg>") is None and icon_kind(b"<svg><script>x</script></svg>") is None and icon_kind(b"hello") is None
+    assert fetch_icon("http://example.com/a.png")[1] and fetch_icon("https://127.0.0.1/a.png")[1]
     # the version list: release-shaped tags, newest first, and none in a sandbox
     assert tag_key("1.20.26") > tag_key("1.9.0") and tag_key("v2.0") > tag_key("v1.99.1")
     antes_u = U.registry_tags

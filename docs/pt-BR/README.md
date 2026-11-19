@@ -170,7 +170,7 @@ aqui.
 | <img src="../../apps/changedetection/icon.svg" width="48" height="48" alt=""> | [changedetection.io](../../apps/changedetection) | Avisa quando uma página da web muda. |
 | <img src="../../apps/collabora/icon.svg" width="48" height="48" alt=""> | [Collabora](../../apps/collabora) | Edite documentos no navegador. |
 | <img src="../../apps/cookcli/icon.svg" width="48" height="48" alt=""> | [CookCLI](../../apps/cookcli) | Guarde suas receitas como arquivos de texto simples. |
-| <img src="../../apps/copyparty/icon.svg" width="48" height="48" alt=""> | [Copyparty](../../apps/copyparty) | Um servidor de arquivos que aceita envios de qualquer aparelho. |
+| <img src="../../apps/copyparty/icon.svg" width="48" height="48" alt=""> | [CopyParty](../../apps/copyparty) | Um servidor de arquivos que aceita envios de qualquer aparelho. |
 | <img src="../../apps/deluge/icon.svg" width="48" height="48" alt=""> | [Deluge](../../apps/deluge) | Um cliente de torrent com interface web. |
 | <img src="../../apps/dispatcharr/icon.svg" width="48" height="48" alt=""> | [Dispatcharr](../../apps/dispatcharr) | Gerencie e redirecione seus streams de IPTV. |
 | <img src="../../apps/docuseal/icon.svg" width="48" height="48" alt=""> | [DocuSeal](../../apps/docuseal) | Assine documentos no seu próprio servidor. |

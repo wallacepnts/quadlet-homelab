@@ -103,7 +103,7 @@ const T = {
     instanceOf: (b) => `instância de ${b}`,
     readyToInstall: (n) => `Pronto para instalar ${n}. Leva cerca de um minuto.`,
     planTitle: "O que vai acontecer",
-    tagHint: "Já vem com a última versão. Abra a lista para uma das 15 mais recentes ou escreva a sua.", dockerImage: "Imagem Docker", dockerTag: "Tag", containerName: "Nome do contêiner", noLimit: "sem limite", latestPinned: "a última versão",
+    tabLook: "Aparência", lkTitle: "Título", lkIconUrl: "URL do ícone", lkIconUse: "Usar", lkIconFile: "Escolher arquivo…", lkIconRemove: "Voltar ao ícone original", lkIconBg: "Cor de fundo do ícone", lkIconBgNone: "Sem cor", lkWebUi: "Web UI", lkScheme: "Protocolo", lkHost: "Endereço", lkPort: "Porta", lkPath: "Caminho", lkDefault: "padrão", lkWebHint: "É para onde o botão Abrir leva. O que ficar vazio segue o endereço padrão do app.", lkNetwork: "Rede", lkNetworkHint: "Trocar a rede tira o app da rede do tsdproxy: o endereço da tailnet deixa de funcionar.", tagHint: "Já vem com a última versão. Abra a lista para uma das 15 mais recentes ou escreva a sua.", dockerImage: "Imagem Docker", dockerTag: "Tag", containerName: "Nome do contêiner", noLimit: "sem limite", latestPinned: "a última versão",
     emptyRows: "Clique em “+” para adicionar um.", hHost: "Host", hContainer: "Contêiner", hProto: "Protocolo", hIp: "IP (opcional)", hKey: "Chave", hValue: "Valor", hLabel: "Rótulo",
     qlPlaceholder: "Buscar apps… (Enter abre, Esc fecha)", qlOpen: "Abrir", qlStore: "Ver na loja", qlManage: "Gerenciar", qlWeb: (q) => `Buscar “${q}” na web`, qlNone: "Nenhum app com esse nome.",
     appearance: "Aparência", apTheme: "Tema", apThemes: { system: "Como o sistema", light: "Claro", dark: "Escuro" }, apAccent: "Cor de destaque",
@@ -163,8 +163,7 @@ const T = {
     revertBtn: "Reverter ao padrão", fileToWrite: "Arquivo que será gravado", generated: "Comando que o Quadlet gera",
     nothingChanged: "Nada diferente da unit do repositório.", filePath: "Arquivo",
     custIntro: "Muda esta instalação sem tocar na unit do repositório: a mudança fica num arquivo ao lado, " +
-      "sobrevive ao Atualizar e some ao Reverter. Imagem e versão são do repositório, e não há chave de privilégio " +
-      "(para isso, edite a unit à mão).",
+      "sobrevive ao Atualizar e some ao Reverter. Não há chave de privilégio (para isso, edite a unit à mão).",
     portsHint: "Publicar uma porta abre o app na rede local, qualquer que seja a regra de acesso.",
     volumesHint: (r) => `Pastas permitidas para volumes novos: ${r.join(", ")}. Para liberar outra, escreva o ` +
       "caminho em ~/.config/quadlet-homelab/store-roots.",
@@ -324,7 +323,7 @@ const T = {
     instanceOf: (b) => `instance of ${b}`,
     readyToInstall: (n) => `Ready to install ${n}. It takes about a minute.`,
     planTitle: "What will happen",
-    tagHint: "It opens with the latest version. Open the list for one of the 15 newest, or write your own.", dockerImage: "Docker image", dockerTag: "Tag", containerName: "Container name", noLimit: "no limit", latestPinned: "the latest version",
+    tabLook: "Appearance", lkTitle: "Title", lkIconUrl: "Icon URL", lkIconUse: "Use", lkIconFile: "Choose a file…", lkIconRemove: "Back to the original icon", lkIconBg: "Icon background colour", lkIconBgNone: "No colour", lkWebUi: "Web UI", lkScheme: "Protocol", lkHost: "Address", lkPort: "Port", lkPath: "Path", lkDefault: "default", lkWebHint: "Where the Open button goes. Anything left empty follows the default address of the app.", lkNetwork: "Network", lkNetworkHint: "Changing the network takes the app off the tsdproxy network: its tailnet address stops working.", tagHint: "It opens with the latest version. Open the list for one of the 15 newest, or write your own.", dockerImage: "Docker image", dockerTag: "Tag", containerName: "Container name", noLimit: "no limit", latestPinned: "the latest version",
     emptyRows: "Click “+” to add one.", hHost: "Host", hContainer: "Container", hProto: "Protocol", hIp: "IP (optional)", hKey: "Key", hValue: "Value", hLabel: "Label",
     qlPlaceholder: "Search apps… (Enter opens, Esc closes)", qlOpen: "Open", qlStore: "See in the store", qlManage: "Manage", qlWeb: (q) => `Search the web for “${q}”`, qlNone: "No app by that name.",
     appearance: "Appearance", apTheme: "Theme", apThemes: { system: "Like the system", light: "Light", dark: "Dark" }, apAccent: "Accent colour",
@@ -384,8 +383,7 @@ const T = {
     revertBtn: "Revert to default", fileToWrite: "File that will be written", generated: "Command Quadlet generates",
     nothingChanged: "Nothing different from the repository's unit.", filePath: "File",
     custIntro: "Changes this installation without touching the repository's unit: the change lives in a file " +
-      "beside it, survives Update and goes away on Revert. The image and version belong to the repository, and " +
-      "there is no privilege switch (for that, edit the unit by hand).",
+      "beside it, survives Update and goes away on Revert. There is no privilege switch (for that, edit the unit by hand).",
     portsHint: "Publishing a port opens the app on the local network, whatever the access rule says.",
     volumesHint: (r) => `Folders allowed for new volumes: ${r.join(", ")}. To allow another, write its path ` +
       "in ~/.config/quadlet-homelab/store-roots.",
@@ -752,7 +750,17 @@ const matches = (a, q) =>
 function openUrl(a) {
   const instaladas = new Set(a.units.filter((u) => u.installed).map((u) => u.unit));
   const urls = a.web.filter((w) => instaladas.has(w.unit)).map((w) => w.tailnet || w.local).filter(Boolean);
-  return urls.length === 1 ? urls[0] : null;
+  const base = urls.length === 1 ? urls[0] : null;
+  const w = (a.look || {}).webui;               // the address the person set: each part left empty stays the default one
+  if (!w || !a.installed) return base;
+  try {
+    const u = new URL(base || `http://${location.hostname}`);
+    if (w.scheme) u.protocol = `${w.scheme}:`;
+    if (w.host) u.hostname = w.host;
+    if (w.port) u.port = String(w.port);
+    if (w.path) u.pathname = w.path;
+    return u.toString();
+  } catch (e) { return base; }
 }
 
 // Where an installed app is: running, paused (frozen, still "active" to systemd), or stopped.
@@ -1725,7 +1733,7 @@ async function formDaUnidade(a, u, pre) {
   let mem = lv.memory, cpus = lv.cpus;
   const config = () => ({ ports: G.ports.read(), volumes: G.volumes.read(), env: G.env.read(), devices: G.devices.read(),
     caps: caps.filter((c) => c.box.checked).map((c) => ({ name: c.n })), restart: reinicio.value,
-    limits: { memory: String(mem).trim(), cpus: String(cpus).trim() }, image: imagemConfig() });
+    limits: { memory: String(mem).trim(), cpus: String(cpus).trim() }, image: imagemConfig(), network: redeConfig() });
   const saida = h("div", { class: "cust-out" });
   // The unit as text: what it is, and the person's own version of it. Saved as a whole file the install and every
   // update then use, instead of the repository's; the form above does not apply to a unit rewritten this way.
@@ -1764,6 +1772,12 @@ async function formDaUnidade(a, u, pre) {
   };
   campoImagem.addEventListener("change", carregaTags);
   carregaTags();
+  // The network: one of the `.network` units that exist; left as it was it writes nothing.
+  const redes = d.networks || [];
+  const redeIni = d.network_override || d.network_base || "";
+  const rede = h("select", { "aria-label": t("lkNetwork") }, ...redes.map((n) => h("option", { value: n }, n.replace(/\.network$/, ""))));
+  rede.value = redeIni;
+  const redeConfig = () => (redes.length > 1 && (rede.value !== redeIni || d.network_override) ? rede.value : "");
   const imagemConfig = () => {
     const ref = campoImagem.value.trim() + (campoTag.value.trim() ? `:${campoTag.value.trim()}` : "");
     const mudou = campoImagem.value.trim() !== repoIni || campoTag.value.trim() !== tagBase;
@@ -1775,6 +1789,8 @@ async function formDaUnidade(a, u, pre) {
       h("label", { class: "field" }, t("dockerTag"), h("div", { class: "combo" }, campoTag, seta, lista))),
     h("p", { class: "cust-note" }, t("tagHint")),
     lerLeitura(t("containerName"), unit),
+    redes.length > 1 ? h("label", { class: "field" }, t("lkNetwork"), rede) : null,
+    redes.length > 1 ? h("p", { class: "cust-note" }, t("lkNetworkHint")) : null,
     d.base_changed ? h("p", { class: "note" }, t("baseChanged")) : null,
     d.override ? h("p", { class: "cust-note" }, `${t("filePath")}: ${d.file}`) : null,
     G.ports.el, G.volumes.el, G.env.el, G.devices.el,
@@ -1870,6 +1886,80 @@ async function showDrift(a, unidades) {
 
 // What the person sees: a sheet over the page, a tab per container, the fields of the chosen one, and the
 // one thing to do at the bottom — Install (before the install) or Save and apply.
+// Appearance and address, the first tab of the Customize sheet: the name the app shows, its icon (an address on the internet, or a
+// file) and the colour behind it, and where Open goes. Title, colour and address are saved with the sheet; the icon at once, so the
+// picture shown is the one kept. Anything left empty is the app's own default.
+function formAparencia(a) {
+  const lk = a.look || {}, w0 = lk.webui || {};
+  let padrao = null;
+  try { padrao = new URL(a.web.map((x) => x.tailnet || x.local).find(Boolean)); } catch (e) { /* no address yet */ }
+  const aviso = h("p", { class: "cust-note", role: "status" });
+  const titulo = h("input", { type: "text", value: lk.title || "", placeholder: a.name_default || a.name, maxlength: "60", "aria-label": t("lkTitle") });
+  const img = h("img", { src: a.icon || "", alt: "", referrerpolicy: "no-referrer" });
+  const placa = h("span", { class: "plate lg" }, img);
+  decoratePlate(placa, a, img);
+  let cor0 = lk.icon_bg || "", cor = cor0;
+  const campoCor = h("input", { type: "color", value: cor || "#ffffff", "aria-label": t("lkIconBg") });
+  const pinta = () => {
+    if (cor) { placa.setAttribute("data-custom", "1"); placa.style.setProperty("--bgc", cor); } else placa.removeAttribute("data-custom");
+  };
+  campoCor.addEventListener("input", () => { cor = campoCor.value; pinta(); });
+  const semCor = h("button", { type: "button", class: "ghost", onclick: () => { cor = ""; pinta(); } }, t("lkIconBgNone"));
+  const campoUrl = h("input", { type: "text", placeholder: "https://…/icon.svg", spellcheck: "false", autocomplete: "off", "aria-label": t("lkIconUrl") });
+  const mostraIcone = () => { img.src = `/ui/icon/${a.id}?v=${Date.now()}`; };
+  const iconeAgora = async (corpo) => {
+    aviso.textContent = t("working");
+    try { await corpo(); aviso.textContent = t("apSaved"); } catch (e) { aviso.textContent = String(e.message); }
+  };
+  const usarUrl = () => iconeAgora(async () => {
+    if (!campoUrl.value.trim()) return;
+    await api("/api/look/icon", { app: a.id, url: campoUrl.value.trim() });
+    mostraIcone(); campoUrl.value = "";
+  });
+  const arquivo = h("input", { type: "file", accept: "image/png,image/jpeg,image/webp,image/gif,image/svg+xml", hidden: true, "aria-label": t("lkIconFile") });
+  arquivo.addEventListener("change", () => iconeAgora(async () => {
+    const f = arquivo.files && arquivo.files[0];
+    if (!f) return;
+    const r = await fetch(`/api/look/icon-upload?app=${encodeURIComponent(a.id)}`, { method: "POST", body: f, headers: { "X-QH-Store": "1", "Content-Type": "application/octet-stream" } });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    mostraIcone();
+  }));
+  const tirar = h("button", { type: "button", class: "ghost", onclick: () => iconeAgora(async () => {
+    await api("/api/look/icon", { app: a.id, remove: true });
+    img.src = a.icon_default || "";       // the manifest's own icon
+  }) }, t("lkIconRemove"));
+  const esquema = h("select", { "aria-label": t("lkScheme") }, h("option", { value: "" }, `${padrao ? padrao.protocol.replace(":", "") : "http"} (${t("lkDefault")})`),
+    h("option", { value: "http" }, "http"), h("option", { value: "https" }, "https"));
+  esquema.value = w0.scheme || "";
+  const host = h("input", { type: "text", value: w0.host || "", placeholder: padrao ? padrao.hostname : "host", spellcheck: "false", autocomplete: "off", "aria-label": t("lkHost") });
+  const porta = h("input", { type: "text", inputmode: "numeric", value: w0.port ? String(w0.port) : "", placeholder: padrao ? (padrao.port || (padrao.protocol === "https:" ? "443" : "80")) : "80", "aria-label": t("lkPort") });
+  const caminho = h("input", { type: "text", value: w0.path || "", placeholder: "/", spellcheck: "false", autocomplete: "off", "aria-label": t("lkPath") });
+  const campo = (rotulo, el) => h("label", { class: "field" }, rotulo, el);
+  const el = h("form", { class: "cust", onsubmit: (ev) => ev.preventDefault() },
+    campo(t("lkTitle"), titulo),
+    h("div", { class: "look-icon" }, placa,
+      h("div", { class: "look-icon-fields" },
+        campo(t("lkIconUrl"), h("div", { class: "row nowrap" }, campoUrl, h("button", { type: "button", class: "ghost", onclick: usarUrl }, t("lkIconUse")))),
+        h("div", { class: "row" }, h("button", { type: "button", class: "ghost", onclick: () => arquivo.click() }, t("lkIconFile")), arquivo,
+          a.look && a.look.own_icon ? tirar : null),
+        h("div", { class: "row" }, h("label", { class: "field-inline" }, t("lkIconBg"), campoCor), semCor))),
+    h("div", { class: "cust-group" }, h("h4", {}, t("lkWebUi")),
+      h("div", { class: "web-ui" }, esquema, host, h("span", { class: "web-colon" }, ":"), porta, caminho),
+      h("p", { class: "cust-note" }, t("lkWebHint"))),
+    aviso);
+  const atual = () => ({ title: titulo.value.trim(), icon_bg: cor,
+    webui: { scheme: esquema.value, host: host.value.trim(), port: porta.value.trim(), path: caminho.value.trim() } });
+  const inicial = JSON.stringify({ title: lk.title || "", icon_bg: cor0, webui: { scheme: w0.scheme || "", host: w0.host || "", port: w0.port ? String(w0.port) : "", path: w0.path || "" } });
+  // True when something was saved (so the screen knows to reload).
+  const salvar = async () => {
+    if (JSON.stringify(atual()) === inicial) return false;
+    await api("/api/look", { app: a.id, ...atual() });
+    return true;
+  };
+  return { unit: "__look", el, salvar, previa: async () => ({ errors: [], changed: false }), d: {}, raw: { difere: () => false, editado: () => false } };
+}
+
 async function showCustom(a, unit, pre = false) {
   const todas = pre ? a.units : a.units.filter((u) => u.installed);
   const principal = a.units.find((u) => u.unit === a.main_unit) || mainUnit(a);
@@ -1880,14 +1970,15 @@ async function showCustom(a, unit, pre = false) {
   try { for (const u of unidades) formas.push(await formDaUnidade(a, u, pre)); }
   catch (e) { return section(h("p", { class: "note" }, String(e.message))); }
   let ativa = formas.find((f) => f.unit === unit) || formas[0];
+  const aparencia = formAparencia(a);
   const corpo = $("c-body"), abas = $("c-tabs");
   $("c-title").textContent = pre ? `${t("install")} ${a.name}` : `${t("customize")} · ${a.name}`;
 
   const mostrar = (f) => {
     ativa = f;
-    fill(abas, ...formas.map((x) => h("button", { type: "button", role: "tab", "aria-selected": String(x === f),
-      onclick: () => mostrar(x) }, x.unit.startsWith(`${a.id}-`) ? x.unit.slice(a.id.length + 1) : x.unit)));
-    abas.hidden = formas.length < 2;
+    fill(abas, ...[aparencia, ...formas].map((x) => h("button", { type: "button", role: "tab", "aria-selected": String(x === f),
+      onclick: () => mostrar(x) }, x === aparencia ? t("tabLook") : x.unit.startsWith(`${a.id}-`) ? x.unit.slice(a.id.length + 1) : x.unit)));
+    abas.hidden = false;
     fill(corpo, pre ? h("p", { class: "cust-note" }, t("preIntro")) : h("p", { class: "cust-note" }, t("custIntro")), f.el);
   };
 
@@ -1901,6 +1992,7 @@ async function showCustom(a, unit, pre = false) {
     return formas.filter((f) => f.r.changed);
   };
   const instalar = async () => {
+    try { await aparencia.salvar(); } catch (e) { mostrar(aparencia); return; }
     const mudadas = await conferir();
     if (!mudadas) return;
     if (mudadas.length && formas.some((f) => f.raw.difere() && mudadas.includes(f))) {   // both at once: the code wins
@@ -1933,9 +2025,11 @@ async function showCustom(a, unit, pre = false) {
       const rv = await f.raw.revisar();
       if (rv.errors.length || (rv.warnings.length && !f.raw.ack())) { mostrar(f); f.raw.open(); return; }
     }
+    let olhou = false;
+    try { olhou = await aparencia.salvar(); } catch (e) { mostrar(aparencia); return; }
     const mudadas = editadas.length ? [] : await conferir();
     if (!mudadas) return;
-    if (!mudadas.length && !editadas.length) return;
+    if (!mudadas.length && !editadas.length) { if (olhou) { $("custom").close(); await load(); } return; }
     $("custom").close();
     for (const f of editadas)
       await follow(() => api("/api/custom/unit-save", { unit: f.unit, text: f.raw.value(), ack: f.raw.ack() }));

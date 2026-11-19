@@ -169,7 +169,7 @@ Leap 15's problem — it publishes no container image and was not measured here.
 | <img src="./apps/changedetection/icon.svg" width="48" height="48" alt=""> | [changedetection.io](./apps/changedetection) | Tells you when a web page changes. |
 | <img src="./apps/collabora/icon.svg" width="48" height="48" alt=""> | [Collabora](./apps/collabora) | Edit documents in your browser. |
 | <img src="./apps/cookcli/icon.svg" width="48" height="48" alt=""> | [CookCLI](./apps/cookcli) | Keep your recipes as plain text files. |
-| <img src="./apps/copyparty/icon.svg" width="48" height="48" alt=""> | [Copyparty](./apps/copyparty) | A file server you can upload to from any device. |
+| <img src="./apps/copyparty/icon.svg" width="48" height="48" alt=""> | [CopyParty](./apps/copyparty) | A file server you can upload to from any device. |
 | <img src="./apps/deluge/icon.svg" width="48" height="48" alt=""> | [Deluge](./apps/deluge) | A torrent client with a web interface. |
 | <img src="./apps/dispatcharr/icon.svg" width="48" height="48" alt=""> | [Dispatcharr](./apps/dispatcharr) | Manage and proxy your IPTV streams. |
 | <img src="./apps/docuseal/icon.svg" width="48" height="48" alt=""> | [DocuSeal](./apps/docuseal) | Sign documents on your own server. |

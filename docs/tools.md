@@ -431,6 +431,16 @@ The **Docker image** and its **tag** are the first two fields, both editable: th
 the registry publishes (release-shaped tags only, `/api/tags`), and takes anything you type; the version it opens with is not a change. Left as it was they write nothing, so
 the version `qh` pins on the host stays what it is; changed, they write `Image=` in the same drop-in, which wins over the pin
 (`10-image.conf`). A tag or a digest is required, as in rule 9: `latest` is not accepted.
+The **Network** is a drop-down of the `.network` units that exist (the one the unit joins is chosen); changing it writes `Network=`
+(after a reset of the list) in the same drop-in, with a warning that leaving the tsdproxy network ends the tailnet address.
+
+The first tab of the sheet is **Appearance**, about the app and not a unit, kept in `store-apps.json` and `icons/` beside the
+panel's own settings (so an update of the repository never loses it): the **title** the app shows, its **icon**, taken from an
+address on the internet (fetched by the server, https only, never an address inside this network, at most 1 MB) or sent as a file
+(PNG, JPEG, WebP, GIF or SVG, told apart by their bytes; an SVG with a script is refused), the **background colour** behind the icon,
+and the **Web UI**: protocol, address, port and path that **Open** goes to (each part left empty follows the default address).
+The icon is saved at once; the rest with **Save and apply**, and a sheet where only the appearance changed does not touch the unit.
+The icon is served at `/ui/icon/<app>` behind the login, with a CSP that keeps an SVG from running anything.
 **Revert**, or deleting the file, goes back to the unit as published. **Preview**
 shows the exact file and the `podman run` line Quadlet makes of it; **Save and
 apply** writes it, restarts the service, and, if the service does not come up,
