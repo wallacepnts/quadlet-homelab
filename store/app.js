@@ -220,7 +220,7 @@ const T = {
     act: { pause: "Pausar", resume: "Retomar", install: "Instalar", update: "Atualizar", upgrade: "Atualizar versão", remove: "Remover", backup: "Backup",
            restore: "Restaurar", access: "Acesso", env: "Configuração", start: "Iniciar", stop: "Parar", restart: "Reiniciar",
            customize: "Personalizar", revert: "Reverter", prune: "Limpar", "custom-unit": ".container próprio", migrate: "Migração", "force-stop": "Parada à força", "force-restart": "Reinício à força", "image-rm": "Imagem apagada" },
-    link: { repo: "Projeto", docs: "Documentação", issues: "Problemas", releases: "Releases", image: "Imagem", recipe: "Receita neste repositório" },
+    link: { project: "Site", repo: "Projeto", docs: "Documentação", issues: "Problemas", releases: "Releases", image: "Imagem", recipe: "Receita neste repositório" },
     shots: "Capturas de tela",
     lang: "English",
   },
@@ -441,7 +441,7 @@ const T = {
     act: { pause: "Pause", resume: "Resume", install: "Install", update: "Update", upgrade: "Update version", remove: "Remove", backup: "Backup",
            restore: "Restore", access: "Access", env: "Settings", start: "Start", stop: "Stop", restart: "Restart",
            customize: "Customize", revert: "Revert", prune: "Clean up", "custom-unit": "own .container", migrate: "Migration", "force-stop": "Force stop", "force-restart": "Force restart", "image-rm": "Image deleted" },
-    link: { repo: "Project", docs: "Documentation", issues: "Issues", releases: "Releases", image: "Image", recipe: "Recipe in this repository" },
+    link: { project: "Website", repo: "Project", docs: "Documentation", issues: "Issues", releases: "Releases", image: "Image", recipe: "Recipe in this repository" },
     shots: "Screenshots",
     lang: "Português",
   },
@@ -451,7 +451,7 @@ const S = {
   lang: localStorage.getItem("qh-lang") || (navigator.language.startsWith("pt") ? "pt" : "en"),
   backupFirst: localStorage.getItem("qh-backup-first") === "1",   // the box next to Update, remembered
   rule: "tailnet",          // the host's access rule (qh --set-access)
-  apps: [], group: null, filter: null, search: "", current: null, rhist: {}, preCustom: {}, preUnit: {}, preUnitAck: {},
+  apps: [], group: null, filter: null, search: "", current: null, preCustom: {}, preUnit: {}, preUnitAck: {},
   view: null,               // "apps" (what is installed) or "store" (the catalog); kept in the URL hash
   stats: {},                // unit -> {cpu, mem}, from /api/stats
   upd: {}, checked: null,   // unit -> qh-updates --host row; when it was asked
@@ -1164,24 +1164,16 @@ function renderFacts() {
 function renderInfo() {
   const a = current(), info = S.info || {};
   if (!a) return;
+  // No CPU or memory here: the Resources screen and the top bar have them, and a store page is not a monitor.
   const partes = [];
-  const r = a.installed && resources(a);
-  if (r) partes.push(`${t("cpu")} ${r.cpu.toFixed(1)}%`, `${t("mem")} ${mib(r.mem)}`);
   if (a.installed) partes.push(`${t("disk")} ${info.disk ? (info.disk.bytes === null ? "—" : mib(info.disk.bytes)) : t("counting")}`);
   if (a.units.some((u) => u.installed && u.override)) partes.push(t("customizedBadge"));
   const arq = info.arch;
   if (a.installed && arq && arq.runs && arq.runs.length) partes.push(`${t("runsOn")} ${arq.runs.join(", ")}`);
   renderFacts();
   const sem = arq ? arq.units.filter((u) => u.ok === false).map((u) => u.unit) : [];
-  const hist = S.rhist[a.id];
-  const mini = (serie, teto) => {            // heights through the CSSOM: the CSP forbids a style attribute
-    const el = h("div", { class: "spark mini" }, ...serie.map((v) => { const b = h("i"); b.style.height = `${Math.max(6, Math.min(100, (v / teto) * 100))}%`; return b; }));
-    return el;
-  };
-  fill($("p-info"), 
+  fill($("p-info"),
     partes.join(" · "),
-    hist && hist.cpu.length > 1 ? h("div", { class: "rsparks" }, h("div", {}, h("small", {}, t("cpu")), mini(hist.cpu, Math.max(10, ...hist.cpu))),
-      h("div", {}, h("small", {}, t("mem")), mini(hist.mem, Math.max(1, ...hist.mem)))) : null,
     sem.length ? h("span", { class: "note" }, " ", t("noArm")(arq.host, sem.join(", "))) : null);
 }
 
@@ -2011,13 +2003,6 @@ async function pollStats() {
   if (document.hidden || !S.apps.some((a) => a.installed)) return;
   try {
     S.stats = (await api("/api/stats")).stats;
-    for (const a of S.apps) {                       // a short history per app, for the sparklines in its panel
-      const r = a.installed && resources(a);
-      if (!r) continue;
-      const h2 = (S.rhist[a.id] = S.rhist[a.id] || { cpu: [], mem: [] });
-      h2.cpu.push(r.cpu); h2.mem.push(r.mem);
-      if (h2.cpu.length > 30) { h2.cpu.shift(); h2.mem.shift(); }
-    }
     updateResources();
   } catch (e) { /* next turn */ }
 }
@@ -2112,12 +2097,16 @@ function buildForm(a, action, file = "") {
     const bloco = h("div", { class: "purge" }, h("p", { class: "note bad" }, t("purgeWarn")),
       h("label", { for: "purge-confirm" }, `${t("typeToConfirm")} ${a.id}`), confirma);
     bloco.hidden = true;
-    const caixa = h("input", { id: "purge", "data-purge": "1", type: "checkbox", onchange: (ev) => { bloco.hidden = !ev.target.checked; } });
+    // Deleting the data needs the name typed: until it is, Confirm stays off, so there is no round trip to an error.
+    const valida = () => { if (botaoOk) botaoOk.disabled = !!caixa.checked && confirma.value.trim() !== a.id; };
+    const caixa = h("input", { id: "purge", "data-purge": "1", type: "checkbox", onchange: (ev) => { bloco.hidden = !ev.target.checked; valida(); } });
+    confirma.addEventListener("input", valida);
     campos.push(h("label", { class: "check" }, caixa, ` ${t("purgeData")}`), bloco);
   }
+  const botaoOk = h("button", { type: "submit", class: ["remove", "restore"].includes(action) ? "danger" : null },
+    action === "install" ? t("installNow") : t("confirm"));
   campos.push(h("div", {},
-    h("button", { type: "submit", class: ["remove", "restore"].includes(action) ? "danger" : null },
-      action === "install" ? t("installNow") : t("confirm")), " ",
+    botaoOk, " ",
     h("button", { type: "button", class: "ghost", onclick: () => { form.hidden = true; } }, t("cancel"))));
   fill(form, ...campos);
   form.onsubmit = (ev) => { ev.preventDefault(); run(action, file); };

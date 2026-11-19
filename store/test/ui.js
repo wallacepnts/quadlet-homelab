@@ -138,7 +138,7 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   // the panel of an installed app: resources, disk, architectures, and no stray "null"
   api.openPanel("homebox"); await esperar(100);
   const info = $("p-info").textContent;
-  confere(/CPU 1\.5%/.test(info) && /Memória 150 MB/.test(info) && /Disco 5 MB/.test(info), `painel: CPU, memória e disco (${info})`);
+  confere(!/CPU|Memória/.test(info) && /Disco 5 MB/.test(info), `painel: só o disco, sem CPU nem memória (${info})`);
   confere(/Roda em amd64/.test(info) && /Sem imagem para arm64: homebox/.test(info), "painel: arquiteturas, com aviso quando o host não é suportado");
   confere(!/null|undefined|false/.test(info), "painel: nenhum 'null' no texto");
   confere(!/null|undefined|false/.test($("p-actions").textContent), "botões: nenhum 'null' solto");
@@ -218,6 +218,24 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
     if (runAntes === undefined) delete rotas["/api/run"]; else rotas["/api/run"] = runAntes;
     if (planoAntes === undefined) delete rotas["/api/plan"]; else rotas["/api/plan"] = planoAntes;
     delete rotas["/api/job/jc"]; delete rotas["/api/job/jc/cancel"]; hb.installed = true; }
+
+  // removal with the data: Confirm stays off until the name is typed
+  { const hb = api.S.apps.find((x) => x.id === "homebox"); hb.installed = true;
+    api.openPanel("homebox"); await esperar(30);
+    const planoR = rotas["/api/plan"]; rotas["/api/plan"] = { rc: 0, output: "x", nothing: false };
+    porTexto($("p-danger"), "Remover")[0].listeners.click(); await esperar(80);
+    const ok = porTexto($("p-form"), "Confirmar")[0];
+    const marca = [...$("p-form").walk()].find((e) => e.attrs["data-purge"]);
+    const nome = [...$("p-form").walk()].find((e) => e.attrs["data-confirm"]);
+    confere(ok && !ok.disabled, "remover sem apagar os dados: Confirmar liberado");
+    marca.checked = true; marca.listeners.change({ target: marca });
+    confere(ok.disabled === true, "apagar os dados: Confirmar fica desligado até digitar o nome");
+    nome.value = "homebox"; nome.listeners.input();
+    confere(ok.disabled === false, "com o nome digitado, Confirmar libera");
+    nome.value = "outro"; nome.listeners.input();
+    confere(ok.disabled === true, "nome errado: continua desligado");
+    if (planoR === undefined) delete rotas["/api/plan"]; else rotas["/api/plan"] = planoR;
+    $("p-form").hidden = true; }
 
   // "Install" installs at once when nothing has to be asked
   { const hb = api.S.apps.find((x) => x.id === "homebox"); hb.installed = false; hb.asks = { secrets: [], vars: [] }; hb.options = [];
@@ -629,11 +647,10 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   // per-app CPU and memory: a short history kept while the page is open, drawn as two sparklines in the app's panel
   const bs = api.S.apps.find((x) => x.id === "homebox");
   bs.units = [unidade("homebox", { service: "active" })];
-  api.S.rhist = {};
   for (const cpu of [10, 30, 20, 55]) { rotas["/api/stats"] = { stats: { homebox: { cpu, mem: 100 * 2 ** 20 + cpu * 2 ** 20 } } }; await api.pollStats(); }
   api.openPanel("homebox"); await esperar(60);
   const barras = [...$("p-info").walk()].filter((e) => e.tag === "i");
-  confere(api.S.rhist.homebox.cpu.join(",") === "10,30,20,55" && barras.length === 8 && barras[3].style.height === "100%", `CPU e memória: histórico por app e dois sparklines no painel (${barras.length} barras)`);
+  confere(barras.length === 0 && !/CPU|Memória/.test($("p-info").textContent) && api.S.rhist === undefined, `o painel não mostra CPU nem memória, nem os gráficos (${barras.length} barras)`);
   $("panel").open = false;
   bs.units = [unidade("homebox")];
 

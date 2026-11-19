@@ -584,7 +584,7 @@ button.force { color: var(--bad); } pre.mini { margin: 0; padding: .3rem .5rem; 
 .kv th { text-align: left; font-weight: 600; color: var(--muted); white-space: nowrap; padding-right: 1rem; width: 1%; } .kv td { overflow-wrap: anywhere; }
 #p-section h4 { margin: 1rem 0 .4rem; font-size: .85rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
 #resources { width: min(62rem, 96vw); } table.imgs td { vertical-align: top; } table.imgs td:last-child { white-space: nowrap; }
-.rsparks { display: flex; gap: 1.2rem; margin-top: .4rem; } .rsparks > div { flex: 1; max-width: 14rem; } .rsparks small { color: var(--muted); } .spark.mini { height: 26px; }
+
 
 /* ---- Progress of a job ------------------------------------------------------------------------------ */
 .progress { margin: .8rem 0; padding: .8rem 1rem; background: var(--card-2); border-radius: var(--radius-sm); }
