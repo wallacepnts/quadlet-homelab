@@ -589,6 +589,24 @@ def latest_release(repo):
     return target.rsplit("/tag/", 1)[1]
 
 
+def release_date(repo, tag):
+    """The date (YYYY-MM-DD) the release `tag` was published, from the repository's releases feed (a web page, not the API:
+    it spends no quota), or None. The entry of that tag; the first one when the feed does not name it."""
+    import html
+    import urllib.parse
+    try:
+        req = urllib.request.Request(f"https://github.com/{repo}/releases.atom", headers={"User-Agent": UA})
+        with urllib.request.urlopen(req, timeout=20) as f:
+            corpo = f.read(400000).decode("utf-8", "replace")
+    except OSError:
+        return None
+    entradas = re.findall(r"<entry>(.*?)</entry>", corpo, re.S)
+    escolhida = next((e for e in entradas if tag and urllib.parse.unquote(html.unescape(e)).count(f"/tag/{tag}\"")), None)
+    alvo = escolhida or (entradas[0] if entradas else "")
+    m = re.search(r"<updated>(\d{4}-\d{2}-\d{2})", alvo)
+    return m.group(1) if m else None
+
+
 def fetch_releases(repo, por_pagina=50):
     """The repository's releases from the API, newest first — or None on failure.
 

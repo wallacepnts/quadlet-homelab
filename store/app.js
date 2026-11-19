@@ -139,7 +139,7 @@ const T = {
     remove: "Remover", 
     linkName: "Nome", linkUrl: "https://…", linkBad: "Use um endereço http:// ou https://",
     updateAvailable: "Atualização disponível",
-    getApp: "Instalar", factCategory: "Categoria", factAuthor: "Desenvolvedor", cancelling: "Cancelando…", installCancelled: "Instalação cancelada", installCustom: "Instalação personalizada…", installMore: "Instalação personalizada", lbPrev: "Anterior", lbNext: "Próxima", lbClose: "Fechar", lkSite: "Site", lkRepoGh: "Repositório no GitHub", lkRepo: "Repositório", lkDocs: "Documentação", lkDemo: "Demonstração", lkVideo: "Vídeo", factSize: "Tamanho", factLicense: "Licença", factArch: "Arquitetura", factVersion: "Versão", installing: (n) => `Instalando ${n}`, inBackground: "Continuar em segundo plano", installNow: "Instalar agora", advanced: "Avançado", rolledBack: "voltou à versão anterior", techDetails: "Detalhes técnicos", logTitle: "O que foi feito", closeLabel: "Fechar",
+    getApp: "Instalar", factCategory: "Categoria", factAuthor: "Desenvolvedor", cancelling: "Cancelando…", installCancelled: "Instalação cancelada", installCustom: "Instalação personalizada…", installMore: "Instalação personalizada", lbPrev: "Anterior", lbNext: "Próxima", lbClose: "Fechar", lkSite: "Site", lkRepoGh: "Repositório no GitHub", lkRepo: "Repositório", lkDocs: "Documentação", lkDemo: "Demonstração", lkVideo: "Vídeo", factSize: "Tamanho", factLicense: "Licença", factArch: "Arquitetura", factVersion: "Versão", factUpdated: "Atualizado em", factRequires: "Requer", installing: (n) => `Instalando ${n}`, inBackground: "Continuar em segundo plano", installNow: "Instalar agora", advanced: "Avançado", rolledBack: "voltou à versão anterior", techDetails: "Detalhes técnicos", logTitle: "O que foi feito", closeLabel: "Fechar",
     httpsNeeded: "precisa de HTTPS",
     httpsWarn: "Este app precisa de HTTPS: pela rede local (HTTP) o cofre e o service worker falham sem avisar. Use o acesso pela tailnet.",
     podmanOld: (need, host) => `Este app precisa do Podman ${need}+; o host tem ${host}. Atualize o Podman antes de instalar.`,
@@ -360,7 +360,7 @@ const T = {
     remove: "Remove", 
     linkName: "Name", linkUrl: "https://…", linkBad: "Use an http:// or https:// address",
     updateAvailable: "Update available",
-    getApp: "Install", factCategory: "Category", factAuthor: "Developer", cancelling: "Cancelling…", installCancelled: "Install cancelled", installCustom: "Custom install…", installMore: "Custom install", lbPrev: "Previous", lbNext: "Next", lbClose: "Close", lkSite: "Website", lkRepoGh: "GitHub repository", lkRepo: "Repository", lkDocs: "Documentation", lkDemo: "Demo", lkVideo: "Video", factSize: "Size", factLicense: "License", factArch: "Architecture", factVersion: "Version", installing: (n) => `Installing ${n}`, inBackground: "Continue in the background", installNow: "Install now", advanced: "Advanced", rolledBack: "rolled back to the previous version", techDetails: "Technical details", logTitle: "What was done", closeLabel: "Close",
+    getApp: "Install", factCategory: "Category", factAuthor: "Developer", cancelling: "Cancelling…", installCancelled: "Install cancelled", installCustom: "Custom install…", installMore: "Custom install", lbPrev: "Previous", lbNext: "Next", lbClose: "Close", lkSite: "Website", lkRepoGh: "GitHub repository", lkRepo: "Repository", lkDocs: "Documentation", lkDemo: "Demo", lkVideo: "Video", factSize: "Size", factLicense: "License", factArch: "Architecture", factVersion: "Version", factUpdated: "Updated", factRequires: "Requires", installing: (n) => `Installing ${n}`, inBackground: "Continue in the background", installNow: "Install now", advanced: "Advanced", rolledBack: "rolled back to the previous version", techDetails: "Technical details", logTitle: "What was done", closeLabel: "Close",
     httpsNeeded: "needs HTTPS",
     httpsWarn: "This app needs HTTPS: over the local network (HTTP) the vault and the service worker fail without saying why. Use tailnet access.",
     podmanOld: (need, host) => `This app needs Podman ${need}+; the host has ${host}. Update Podman before installing.`,
@@ -1145,6 +1145,20 @@ async function loadInfo(id) {
   if (S.current === id && $("panel").open) renderInfo();
 }
 
+const dataCurta = (iso) => new Date(`${iso}T12:00:00`).toLocaleDateString(S.lang === "pt" ? "pt-BR" : "en-US", { day: "numeric", month: "short", year: "numeric" });
+
+// What an app needs besides itself, for its card: the apps whose network it joins (the tailnet proxy, mostly) and the
+// containers its stack brings (a database, a cache). An app made of alternatives (one unit to pick) has no such list.
+function requer(a) {
+  if (a.units.some((u) => u.only_unit)) return null;
+  const apps = (a.depends || []).map((id) => { const x = S.apps.find((y) => y.id === id); return x ? x.name : id; });
+  const prefixo = `${a.id}-`;
+  const partes = a.units.filter((u) => u.unit !== a.main_unit && u.unit.startsWith(prefixo))
+    .map((u) => { const n = u.unit.slice(prefixo.length).replace(/-/g, " "); return n.charAt(0).toUpperCase() + n.slice(1); });
+  const todos = [...apps, ...partes];
+  return todos.length ? todos.join(", ") : null;
+}
+
 // The card beside an app in the store: what is known before installing it. The size and the architectures come from
 // the registry (asked when the panel opens), so this is painted again when they arrive. Memory is not here: nobody
 // publishes it, and a made-up number is worse than none.
@@ -1164,7 +1178,9 @@ function renderFacts() {
     fato("factLicense", a.license),
     fato("factSize", arq.download ? `${sizeOf(arq.download)}` : null),
     fato("factArch", roda.length ? todas.join(", ") : null),
-    fato("factVersion", versao));
+    fato("factVersion", versao),
+    fato("factUpdated", arq.updated ? dataCurta(arq.updated) : null),
+    fato("factRequires", requer(a)));
 }
 
 function renderInfo() {

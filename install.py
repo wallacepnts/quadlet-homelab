@@ -4767,6 +4767,7 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude, falhas=None):
         # Whoever owns a network it needs and is not installed: install
         # refuses until they are, so a front end offers them first.
         "requires": sorted({dono for dono, _ in missing_prereqs(s)}),
+        "depends": sorted(set(foreign_networks(s).values()) - {d}),       # the apps whose network it joins, installed or not
         "units": units,
         # An app with no web interface (app.json `no_gui`) has no address to open, whatever port it publishes.
         "no_gui": bool(s.manifest.get("no_gui")),
