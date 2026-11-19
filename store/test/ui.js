@@ -110,7 +110,7 @@ global.fetch = async (url, opts = {}) => {
 };
 
 const codigo = fs.readFileSync(path.join(__dirname, "..", "app.js"), "utf8");
-const api = new Function(codigo + "; return { S, openPanel, showEnv, current, renderGrid, pollStats, pollHost, openSettings, showLogs, showConsole, termNew, termFeed, termKey, openResources, hintClean, openHistory, setView, openFiles, renderFiles, uploadFiles, jobProgress, stepLabel, instalar, pollJobs, pollPerf, iconPlate, renderHome, touchRecent };")();
+const api = new Function(codigo + "; return { S, openPanel, showEnv, current, renderGrid, pollStats, pollHost, openSettings, showLogs, showConsole, termNew, termFeed, termKey, openResources, hintClean, openHistory, setView, openFiles, renderFiles, uploadFiles, jobProgress, stepLabel, instalar, suggestInstanceName, pollJobs, pollPerf, iconPlate, renderHome, touchRecent };")();
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 let falhas = 0;
 const confere = (cond, msg) => { if (!cond) { falhas++; console.log("FALHOU:", msg); } else console.log("ok   ", msg); };
@@ -297,6 +297,20 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
     if (runA === undefined) delete rotas["/api/run"]; else rotas["/api/run"] = runA; delete rotas["/api/job/jn"];
     hb.web = webAntes;
     api.openPanel("homebox"); await esperar(30); }
+
+  // the suggested instance name: one step on from the others, else -2, and never one that is taken
+  { const base = { id: "memos" };
+    const antes = api.S.apps.length;
+    confere(api.suggestInstanceName(base) === "2", "sem instâncias: sugere 2 (memos-2)");
+    api.S.apps.push({ id: "memos-casa", instance_of: "memos" });
+    confere(api.suggestInstanceName(base) === "2", "instância sem número no nome: continua em 2");
+    api.S.apps.push({ id: "memos-2", instance_of: "memos" });
+    confere(api.suggestInstanceName(base) === "3", "memos-2 existe: sugere 3");
+    api.S.apps.push({ id: "memos-casa7", instance_of: "memos" });
+    confere(api.suggestInstanceName(base) === "casa8", "segue o padrão com prefixo (casa7 → casa8)");
+    api.S.apps.push({ id: "memos-casa8", instance_of: "memos" });
+    confere(api.suggestInstanceName(base) === "casa9", "e pula o que já existe");
+    api.S.apps.length = antes; }
 
   // the lightbox
   api.S.apps.find((x) => x.id === "homebox").installed = false;

@@ -99,7 +99,7 @@ const T = {
                   update: "Versão nova do projeto", disk: "Disco cheio" },
     alertSave: "Salvar alertas", alertTest: "Enviar teste", alertSaved: "Alertas salvos.", alertTested: "Teste enviado.",
     optionsTitle: "Opções de instalação", optionLocked: "escolhido na instalação; mudar move os dados (remova o app com os dados e instale de novo)",
-    newInstance: "Nova instância", instanceName: "Nome da instância (letras minúsculas, números e -)", instanceCreate: "Criar instância", instanceCreateCustom: "Criar e personalizar", customizeInstance: "Personalizar a instância", instanceCustomHint: "Depois de criada, a instância abre na personalização (portas, volumes, .container).",
+    newInstance: "Nova instância", instanceName: "Nome da instância (letras minúsculas, números e -)", instanceCreate: "Criar instância", instanceCreateCustom: "Criar e personalizar", instanceFinal: (n) => `Vai se chamar ${n}.`, customizeInstance: "Personalizar a instância", instanceCustomHint: "Depois de criada, a instância abre na personalização (portas, volumes, .container).",
     instanceOf: (b) => `instância de ${b}`,
     readyToInstall: (n) => `Pronto para instalar ${n}. Leva cerca de um minuto.`,
     planTitle: "O que vai acontecer",
@@ -320,7 +320,7 @@ const T = {
                   update: "New upstream release", disk: "Disk almost full" },
     alertSave: "Save alerts", alertTest: "Send a test", alertSaved: "Alerts saved.", alertTested: "Test sent.",
     optionsTitle: "Install options", optionLocked: "chosen at the install; changing it moves the data (remove the app with its data and install again)",
-    newInstance: "New instance", instanceName: "Instance name (lowercase letters, digits and -)", instanceCreate: "Create instance", instanceCreateCustom: "Create and customize", customizeInstance: "Customize the instance", instanceCustomHint: "Once created, the instance opens in its customization (ports, volumes, .container).",
+    newInstance: "New instance", instanceName: "Instance name (lowercase letters, digits and -)", instanceCreate: "Create instance", instanceCreateCustom: "Create and customize", instanceFinal: (n) => `It will be called ${n}.`, customizeInstance: "Customize the instance", instanceCustomHint: "Once created, the instance opens in its customization (ports, volumes, .container).",
     instanceOf: (b) => `instance of ${b}`,
     readyToInstall: (n) => `Ready to install ${n}. It takes about a minute.`,
     planTitle: "What will happen",
@@ -2637,16 +2637,33 @@ async function unitVerb(unit, verb) {
   await follow(() => api("/api/unit", { unit, verb }));
 }
 
+// The name an instance would get: the pattern the others already follow, one step on. Instances end in a number
+// ("casa2" → "casa3"), else the first free number from 2 (`memos` → `memos-2`). It is a suggestion, in the field.
+function suggestInstanceName(a) {
+  const ids = new Set(S.apps.map((x) => x.id));
+  const usados = S.apps.filter((x) => x.instance_of === a.id).map((x) => x.id.slice(a.id.length + 1));
+  const alvo = usados.map((n) => /^(.*?)(\d+)$/.exec(n)).filter(Boolean).sort((x, y) => Number(y[2]) - Number(x[2]))[0];
+  let prefixo = alvo ? alvo[1] : "", n = alvo ? Number(alvo[2]) + 1 : 2;
+  while (ids.has(`${a.id}-${prefixo}${n}`)) n++;
+  return `${prefixo}${n}`;
+}
+
 function showInstance(a, personalizar = false) {
   const nome = h("input", { type: "text", placeholder: t("instanceName"), autocomplete: "off", "aria-label": t("instanceName") });
+  nome.value = suggestInstanceName(a);
+  const final = h("p", { class: "help" });
+  const mostra = () => { final.textContent = nome.value.trim() ? t("instanceFinal")(`${a.id}-${nome.value.trim()}`) : ""; };
+  nome.addEventListener("input", mostra);
+  mostra();
   const criar = async () => {
     const v = nome.value.trim();
     if (!v) return;
     await installFlow(a, () => api("/api/run", { app: a.id, action: "install", instance: v }), personalizar ? { personalizar: `${a.id}-${v}` } : {});
   };
   section(h("h3", {}, t(personalizar ? "installCustom" : "newInstance")), h("div", { class: "row" }, nome,
-    h("button", { type: "button", onclick: criar }, t(personalizar ? "instanceCreateCustom" : "instanceCreate"))),
+    h("button", { type: "button", onclick: criar }, t(personalizar ? "instanceCreateCustom" : "instanceCreate"))), final,
     ...(personalizar ? [h("p", { class: "help" }, t("instanceCustomHint"))] : []));
+  if (nome.focus) { nome.focus(); if (nome.select) nome.select(); }
 }
 
 // -- the progress of a job: the plan, which step is under way and for how long ---------------------------------
