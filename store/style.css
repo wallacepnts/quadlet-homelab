@@ -694,5 +694,5 @@ dialog.lightbox[open] { display: flex; align-items: center; justify-content: cen
 #p-close, #f-close, #r-close, #s-close, #i-close, #b-close, #h-close { position: absolute; top: .9rem; right: 1rem; z-index: 3; width: 2.4rem; height: 2.4rem; min-height: 0; padding: 0;
   border-radius: 50%; font-size: 1.05rem; line-height: 1; display: grid; place-items: center; }
 dialog .panel-head { padding-right: 2.8rem; }
-#panel.store[open] { padding-top: 3.4rem; }
+#panel.store[open] { padding-right: 3.8rem; width: min(65rem, 96vw); }       /* a gutter for the ✕ beside the card: nothing is pushed down */
 #panel.store > .panel-head { padding-right: 0; }
