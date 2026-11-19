@@ -68,7 +68,7 @@ button.danger { background: transparent; color: var(--bad); box-shadow: inset 0 
 button:disabled { opacity: .45; cursor: default; }
 input[type=search], input[type=text], input[type=password], input[type=number], select {
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: .55rem .8rem; min-height: 40px; }
-input:focus-visible, select:focus-visible { outline-offset: 0; border-color: var(--accent); }
+input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 1px solid var(--accent); outline-offset: 0; border-color: var(--accent); }
 .muted { color: var(--muted); font-size: .85rem; }
 
 /* Icon buttons draw their glyph with a mask, so no icon font or inline SVG is needed. */
