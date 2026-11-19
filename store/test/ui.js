@@ -320,7 +320,7 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
     g.requires_https = true; api.openPanel("gitea", false, "store"); await esperar(60);
     confere(/Acesso\s*Tailnet \(precisa de HTTPS\)/.test($("p-actions").textContent), "app que exige HTTPS: o acesso diz tailnet");
     g.depends = []; g.requires_https = false; api.openPanel("gitea", false, "store"); await esperar(60);
-    confere(/Acesso\s*Rede local$/.test($("p-actions").textContent.replace(/Requer.*?Acesso/, "Acesso")) || /Acesso\s*Rede local/.test($("p-actions").textContent), "sem a rede do tsdproxy: só rede local");
+    confere(!/Acesso/.test($("p-actions").textContent), "app comum: sem linha de acesso (seria igual para todos)");
     Object.assign(g, antes); }
 
   // the lightbox
@@ -388,7 +388,7 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   api.S.apps.find((x) => x.id === "gitea").depends = ["tsdproxy"];
   api.openPanel("gitea"); await esperar(100);
   confere(botoes($("p-actions")).map((b) => b.textContent).join("") === "InstalarInstalação personalizada…" && $("p-tech").hidden && /Categoria/.test($("p-actions").textContent), `app não instalado: só Instalar e Personalizar (sem histórico, instância nem detalhes técnicos), e o cartão com a categoria (${$("p-actions").textContent})`);
-  confere(!/null|undefined/.test($("p-info").textContent + $("p-actions").textContent) && /Arquitetura\s*amd64, arm64/.test($("p-actions").textContent) && /Tamanho\s*37 MB/.test($("p-actions").textContent) && /Licença\s*AGPL-3\.0/.test($("p-actions").textContent) && /Atualizado em\s*15 de out\.? de 2026/.test($("p-actions").textContent) && !/Requer/.test($("p-actions").textContent) && /Acesso\s*Rede local ou tailnet/.test($("p-actions").textContent) && /Versão\s*1\.20\.26/.test($("p-actions").textContent) && !/Roda em/.test($("p-info").textContent), "app não instalado: tamanho e arquitetura vão no cartão, e nada de 'null'");
+  confere(!/null|undefined/.test($("p-info").textContent + $("p-actions").textContent) && /Arquitetura\s*amd64, arm64/.test($("p-actions").textContent) && /Tamanho\s*37 MB/.test($("p-actions").textContent) && /Licença\s*AGPL-3\.0/.test($("p-actions").textContent) && /Atualizado em\s*15 de out\.? de 2026/.test($("p-actions").textContent) && !/Requer/.test($("p-actions").textContent) && !/Acesso/.test($("p-actions").textContent) && /Versão\s*1\.20\.26/.test($("p-actions").textContent) && !/Roda em/.test($("p-info").textContent), "app não instalado: tamanho e arquitetura vão no cartão, e nada de 'null'");
   $("panel").open = false;
 
   // discontinued: the badge, the reason in the page's language, and no install for what is not installed

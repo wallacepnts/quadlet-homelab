@@ -139,7 +139,7 @@ const T = {
     remove: "Remover", 
     linkName: "Nome", linkUrl: "https://…", linkBad: "Use um endereço http:// ou https://",
     updateAvailable: "Atualização disponível",
-    getApp: "Instalar", factCategory: "Categoria", factAuthor: "Desenvolvedor", cancelling: "Cancelando…", installCancelled: "Instalação cancelada", installCustom: "Instalação personalizada…", installMore: "Instalação personalizada", lbPrev: "Anterior", lbNext: "Próxima", lbClose: "Fechar", lkSite: "Site", lkRepoGh: "Repositório no GitHub", lkRepo: "Repositório", lkDocs: "Documentação", lkDemo: "Demonstração", lkVideo: "Vídeo", factSize: "Tamanho", factLicense: "Licença", factArch: "Arquitetura", factVersion: "Versão", factUpdated: "Atualizado em", factRequires: "Requer", factAccess: "Acesso", accessLan: "Rede local", accessLanTailnet: "Rede local ou tailnet", accessTailnetHttps: "Tailnet (precisa de HTTPS)", installing: (n) => `Instalando ${n}`, inBackground: "Continuar em segundo plano", installNow: "Instalar agora", advanced: "Avançado", rolledBack: "voltou à versão anterior", techDetails: "Detalhes técnicos", logTitle: "O que foi feito", closeLabel: "Fechar",
+    getApp: "Instalar", factCategory: "Categoria", factAuthor: "Desenvolvedor", cancelling: "Cancelando…", installCancelled: "Instalação cancelada", installCustom: "Instalação personalizada…", installMore: "Instalação personalizada", lbPrev: "Anterior", lbNext: "Próxima", lbClose: "Fechar", lkSite: "Site", lkRepoGh: "Repositório no GitHub", lkRepo: "Repositório", lkDocs: "Documentação", lkDemo: "Demonstração", lkVideo: "Vídeo", factSize: "Tamanho", factLicense: "Licença", factArch: "Arquitetura", factVersion: "Versão", factUpdated: "Atualizado em", factRequires: "Requer", factAccess: "Acesso", accessTailnetHttps: "Tailnet (precisa de HTTPS)", installing: (n) => `Instalando ${n}`, inBackground: "Continuar em segundo plano", installNow: "Instalar agora", advanced: "Avançado", rolledBack: "voltou à versão anterior", techDetails: "Detalhes técnicos", logTitle: "O que foi feito", closeLabel: "Fechar",
     httpsNeeded: "precisa de HTTPS",
     httpsWarn: "Este app precisa de HTTPS: pela rede local (HTTP) o cofre e o service worker falham sem avisar. Use o acesso pela tailnet.",
     podmanOld: (need, host) => `Este app precisa do Podman ${need}+; o host tem ${host}. Atualize o Podman antes de instalar.`,
@@ -360,7 +360,7 @@ const T = {
     remove: "Remove", 
     linkName: "Name", linkUrl: "https://…", linkBad: "Use an http:// or https:// address",
     updateAvailable: "Update available",
-    getApp: "Install", factCategory: "Category", factAuthor: "Developer", cancelling: "Cancelling…", installCancelled: "Install cancelled", installCustom: "Custom install…", installMore: "Custom install", lbPrev: "Previous", lbNext: "Next", lbClose: "Close", lkSite: "Website", lkRepoGh: "GitHub repository", lkRepo: "Repository", lkDocs: "Documentation", lkDemo: "Demo", lkVideo: "Video", factSize: "Size", factLicense: "License", factArch: "Architecture", factVersion: "Version", factUpdated: "Updated", factRequires: "Requires", factAccess: "Access", accessLan: "Local network", accessLanTailnet: "Local network or tailnet", accessTailnetHttps: "Tailnet (needs HTTPS)", installing: (n) => `Installing ${n}`, inBackground: "Continue in the background", installNow: "Install now", advanced: "Advanced", rolledBack: "rolled back to the previous version", techDetails: "Technical details", logTitle: "What was done", closeLabel: "Close",
+    getApp: "Install", factCategory: "Category", factAuthor: "Developer", cancelling: "Cancelling…", installCancelled: "Install cancelled", installCustom: "Custom install…", installMore: "Custom install", lbPrev: "Previous", lbNext: "Next", lbClose: "Close", lkSite: "Website", lkRepoGh: "GitHub repository", lkRepo: "Repository", lkDocs: "Documentation", lkDemo: "Demo", lkVideo: "Video", factSize: "Size", factLicense: "License", factArch: "Architecture", factVersion: "Version", factUpdated: "Updated", factRequires: "Requires", factAccess: "Access", accessTailnetHttps: "Tailnet (needs HTTPS)", installing: (n) => `Installing ${n}`, inBackground: "Continue in the background", installNow: "Install now", advanced: "Advanced", rolledBack: "rolled back to the previous version", techDetails: "Technical details", logTitle: "What was done", closeLabel: "Close",
     httpsNeeded: "needs HTTPS",
     httpsWarn: "This app needs HTTPS: over the local network (HTTP) the vault and the service worker fail without saying why. Use tailnet access.",
     podmanOld: (need, host) => `This app needs Podman ${need}+; the host has ${host}. Update Podman before installing.`,
@@ -1163,11 +1163,9 @@ function requer(a) {
 // The card beside an app in the store: what is known before installing it. The size and the architectures come from
 // the registry (asked when the panel opens), so this is painted again when they arrive. Memory is not here: nobody
 // publishes it, and a made-up number is worse than none.
-// How the app is reached: the LAN always, and the tailnet when tsdproxy is there, which Vaultwarden-like apps need (HTTPS).
-function acesso(a) {
-  if (a.requires_https) return t("accessTailnetHttps");
-  return (a.depends || []).includes("tsdproxy") ? t("accessLanTailnet") : t("accessLan");
-}
+// Only the exception is worth a row: an app that insists on HTTPS needs the tailnet (the same line would otherwise read the
+// same on every app).
+const acesso = (a) => (a.requires_https ? t("accessTailnetHttps") : null);
 
 function renderFacts() {
   const a = current(), caixa = S.factsEl;
