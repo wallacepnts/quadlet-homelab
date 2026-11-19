@@ -3010,6 +3010,15 @@ $("settings-btn").addEventListener("click", openSettings);
 $("s-close").addEventListener("click", () => $("settings").close());
 $("b-close").addEventListener("click", () => $("bulk").close());
 $("i-close").addEventListener("click", () => $("install").close());
+// A click on the dim area around a window closes it, as a click on the ✕ does. Not the code editor (an edit could be lost), and only when
+// the press and the release were both out there, so selecting text and letting go outside does not close it.
+for (const id of ["panel", "install", "bulk", "history", "files", "resources", "settings"]) {
+  const d = $(id);
+  const fora = (ev) => { const r = d.getBoundingClientRect(); return ev.target === d && (ev.clientX < r.left || ev.clientX > r.right || ev.clientY < r.top || ev.clientY > r.bottom); };
+  let apertou = false;
+  d.addEventListener("mousedown", (ev) => { apertou = fora(ev); });
+  d.addEventListener("click", (ev) => { if (apertou && fora(ev)) d.close(); apertou = false; });
+}
 $("lb-close").addEventListener("click", () => $("lightbox").close());
 $("lb-prev").addEventListener("click", () => lightboxGo(-1));
 $("lb-next").addEventListener("click", () => lightboxGo(1));

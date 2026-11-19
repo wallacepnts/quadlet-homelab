@@ -119,8 +119,13 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
     await ev("document.body.click()"); await esperar(200);
     console.log("galeria:", await ev("(() => { const f = document.querySelector('#p-shots .shots'); return 'barra: ' + (f.offsetHeight - f.clientHeight) + ' | setas visíveis: ' + [...document.querySelectorAll('#p-shots .g-arrow')].filter((b) => !b.hidden).length; })()"));
     await ev("document.querySelector('#p-shots .g-right').click()"); await esperar(900); await foto("97-galeria-seta");
+    console.log("seta:", await ev("(() => { const r = document.querySelector('#p-shots .g-arrow:not([hidden])').getBoundingClientRect(); return Math.round(r.width) + 'x' + Math.round(r.height); })()"));
+    await foto("97-seta-circulo");
     await ev("document.querySelector('#p-shots .shots a').click()"); await esperar(800); await foto("97-lightbox");
     console.log("lightbox:", await ev("document.getElementById('lightbox').open + ' ' + document.getElementById('lb-count').textContent"));
+    await ev("document.getElementById('lb-close').click()"); await esperar(300);
+    await send("Input.dispatchMouseEvent", { type: "mousePressed", x: 20, y: 400, button: "left", clickCount: 1 }); await send("Input.dispatchMouseEvent", { type: "mouseReleased", x: 20, y: 400, button: "left", clickCount: 1 }); await esperar(400);
+    console.log("painel aberto depois do clique fora:", await ev("document.getElementById('panel').open"));
   }
 
   if (MODO === "remover") {

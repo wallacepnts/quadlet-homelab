@@ -259,6 +259,17 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   confere(menuI.hidden === false && setaI.attrs["aria-expanded"] === "true", "a setinha abre o menu");
   confere(botoes(menuI).map((b) => b.textContent).join("|") === "Instalação personalizada…", "o menu só tem a instalação personalizada (tudo está nela)");
   api.S.apps.find((x) => x.id === "homebox").installed = true;
+  // a click on the dim area around the window closes it (press and release both outside); inside, or a drag that ends outside, does not
+  { const pn = $("panel"); pn.getBoundingClientRect = () => ({ left: 100, right: 500, top: 50, bottom: 400 });
+    pn.open = true;
+    pn.listeners.mousedown({ target: pn, clientX: 300, clientY: 200 }); pn.listeners.click({ target: pn, clientX: 300, clientY: 200 });
+    confere(pn.open, "clicar no preenchimento da própria janela não fecha");
+    pn.listeners.mousedown({ target: {}, clientX: 300, clientY: 200 }); pn.listeners.click({ target: pn, clientX: 10, clientY: 10 });
+    confere(pn.open, "começar dentro e soltar fora (selecionar texto) não fecha");
+    pn.listeners.mousedown({ target: pn, clientX: 10, clientY: 10 }); pn.listeners.click({ target: pn, clientX: 10, clientY: 10 });
+    confere(!pn.open, "clicar fora da janela fecha");
+    delete pn.getBoundingClientRect; }
+
   // the lightbox
   api.S.apps.find((x) => x.id === "homebox").installed = false;
   api.openPanel("homebox"); await esperar(30);
