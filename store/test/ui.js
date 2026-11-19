@@ -212,6 +212,23 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
 
   // gallery, project links, history
   const shots = $("p-shots");
+  // the lightbox
+  api.S.apps.find((x) => x.id === "homebox").installed = false;
+  api.openPanel("homebox"); await esperar(30);
+  const primeira = [...$("p-shots").walk()].find((e) => e.tag === "a");
+  let prevenido = false;
+  primeira.listeners.click({ preventDefault() { prevenido = true; } }); await esperar(10);
+  confere($("lightbox").open && prevenido && $("lb-img").src === "https://img.example/a.png" && $("lb-count").textContent === "1 / 2", "clicar numa captura abre o lightbox na imagem certa");
+  $("lb-next").listeners.click(); await esperar(5);
+  confere($("lb-img").src === "https://img.example/b.png" && $("lb-count").textContent === "2 / 2", "seta para a direita: próxima captura");
+  $("lb-next").listeners.click(); await esperar(5);
+  confere($("lb-img").src === "https://img.example/a.png", "depois da última volta à primeira");
+  $("lightbox").listeners.keydown({ key: "ArrowLeft", preventDefault() {} }); await esperar(5);
+  confere($("lb-img").src === "https://img.example/b.png", "tecla ←: captura anterior");
+  $("lb-close").listeners.click(); confere(!$("lightbox").open, "o ✕ fecha o lightbox");
+  confere([...$("p-shots").walk()].filter((e) => e.tag === "button").length === 2, "a galeria tem uma seta de cada lado");
+  api.S.apps.find((x) => x.id === "homebox").installed = true;
+  api.openPanel("homebox"); await esperar(30);
   confere(shots.hidden, "gerenciar (instalado): sem capturas de tela");
   const homebox = api.S.apps.find((x) => x.id === "homebox");
   homebox.installed = false; homebox.about = { en: "long about", pt: "sobre longo" };

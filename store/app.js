@@ -139,7 +139,7 @@ const T = {
     remove: "Remover", 
     linkName: "Nome", linkUrl: "https://…", linkBad: "Use um endereço http:// ou https://",
     updateAvailable: "Atualização disponível",
-    getApp: "Instalar", factCategory: "Categoria", factAuthor: "Desenvolvedor", lkSite: "Site", lkRepoGh: "Repositório no GitHub", lkRepo: "Repositório", lkDocs: "Documentação", lkDemo: "Demonstração", lkVideo: "Vídeo", factSize: "Download", factArch: "Arquitetura", factVersion: "Versão", installing: (n) => `Instalando ${n}`, inBackground: "Continuar em segundo plano", installNow: "Instalar agora", advanced: "Avançado", rolledBack: "voltou à versão anterior", techDetails: "Detalhes técnicos", logTitle: "O que foi feito", closeLabel: "Fechar",
+    getApp: "Instalar", factCategory: "Categoria", factAuthor: "Desenvolvedor", lbPrev: "Anterior", lbNext: "Próxima", lbClose: "Fechar", lkSite: "Site", lkRepoGh: "Repositório no GitHub", lkRepo: "Repositório", lkDocs: "Documentação", lkDemo: "Demonstração", lkVideo: "Vídeo", factSize: "Download", factArch: "Arquitetura", factVersion: "Versão", installing: (n) => `Instalando ${n}`, inBackground: "Continuar em segundo plano", installNow: "Instalar agora", advanced: "Avançado", rolledBack: "voltou à versão anterior", techDetails: "Detalhes técnicos", logTitle: "O que foi feito", closeLabel: "Fechar",
     httpsNeeded: "precisa de HTTPS",
     httpsWarn: "Este app precisa de HTTPS: pela rede local (HTTP) o cofre e o service worker falham sem avisar. Use o acesso pela tailnet.",
     podmanOld: (need, host) => `Este app precisa do Podman ${need}+; o host tem ${host}. Atualize o Podman antes de instalar.`,
@@ -360,7 +360,7 @@ const T = {
     remove: "Remove", 
     linkName: "Name", linkUrl: "https://…", linkBad: "Use an http:// or https:// address",
     updateAvailable: "Update available",
-    getApp: "Install", factCategory: "Category", factAuthor: "Developer", lkSite: "Website", lkRepoGh: "GitHub repository", lkRepo: "Repository", lkDocs: "Documentation", lkDemo: "Demo", lkVideo: "Video", factSize: "Download", factArch: "Architecture", factVersion: "Version", installing: (n) => `Installing ${n}`, inBackground: "Continue in the background", installNow: "Install now", advanced: "Advanced", rolledBack: "rolled back to the previous version", techDetails: "Technical details", logTitle: "What was done", closeLabel: "Close",
+    getApp: "Install", factCategory: "Category", factAuthor: "Developer", lbPrev: "Previous", lbNext: "Next", lbClose: "Close", lkSite: "Website", lkRepoGh: "GitHub repository", lkRepo: "Repository", lkDocs: "Documentation", lkDemo: "Demo", lkVideo: "Video", factSize: "Download", factArch: "Architecture", factVersion: "Version", installing: (n) => `Installing ${n}`, inBackground: "Continue in the background", installNow: "Install now", advanced: "Advanced", rolledBack: "rolled back to the previous version", techDetails: "Technical details", logTitle: "What was done", closeLabel: "Close",
     httpsNeeded: "needs HTTPS",
     httpsWarn: "This app needs HTTPS: over the local network (HTTP) the vault and the service worker fail without saying why. Use tailnet access.",
     podmanOld: (need, host) => `This app needs Podman ${need}+; the host has ${host}. Update Podman before installing.`,
@@ -1237,6 +1237,26 @@ function showConfigTab(a) {
       ? [linha(t("newInstance"), t("cfgInstanceHint"), () => showInstance(a))] : []));
 }
 
+// The lightbox: one screenshot large, with arrows (and the arrow keys) to walk through them. Esc, the ✕ or a click outside close it.
+function openLightbox(urls, i) {
+  S.lb = { urls, i };
+  paintLightbox();
+  if (!$("lightbox").open) $("lightbox").showModal();
+}
+
+function paintLightbox() {
+  const { urls, i } = S.lb;
+  $("lb-img").src = urls[i];
+  $("lb-count").textContent = `${i + 1} / ${urls.length}`;
+  $("lb-prev").hidden = $("lb-next").hidden = urls.length < 2;
+}
+
+function lightboxGo(passo) {
+  if (!S.lb) return;
+  S.lb.i = (S.lb.i + passo + S.lb.urls.length) % S.lb.urls.length;
+  paintLightbox();
+}
+
 function renderPanel() {
   const a = current();
   $("p-icon").src = a.icon || "";
@@ -1253,10 +1273,24 @@ function renderPanel() {
     + deInst;
 
   renderSvc(a);
-  // Images the project hosts (app.json, screenshots); each opens full size in a new tab.
-  fill($("p-shots"), ...(a.screenshots || []).map((u) =>
-    h("a", { href: u, target: "_blank", rel: "noopener noreferrer", "aria-label": t("shots") },
+  // Images the project hosts (app.json, screenshots): a strip with an arrow on each side (no scrollbar); a click opens
+  // the lightbox. The link stays a real one, so a middle click still opens the image in a tab.
+  const fotos = a.screenshots || [];
+  const faixa = h("div", { class: "shots" }, ...fotos.map((u, i) =>
+    h("a", { href: u, target: "_blank", rel: "noopener noreferrer", "aria-label": `${t("shots")} ${i + 1}`,
+             onclick: (ev) => { ev.preventDefault(); openLightbox(fotos, i); } },
       h("img", { src: u, alt: "", loading: "lazy", referrerpolicy: "no-referrer" }))));
+  const seta = (dir, rotulo) => h("button", { type: "button", class: `g-arrow ${dir < 0 ? "g-left" : "g-right"}`, "aria-label": rotulo,
+    onclick: () => faixa.scrollBy({ left: dir * Math.max(200, faixa.clientWidth * 0.8), behavior: "smooth" }) }, dir < 0 ? "‹" : "›");
+  const esq = seta(-1, t("lbPrev")), dir = seta(1, t("lbNext"));
+  const setas = () => {      // an arrow shows only where there is more to see
+    const fim = faixa.scrollWidth - faixa.clientWidth - 2;
+    esq.hidden = !(faixa.scrollLeft > 2);
+    dir.hidden = !(faixa.scrollLeft < fim);
+  };
+  faixa.addEventListener("scroll", setas);
+  fill($("p-shots"), faixa, esq, dir);
+  setTimeout(setas, 60); setTimeout(setas, 600);       // after the images give the strip its width
   $("p-shots").hidden = a.installed || !(a.screenshots || []).length;
 
   const instaladas = new Set(a.units.filter((u) => u.installed).map((u) => u.unit));
@@ -2963,6 +2997,14 @@ $("settings-btn").addEventListener("click", openSettings);
 $("s-close").addEventListener("click", () => $("settings").close());
 $("b-close").addEventListener("click", () => $("bulk").close());
 $("i-close").addEventListener("click", () => $("install").close());
+$("lb-close").addEventListener("click", () => $("lightbox").close());
+$("lb-prev").addEventListener("click", () => lightboxGo(-1));
+$("lb-next").addEventListener("click", () => lightboxGo(1));
+$("lightbox").addEventListener("click", (ev) => { if (ev.target === $("lightbox")) $("lightbox").close(); });   // the empty space around the image
+$("lightbox").addEventListener("keydown", (ev) => {
+  if (ev.key === "ArrowLeft") { ev.preventDefault(); lightboxGo(-1); }
+  else if (ev.key === "ArrowRight") { ev.preventDefault(); lightboxGo(1); }
+});
 $("i-bg").addEventListener("click", () => $("install").close());
 $("r-close").addEventListener("click", () => $("resources").close());
 $("recheck").addEventListener("click", () => loadUpdates(true));

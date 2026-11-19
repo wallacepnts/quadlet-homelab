@@ -64,7 +64,7 @@
   <section id="p-section" hidden></section>
   <p id="p-desc"></p>
   <div id="p-svc" class="svc" hidden></div>
-  <div id="p-shots" class="shots" hidden></div>
+  <div id="p-shots" class="gallery" hidden></div>
   <details id="p-notes" class="notes" hidden><summary id="p-notes-title"></summary><div id="p-notes-body" class="md"></div></details>
   <div id="p-options" class="perms" hidden></div>
   <div id="p-perms" class="perms" hidden></div>
@@ -120,6 +120,13 @@
   </div>
   <div id="s-body"></div>
   <pre id="s-out" hidden></pre>
+</dialog>
+<dialog id="lightbox" class="lightbox" aria-label="Captura de tela">
+  <button id="lb-close" type="button" class="lb-btn lb-x" aria-label="Fechar">✕</button>
+  <button id="lb-prev" type="button" class="lb-btn lb-side lb-l" aria-label="Anterior">‹</button>
+  <img id="lb-img" alt="" referrerpolicy="no-referrer">
+  <button id="lb-next" type="button" class="lb-btn lb-side lb-r" aria-label="Próxima">›</button>
+  <span id="lb-count"></span>
 </dialog>
 <dialog id="install" class="install" aria-labelledby="i-title">
   <div class="panel-head">

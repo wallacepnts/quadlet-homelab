@@ -115,6 +115,10 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
     console.log("filhos:", await ev("[...document.getElementById('panel').children].map((e) => { const r = e.getBoundingClientRect(); return e.id + ':' + Math.round(r.top) + '-' + Math.round(r.bottom); }).filter((x) => !/:0-0$/.test(x)).join(' ')"));
     console.log("grade:", await ev("(() => { const d = document.getElementById('panel'), c = getComputedStyle(d); const r = d.getBoundingClientRect(); return c.gridTemplateRows + ' | ' + Math.round(r.top) + '-' + Math.round(r.bottom) + ' | pad ' + c.paddingBottom + ' | minH ' + c.minHeight + ' | h ' + c.height + ' | over ' + d.scrollHeight; })()"));
     await foto("97-loja-app");
+    console.log("galeria:", await ev("(() => { const f = document.querySelector('#p-shots .shots'); return 'barra: ' + (f.offsetHeight - f.clientHeight) + ' | setas visíveis: ' + [...document.querySelectorAll('#p-shots .g-arrow')].filter((b) => !b.hidden).length; })()"));
+    await ev("document.querySelector('#p-shots .g-right').click()"); await esperar(900); await foto("97-galeria-seta");
+    await ev("document.querySelector('#p-shots .shots a').click()"); await esperar(800); await foto("97-lightbox");
+    console.log("lightbox:", await ev("document.getElementById('lightbox').open + ' ' + document.getElementById('lb-count').textContent"));
   }
 
   if (MODO === "legado") {
