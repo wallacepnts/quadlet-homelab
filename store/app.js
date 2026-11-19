@@ -103,7 +103,7 @@ const T = {
     instanceOf: (b) => `instância de ${b}`,
     readyToInstall: (n) => `Pronto para instalar ${n}. Leva cerca de um minuto.`,
     planTitle: "O que vai acontecer",
-    dockerImage: "Imagem Docker", dockerTag: "Tag", containerName: "Nome do contêiner", noLimit: "sem limite", latestPinned: "a última versão",
+    tagHint: "Escolha uma versão da lista ou escreva a sua. Vazio: a última versão, que a instalação fixa.", dockerImage: "Imagem Docker", dockerTag: "Tag", containerName: "Nome do contêiner", noLimit: "sem limite", latestPinned: "a última versão",
     emptyRows: "Clique em “+” para adicionar um.", hHost: "Host", hContainer: "Contêiner", hProto: "Protocolo", hIp: "IP (opcional)", hKey: "Chave", hValue: "Valor", hLabel: "Rótulo",
     qlPlaceholder: "Buscar apps… (Enter abre, Esc fecha)", qlOpen: "Abrir", qlStore: "Ver na loja", qlManage: "Gerenciar", qlWeb: (q) => `Buscar “${q}” na web`, qlNone: "Nenhum app com esse nome.",
     appearance: "Aparência", apTheme: "Tema", apThemes: { system: "Como o sistema", light: "Claro", dark: "Escuro" }, apAccent: "Cor de destaque",
@@ -324,7 +324,7 @@ const T = {
     instanceOf: (b) => `instance of ${b}`,
     readyToInstall: (n) => `Ready to install ${n}. It takes about a minute.`,
     planTitle: "What will happen",
-    dockerImage: "Docker image", dockerTag: "Tag", containerName: "Container name", noLimit: "no limit", latestPinned: "the latest version",
+    tagHint: "Pick a version from the list or write your own. Empty: the latest version, which the install pins.", dockerImage: "Docker image", dockerTag: "Tag", containerName: "Container name", noLimit: "no limit", latestPinned: "the latest version",
     emptyRows: "Click “+” to add one.", hHost: "Host", hContainer: "Container", hProto: "Protocol", hIp: "IP (optional)", hKey: "Key", hValue: "Value", hLabel: "Label",
     qlPlaceholder: "Search apps… (Enter opens, Esc closes)", qlOpen: "Open", qlStore: "See in the store", qlManage: "Manage", qlWeb: (q) => `Search the web for “${q}”`, qlNone: "No app by that name.",
     appearance: "Appearance", apTheme: "Theme", apThemes: { system: "Like the system", light: "Light", dark: "Dark" }, apAccent: "Accent colour",
@@ -1725,17 +1725,38 @@ async function formDaUnidade(a, u, pre) {
   let mem = lv.memory, cpus = lv.cpus;
   const config = () => ({ ports: G.ports.read(), volumes: G.volumes.read(), env: G.env.read(), devices: G.devices.read(),
     caps: caps.filter((c) => c.box.checked).map((c) => ({ name: c.n })), restart: reinicio.value,
-    limits: { memory: String(mem).trim(), cpus: String(cpus).trim() } });
+    limits: { memory: String(mem).trim(), cpus: String(cpus).trim() }, image: imagemConfig() });
   const saida = h("div", { class: "cust-out" });
   // The unit as text: what it is, and the person's own version of it. Saved as a whole file the install and every
   // update then use, instead of the repository's; the form above does not apply to a unit rewritten this way.
   const rawSec = rawUnit(a, unit, d, pre);
-  const imagem = (u.image || "").replace(/@sha256:.*/, "");
-  const repo = imagem.replace(/:[^/:]*$/, "");
-  const tag = u.templated ? t("latestPinned") : tagOf(u.image);
+  // The image and its tag, both editable: what runs now (the drop-in's, else the version the host pinned, else the
+  // repository's), and the tag a list of the registry's versions offers, or anything the person writes.
+  const efetiva = (d.image_override || u.installed_image || u.image || "").replace(/@sha256:.*/, "");
+  const [repoIni, tagIni] = /^(.*?)(?::([^/:]+))?$/.exec(efetiva).slice(1).map((x) => x || "");
   const lerLeitura = (rotulo, valor) => h("label", { class: "field ro" }, rotulo, h("input", { type: "text", value: valor, readonly: true }));
+  const campoImagem = h("input", { type: "text", value: repoIni, spellcheck: "false", autocomplete: "off", "aria-label": t("dockerImage") });
+  const listaTags = h("datalist", { id: `tags-${unit}` });
+  const campoTag = h("input", { type: "text", value: tagIni, list: `tags-${unit}`, spellcheck: "false", autocomplete: "off",
+    placeholder: u.templated || !tagIni ? t("latestPinned") : "", "aria-label": t("dockerTag") });
+  const carregaTags = async () => {
+    try {
+      const r = await api(`/api/tags?image=${encodeURIComponent(campoImagem.value.trim())}`);
+      fill(listaTags, ...(r.tags || []).map((v) => h("option", { value: v })));
+    } catch (e) { /* no list: the tag can still be typed */ }
+  };
+  campoImagem.addEventListener("change", carregaTags);
+  carregaTags();
+  const imagemConfig = () => {
+    const ref = campoImagem.value.trim() + (campoTag.value.trim() ? `:${campoTag.value.trim()}` : "");
+    const mudou = campoImagem.value.trim() !== repoIni || campoTag.value.trim() !== tagIni;
+    return mudou || d.image_override ? ref : "";          // untouched: the unit, and its pinned version, are left alone
+  };
   const el = h("form", { class: "cust", onsubmit: (ev) => ev.preventDefault() },
-    h("div", { class: "cust-two" }, lerLeitura(t("dockerImage"), repo), lerLeitura(t("dockerTag"), tag)),
+    h("div", { class: "cust-two" },
+      h("label", { class: "field" }, t("dockerImage"), campoImagem),
+      h("label", { class: "field" }, t("dockerTag"), campoTag, listaTags)),
+    h("p", { class: "cust-note" }, t("tagHint")),
     lerLeitura(t("containerName"), unit),
     d.base_changed ? h("p", { class: "note" }, t("baseChanged")) : null,
     d.override ? h("p", { class: "cust-note" }, `${t("filePath")}: ${d.file}`) : null,

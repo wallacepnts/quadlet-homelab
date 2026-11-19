@@ -60,6 +60,8 @@ DEVICE = re.compile(r"^/dev/[A-Za-z0-9._/-]+(:/dev/[A-Za-z0-9._/-]+)?(:[rwm]{1,3
 CDI = re.compile(r"^[A-Za-z0-9.-]+/[A-Za-z0-9_-]+=[A-Za-z0-9._-]+$")
 PORT = re.compile(r"^(?:(?P<bind>\[[0-9a-fA-F:]+\]|[0-9.]+):)?(?P<host>\d{1,5}):(?P<container>\d{1,5})"
                   r"(?:/(?P<proto>tcp|udp))?$")
+# An image reference: registry[:port]/path[:tag][@digest], lowercase paths as registries require.
+IMAGE_REF = re.compile(r"^(?:[a-z0-9.-]+(?::\d+)?/)?[a-z0-9._-]+(?:/[a-z0-9._-]+)*(?::[A-Za-z0-9_][A-Za-z0-9._-]{0,127})?(?:@sha256:[0-9a-f]{64})?$")
 LIMIT_VALUE = 4096
 
 
@@ -363,7 +365,7 @@ def _chave_dup(grupo, item, linha):
             "env": item.get("key")}.get(grupo, linha)
 
 
-def validate_and_render(base, desejado, restart, ctx, propria="", base_limits=None):
+def validate_and_render(base, desejado, restart, ctx, propria="", base_limits=None, base_image=""):
     """(text or None, errors, warnings).
 
     `desejado` is {group: [item]} — the whole list the person wants for each group.
@@ -423,6 +425,16 @@ def validate_and_render(base, desejado, restart, ctx, propria="", base_limits=No
             erros.append(f"CPUs {cpus}: este host tem {ctx.ncpu}")
         else:
             linhas.append(("PodmanArgs", f"--cpus={cpus}"))
+    # The image: only when the person set one that is not the unit's own (an empty field leaves the unit, and the version
+    # the host pins for it, alone).
+    imagem = str(desejado.get("image") or "").strip()
+    if imagem and imagem != (base_image or "").strip():
+        if len(imagem) > 300 or not IMAGE_REF.match(imagem):
+            erros.append(f"imagem {imagem!r}: use o endereço como registry/organização/nome:tag")
+        elif ":" not in imagem.rsplit("/", 1)[-1] and "@" not in imagem:
+            erros.append("imagem: sem tag nem digest o Podman usa :latest; escreva a versão (a regra 9 não aceita tag flutuante)")
+        else:
+            linhas.append(("Image", imagem))
     if restart is not None and restart != (b_restart or ""):
         if restart not in RESTARTS:
             erros.append(f"reinício {restart!r}: use {', '.join(RESTARTS)}")
@@ -583,6 +595,18 @@ def selftest():
     assert not e and "Memory=512m" in t and "PodmanArgs=--cpus=1.5" in t, (e, t)
     assert validate_and_render(base, quer(), None, livre, base_limits=sem) == (None, [], []), "no limit asked: nothing written"
     assert validate_and_render(base, quer(memory="1g"), None, livre, base_limits={"memory": "1g", "cpus": ""}) == (None, [], []), "the unit's own limit is not a change"
+    # the image: written only when it differs from the unit's, with a tag or a digest, and shaped like a reference
+    img = lambda ref: {**nada, "image": ref}
+    t, e, _ = validate_and_render(base, img("ghcr.io/o/r:1.2.0"), None, livre, base_limits=sem, base_image="ghcr.io/o/r")
+    assert not e and "[Container]" in t and "Image=ghcr.io/o/r:1.2.0" in t, (e, t)
+    assert validate_and_render(base, img("ghcr.io/o/r:1.2.0"), None, livre, base_limits=sem, base_image="ghcr.io/o/r:1.2.0") == (None, [], []), "the unit's own image is not a change"
+    assert validate_and_render(base, img(""), None, livre, base_limits=sem, base_image="ghcr.io/o/r") == (None, [], []), "an empty image leaves the unit alone"
+    t, e, _ = validate_and_render(base, img("ghcr.io/o/r"), None, livre, base_limits=sem, base_image="docker.io/x/y:1")
+    assert t is None and "sem tag" in e[0], e
+    t, e, _ = validate_and_render(base, img("Not An Image:1"), None, livre, base_limits=sem, base_image="")
+    assert t is None and "imagem" in e[0], e
+    t, e, _ = validate_and_render(base, img("ghcr.io/o/r@sha256:" + "a" * 64), None, livre, base_limits=sem, base_image="")
+    assert not e and "@sha256:" in t, (e, t)
     # where the controllers are not delegated, saving a limit is refused with the reason, and a form with none is untouched
     t, e, _ = validate_and_render(base, quer(memory="512m"), None, ctx, base_limits=sem)
     assert t is None and "não delega o controlador memory" in e[0], e

@@ -213,6 +213,18 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
     }
   }
 
+  if (MODO === "personalizada") {
+    // reads only: the custom install sheet of an app that is not installed (never saves)
+    await esperar(2500);
+    await ev("[...document.querySelectorAll('nav button, aside button, .side button')].find((b) => /^Loja/.test(b.textContent.trim())).click()"); await esperar(1200);
+    await ev("(() => { const c = [...document.querySelectorAll('.card')].find((x) => x.querySelector('.get:not(.got)') && /Copyparty/.test(x.textContent)); c.click(); })()"); await esperar(2500);
+    await ev("document.querySelector('#p-actions .split-arrow').click()"); await esperar(300);
+    await ev("[...document.querySelectorAll('.split-menu button')].find((b) => /personalizada/i.test(b.textContent)).click()"); await esperar(4000);
+    console.log("tags:", await ev("[...document.querySelectorAll('#custom datalist option')].slice(0, 6).map((o) => o.value).join(' ') + ' (' + document.querySelectorAll('#custom datalist option').length + ')'"));
+    console.log("campos:", await ev("[...document.querySelectorAll('#custom input[aria-label=\"Imagem Docker\"], #custom input[aria-label=\"Tag\"]')].map((i) => i.value + '|' + i.placeholder + '|' + i.readOnly).join(' ; ')"));
+    await foto("97-personalizada");
+  }
+
   if (MODO === "legado") {
     // reads only: the banner of an old media-stack install, and what the new apps look like in the store
     await ate("document.querySelectorAll('.tile').length > 0", 15000); await esperar(2000);

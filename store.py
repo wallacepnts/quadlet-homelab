@@ -1047,6 +1047,38 @@ def unit_source(unit, pre=False):
     raise LookupError(loc("not installed"))
 
 
+TAGS_CACHE = {}          # image -> (when, [tags]); a registry is not asked again for ten minutes
+TAG_RELEASE = re.compile(r"^v?\d+(?:\.\d+)*(?:-[A-Za-z0-9.]+)*$")
+TAG_PRE = re.compile(r"(?i)(?:^|[-.])(?:rc|alpha|beta|dev|nightly|preview|snapshot|test)\d*(?:$|[-.])")
+
+
+def tag_key(tag):
+    nums = [int(n) for n in re.findall(r"\d+", tag.split("-", 1)[0])]
+    return (nums, tag)
+
+
+def tag_list(image):
+    """The versions of an image the registry lists, newest first: release-shaped tags only (no `latest`, no
+    digests-as-tags, no release candidates), at most 60. [] when the registry will not say, or in a sandbox."""
+    repo = image.split("@")[0]
+    if ":" in repo.rsplit("/", 1)[-1]:
+        repo = repo.rsplit(":", 1)[0]
+    if PREFIX or not O.IMAGE_REF.match(repo):
+        return []
+    agora = time.time()
+    if repo in TAGS_CACHE and agora - TAGS_CACHE[repo][0] < 600:
+        return TAGS_CACHE[repo][1]
+    todas = U.registry_tags(repo, paginas=5) or []
+    boas = sorted({t for t in todas if TAG_RELEASE.match(t) and not TAG_PRE.search(t)}, key=tag_key, reverse=True)[:60]
+    TAGS_CACHE[repo] = (agora, boas)
+    return boas
+
+
+def image_of(texto):
+    """The `Image=` a unit text (or a drop-in) carries, or ''."""
+    return next((v.strip() for k, v in O.parse_sections(texto or "").get("Container", []) if k == "Image"), "")
+
+
 def custom_state(unit, pre=False):
     """What the Customize screen starts from: the unit, what it carries now, and the rules."""
     p, unit_texto, texto = unit_source(unit, pre)
@@ -1066,7 +1098,8 @@ def custom_state(unit, pre=False):
                             else unit_repo_text(unit)),
             "repo_text": unit_repo_text(unit), "custom_unit": bool(unit_custom_file(unit) and unit_custom_file(unit).is_file()),
             "installed_text": unit_texto if p is not None else None,
-            "limits": cgroup_limits(), "limit_values": O.merged_limits(unit_texto, texto)}
+            "limits": cgroup_limits(), "limit_values": O.merged_limits(unit_texto, texto),
+            "image_base": image_of(unit_texto), "image_override": image_of(texto)}
 
 
 # -- the unit as text: see it, rewrite it, or install the person's own -------------------------------
@@ -1251,6 +1284,11 @@ def clean_config(config):
         if not isinstance(lim, dict) or not all(isinstance(lim.get(k, ""), str) for k in ("memory", "cpus")):
             raise ValueError("limits")
         saida["limits"] = {"memory": lim.get("memory", ""), "cpus": lim.get("cpus", "")}
+    imagem = config.get("image")
+    if imagem is not None:
+        if not isinstance(imagem, str):
+            raise ValueError("image")
+        saida["image"] = imagem
     return saida, (restart or None)
 
 
@@ -1287,7 +1325,8 @@ def custom_plan(unit, config, pre=False):
     base = O.base_of(unit_texto)
     ctx = custom_context(unit, O.merged(base, drop))
     texto, erros, avisos = O.validate_and_render(base, desejado, restart, ctx, propria=unit,
-                                                 base_limits=O.limits_in(O.parse_sections(unit_texto)))
+                                                 base_limits=O.limits_in(O.parse_sections(unit_texto)),
+                                                 base_image=image_of(unit_texto))
     gerado = ""
     if not erros:
         ok, mensagens, gerado = (O.quadlet_check(systemd_dir(), p, texto) if p is not None
@@ -2801,6 +2840,8 @@ class Handler(BaseHTTPRequestHandler):
             if url.path == "/api/disk":
                 return self._json(200, disk(app))
             return self._json(200, arch(app))
+        if url.path == "/api/tags":
+            return self._json(200, {"tags": tag_list(q.get("image", ""))})
         if url.path == "/api/history":
             try:
                 limite = max(1, min(500, int(q.get("limit", "100"))))
@@ -4508,6 +4549,19 @@ esac
     assert [x["ok"] for x in r] == [False, True, None], "an unknown answer is not a warning"
     assert r[0]["platforms"] == ["amd64", "unknown"] and r[2]["platforms"] is None
     assert ARCH_NOMES["x86_64"] == "amd64" and ARCH_NOMES["aarch64"] == "arm64"
+    # the version list: release-shaped tags, newest first, and none in a sandbox
+    assert tag_key("1.20.26") > tag_key("1.9.0") and tag_key("v2.0") > tag_key("v1.99.1")
+    antes_u = U.registry_tags
+    U.registry_tags = lambda *_a, **_k: ["latest", "1.9.0", "1.20.26", "1.21.0-rc1", "sha256-abc", "1.20.13", "main", "1.20.26-alpine"]
+    pf = PREFIX
+    globals()["PREFIX"] = None
+    TAGS_CACHE.clear()
+    try:
+        assert tag_list("ghcr.io/o/r:1.0") == ["1.20.26-alpine", "1.20.26", "1.20.13", "1.9.0"] or tag_list("ghcr.io/o/r")[0].startswith("1.20.26"), tag_list("ghcr.io/o/r")
+        assert "latest" not in tag_list("ghcr.io/o/r") and "1.21.0-rc1" not in tag_list("ghcr.io/o/r") and tag_list("BAD IMAGE") == []
+    finally:
+        U.registry_tags = antes_u
+        globals()["PREFIX"] = pf
     # cancelling: SIGINT to the running command, then what the job asked to put back
     j = start_job("x", "install", ["sleep", "30"], None, desfazer=[sys.executable, "-c", "print('undone')"])
     assert j is not None

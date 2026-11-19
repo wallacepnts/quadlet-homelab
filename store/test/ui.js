@@ -96,6 +96,7 @@ const rotas = {
     effective: { ports: [{ bind: "", host: 8085, container: 3000, proto: "tcp" }, { raw: "${DNS}:53:53/udp", opaque: true }],
       volumes: [{ host: "%h/a", container: "/a", label: "Z", ro: false, extra: [] }, { host: "%h/b", container: "/b", label: "z", ro: true, extra: [] }],
       env: [{ key: "TZ", value: "UTC" }], devices: [], caps: [{ name: "CHOWN" }] } },
+  "/api/tags": { tags: ["1.2.0", "1.1.0"] },
   "/api/custom/preview": { errors: [], warnings: ["uma porta publicada abre o app na rede local"], text: "[Container]\nPublishPort=\n", generated: "podman run x", changed: true },
   "/api/custom/apply": { job: "j1" }, "/api/custom/reset": { job: "j1" },
   "/api/job/j1": { rc: 0, next: 0, output: "" },
@@ -1219,6 +1220,17 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   confere(pre.config.ports[1].opaque === true && pre.config.ports[1].raw === "${DNS}:53:53/udp", "a entrada opaca volta intacta");
   confere(pre.config.volumes.length === 1 && pre.config.volumes[0].host === "%h/b" && pre.config.volumes[0].ro === true, "o volume removido não vai; o outro mantém as opções");
   confere(pre.config.caps.length === 1 && pre.config.caps[0].name === "CHOWN" && pre.config.restart === "always", "capabilities e reinício");
+  // the image and the tag: editable, the tag with the registry's versions to pick from, and untouched they send nothing
+  const campos = [...formulario().walk()].filter((e) => e.tag === "input" && (e.attrs["aria-label"] === "Imagem Docker" || e.attrs["aria-label"] === "Tag"));
+  confere(campos.length === 2 && campos.every((c) => c.attrs.readonly === undefined), "imagem e tag são campos editáveis");
+  confere(pre.config.image === "", "sem mexer na imagem nem na tag, o payload não leva imagem (a versão fixada fica como está)");
+  const opcoes = [...[...formulario().walk()].find((e) => e.tag === "datalist").walk()].filter((e) => e.tag === "option").map((e) => e.attrs.value);
+  confere(opcoes.join(",") === "1.2.0,1.1.0", `a tag oferece as versões do registry (${opcoes})`);
+  campos[1].value = "9.9.9";
+  porTexto(folhaC, "Pré-visualizar")[0].listeners.click(); await esperar(100);
+  const preI = posts.filter((x) => x.rota === "/api/custom/preview").pop().corpo;
+  confere(/:9\.9\.9$/.test(preI.config.image), `com a tag mudada, o payload leva a imagem completa (${preI.config.image})`);
+  campos[1].value = "";
   confere(!/null|undefined/.test(folhaC.textContent), "nenhum 'null' solto na tela");
   confere(/rede local/.test(formulario().textContent) && /PublishPort=/.test(formulario().textContent) && /podman run x/.test(formulario().textContent),
     "a pré-visualização mostra o aviso, o arquivo e o comando gerado");
