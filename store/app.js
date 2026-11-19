@@ -139,7 +139,7 @@ const T = {
     remove: "Remover", 
     linkName: "Nome", linkUrl: "https://…", linkBad: "Use um endereço http:// ou https://",
     updateAvailable: "Atualização disponível",
-    getApp: "Obter", installNow: "Instalar agora", advanced: "Avançado", rolledBack: "voltou à versão anterior", techDetails: "Detalhes técnicos", logTitle: "O que foi feito", closeLabel: "Fechar",
+    getApp: "Instalar", installing: (n) => `Instalando ${n}`, inBackground: "Continuar em segundo plano", installNow: "Instalar agora", advanced: "Avançado", rolledBack: "voltou à versão anterior", techDetails: "Detalhes técnicos", logTitle: "O que foi feito", closeLabel: "Fechar",
     httpsNeeded: "precisa de HTTPS",
     httpsWarn: "Este app precisa de HTTPS: pela rede local (HTTP) o cofre e o service worker falham sem avisar. Use o acesso pela tailnet.",
     podmanOld: (need, host) => `Este app precisa do Podman ${need}+; o host tem ${host}. Atualize o Podman antes de instalar.`,
@@ -360,7 +360,7 @@ const T = {
     remove: "Remove", 
     linkName: "Name", linkUrl: "https://…", linkBad: "Use an http:// or https:// address",
     updateAvailable: "Update available",
-    getApp: "Get", installNow: "Install now", advanced: "Advanced", rolledBack: "rolled back to the previous version", techDetails: "Technical details", logTitle: "What was done", closeLabel: "Close",
+    getApp: "Install", installing: (n) => `Installing ${n}`, inBackground: "Continue in the background", installNow: "Install now", advanced: "Advanced", rolledBack: "rolled back to the previous version", techDetails: "Technical details", logTitle: "What was done", closeLabel: "Close",
     httpsNeeded: "needs HTTPS",
     httpsWarn: "This app needs HTTPS: over the local network (HTTP) the vault and the service worker fail without saying why. Use tailnet access.",
     podmanOld: (need, host) => `This app needs Podman ${need}+; the host has ${host}. Update Podman before installing.`,
@@ -2048,10 +2048,11 @@ async function run(action, file = "") {
   const custom = action === "install" && S.preCustom[a.id] ? S.preCustom[a.id] : null;
   const unidades = action === "install" && S.preUnit[a.id] ? S.preUnit[a.id] : null;
   const purge = action === "remove" && !!($("p-form").querySelector("[data-purge]") || {}).checked;
-  await follow(() => api("/api/run", { app: a.id, action, secrets, vars, file, confirm,
+  const iniciar = () => api("/api/run", { app: a.id, action, secrets, vars, file, confirm,
                                        ...(trial ? { trial, trial_purge } : {}), ...(custom ? { custom } : {}),
                                        ...(unidades ? { custom_units: unidades, ack: !!S.preUnitAck[a.id] } : {}),
-                                       ...(purge ? { purge: true } : {}), ...(Object.keys(options).length ? { options } : {}) }));
+                                       ...(purge ? { purge: true } : {}), ...(Object.keys(options).length ? { options } : {}) });
+  await (action === "install" ? installFlow(a, iniciar) : follow(iniciar));
   if (custom) delete S.preCustom[a.id];
   if (unidades) { delete S.preUnit[a.id]; delete S.preUnitAck[a.id]; }
   if (action === "backup" || action === "restore") showBackups(a);
@@ -2572,7 +2573,7 @@ function stepLabel(desc) {
 // Two ways to show it, kept in this browser: the steps with a bar (default), or the terminal, which is the output as it comes.
 function jobProgress(host, opcoes = {}) {
   let plano = [], atual = 0, total = 0, falhou = false, fim = null, buf = "", rodando = false, relogio = null, bruto = "", termSujo = false, mostrando = null;
-  let modo = localStorage.getItem("qh-progress") === "terminal" ? "terminal" : "steps";
+  let modo = !opcoes.janela && localStorage.getItem("qh-progress") === "terminal" ? "terminal" : "steps";   // the install window shows steps and console together
   const inicio = Date.now();
   let passoInicio = inicio, tFim = null;
   const seg = (ms) => { const n = Math.max(0, Math.round(ms / 1000)); return n >= 60 ? `${Math.floor(n / 60)}min ${n % 60}s` : `${n}s`; };
@@ -2591,7 +2592,7 @@ function jobProgress(host, opcoes = {}) {
     if (opcoes.onmode) opcoes.onmode(m);
     desenha(true);
   };
-  const cabeca = (estado) => h("div", { class: "pr-head" }, h("b", {}, estado),
+  const cabeca = (estado) => opcoes.janela ? h("div", { class: "pr-head" }, h("b", {}, estado), tempoEl) : h("div", { class: "pr-head" }, h("b", {}, estado),
     h("div", { class: "pr-right" }, tempoEl, h("div", { class: "seg", role: "group", "aria-label": t("prView") }, botao("steps", t("prSteps")), botao("terminal", t("prTerminal")))));
   const desenha = (forcar = false) => {
     host.hidden = !plano.length;
@@ -2612,7 +2613,8 @@ function jobProgress(host, opcoes = {}) {
     const cheio = h("i", {});
     const barra = h("div", { class: "bar" }, cheio);
     cheio.style.width = `${pct}%`;                // through the CSSOM: the CSP forbids a style attribute
-    fill(host, cabeca(estado), barra,
+    const pctEl = opcoes.janela ? h("span", { class: "pr-pct" }, `${pct}%`) : null;
+    fill(host, cabeca(estado), opcoes.janela ? h("div", { class: "bar-row" }, barra, pctEl) : barra,
       h("ol", { class: "pr-steps" }, ...plano.map((d, i) => {
         const n = i + 1;
         const ruim = (falhou || (fim !== null && fim !== 0)) && n === atual;
@@ -2656,6 +2658,53 @@ function jobProgress(host, opcoes = {}) {
     reset() { plano = []; atual = 0; total = 0; falhou = false; fim = null; tFim = null; buf = ""; bruto = ""; termSujo = false; mostrando = null; rodando = false; if (relogio) { clearInterval(relogio); relogio = null; } host.hidden = true; fill(host); },
     mode: () => modo,
   };
+}
+
+// Installing, in a window of its own: the whole bar with its percentage, every step, and the console under them.
+// Closing it ("Continue in the background") does not stop the job: it runs on the server, and the chip in the top bar
+// brings the progress back.
+async function installFlow(a, start) {
+  const pronto = $("i-bg");
+  $("i-title").textContent = t("installing")(a.name);
+  $("i-out").textContent = "";
+  $("i-result").textContent = "";
+  $("i-open").hidden = true;
+  $("i-spin").hidden = false;
+  pronto.textContent = t("inBackground");
+  const prog = jobProgress($("i-progress"), { janela: true });
+  prog.reset();
+  $("panel").close();
+  $("install").showModal();
+  const fim = (rc, msg) => {
+    $("i-spin").hidden = true;
+    $("i-result").textContent = msg;
+    $("i-result").className = rc === 0 ? "ok" : "bad";
+    pronto.textContent = t("closeLabel");
+  };
+  try {
+    const { job } = await start();
+    let next = 0, st;
+    do {
+      await new Promise((r) => setTimeout(r, 700));
+      st = await api(`/api/job/${job}?from=${next}`);
+      next = st.next;
+      if (st.output) {
+        $("i-out").textContent += st.output; $("i-out").scrollTop = $("i-out").scrollHeight;
+        prog.feed(st.output);
+        $("i-spin").hidden = !$("i-progress").hidden;
+      }
+    } while (st.rc === null);
+    prog.finish(st.rc);
+    fim(st.rc, st.rc === 0 ? t("done") : `${t("failed")} (${st.rc})`);
+    await load();
+    const b = S.apps.find((x) => x.id === a.id), url = st.rc === 0 && b ? openUrl(b) : null;
+    if (url) { $("i-open").href = url; $("i-open").hidden = false; }
+  } catch (e) {
+    prog.finish(1);
+    const msg = e.status === 409 ? t("busy") : String(e.message);
+    $("i-out").textContent += msg;
+    fim(1, msg);
+  }
 }
 
 async function follow(start) {
@@ -2865,6 +2914,8 @@ $("files").addEventListener("drop", (ev) => {
 $("settings-btn").addEventListener("click", openSettings);
 $("s-close").addEventListener("click", () => $("settings").close());
 $("b-close").addEventListener("click", () => $("bulk").close());
+$("i-close").addEventListener("click", () => $("install").close());
+$("i-bg").addEventListener("click", () => $("install").close());
 $("r-close").addEventListener("click", () => $("resources").close());
 $("recheck").addEventListener("click", () => loadUpdates(true));
 renderChrome();

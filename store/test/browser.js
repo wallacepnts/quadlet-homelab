@@ -68,6 +68,8 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
     await ev("[...document.querySelectorAll('#p-actions button')].find((b) => b.textContent.trim().startsWith('Instalar')).click()"); await esperar(1500);
     await ev("(() => { for (const i of document.querySelectorAll('#p-form input[data-secret]')) i.value = 'tskey-auth-test'; })()");
     await ev("[...document.querySelectorAll('#p-form button')].find((b) => /Instalar agora/.test(b.textContent)).click()"); await esperar(4500);
+    await foto("98-instalando");
+    console.log("janela:", await ev("(() => { const d = document.getElementById('install'); return d.open + ' | ' + document.getElementById('i-title').textContent + ' | ' + document.getElementById('i-progress').textContent.replace(/\\s+/g, ' ').slice(0, 160) + ' | ' + document.getElementById('i-bg').textContent; })()"));
     if (process.env.QH_PROGRESS_TERMINAL) { await ev("[...document.querySelectorAll('#p-progress .seg-btn')].find((b) => b.textContent.trim() === 'Terminal').click()"); await esperar(500); }
     console.log("progresso:", await ev("document.getElementById('p-progress').hidden ? 'oculto' : document.getElementById('p-progress').textContent.replace(/\\s+/g, ' ').slice(0, 300)"));
     await ev("document.getElementById('p-progress').scrollIntoView()"); await esperar(300);

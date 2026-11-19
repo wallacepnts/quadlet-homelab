@@ -121,6 +121,20 @@
   <div id="s-body"></div>
   <pre id="s-out" hidden></pre>
 </dialog>
+<dialog id="install" class="install" aria-labelledby="i-title">
+  <div class="panel-head">
+    <h2 id="i-title"></h2>
+    <button id="i-close" type="button" class="icon text" aria-label="Fechar">✕</button>
+  </div>
+  <div id="i-spin" class="dots" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div id="i-progress" class="progress" hidden></div>
+  <pre id="i-out" class="live-term" tabindex="0"></pre>
+  <div class="install-foot">
+    <span id="i-result" role="status"></span>
+    <a id="i-open" class="btn" target="_blank" rel="noopener noreferrer" hidden>Abrir</a>
+    <button id="i-bg" type="button" class="ghost"></button>
+  </div>
+</dialog>
 <dialog id="bulk">
   <div class="panel-head">
     <h2 id="b-title"></h2>
