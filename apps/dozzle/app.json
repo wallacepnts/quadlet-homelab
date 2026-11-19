@@ -12,6 +12,7 @@
   "author": "amir20",
   "source": "https://github.com/amir20/dozzle",
   "docs": "https://dozzle.dev/",
+  "license": "MIT",
   "architectures": ["amd64", "arm64", "arm"],
   "category": "Monitoring",
   "units": { "dozzle": { "image": "v{version}" } }

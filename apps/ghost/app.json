@@ -9,6 +9,7 @@
   "author": "TryGhost",
   "source": "https://github.com/TryGhost/Ghost",
   "docs": "https://ghost.org",
+  "license": "MIT",
   "architectures": ["amd64", "arm64", "arm"],
   "category": "Productivity",
   "units": { "ghost": { "upstream": "TryGhost/Ghost", "image": "{version}-alpine" } }

@@ -12,6 +12,7 @@
   "author": "crocodilestick",
   "source": "https://github.com/crocodilestick/calibre-web-automated",
   "docs": "https://github.com/crocodilestick/Calibre-Web-Automated",
+  "license": "GPL-3.0",
   "architectures": ["amd64", "arm64"],
   "category": "Media",
   "units": { "calibre-web-automated": { "image": "v{version}" } }

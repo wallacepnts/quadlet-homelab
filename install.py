@@ -4637,7 +4637,7 @@ def app_cards(pastas):
                  "description": (m.get("short_desc") or {}).get("en", ""),
                  "long": (m.get("description") or {}).get("en", ""), "author": m.get("author"),
                  "website": m.get("website"), "source": m.get("source"), "docs": m.get("docs"),
-                 "demo": m.get("demo"), "video": m.get("video"), "architectures": m.get("architectures")}
+                 "demo": m.get("demo"), "video": m.get("video"), "license": m.get("license"), "architectures": m.get("architectures")}
         pt[d] = {"description": (m.get("short_desc") or {}).get("pt", ""), "long": (m.get("description") or {}).get("pt", "")}
     return en, pt
 
@@ -4730,7 +4730,7 @@ def catalog_entry(d, home, tailnet, en, pt, ativos, saude, falhas=None):
                         "pt": pt.get(d, {}).get("description", "")},
         "about": {"en": vitrine.get("long", ""), "pt": pt.get(d, {}).get("long", "")},
         "author": vitrine.get("author"), "website": vitrine.get("website"), "source": vitrine.get("source"),
-        "docs": vitrine.get("docs"), "demo": vitrine.get("demo"), "video": vitrine.get("video"),
+        "docs": vitrine.get("docs"), "demo": vitrine.get("demo"), "video": vitrine.get("video"), "license": vitrine.get("license"),
         "architectures": vitrine.get("architectures"),
         # An install choice the developer offers (app.json options): asked on the first install, read-only after.
         "options": [{"key": k, "question": o["question"], "default": o["default"], "chosen": s.options[k],

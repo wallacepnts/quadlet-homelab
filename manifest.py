@@ -98,7 +98,7 @@ def dump(data):
     return "{\n" + ",\n".join(linhas) + "\n}\n"
 
 
-KEY_ORDER = ["$schema", "title", "short_desc", "description", "author", "website", "source", "docs", "demo", "video", "architectures", "category",
+KEY_ORDER = ["$schema", "title", "short_desc", "description", "author", "website", "source", "docs", "demo", "video", "license", "architectures", "category",
              "min_podman", "requires_https", "no_gui", "deprecated", "secrets", "validate", "config", "vars", "ask",
              "login", "choices", "options", "widgets", "icon", "backup", "units", "instance"]
 
@@ -513,7 +513,8 @@ def schema(grupos):
         "title": texto, "short_desc": par, "description": par, "author": texto,
         "website": {"type": "string", "format": "uri"}, "source": {"type": "string", "format": "uri"},
         "docs": {"type": "string", "format": "uri"}, "demo": {"type": "string", "format": "uri"},
-        "video": {"type": "string", "format": "uri"}, "architectures": {"type": "array", "items": texto},
+        "video": {"type": "string", "format": "uri"}, "license": {"type": "string", "minLength": 1, "maxLength": 40},
+        "architectures": {"type": "array", "items": texto},
         "category": {"enum": list(grupos)}, "min_podman": {"type": "string"},
         "requires_https": {"type": "boolean"}, "no_gui": {"const": True}, "deprecated": par,
         "secrets": mapa(texto), "validate": mapa(texto), "config": mapa(texto),
@@ -554,6 +555,9 @@ def problems(data, grupos, folder=None):
             erros.append(f'"{k}" must be a string')
         elif k in ("website", "source", "docs", "demo", "video") and data.get(k) and not re.fullmatch(r"https://[A-Za-z0-9.-]+(/\S*)?", data[k]):
             erros.append(f'"{k}" must be a plain https:// URL')
+    lic = data.get("license")
+    if lic is not None and (not isinstance(lic, str) or not lic.strip() or len(lic) > 40 or "\n" in lic):
+        erros.append('"license" must be a short text: an SPDX identifier (MIT, AGPL-3.0, Apache-2.0…) or the licence\'s name')
     arq = data.get("architectures")
     if arq is not None and (not isinstance(arq, list) or not arq or not set(arq) <= {"amd64", "arm64", "arm", "riscv64", "386", "ppc64le", "s390x"}):
         erros.append('"architectures" must be a list of: amd64, arm64, arm, riscv64, 386, ppc64le, s390x')

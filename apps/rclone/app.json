@@ -12,6 +12,7 @@
   "author": "rclone",
   "source": "https://github.com/rclone/rclone",
   "docs": "https://rclone.org/rc/",
+  "license": "MIT",
   "architectures": ["amd64", "arm64", "arm", "386"],
   "category": "Files",
   "secrets": { "rclone-password": "rand-alnum 24" },

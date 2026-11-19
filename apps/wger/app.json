@@ -9,6 +9,7 @@
   "author": "wger-project",
   "source": "https://github.com/wger-project/wger",
   "docs": "https://wger.de",
+  "license": "AGPL-3.0",
   "architectures": ["amd64", "arm64"],
   "category": "Personal",
   "secrets": { "wger-secret-key": "rand-hex 32" },

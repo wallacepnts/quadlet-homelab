@@ -12,6 +12,7 @@
   "author": "almeidapaulopt",
   "source": "https://github.com/almeidapaulopt/tsdproxy",
   "docs": "https://almeidapaulopt.github.io/tsdproxy/",
+  "license": "MIT",
   "architectures": ["amd64", "arm64", "arm"],
   "category": "Network & Security",
   "secrets": {

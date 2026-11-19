@@ -12,6 +12,7 @@
   "author": "henrygd",
   "source": "https://github.com/henrygd/beszel",
   "docs": "https://beszel.dev",
+  "license": "MIT",
   "architectures": ["amd64", "arm64", "arm"],
   "category": "Monitoring",
   "secrets": {

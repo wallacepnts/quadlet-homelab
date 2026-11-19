@@ -12,6 +12,7 @@
   "author": "hargata",
   "source": "https://github.com/hargata/lubelog",
   "docs": "https://lubelogger.com",
+  "license": "MIT",
   "architectures": ["amd64", "arm64"],
   "category": "Personal",
   "units": { "lubelogger": { "upstream": "hargata/lubelog", "image": "v{version}" } }

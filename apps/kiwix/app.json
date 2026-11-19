@@ -12,6 +12,7 @@
   "author": "kiwix",
   "source": "https://github.com/kiwix/kiwix-tools",
   "docs": "https://wiki.kiwix.org/",
+  "license": "GPL-3.0",
   "architectures": ["amd64", "arm64", "arm", "386"],
   "category": "Personal",
   "units": { "kiwix": { "upstream": "kiwix/kiwix-tools" } }

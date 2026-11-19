@@ -9,6 +9,7 @@
   "author": "sabnzbd",
   "source": "https://github.com/sabnzbd/sabnzbd",
   "docs": "https://sabnzbd.org/wiki",
+  "license": "GPL-2.0",
   "architectures": ["amd64", "arm64"],
   "category": "Downloads",
   "config": { ".env.example": "%h/.config/containers/env/sabnzbd.env" },

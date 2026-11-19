@@ -9,6 +9,7 @@
   "author": "nousresearch",
   "source": "https://github.com/nousresearch/hermes-agent",
   "docs": "https://hermes-agent.nousresearch.com",
+  "license": "MIT",
   "architectures": ["amd64", "arm64"],
   "category": "AI",
   "secrets": {

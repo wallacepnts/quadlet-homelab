@@ -9,6 +9,7 @@
   "author": "Lidarr",
   "source": "https://github.com/Lidarr/Lidarr",
   "docs": "https://wiki.servarr.com/lidarr",
+  "license": "GPL-3.0",
   "architectures": ["amd64", "arm64"],
   "category": "Downloads",
   "config": { ".env.example": "%h/.config/containers/env/lidarr.env" },

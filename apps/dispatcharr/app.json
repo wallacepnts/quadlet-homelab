@@ -12,6 +12,7 @@
   "author": "Dispatcharr",
   "source": "https://github.com/Dispatcharr/Dispatcharr",
   "docs": "https://dispatcharr.github.io/Dispatcharr-Docs",
+  "license": "AGPL-3.0",
   "architectures": ["amd64", "arm64"],
   "category": "Media"
 }

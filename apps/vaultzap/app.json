@@ -12,6 +12,7 @@
   "author": "wallacepnts",
   "source": "https://github.com/wallacepnts/vaultzap",
   "docs": "https://github.com/wallacepnts/vaultzap#readme",
+  "license": "AGPL-3.0",
   "architectures": ["amd64", "arm64"],
   "category": "Personal",
   "units": { "vaultzap": { "upstream": "registry:^v[0-9]+\\.[0-9]+\\.[0-9]+$" } }

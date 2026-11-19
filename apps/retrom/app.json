@@ -9,6 +9,7 @@
   "author": "JMBeresford",
   "source": "https://github.com/JMBeresford/retrom",
   "docs": "https://github.com/JMBeresford/retrom/wiki",
+  "license": "GPL-3.0",
   "architectures": ["amd64", "arm64"],
   "category": "Media",
   "backup": { "mode": "stop" },

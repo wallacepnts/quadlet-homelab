@@ -12,6 +12,7 @@
   "author": "ferdium",
   "source": "https://github.com/ferdium/ferdium-server",
   "docs": "https://github.com/ferdium/ferdium-server#readme",
+  "license": "MIT",
   "architectures": ["amd64", "arm64"],
   "category": "Personal",
   "units": { "ferdium-server": { "upstream": "registry:^[0-9]+\\.[0-9]+\\.[0-9]+$" } }

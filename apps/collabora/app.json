@@ -9,6 +9,7 @@
   "author": "collabora",
   "source": "https://github.com/collabora/code",
   "docs": "https://sdk.collaboraonline.com/docs/installation/",
+  "license": "MPL-2.0",
   "architectures": ["amd64", "arm64", "ppc64le"],
   "category": "Files",
   "units": { "collabora": { "upstream": "registry:^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$" } }

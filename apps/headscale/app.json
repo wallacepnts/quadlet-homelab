@@ -12,6 +12,7 @@
   "author": "juanfont",
   "source": "https://github.com/juanfont/headscale",
   "docs": "https://headscale.net/",
+  "license": "BSD-3-Clause",
   "architectures": ["amd64", "arm64"],
   "category": "Network & Security",
   "no_gui": true,

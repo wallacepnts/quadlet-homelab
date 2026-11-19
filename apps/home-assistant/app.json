@@ -12,6 +12,7 @@
   "author": "home-assistant",
   "source": "https://github.com/home-assistant/core",
   "docs": "https://www.home-assistant.io",
+  "license": "Apache-2.0",
   "architectures": ["amd64", "arm64"],
   "category": "Home",
   "units": { "home-assistant": { "upstream": "home-assistant/core" } }

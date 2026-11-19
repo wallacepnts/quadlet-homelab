@@ -12,6 +12,7 @@
   "author": "AdguardTeam",
   "source": "https://github.com/AdguardTeam/AdGuardHome",
   "docs": "https://adguard.com/adguard-home/overview.html",
+  "license": "GPL-3.0",
   "architectures": ["amd64", "arm64", "arm", "386", "ppc64le"],
   "category": "Network & Security",
   "widgets": [{ "type": "adguard" }],

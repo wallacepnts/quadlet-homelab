@@ -9,6 +9,7 @@
   "author": "binwiederhier",
   "source": "https://github.com/binwiederhier/ntfy",
   "docs": "https://ntfy.sh",
+  "license": "Apache-2.0",
   "architectures": ["amd64", "arm64", "arm"],
   "category": "Monitoring",
   "units": { "ntfy": { "image": "v{version}" } }

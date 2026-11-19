@@ -12,6 +12,7 @@
   "author": "ankitects",
   "source": "https://github.com/ankitects/anki",
   "docs": "https://docs.ankiweb.net/sync-server.html",
+  "license": "AGPL-3.0",
   "architectures": ["amd64", "arm64"],
   "category": "Productivity",
   "secrets": { "anki-user": "shell printf 'anki:%s' \"$(openssl rand -hex 16)\"" },

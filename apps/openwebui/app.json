@@ -9,6 +9,7 @@
   "author": "open-webui",
   "source": "https://github.com/open-webui/open-webui",
   "docs": "https://ollama.com",
+  "license": "BSD-3-Clause",
   "architectures": ["amd64", "arm64"],
   "category": "AI",
   "secrets": { "openwebui-secret-key": "rand-hex 32" },

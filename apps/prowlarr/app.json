@@ -12,6 +12,7 @@
   "author": "Prowlarr",
   "source": "https://github.com/Prowlarr/Prowlarr",
   "docs": "https://wiki.servarr.com/prowlarr",
+  "license": "GPL-3.0",
   "architectures": ["amd64", "arm64"],
   "category": "Downloads",
   "config": { ".env.example": "%h/.config/containers/env/prowlarr.env" }

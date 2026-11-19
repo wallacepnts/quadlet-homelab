@@ -9,6 +9,7 @@
   "author": "monicahq",
   "source": "https://github.com/monicahq/monica",
   "docs": "https://beta.monicahq.com",
+  "license": "AGPL-3.0",
   "architectures": ["amd64", "arm64"],
   "category": "Personal",
   "secrets": { "monica-app-key": "shell printf 'base64:%s' \"$(openssl rand -base64 32)\"" }

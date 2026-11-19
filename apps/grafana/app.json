@@ -12,6 +12,7 @@
   "author": "grafana",
   "source": "https://github.com/grafana/grafana",
   "docs": "https://grafana.com/docs/grafana/latest/",
+  "license": "AGPL-3.0",
   "architectures": ["amd64", "arm64", "arm"],
   "category": "Monitoring",
   "secrets": { "grafana-admin-password": "rand-alnum 20" },

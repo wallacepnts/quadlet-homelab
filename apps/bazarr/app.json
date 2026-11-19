@@ -9,6 +9,7 @@
   "author": "morpheus65535",
   "source": "https://github.com/morpheus65535/bazarr",
   "docs": "https://wiki.bazarr.media",
+  "license": "GPL-3.0",
   "architectures": ["amd64", "arm64"],
   "category": "Downloads",
   "config": { ".env.example": "%h/.config/containers/env/bazarr.env" },

@@ -12,6 +12,7 @@
   "author": "netbootxyz",
   "source": "https://github.com/netbootxyz/netboot.xyz",
   "docs": "https://netboot.xyz/docs/docker",
+  "license": "Apache-2.0",
   "architectures": ["amd64", "arm64"],
   "category": "Network & Security",
   "units": { "netbootxyz": { "upstream": "registry" } }

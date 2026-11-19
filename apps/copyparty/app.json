@@ -15,6 +15,7 @@
   "docs": "https://github.com/9001/copyparty#readme",
   "demo": "https://a.ocv.me/pub/demo/",
   "video": "https://www.youtube.com/watch?v=15_-hgsX2V0",
+  "license": "MIT",
   "architectures": ["amd64", "arm64", "arm", "386", "ppc64le", "s390x"],
   "category": "Files",
   "config": { "copyparty.conf.example": "%h/.config/containers/volumes/copyparty/cfg/copyparty.conf" },

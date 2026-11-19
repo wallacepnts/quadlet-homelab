@@ -9,6 +9,7 @@
   "author": "gotson",
   "source": "https://github.com/gotson/komga",
   "docs": "https://komga.org/",
+  "license": "MIT",
   "architectures": ["amd64", "arm64", "arm"],
   "category": "Media",
   "vars": { "MEDIA_DATA_DIR": "~/data" },

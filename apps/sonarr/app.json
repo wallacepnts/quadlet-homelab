@@ -9,6 +9,7 @@
   "author": "Sonarr",
   "source": "https://github.com/Sonarr/Sonarr",
   "docs": "https://wiki.servarr.com/sonarr",
+  "license": "GPL-3.0",
   "architectures": ["amd64", "arm64"],
   "category": "Downloads",
   "config": { ".env.example": "%h/.config/containers/env/sonarr.env" },

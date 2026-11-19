@@ -12,6 +12,7 @@
   "author": "prometheus",
   "source": "https://github.com/prometheus/prometheus",
   "docs": "https://prometheus.io/docs/introduction/overview/",
+  "license": "Apache-2.0",
   "architectures": ["amd64", "arm64", "arm", "riscv64", "ppc64le", "s390x"],
   "category": "Monitoring",
   "config": { "config/prometheus.yml": "%h/.config/containers/volumes/prometheus/config/prometheus.yml" },

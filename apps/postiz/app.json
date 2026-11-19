@@ -12,6 +12,7 @@
   "author": "gitroomhq",
   "source": "https://github.com/gitroomhq/postiz-app",
   "docs": "https://docs.postiz.com",
+  "license": "AGPL-3.0",
   "architectures": ["amd64", "arm64"],
   "category": "Productivity",
   "secrets": {

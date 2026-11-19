@@ -11,6 +11,7 @@
   },
   "author": "misiektoja",
   "source": "https://github.com/misiektoja/instagram_monitor",
+  "license": "GPL-3.0",
   "architectures": ["amd64", "arm64"],
   "category": "Monitoring",
   "config": {

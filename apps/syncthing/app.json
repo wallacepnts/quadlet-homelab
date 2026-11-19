@@ -12,6 +12,7 @@
   "author": "syncthing",
   "source": "https://github.com/syncthing/syncthing",
   "docs": "https://syncthing.net/",
+  "license": "MPL-2.0",
   "architectures": ["amd64", "arm64", "arm"],
   "category": "Files"
 }

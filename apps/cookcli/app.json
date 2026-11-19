@@ -12,6 +12,7 @@
   "author": "cooklang",
   "source": "https://github.com/cooklang/cookcli",
   "docs": "https://demo.cooklang.org",
+  "license": "MIT",
   "architectures": ["amd64", "arm64"],
   "category": "Productivity",
   "config": {

@@ -9,6 +9,7 @@
   "author": "daya0576",
   "source": "https://github.com/daya0576/beaverhabits",
   "docs": "https://github.com/daya0576/beaverhabits/wiki",
+  "license": "BSD-3-Clause",
   "architectures": ["amd64", "arm64", "arm"],
   "category": "Personal"
 }

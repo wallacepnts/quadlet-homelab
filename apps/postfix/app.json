@@ -12,6 +12,7 @@
   "author": "bokysan",
   "source": "https://github.com/bokysan/docker-postfix",
   "docs": "https://github.com/bokysan/docker-postfix#readme",
+  "license": "MIT",
   "architectures": ["amd64", "arm64", "arm", "386", "ppc64le", "s390x"],
   "no_gui": true,
   "units": { "postfix": { "upstream": "bokysan/docker-postfix", "image": "v{version}" } }

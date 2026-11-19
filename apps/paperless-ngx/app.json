@@ -12,6 +12,7 @@
   "author": "paperless-ngx",
   "source": "https://github.com/paperless-ngx/paperless-ngx",
   "docs": "https://docs.paperless-ngx.com/",
+  "license": "GPL-3.0",
   "architectures": ["amd64", "arm64"],
   "category": "Files",
   "secrets": { "paperless-ngx-secret-key": "rand-base64 64", "paperless-ngx-db-password": "rand-urlsafe 32" },

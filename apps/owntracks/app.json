@@ -12,6 +12,7 @@
   "author": "owntracks",
   "source": "https://github.com/owntracks/recorder",
   "docs": "https://owntracks.org/booklet/",
+  "license": "GPL-2.0",
   "architectures": ["amd64", "arm64", "arm"],
   "category": "Home",
   "secrets": {

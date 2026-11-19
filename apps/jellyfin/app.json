@@ -12,6 +12,7 @@
   "author": "jellyfin",
   "source": "https://github.com/jellyfin/jellyfin",
   "docs": "https://jellyfin.org/docs",
+  "license": "GPL-2.0",
   "architectures": ["amd64", "arm64"],
   "category": "Media",
   "vars": { "MEDIA_DATA_DIR": "~/data" },

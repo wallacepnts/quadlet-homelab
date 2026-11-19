@@ -12,6 +12,7 @@
   "author": "koenkk",
   "source": "https://github.com/koenkk/zigbee2mqtt",
   "docs": "https://www.zigbee2mqtt.io",
+  "license": "GPL-3.0",
   "architectures": ["amd64", "arm64", "arm", "386"],
   "category": "Home",
   "config": {

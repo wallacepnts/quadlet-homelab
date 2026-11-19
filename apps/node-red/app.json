@@ -9,6 +9,7 @@
   "author": "node-red",
   "source": "https://github.com/node-red/node-red",
   "docs": "https://nodered.org",
+  "license": "Apache-2.0",
   "architectures": ["amd64", "arm64"],
   "category": "Automation",
   "units": { "node-red": { "upstream": "node-red/node-red", "image": "{version}-minimal" } }

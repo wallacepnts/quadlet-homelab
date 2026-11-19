@@ -12,6 +12,7 @@
   "author": "immich-app",
   "source": "https://github.com/immich-app/immich",
   "docs": "https://immich.app",
+  "license": "AGPL-3.0",
   "architectures": ["amd64", "arm64"],
   "category": "Media",
   "secrets": { "immich-db-password": "rand-base64 24" },

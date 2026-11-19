@@ -12,6 +12,7 @@
   "author": "denho",
   "source": "https://github.com/denho/faved",
   "docs": "https://faved.to/",
+  "license": "MIT",
   "architectures": ["amd64", "arm64"],
   "category": "Personal"
 }
