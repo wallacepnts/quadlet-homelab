@@ -212,6 +212,19 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
 
   // gallery, project links, history
   const shots = $("p-shots");
+  // the arrow beside Install: opens the menu, and "More options" brings the form (where the trial lives)
+  api.S.apps.find((x) => x.id === "homebox").installed = false;
+  api.openPanel("homebox"); await esperar(30);
+  const menuI = [...$("p-actions").walk()].find((e) => e.attrs.class === "split-menu");
+  const setaI = [...$("p-actions").walk()].find((e) => e.attrs.class === "split-arrow");
+  confere(menuI.hidden === true, "o menu da setinha começa fechado");
+  setaI.listeners.click({ stopPropagation() {} });
+  confere(menuI.hidden === false && setaI.attrs["aria-expanded"] === "true", "a setinha abre o menu");
+  const planoI = rotas["/api/plan"]; rotas["/api/plan"] = { rc: 0, output: "x", nothing: false };
+  porTexto(menuI, "Mais opções…")[0].listeners.click(); await esperar(100);
+  confere(!$("p-form").hidden && /Avançado/.test($("p-form").textContent), "Mais opções mostra o formulário, com o Avançado (teste por um tempo)");
+  if (planoI === undefined) delete rotas["/api/plan"]; else rotas["/api/plan"] = planoI;
+  api.S.apps.find((x) => x.id === "homebox").installed = true;
   // the lightbox
   api.S.apps.find((x) => x.id === "homebox").installed = false;
   api.openPanel("homebox"); await esperar(30);
@@ -274,7 +287,7 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
 
   rotas["/api/arch"] = { host: "amd64", runs: ["amd64", "arm64"], download: 38617327, version: "1.20.26", units: [{ unit: "homebox", ok: true }] };
   api.openPanel("gitea"); await esperar(100);
-  confere(botoes($("p-actions")).map((b) => b.textContent).join("") === "InstalarPersonalizar" && $("p-tech").hidden && /Categoria/.test($("p-actions").textContent), `app não instalado: só Instalar e Personalizar (sem histórico, instância nem detalhes técnicos), e o cartão com a categoria (${$("p-actions").textContent})`);
+  confere(botoes($("p-actions")).map((b) => b.textContent).join("") === "Instalar▾Instalação personalizada…Mais opções…" && $("p-tech").hidden && /Categoria/.test($("p-actions").textContent), `app não instalado: só Instalar e Personalizar (sem histórico, instância nem detalhes técnicos), e o cartão com a categoria (${$("p-actions").textContent})`);
   confere(!/null|undefined/.test($("p-info").textContent + $("p-actions").textContent) && /Arquitetura\s*amd64, arm64/.test($("p-actions").textContent) && /Download\s*37 MB/.test($("p-actions").textContent) && /Versão\s*1\.20\.26/.test($("p-actions").textContent) && !/Roda em/.test($("p-info").textContent), "app não instalado: tamanho e arquitetura vão no cartão, e nada de 'null'");
   $("panel").open = false;
 
@@ -754,7 +767,7 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   // customize before installing: the form opens on an app that is not installed, keeps the choice, and the install carries it
   const gi = api.S.apps.find((x) => x.id === "gitea");
   api.openPanel("gitea"); await esperar(30);
-  porTexto($("p-actions"), "Personalizar")[0].listeners.click(); await esperar(100);
+  porTexto($("p-actions"), "Instalação personalizada…")[0].listeners.click(); await esperar(100);
   const formPre = () => folhaC;
   confere($("custom").open && /Antes de instalar/.test(formPre().textContent) && porTexto(formPre(), "Instalar").length === 1
     && porTexto(formPre(), "Salvar e aplicar").length === 0, "antes de instalar: a tela abre, com Instalar e sem Salvar e aplicar");
@@ -794,7 +807,7 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   confere(urlsPre.some((u) => /\/api\/custom\?unit=gitea&pre=1|\/api\/custom\/preview/.test(u)), "e pede o estado da unit ainda não instalada");
   confere(!!api.S.preCustom.gitea && !$("custom").open && !$("p-form").hidden, "Instalar guarda a escolha, fecha a tela e abre a confirmação da instalação");
   api.openPanel("gitea"); await esperar(30);
-  confere(porTexto($("p-actions"), "Personalizar ✓").length === 1, "o botão mostra que há personalização guardada");
+  confere(porTexto($("p-actions"), "Instalação personalizada… ✓").length === 1, "o botão mostra que há personalização guardada");
   rotas["/api/plan"] = { rc: 0, output: "x", nothing: false };
   rotas["/api/run"] = { job: "jr" }; rotas["/api/job/jr"] = { output: "ok\n", next: 1, rc: 0 };
   porTexto($("p-actions"), "Instalar")[0].listeners.click(); await esperar(100);
@@ -827,12 +840,12 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   const previaGuardada = rotas["/api/custom/preview"];
   rotas["/api/custom/preview"] = { text: null, errors: [], warnings: [], generated: "", changed: false };
   api.openPanel("gitea"); await esperar(30);
-  porTexto($("p-actions"), "Personalizar")[0].listeners.click(); await esperar(100);
+  porTexto($("p-actions"), "Instalação personalizada…")[0].listeners.click(); await esperar(100);
   areaRaw().value = REPO_PRE + "Label=meu=sim\n"; areaRaw().listeners.input();
   porTexto(folhaC, "Instalar")[0].listeners.click(); await esperar(200);
   confere(api.S.preUnit.gitea && api.S.preUnit.gitea.gitea === REPO_PRE + "Label=meu=sim\n" && !$("custom").open, "antes de instalar: o .container editado fica guardado e a tela fecha");
   api.openPanel("gitea"); await esperar(30);
-  confere(porTexto($("p-actions"), "Personalizar ✓").length === 1, "o botão mostra que há personalização (o .container)");
+  confere(porTexto($("p-actions"), "Instalação personalizada… ✓").length === 1, "o botão mostra que há personalização (o .container)");
   porTexto($("p-actions"), "Instalar")[0].listeners.click(); await esperar(100);
   const antesRun2 = posts.length;
   await $("p-form").onsubmit({ preventDefault() {} }); await esperar(1000);

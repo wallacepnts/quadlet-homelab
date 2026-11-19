@@ -139,7 +139,7 @@ const T = {
     remove: "Remover", 
     linkName: "Nome", linkUrl: "https://…", linkBad: "Use um endereço http:// ou https://",
     updateAvailable: "Atualização disponível",
-    getApp: "Instalar", factCategory: "Categoria", factAuthor: "Desenvolvedor", lbPrev: "Anterior", lbNext: "Próxima", lbClose: "Fechar", lkSite: "Site", lkRepoGh: "Repositório no GitHub", lkRepo: "Repositório", lkDocs: "Documentação", lkDemo: "Demonstração", lkVideo: "Vídeo", factSize: "Download", factArch: "Arquitetura", factVersion: "Versão", installing: (n) => `Instalando ${n}`, inBackground: "Continuar em segundo plano", installNow: "Instalar agora", advanced: "Avançado", rolledBack: "voltou à versão anterior", techDetails: "Detalhes técnicos", logTitle: "O que foi feito", closeLabel: "Fechar",
+    getApp: "Instalar", factCategory: "Categoria", factAuthor: "Desenvolvedor", installCustom: "Instalação personalizada…", installOptions: "Mais opções…", installMore: "Outras formas de instalar", lbPrev: "Anterior", lbNext: "Próxima", lbClose: "Fechar", lkSite: "Site", lkRepoGh: "Repositório no GitHub", lkRepo: "Repositório", lkDocs: "Documentação", lkDemo: "Demonstração", lkVideo: "Vídeo", factSize: "Download", factArch: "Arquitetura", factVersion: "Versão", installing: (n) => `Instalando ${n}`, inBackground: "Continuar em segundo plano", installNow: "Instalar agora", advanced: "Avançado", rolledBack: "voltou à versão anterior", techDetails: "Detalhes técnicos", logTitle: "O que foi feito", closeLabel: "Fechar",
     httpsNeeded: "precisa de HTTPS",
     httpsWarn: "Este app precisa de HTTPS: pela rede local (HTTP) o cofre e o service worker falham sem avisar. Use o acesso pela tailnet.",
     podmanOld: (need, host) => `Este app precisa do Podman ${need}+; o host tem ${host}. Atualize o Podman antes de instalar.`,
@@ -360,7 +360,7 @@ const T = {
     remove: "Remove", 
     linkName: "Name", linkUrl: "https://…", linkBad: "Use an http:// or https:// address",
     updateAvailable: "Update available",
-    getApp: "Install", factCategory: "Category", factAuthor: "Developer", lbPrev: "Previous", lbNext: "Next", lbClose: "Close", lkSite: "Website", lkRepoGh: "GitHub repository", lkRepo: "Repository", lkDocs: "Documentation", lkDemo: "Demo", lkVideo: "Video", factSize: "Download", factArch: "Architecture", factVersion: "Version", installing: (n) => `Installing ${n}`, inBackground: "Continue in the background", installNow: "Install now", advanced: "Advanced", rolledBack: "rolled back to the previous version", techDetails: "Technical details", logTitle: "What was done", closeLabel: "Close",
+    getApp: "Install", factCategory: "Category", factAuthor: "Developer", installCustom: "Custom install…", installOptions: "More options…", installMore: "Other ways to install", lbPrev: "Previous", lbNext: "Next", lbClose: "Close", lkSite: "Website", lkRepoGh: "GitHub repository", lkRepo: "Repository", lkDocs: "Documentation", lkDemo: "Demo", lkVideo: "Video", factSize: "Download", factArch: "Architecture", factVersion: "Version", installing: (n) => `Installing ${n}`, inBackground: "Continue in the background", installNow: "Install now", advanced: "Advanced", rolledBack: "rolled back to the previous version", techDetails: "Technical details", logTitle: "What was done", closeLabel: "Close",
     httpsNeeded: "needs HTTPS",
     httpsWarn: "This app needs HTTPS: over the local network (HTTP) the vault and the service worker fail without saying why. Use tailnet access.",
     podmanOld: (need, host) => `This app needs Podman ${need}+; the host has ${host}. Update Podman before installing.`,
@@ -1364,10 +1364,23 @@ function renderPanel() {
   if (!a.installed) {
     if (!a.deprecated) {
       const deps = needs(a);
-      acoes.push(h("button", { type: "button", onclick: () => instalar(a.id) },
-        deps.length ? t("installWith")(deps.map((x) => x.name).join(", ")) : t("install")));
-      acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showCustom(a, null, true) },
-        S.preCustom[a.id] || S.preUnit[a.id] ? `${t("customize")} ✓` : t("customize")));
+      // One button that installs, and a small arrow beside it for the two ways that need a say first.
+      const menu = h("div", { class: "split-menu", role: "menu" },
+        h("button", { type: "button", role: "menuitem", onclick: () => showCustom(a, null, true) },
+          S.preCustom[a.id] || S.preUnit[a.id] ? `${t("installCustom")} ✓` : t("installCustom")),
+        h("button", { type: "button", role: "menuitem", onclick: () => plan("install") }, t("installOptions")));
+      menu.hidden = true;
+      const seta = h("button", { type: "button", class: "split-arrow", "aria-haspopup": "menu", "aria-expanded": "false", "aria-label": t("installMore"),
+        onclick: (ev) => {
+          ev.stopPropagation();
+          menu.hidden = !menu.hidden;
+          seta.setAttribute("aria-expanded", String(!menu.hidden));
+          if (!menu.hidden) document.addEventListener("click", () => { menu.hidden = true; seta.setAttribute("aria-expanded", "false"); }, { once: true });
+        } }, "▾");
+      acoes.push(h("div", { class: "split" },
+        h("button", { type: "button", class: "split-main", onclick: () => instalar(a.id) },
+          deps.length ? t("installWith")(deps.map((x) => x.name).join(", ")) : t("install")),
+        seta, menu));
     }
   }
   else {

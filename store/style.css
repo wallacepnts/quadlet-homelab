@@ -661,3 +661,14 @@ dialog.lightbox[open] { display: flex; align-items: center; justify-content: cen
 .lb-x { position: fixed; top: 1rem; right: 1rem; font-size: 1.2rem; }
 #lb-count { position: fixed; bottom: 1rem; left: 0; right: 0; text-align: center; color: #fff; opacity: .8; font-size: .9rem; pointer-events: none; }
 @media (max-width: 720px) { .lb-side { position: fixed; bottom: 1rem; } .lb-l { left: 1rem; } .lb-r { right: 1rem; } }
+
+/* Install with a small arrow beside it: the arrow opens the ways of installing that need a say first. */
+.split { position: relative; display: flex; }
+.split-main { border-radius: 999px 0 0 999px; flex: 1; }
+.split-arrow { border-radius: 0 999px 999px 0; padding-inline: .8rem; margin-left: 2px; background: var(--accent); color: var(--accent-ink); border: 0; min-height: 44px; }
+.split-menu { position: absolute; top: calc(100% + .35rem); right: 0; min-width: 100%; white-space: nowrap; z-index: 5; display: flex; flex-direction: column; padding: .3rem;
+  background: var(--card); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 32px rgb(0 0 0 / .25); }
+.split-menu[hidden] { display: none; }
+.split-menu button { text-align: left; background: none; border: 0; border-radius: 8px; padding: .55rem .7rem; color: var(--fg); min-height: 0; justify-content: flex-start; }
+.split-menu button:hover { background: var(--card-2); }
+#panel.store > #p-actions > .split { width: 100%; }
