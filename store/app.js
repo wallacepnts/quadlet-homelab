@@ -970,7 +970,7 @@ function tile(a) {
 }
 
 function storeCard(a) {
-  return h("button", { class: "card", type: "button", onclick: () => openPanel(a.id) },
+  return h("button", { class: "card", type: "button", onclick: () => openPanel(a.id, true, "store") },
     iconPlate(a, "sm"),
     h("div", { class: "tx" }, h("h3", {}, a.name, a.deprecated ? h("span", { class: "badge warn" }, a.installed ? `${t("deprecatedBadge")} · ${t("installedBadge")}` : t("deprecatedBadge")) : null),
       h("p", { class: "desc" }, plain(a.description[S.lang] || a.description.en))),
@@ -1086,9 +1086,14 @@ async function loadUpdates(refresh) {
 
 // -- panel ------------------------------------------------------------------
 
-function openPanel(id, mostrar = true) {
+// Two screens for an installed app: the manager (from My apps) and the store page (from the Store), where the only
+// difference from an app that is not installed is Open in place of Install. `gerenciando` says which one is on.
+const gerenciando = (a) => !!a.installed && S.panelMode !== "store";
+
+function openPanel(id, mostrar = true, modo = "manage") {
   closeLogs();
   S.current = id;
+  S.panelMode = modo;
   S.info = { disk: null, arch: null };       // asked per app, when its panel opens
   renderPanel();
   loadInfo(id);
@@ -1125,16 +1130,16 @@ function renderStoreLinks(a) {
 async function loadInfo(id) {
   const a = current();
   const pedidos = [];
-  if (a.installed) pedidos.push(api(`/api/disk?app=${encodeURIComponent(id)}`).then((d) => { S.info.disk = d; }));
+  if (gerenciando(a)) pedidos.push(api(`/api/disk?app=${encodeURIComponent(id)}`).then((d) => { S.info.disk = d; }));
   pedidos.push(api(`/api/arch?app=${encodeURIComponent(id)}`).then((d) => { S.info.arch = d; }));
-  if (!a.installed) renderStoreLinks(a);
+  if (!gerenciando(a)) renderStoreLinks(a);
   else api(`/api/links?app=${encodeURIComponent(id)}`).then(({ links }) => {
     if (S.current !== id) return;
     const site = a.website && !links.some((l) => l.url === a.website) ? [{ kind: "project", url: a.website }] : [];
     fill($("p-project"), ...site.concat(links).map((l) =>
       h("a", { href: l.url, target: "_blank", rel: "noopener noreferrer" }, `${t("link")[l.kind]} ↗`)));
   }).catch(() => {});
-  if (a.installed) fill($("p-project"));
+  if (gerenciando(a)) fill($("p-project"));
   renderInfo();
   await Promise.allSettled(pedidos);
   if (S.current === id && $("panel").open) renderInfo();
@@ -1145,7 +1150,7 @@ async function loadInfo(id) {
 // publishes it, and a made-up number is worse than none.
 function renderFacts() {
   const a = current(), caixa = S.factsEl;
-  if (!a || !caixa || a.installed) return;
+  if (!a || !caixa) return;
   const info = S.info || {}, arq = info.arch || {};
   const ordem = ["amd64", "arm64", "arm", "386"];
   const roda = (arq.runs || a.architectures || []).map((x) => x.replace(/^linux\//, ""));   // the registry's answer, else what the manifest says
@@ -1166,10 +1171,10 @@ function renderInfo() {
   if (!a) return;
   // No CPU or memory here: the Resources screen and the top bar have them, and a store page is not a monitor.
   const partes = [];
-  if (a.installed) partes.push(`${t("disk")} ${info.disk ? (info.disk.bytes === null ? "—" : mib(info.disk.bytes)) : t("counting")}`);
+  if (gerenciando(a)) partes.push(`${t("disk")} ${info.disk ? (info.disk.bytes === null ? "—" : mib(info.disk.bytes)) : t("counting")}`);
   if (a.units.some((u) => u.installed && u.override)) partes.push(t("customizedBadge"));
   const arq = info.arch;
-  if (a.installed && arq && arq.runs && arq.runs.length) partes.push(`${t("runsOn")} ${arq.runs.join(", ")}`);
+  if (gerenciando(a) && arq && arq.runs && arq.runs.length) partes.push(`${t("runsOn")} ${arq.runs.join(", ")}`);
   renderFacts();
   const sem = arq ? arq.units.filter((u) => u.ok === false).map((u) => u.unit) : [];
   fill($("p-info"),
@@ -1191,9 +1196,9 @@ const TABS = ["resumo", "config", "files", "backups", "history"];
 
 function renderPanelTabs(a) {
   const barra = $("p-tabs");
-  barra.hidden = !a.installed;
-  $("p-danger").hidden = !a.installed;
-  if (!a.installed) { fill(barra); fill($("p-danger")); return; }
+  barra.hidden = !gerenciando(a);
+  $("p-danger").hidden = !gerenciando(a);
+  if (!gerenciando(a)) { fill(barra); fill($("p-danger")); return; }
   const rot = { resumo: t("tabSummary"), config: t("tabConfig"), files: `${t("files")} ↗`, backups: t("backups"), history: `${t("history")} ↗` };
   fill(barra, ...TABS.filter((k) => k !== "files" || a.has_data).map((k) =>
     h("button", { type: "button", role: "tab", class: "tab" + (S.tab === k ? " on" : ""), "aria-selected": String(S.tab === k),
@@ -1254,12 +1259,12 @@ function renderPanel() {
   $("p-icon").src = a.icon || "";
   decoratePlate($("p-plate"), a, $("p-icon"));
   $("p-name").textContent = a.name;
-  $("p-meta").textContent = [a.installed ? runDot(a)[1] : "", (a.group && a.group[S.lang]) || "", a.installed ? a.author : ""].filter(Boolean).join(" · ");   // the store card has the developer
+  $("p-meta").textContent = [gerenciando(a) ? runDot(a)[1] : "", (a.group && a.group[S.lang]) || "", gerenciando(a) ? a.author : ""].filter(Boolean).join(" · ");   // the store card has the developer
   // Two screens for one app. The store's (not installed) is about the app itself and about installing it: the long
   // description and the screenshots. The manager's (installed) is about running it: the short description, no screenshots.
-  $("panel").classList.toggle("manage", !!a.installed);
-  $("panel").classList.toggle("store", !a.installed);     // the store screen: content on the left, a card with Install on the right
-  const sobre = !a.installed && a.about && (a.about[S.lang] || a.about.en);
+  $("panel").classList.toggle("manage", gerenciando(a));
+  $("panel").classList.toggle("store", !gerenciando(a));     // the store screen: content on the left, a card with Install on the right
+  const sobre = !gerenciando(a) && a.about && (a.about[S.lang] || a.about.en);
   const deInst = a.instance_of ? ` — ${t("instanceOf")(a.instance_of)}` : "";
   $("p-desc").textContent = plain(sobre || a.description[S.lang] || a.description.en)
     + deInst;
@@ -1283,7 +1288,7 @@ function renderPanel() {
   faixa.addEventListener("scroll", setas);
   fill($("p-shots"), faixa, esq, dir);
   setTimeout(setas, 60); setTimeout(setas, 600);       // after the images give the strip its width
-  $("p-shots").hidden = a.installed || !(a.screenshots || []).length;
+  $("p-shots").hidden = gerenciando(a) || !(a.screenshots || []).length;
 
   const instaladas = new Set(a.units.filter((u) => u.installed).map((u) => u.unit));
   // With a single address the primary "Open" button already goes there; the list is for stacks with several.
@@ -1294,7 +1299,7 @@ function renderPanel() {
 
   const linhas = a.units.filter((u) => u.installed);
   $("p-units").hidden = !linhas.length;
-  $("p-tech").hidden = !a.installed;          // the units table has nothing to say before the install
+  $("p-tech").hidden = !gerenciando(a);          // the units table has nothing to say before the install
   fill($("p-units"), 
     h("tr", {}, ...["unit", "service", "container", "installedTag", "upstream", "repo", ""]
       .map((k) => h("th", {}, k ? t(k) : ""))),
@@ -1318,11 +1323,11 @@ function renderPanel() {
 
   // The reason, where it is read; and a service that is discontinued is not offered for install.
   const motivo = depReason(a);
-  const trial = a.installed && a.trial ? t("trialEnds")(trialWhen(a.trial), a.trial.purge) : null;
+  const trial = gerenciando(a) && a.trial ? t("trialEnds")(trialWhen(a.trial), a.trial.purge) : null;
   const caidas = a.units.filter((u) => u.installed && u.failure && !u.stopped);
   $("p-fail").hidden = !caidas.length;
   fill($("p-fail"), ...caidas.map((u) => h("p", {}, failText(u))));
-  const mudaram = a.installed ? a.units.filter((u) => u.installed && u.drift === "changed") : [];
+  const mudaram = gerenciando(a) ? a.units.filter((u) => u.installed && u.drift === "changed") : [];
   $("p-drift").hidden = !mudaram.length;
   if (mudaram.length) showDrift(a, mudaram);
   const velho = a.podman_too_old ? t("podmanOld")(a.min_podman, S.podman) : null;
@@ -1334,7 +1339,7 @@ function renderPanel() {
   // What the unit asks for beyond its own container, read from the unit itself: seen before the click.
   const perms = a.permissions || [];
   // The install options, read-only once chosen.
-  const ops = a.installed ? (a.options || []) : [];
+  const ops = gerenciando(a) ? (a.options || []) : [];
   $("p-options").hidden = !ops.length;
   fill($("p-options"), ...(ops.length ? [h("strong", {}, t("optionsTitle"))] : []),
     ...ops.map((o) => h("div", {}, `${o.question} ${(o.values.find((v) => v.value === o.chosen) || {}).label || o.chosen}`)),
@@ -1352,7 +1357,10 @@ function renderPanel() {
   else if (trial) $("p-notice").textContent = trial;
   // The thing most people came for goes first and is the loudest: open the app.
   const abrir = a.installed ? openUrl(a) : null;
-  const acoes = a.installed ? [abrir ? h("a", { class: "btn", href: abrir, target: "_blank", rel: "noopener noreferrer" }, t("open")) : null, controls(a)].filter(Boolean) : [];
+  const acoes = gerenciando(a) ? [abrir ? h("a", { class: "btn", href: abrir, target: "_blank", rel: "noopener noreferrer" }, t("open")) : null, controls(a)].filter(Boolean)
+    : a.installed ? [abrir ? h("a", { class: "btn", href: abrir, target: "_blank", rel: "noopener noreferrer" }, t("open")) : null,
+      h("button", { type: "button", class: "ghost", onclick: () => openPanel(a.id, false, "manage") }, t("manage"))].filter(Boolean)    // the store page of an installed app: Open, and the way to the manager
+    : [];
   if (!a.installed) {
     if (!a.deprecated) {
       const deps = needs(a);
@@ -1374,7 +1382,7 @@ function renderPanel() {
         seta, menu));
     }
   }
-  else {
+  else if (gerenciando(a)) {
     // One update button, and only when there is something to update: a newer
     // upstream release than what runs (bump the repository if it is behind
     // too, then update — the bump is a no-op when the repository already has
@@ -1400,9 +1408,9 @@ function renderPanel() {
   }
   // A not-installed app has no history and no second copy to make: those are in the tabs of an installed one.
   renderPanelTabs(a);
-  fill($("p-actions"), ...acoes, a.installed && a.web.length ? accessPicker(a) : null,
-    ...(a.installed ? [] : [(S.factsEl = h("div", { class: "facts" }))]));
-  if (a.installed) S.factsEl = null;
+  fill($("p-actions"), ...acoes, gerenciando(a) && a.web.length ? accessPicker(a) : null,
+    ...(gerenciando(a) ? [] : [(S.factsEl = h("div", { class: "facts" }))]));
+  if (gerenciando(a)) S.factsEl = null;
   renderFacts();
 }
 
@@ -1430,7 +1438,7 @@ function busy(on) {
 // developer offers) or a reason not to (discontinued, Podman too old) brings the panel up first.
 async function instalar(id) {
   const aberto = $("panel").open && S.current === id;
-  if (!aberto) openPanel(id, false);
+  if (!aberto) openPanel(id, false, "store");
   const a = current();
   if (!a.deprecated && !a.podman_too_old) await plan("install");
   const falta = ["secret", "var", "option"].some((k) => $("p-form").querySelector(`[data-${k}]`));

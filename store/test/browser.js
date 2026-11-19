@@ -160,6 +160,15 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
     await foto("96-removido");
   }
 
+  if (MODO === "loja-instalado") {
+    // reads only: an installed app opened from the Store
+    await esperar(2500);
+    await ev("[...document.querySelectorAll('nav button, aside button, .side button')].find((b) => /^Loja/.test(b.textContent.trim())).click()"); await esperar(1500);
+    await ev("(() => { const c = [...document.querySelectorAll('.card')].find((x) => x.querySelector('.get.got') && /Actual/.test(x.textContent)); c.click(); })()"); await esperar(2500);
+    console.log("acoes:", await ev("[...document.querySelectorAll('#p-actions button, #p-actions a')].map((b) => b.textContent.trim()).join(' | ')"));
+    await foto("97-loja-instalado");
+  }
+
   if (MODO === "legado") {
     // reads only: the banner of an old media-stack install, and what the new apps look like in the store
     await ate("document.querySelectorAll('.tile').length > 0", 15000); await esperar(2000);
