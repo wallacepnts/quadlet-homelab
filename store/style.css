@@ -672,7 +672,7 @@ dialog.lightbox[open] { display: flex; align-items: center; justify-content: cen
 
 /* Install with a small arrow beside it: the arrow opens the ways of installing that need a say first. */
 .split { position: relative; display: flex; }
-.split-main { flex: 1; border-radius: 999px; padding-inline: 3rem 3rem; }          /* the label stays centered in the whole pill */
+.split-main { flex: 1; display: flex; align-items: center; justify-content: center; text-decoration: none; border-radius: 999px; padding-inline: 3rem 3rem; }          /* the label stays centered in the whole pill */
 .split-arrow { position: absolute; top: 0; right: 0; bottom: 0; width: 3rem; padding: 0; margin: 0; display: grid; place-items: center; border: 0; border-radius: 0 999px 999px 0;
   background: transparent; color: var(--accent-ink); cursor: pointer; }
 .split-arrow::after { content: ""; width: .48rem; height: .48rem; border: solid currentColor; border-width: 0 2px 2px 0; transform: translateY(-.17rem) rotate(45deg); }

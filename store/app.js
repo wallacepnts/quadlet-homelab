@@ -1254,6 +1254,32 @@ function lightboxGo(passo) {
   paintLightbox();
 }
 
+// A pill with a small arrow inside: the main part acts at once, the arrow opens a menu of the other ways. `principal` is
+// the element of the main part (a button or a link); `itens` are [label, action].
+function splitButton(principal, itens, rotuloSeta) {
+  const menu = h("div", { class: "split-menu", role: "menu" },
+    ...itens.map(([rotulo, acao]) => h("button", { type: "button", role: "menuitem", onclick: acao }, rotulo)));
+  menu.hidden = true;
+  const seta = h("button", { type: "button", class: "split-arrow", "aria-haspopup": "menu", "aria-expanded": "false", "aria-label": rotuloSeta,
+    onclick: (ev) => {
+      ev.stopPropagation();
+      menu.hidden = !menu.hidden;
+      seta.setAttribute("aria-expanded", String(!menu.hidden));
+      if (!menu.hidden) document.addEventListener("click", () => { menu.hidden = true; seta.setAttribute("aria-expanded", "false"); }, { once: true });
+    } });
+  return h("div", { class: "split" }, principal, seta, menu);
+}
+
+// On the store page of an installed app: Open (a pill with an arrow) whose menu makes another instance of it. An app that
+// cannot be instanced, or has no address, gets the part it can.
+function novaInstancia(a, abrir) {
+  const pode = !a.instance_of && !a.deprecated && !a.units.some((u) => u.only_unit);
+  const abre = abrir ? h("a", { class: "btn split-main", href: abrir, target: "_blank", rel: "noopener noreferrer" }, t("open")) : null;
+  if (!pode) return abre || h("span", {});
+  if (!abre) return h("button", { type: "button", class: "split-main", onclick: () => showInstance(a) }, t("newInstance"));
+  return splitButton(abre, [[`${t("newInstance")}…`, () => showInstance(a)]], t("newInstance"));
+}
+
 function renderPanel() {
   const a = current();
   $("p-icon").src = a.icon || "";
@@ -1358,28 +1384,17 @@ function renderPanel() {
   // The thing most people came for goes first and is the loudest: open the app.
   const abrir = a.installed ? openUrl(a) : null;
   const acoes = gerenciando(a) ? [abrir ? h("a", { class: "btn", href: abrir, target: "_blank", rel: "noopener noreferrer" }, t("open")) : null, controls(a)].filter(Boolean)
-    : a.installed ? [abrir ? h("a", { class: "btn", href: abrir, target: "_blank", rel: "noopener noreferrer" }, t("open")) : null,
-      h("button", { type: "button", class: "ghost", onclick: () => openPanel(a.id, false, "manage") }, t("manage"))].filter(Boolean)    // the store page of an installed app: Open, and the way to the manager
+    : a.installed ? [novaInstancia(a, abrir)]       // the store page of an installed app: Open, and the arrow for another copy
     : [];
   if (!a.installed) {
     if (!a.deprecated) {
       const deps = needs(a);
-      // One button that installs, and a small arrow beside it for the two ways that need a say first.
-      const menu = h("div", { class: "split-menu", role: "menu" },
-        h("button", { type: "button", role: "menuitem", onclick: () => showCustom(a, null, true) },
-          S.preCustom[a.id] || S.preUnit[a.id] ? `${t("installCustom")} ✓` : t("installCustom")));
-      menu.hidden = true;
-      const seta = h("button", { type: "button", class: "split-arrow", "aria-haspopup": "menu", "aria-expanded": "false", "aria-label": t("installMore"),
-        onclick: (ev) => {
-          ev.stopPropagation();
-          menu.hidden = !menu.hidden;
-          seta.setAttribute("aria-expanded", String(!menu.hidden));
-          if (!menu.hidden) document.addEventListener("click", () => { menu.hidden = true; seta.setAttribute("aria-expanded", "false"); }, { once: true });
-        } });
-      acoes.push(h("div", { class: "split" },
+      // One button that installs; the arrow opens the install that needs a say first.
+      acoes.push(splitButton(
         h("button", { type: "button", class: "split-main", onclick: () => instalar(a.id) },
           deps.length ? t("installWith")(deps.map((x) => x.name).join(", ")) : t("install")),
-        seta, menu));
+        [[S.preCustom[a.id] || S.preUnit[a.id] ? `${t("installCustom")} ✓` : t("installCustom"), () => showCustom(a, null, true)]],
+        t("installMore")));
     }
   }
   else if (gerenciando(a)) {
@@ -2627,7 +2642,7 @@ function showInstance(a) {
   const criar = async () => {
     const v = nome.value.trim();
     if (!v) return;
-    await follow(() => api("/api/run", { app: a.id, action: "install", instance: v }));
+    await installFlow(a, () => api("/api/run", { app: a.id, action: "install", instance: v }));
   };
   section(h("h3", {}, t("newInstance")), h("div", { class: "row" }, nome,
     h("button", { type: "button", onclick: criar }, t("instanceCreate"))));

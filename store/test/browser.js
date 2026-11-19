@@ -166,6 +166,7 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
     await ev("[...document.querySelectorAll('nav button, aside button, .side button')].find((b) => /^Loja/.test(b.textContent.trim())).click()"); await esperar(1500);
     await ev("(() => { const c = [...document.querySelectorAll('.card')].find((x) => x.querySelector('.get.got') && /Actual/.test(x.textContent)); c.click(); })()"); await esperar(2500);
     console.log("acoes:", await ev("[...document.querySelectorAll('#p-actions button, #p-actions a')].map((b) => b.textContent.trim()).join(' | ')"));
+    await ev("document.querySelector('#p-actions .split-arrow').click()"); await esperar(400);
     await foto("97-loja-instalado");
   }
 

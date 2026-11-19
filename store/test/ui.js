@@ -274,11 +274,17 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   { const hb = api.S.apps.find((x) => x.id === "homebox"); const webAntes = hb.web; hb.installed = true; hb.web = [{ unit: "homebox", local: "http://x:1", tailnet: null }];
     api.openPanel("homebox", false, "store"); await esperar(60);
     const nomes = botoes($("p-actions")).map((b) => b.textContent).join("|");
-    confere(!$("p-tabs").hidden === false && nomes === "Gerenciar" && /Categoria/.test($("p-actions").textContent) && $("p-danger").hidden && $("p-tech").hidden,
-      `loja, app instalado: o mesmo cartão, sem abas nem zona de perigo, com Gerenciar (${nomes})`);
+    confere($("p-tabs").hidden && !/Gerenciar/.test(nomes) && nomes === "|Nova instância…" && /Categoria/.test($("p-actions").textContent) && $("p-danger").hidden && $("p-tech").hidden,
+      `loja, app instalado: o mesmo cartão, sem abas, zona de perigo nem Gerenciar (${nomes})`);
     confere([...$("p-actions").walk()].some((e) => e.tag === "a" && e.textContent === "Abrir"), "loja, app instalado: o botão Abrir no lugar do Instalar");
-    porTexto($("p-actions"), "Gerenciar")[0].listeners.click(); await esperar(60);
-    confere(!$("p-tabs").hidden && !$("p-danger").hidden, "Gerenciar leva à tela de gerenciar (abas e zona de perigo)");
+    porTexto($("p-actions"), "Nova instância…")[0].listeners.click(); await esperar(40);
+    const nomeI = [...$("p-section").walk()].find((e) => e.tag === "input" && e.attrs.type === "text");
+    confere(!!nomeI, "o submenu do Abrir leva a criar uma nova instância");
+    const runA = rotas["/api/run"]; rotas["/api/run"] = { job: "jn" }; rotas["/api/job/jn"] = { rc: 0, next: 1, output: "ok\n" };
+    nomeI.value = "casa"; const antesN = posts.length;
+    porTexto($("p-section"), "Criar instância")[0].listeners.click(); await esperar(1200);
+    confere(posts.slice(antesN).some((x) => x.rota === "/api/run" && x.corpo.instance === "casa") && $("install").open, "criar a instância usa a janela de instalação");
+    $("install").open = false; if (runA === undefined) delete rotas["/api/run"]; else rotas["/api/run"] = runA; delete rotas["/api/job/jn"];
     hb.web = webAntes;
     api.openPanel("homebox"); await esperar(30); }
 
