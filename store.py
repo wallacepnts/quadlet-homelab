@@ -1985,7 +1985,7 @@ def arch(app):
              for u in s.units if u.suffix == ".container"]
     host = host_arch()
     if PREFIX:             # a sandbox must not reach the network
-        return {"host": host, "units": arch_report(units, host, lambda _i: None), "runs": None}
+        return {"host": host, "units": arch_report(units, host, lambda _i: None), "runs": None, "version": None}
     try:
         guardado = json.loads(arch_cache_file().read_text())
     except (OSError, ValueError):
@@ -2004,7 +2004,20 @@ def arch(app):
     relatorio = arch_report(units, host, lambda i: set(guardado.get(i, {}).get("platforms", [])) or None)
     conjuntos = [set(x["platforms"]) for x in relatorio if x["platforms"]]
     tamanhos = [guardado.get(i, {}).get("size") for _, i in units if i]
-    return {"host": host, "units": relatorio,
+    versao = None
+    principal = s.main_unit()
+    if principal:
+        imagem = next((v for k, v in I.directives_of(principal) if k == "Image"), "")
+        fonte = s.ini.get("upstream", principal.stem, fallback=None) if s.ini.has_section("upstream") else None
+        repo = None if (fonte or "").startswith(("registry", "compose:")) else U.github_repo(imagem, fonte)
+        if repo:
+            chave = f"gh:{repo}"
+            if not (chave in guardado and agora - guardado[chave]["at"] < ARCH_TTL):
+                guardado[chave] = {"at": agora, "tag": U.latest_release(repo)}
+                arch_cache_file().write_text(json.dumps(guardado))
+            tag = guardado[chave].get("tag")
+            versao = re.sub(r"^v(?=\d)", "", tag) if tag else None
+    return {"version": versao, "host": host, "units": relatorio,
             "runs": sorted(set.intersection(*conjuntos)) if conjuntos else None,
             "download": sum(x for x in tamanhos if x) or None}
 

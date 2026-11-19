@@ -246,10 +246,10 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   confere(/12%/.test($("home").textContent) && /25%/.test($("home").textContent) && /91%/.test($("home").textContent), `início: processador, memória e disco (${$("home").textContent.slice(0, 120)})`);
   confere(/↓ 1\.5 MB\/s/.test($("home").textContent), "início: taxa de rede");
 
-  rotas["/api/arch"] = { host: "amd64", runs: ["amd64", "arm64"], download: 38617327, units: [{ unit: "homebox", ok: true }] };
+  rotas["/api/arch"] = { host: "amd64", runs: ["amd64", "arm64"], download: 38617327, version: "1.20.26", units: [{ unit: "homebox", ok: true }] };
   api.openPanel("gitea"); await esperar(100);
   confere(botoes($("p-actions")).map((b) => b.textContent).join("") === "InstalarPersonalizarNova instânciaHistórico" && /Categoria/.test($("p-actions").textContent), `app não instalado: Instalar, Personalizar, Nova instância e Histórico, e o cartão com a categoria (${$("p-actions").textContent})`);
-  confere(!/null|undefined/.test($("p-info").textContent + $("p-actions").textContent) && /Arquitetura\s*amd64, arm64/.test($("p-actions").textContent) && /Download\s*37 MB/.test($("p-actions").textContent) && !/Roda em/.test($("p-info").textContent), "app não instalado: tamanho e arquitetura vão no cartão, e nada de 'null'");
+  confere(!/null|undefined/.test($("p-info").textContent + $("p-actions").textContent) && /Arquitetura\s*amd64, arm64/.test($("p-actions").textContent) && /Download\s*37 MB/.test($("p-actions").textContent) && /Versão\s*1\.20\.26/.test($("p-actions").textContent) && !/Roda em/.test($("p-info").textContent), "app não instalado: tamanho e arquitetura vão no cartão, e nada de 'null'");
   $("panel").open = false;
 
   // discontinued: the badge, the reason in the page's language, and no install for what is not installed

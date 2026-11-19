@@ -1,3 +1,4 @@
+  // Not-installed apps have no history and no second copy to make: that is for the Configure and History tabs of an installed one.
 // The store's page. Every string the server sends goes in through textContent:
 // descriptions and command output come from files and processes, not from us.
 "use strict";
@@ -1136,15 +1137,15 @@ function renderFacts() {
   const info = S.info || {}, arq = info.arch || {};
   const ordem = ["amd64", "arm64", "arm", "386"];
   const roda = (arq.runs || []).map((x) => x.replace(/^linux\//, ""));
-  const vistos = ordem.filter((x) => roda.includes(x)), resto = roda.length - vistos.length;
+  const todas = [...ordem.filter((x) => roda.includes(x)), ...roda.filter((x) => !ordem.includes(x)).sort()];   // the usual ones first, then the rest
   const principal = a.units.find((u) => u.unit === a.main_unit) || a.units[0];
-  const v = principal && tagOf(principal.image), versao = v && v !== "latest" ? v : null;   // no tag: the host pins the latest release, nothing to show yet
+  const v = principal && tagOf(principal.image), versao = arq.version || (v && v !== "latest" ? v : null);   // the project's latest release, else the tag the unit pins
   const fato = (k, v) => v ? h("div", { class: "kv" }, h("span", {}, t(k)), h("span", {}, v)) : null;
   fill(caixa,
     fato("factCategory", a.group && (a.group[S.lang] || a.group.en)),
     fato("factAuthor", a.author),
     fato("factSize", arq.download ? `${sizeOf(arq.download)}` : null),
-    fato("factArch", roda.length ? vistos.join(", ") + (resto > 0 ? ` +${resto}` : "") : null),
+    fato("factArch", roda.length ? todas.join(", ") : null),
     fato("factVersion", versao));
 }
 
