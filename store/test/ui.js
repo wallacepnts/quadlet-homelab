@@ -183,8 +183,17 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
 
   // gallery, project links, history
   const shots = $("p-shots");
-  confere(!shots.hidden && [...shots.walk()].filter((e) => e.tag === "img").length === 2, "galeria: duas capturas");
+  confere(shots.hidden, "gerenciar (instalado): sem capturas de tela");
+  const homebox = api.S.apps.find((x) => x.id === "homebox");
+  homebox.installed = false; homebox.about = { en: "long about", pt: "sobre longo" };
+  api.openPanel("homebox"); await esperar(30);
+  confere(!shots.hidden && [...shots.walk()].filter((e) => e.tag === "img").length === 2, "loja (não instalado): galeria com duas capturas");
   confere([...shots.walk()].filter((e) => e.tag === "a").every((a) => a.attrs.target === "_blank" && /noopener/.test(a.attrs.rel)), "galeria: outra aba, com noopener");
+  confere(/sobre longo/.test($("p-desc").textContent), "loja: mostra a descrição longa");
+  homebox.installed = true;
+  api.openPanel("homebox"); await esperar(30);
+  confere(!/sobre longo/.test($("p-desc").textContent) && $("p-desc").textContent === "y", "gerenciar: só a descrição curta");
+  delete homebox.about;
   confere(/Projeto ↗/.test($("p-project").textContent) && /Releases ↗/.test($("p-project").textContent), "links do projeto");
   const ancorasProjeto = [...$("p-project").walk()].filter((e) => e.tag === "a");
   confere(ancorasProjeto.map((a) => a.textContent).slice(0, 3).join("|") === "Projeto ↗|Documentação ↗|Problemas ↗",

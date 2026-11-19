@@ -1157,7 +1157,10 @@ function renderPanel() {
   decoratePlate($("p-plate"), a, $("p-icon"));
   $("p-name").textContent = a.name;
   $("p-meta").textContent = [a.installed ? runDot(a)[1] : "", (a.group && a.group[S.lang]) || "", a.author].filter(Boolean).join(" · ");
-  const sobre = a.about && (a.about[S.lang] || a.about.en);
+  // Two screens for one app. The store's (not installed) is about the app itself and about installing it: the long
+  // description and the screenshots. The manager's (installed) is about running it: the short description, no screenshots.
+  $("panel").classList.toggle("manage", !!a.installed);
+  const sobre = !a.installed && a.about && (a.about[S.lang] || a.about.en);
   const deInst = a.instance_of ? ` — ${t("instanceOf")(a.instance_of)}` : "";
   $("p-desc").textContent = plain(sobre || a.description[S.lang] || a.description.en)
     + deInst;
@@ -1167,7 +1170,7 @@ function renderPanel() {
   fill($("p-shots"), ...(a.screenshots || []).map((u) =>
     h("a", { href: u, target: "_blank", rel: "noopener noreferrer", "aria-label": t("shots") },
       h("img", { src: u, alt: "", loading: "lazy", referrerpolicy: "no-referrer" }))));
-  $("p-shots").hidden = !(a.screenshots || []).length;
+  $("p-shots").hidden = a.installed || !(a.screenshots || []).length;
 
   const instaladas = new Set(a.units.filter((u) => u.installed).map((u) => u.unit));
   // With a single address the primary "Open" button already goes there; the list is for stacks with several.
