@@ -587,6 +587,12 @@ dark monospace view that follows it (the step lines in green, warnings in yellow
 notes dimmed, and a cursor while it runs). The choice is kept in this browser and applies to every job after it, in the app's panel
 and in the window of *Update all* and of a migration (there the terminal replaces the plain log, since it already is the output).
 
+**Installing** has a window of its own: the whole bar with its percentage, every step and the console under them, and *Continue in the
+background* (closing it does not stop the job; the chip in the top bar brings it back). While it runs there is also **Cancel**: the
+panel sends `SIGINT` to `qh` and to what it started (the Ctrl+C of the terminal, `POST /api/job/<id>/cancel`, install jobs only), and then
+runs `qh <app> --remove` so that what the install had already put in place (units, the `.env`) goes back out. The data and the secrets
+are not touched. The window says *Install cancelled*, and the history keeps the run.
+
 ## What Podman says: health, what runs, the images
 
 Ideas taken from cockpit-podman, kept read-only except where said. In an app's panel, each running unit has:

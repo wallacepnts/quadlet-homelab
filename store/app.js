@@ -139,7 +139,7 @@ const T = {
     remove: "Remover", 
     linkName: "Nome", linkUrl: "https://…", linkBad: "Use um endereço http:// ou https://",
     updateAvailable: "Atualização disponível",
-    getApp: "Instalar", factCategory: "Categoria", factAuthor: "Desenvolvedor", installCustom: "Instalação personalizada…", installOptions: "Mais opções…", installMore: "Outras formas de instalar", lbPrev: "Anterior", lbNext: "Próxima", lbClose: "Fechar", lkSite: "Site", lkRepoGh: "Repositório no GitHub", lkRepo: "Repositório", lkDocs: "Documentação", lkDemo: "Demonstração", lkVideo: "Vídeo", factSize: "Download", factArch: "Arquitetura", factVersion: "Versão", installing: (n) => `Instalando ${n}`, inBackground: "Continuar em segundo plano", installNow: "Instalar agora", advanced: "Avançado", rolledBack: "voltou à versão anterior", techDetails: "Detalhes técnicos", logTitle: "O que foi feito", closeLabel: "Fechar",
+    getApp: "Instalar", factCategory: "Categoria", factAuthor: "Desenvolvedor", cancelling: "Cancelando…", installCancelled: "Instalação cancelada", installCustom: "Instalação personalizada…", installOptions: "Mais opções…", installMore: "Outras formas de instalar", lbPrev: "Anterior", lbNext: "Próxima", lbClose: "Fechar", lkSite: "Site", lkRepoGh: "Repositório no GitHub", lkRepo: "Repositório", lkDocs: "Documentação", lkDemo: "Demonstração", lkVideo: "Vídeo", factSize: "Download", factArch: "Arquitetura", factVersion: "Versão", installing: (n) => `Instalando ${n}`, inBackground: "Continuar em segundo plano", installNow: "Instalar agora", advanced: "Avançado", rolledBack: "voltou à versão anterior", techDetails: "Detalhes técnicos", logTitle: "O que foi feito", closeLabel: "Fechar",
     httpsNeeded: "precisa de HTTPS",
     httpsWarn: "Este app precisa de HTTPS: pela rede local (HTTP) o cofre e o service worker falham sem avisar. Use o acesso pela tailnet.",
     podmanOld: (need, host) => `Este app precisa do Podman ${need}+; o host tem ${host}. Atualize o Podman antes de instalar.`,
@@ -360,7 +360,7 @@ const T = {
     remove: "Remove", 
     linkName: "Name", linkUrl: "https://…", linkBad: "Use an http:// or https:// address",
     updateAvailable: "Update available",
-    getApp: "Install", factCategory: "Category", factAuthor: "Developer", installCustom: "Custom install…", installOptions: "More options…", installMore: "Other ways to install", lbPrev: "Previous", lbNext: "Next", lbClose: "Close", lkSite: "Website", lkRepoGh: "GitHub repository", lkRepo: "Repository", lkDocs: "Documentation", lkDemo: "Demo", lkVideo: "Video", factSize: "Download", factArch: "Architecture", factVersion: "Version", installing: (n) => `Installing ${n}`, inBackground: "Continue in the background", installNow: "Install now", advanced: "Advanced", rolledBack: "rolled back to the previous version", techDetails: "Technical details", logTitle: "What was done", closeLabel: "Close",
+    getApp: "Install", factCategory: "Category", factAuthor: "Developer", cancelling: "Cancelling…", installCancelled: "Install cancelled", installCustom: "Custom install…", installOptions: "More options…", installMore: "Other ways to install", lbPrev: "Previous", lbNext: "Next", lbClose: "Close", lkSite: "Website", lkRepoGh: "GitHub repository", lkRepo: "Repository", lkDocs: "Documentation", lkDemo: "Demo", lkVideo: "Video", factSize: "Download", factArch: "Architecture", factVersion: "Version", installing: (n) => `Installing ${n}`, inBackground: "Continue in the background", installNow: "Install now", advanced: "Advanced", rolledBack: "rolled back to the previous version", techDetails: "Technical details", logTitle: "What was done", closeLabel: "Close",
     httpsNeeded: "needs HTTPS",
     httpsWarn: "This app needs HTTPS: over the local network (HTTP) the vault and the service worker fail without saying why. Use tailnet access.",
     podmanOld: (need, host) => `This app needs Podman ${need}+; the host has ${host}. Update Podman before installing.`,
@@ -2770,7 +2770,13 @@ async function installFlow(a, start) {
   prog.reset();
   $("panel").close();
   $("install").showModal();
+  const cancelar = $("i-cancel");
+  cancelar.textContent = t("cancel");
+  cancelar.disabled = false;
+  cancelar.hidden = true;
+  cancelar.onclick = null;
   const fim = (rc, msg) => {
+    cancelar.hidden = true;
     $("i-spin").hidden = true;
     $("i-result").textContent = msg;
     $("i-result").className = rc === 0 ? "ok" : "bad";
@@ -2778,6 +2784,12 @@ async function installFlow(a, start) {
   };
   try {
     const { job } = await start();
+    cancelar.hidden = false;
+    cancelar.onclick = async () => {
+      cancelar.disabled = true;
+      cancelar.textContent = t("cancelling");
+      try { await api(`/api/job/${job}/cancel`, {}); } catch (e) { cancelar.disabled = false; cancelar.textContent = t("cancel"); }
+    };
     let next = 0, st;
     do {
       await new Promise((r) => setTimeout(r, 700));
@@ -2790,7 +2802,7 @@ async function installFlow(a, start) {
       }
     } while (st.rc === null);
     prog.finish(st.rc);
-    fim(st.rc, st.rc === 0 ? t("done") : `${t("failed")} (${st.rc})`);
+    fim(st.rc, st.rc === 0 ? t("done") : st.cancelled ? t("installCancelled") : `${t("failed")} (${st.rc})`);
     await load();
     const b = S.apps.find((x) => x.id === a.id), url = st.rc === 0 && b ? openUrl(b) : null;
     if (url) { $("i-open").href = url; $("i-open").hidden = false; }

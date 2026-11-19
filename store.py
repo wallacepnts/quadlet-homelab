@@ -39,6 +39,7 @@ import os
 import platform
 import re
 import secrets
+import signal
 import shutil
 import subprocess
 import sys
@@ -75,6 +76,9 @@ U = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(U)
 
 PT = {
+    "Cancelled.": "Cancelado.",
+    "Putting back what had been done…": "Desfazendo o que já tinha sido feito…",
+    "only an install can be cancelled": "só uma instalação pode ser cancelada",
     "the store is at": "a loja está em",
     "token created in": "token criado em",
     "the token is in": "o token está em",
@@ -2185,6 +2189,7 @@ class Job:
         self.app, self.action, self.origem, self.unit = app, action, origem, unit
         self.started = time.time()
         self.out, self.rc = [], None
+        self.proc, self.cancelled = None, False
 
     def write(self, texto):           # a file, for redirect_stdout
         if texto:
@@ -2194,8 +2199,27 @@ class Job:
         pass
 
 
+def cancel_job(job):
+    """Stop a running job: SIGINT to qh and what it started (its own process group), which is the Ctrl+C of the terminal.
+    True when there was something to stop. The worker then runs the job's `desfazer`, if it has one."""
+    if job.rc is not None or job.cancelled:
+        return False
+    job.cancelled = True
+    _sigint(job)
+    return True
+
+
+def _sigint(job):
+    p = job.proc
+    if p is not None and p.poll() is None:
+        try:
+            os.killpg(os.getpgid(p.pid), signal.SIGINT)
+        except (ProcessLookupError, PermissionError):
+            pass
+
+
 def start_job(app, action, cmd, lang, prepare=None, entrada=None, refrescar=None, origem="",
-              unit="", depois=None, continuar=False):
+              unit="", depois=None, continuar=False, desfazer=None):
     """The job, running in the background — or None when another one still is.
 
     One at a time: two `qh --apply` racing each other over the same
@@ -2222,6 +2246,8 @@ def start_job(app, action, cmd, lang, prepare=None, entrada=None, refrescar=None
             # One command, or several in order (an upgrade is a bump, then an
             # update): each runs only if the one before it succeeded.
             for i, uno in enumerate(cmd if cmd and isinstance(cmd[0], list) else [cmd] if cmd else []):
+                if job.cancelled:
+                    break
                 if i:
                     job.write("\n" + "─" * 60 + "\n")
                 if PREFIX and uno[0] in ("systemctl", "podman"):
@@ -2233,9 +2259,11 @@ def start_job(app, action, cmd, lang, prepare=None, entrada=None, refrescar=None
                 # dashboard labels it writes into the unit, so a unit installed
                 # from a page in English read as "changed" to qh in Portuguese
                 # ever after. Only read-only output follows the page.
-                p = subprocess.Popen(uno, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                     stdin=subprocess.PIPE if entrada else subprocess.DEVNULL,
-                                     text=True, cwd=ROOT, env=qh_env(None))
+                p = job.proc = subprocess.Popen(uno, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                                stdin=subprocess.PIPE if entrada else subprocess.DEVNULL,
+                                                text=True, cwd=ROOT, env=qh_env(None), start_new_session=True)
+                if job.cancelled:                  # asked to stop between the check and the start
+                    _sigint(job)
                 if entrada:
                     p.stdin.write(entrada + "\n")
                     p.stdin.close()
@@ -2248,6 +2276,14 @@ def start_job(app, action, cmd, lang, prepare=None, entrada=None, refrescar=None
                         break
             if continuar and falhou:
                 rc = falhou          # `continuar`: every command ran; the job still says one of them failed
+            if job.cancelled:
+                rc = rc or 130
+                job.write("\n" + loc("Cancelled.") + "\n")
+                if desfazer:         # what the cancelled install had already put in place goes back out
+                    job.write(loc("Putting back what had been done…") + "\n")
+                    d = subprocess.run(desfazer, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                                       cwd=ROOT, env=qh_env(None), stdin=subprocess.DEVNULL)
+                    job.write(d.stdout or "")
             # What has to follow a successful run: the customization chosen before an install, which is
             # written into the unit's drop-in only once the unit exists.
             if rc == 0 and depois:
@@ -2788,7 +2824,7 @@ class Handler(BaseHTTPRequestHandler):
             if not job:
                 return self._json(404, {"error": "job"})
             desde = int(q.get("from", "0") or 0)
-            return self._json(200, {"app": job.app, "action": job.action, "rc": job.rc,
+            return self._json(200, {"app": job.app, "action": job.action, "rc": job.rc, "cancelled": job.cancelled,
                                     "next": len(job.out), "output": "".join(job.out[desde:])})
         if url.path == "/api/shell":
             unit = q.get("unit", "")
@@ -3238,8 +3274,16 @@ class Handler(BaseHTTPRequestHandler):
                 cmd = [qh("--set-access", modo, app)]
                 if I.Service(app, PREFIX).installed():
                     cmd.append(qh(app, "--update", "--apply"))
+            desfazer = qh(app, "--remove", *([f"--instance={nova}"] if nova else []), "--apply") if action == "install" else None
             job = start_job(app, action, cmd, lang, prepare, entrada, refrescar=cadeia,
-                            origem=self.client_address[0], depois=depois)
+                            origem=self.client_address[0], depois=depois, desfazer=desfazer)
+        elif url.path.startswith("/api/job/") and url.path.endswith("/cancel"):
+            job = JOBS.get(url.path.split("/")[3])
+            if not job:
+                return self._json(404, {"error": "job"})
+            if job.action != "install":
+                return self._json(409, {"error": loc("only an install can be cancelled")})
+            return self._json(200, {"cancelled": cancel_job(job)})
         elif url.path == "/api/prune":
             tipo = d.get("kind", "")
             if tipo not in resources.KINDS:
@@ -4462,6 +4506,19 @@ esac
     assert [x["ok"] for x in r] == [False, True, None], "an unknown answer is not a warning"
     assert r[0]["platforms"] == ["amd64", "unknown"] and r[2]["platforms"] is None
     assert ARCH_NOMES["x86_64"] == "amd64" and ARCH_NOMES["aarch64"] == "arm64"
+    # cancelling: SIGINT to the running command, then what the job asked to put back
+    j = start_job("x", "install", ["sleep", "30"], None, desfazer=[sys.executable, "-c", "print('undone')"])
+    assert j is not None
+    for _ in range(50):
+        if j.proc is not None:
+            break
+        time.sleep(0.05)
+    assert cancel_job(j) and not cancel_job(j)
+    for _ in range(100):
+        if j.rc is not None:
+            break
+        time.sleep(0.1)
+    assert j.rc not in (None, 0) and j.cancelled and "undone" in "".join(j.out), (j.rc, j.out)
     print("store selftest: ok")
 
 

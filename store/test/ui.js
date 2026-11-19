@@ -200,6 +200,25 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
     for (const k of ["website", "source", "docs", "demo", "video"]) delete hb[k];
     hb.installed = antes.installed; api.openPanel("homebox"); await esperar(30); }
 
+  // Cancel: shown while the install runs, asks the server to stop, and the window says it was cancelled
+  { const hb = api.S.apps.find((x) => x.id === "homebox"); hb.installed = false; hb.asks = { secrets: [], vars: [] }; hb.options = [];
+    const runAntes = rotas["/api/run"], planoAntes = rotas["/api/plan"];
+    rotas["/api/plan"] = { rc: 0, output: "x", nothing: false };
+    rotas["/api/run"] = { job: "jc" }; rotas["/api/job/jc"] = { rc: null, next: 1, output: "homebox: instalação, 2 passos\n  -> mkdir -p /h\n  -> podman pull x\n[1/2] mkdir -p /h\n", cancelled: false };
+    const fim = api.instalar("homebox"); await esperar(1000);
+    confere(!$("i-cancel").hidden && $("i-cancel").textContent === "Cancelar", "instalando: o botão Cancelar aparece");
+    rotas["/api/job/jc/cancel"] = { cancelled: true };
+    const antesC = posts.length;
+    $("i-cancel").onclick(); await esperar(30);
+    confere(posts.slice(antesC).some((x) => x.rota === "/api/job/jc/cancel") && $("i-cancel").disabled, "Cancelar pede ao servidor para parar");
+    rotas["/api/job/jc"] = { rc: 130, next: 2, output: "\nCancelado.\n", cancelled: true };
+    await fim; await esperar(30);
+    confere($("i-result").textContent === "Instalação cancelada" && $("i-cancel").hidden, "ao terminar cancelado: 'Instalação cancelada' e sem o botão");
+    $("install").open = false;
+    if (runAntes === undefined) delete rotas["/api/run"]; else rotas["/api/run"] = runAntes;
+    if (planoAntes === undefined) delete rotas["/api/plan"]; else rotas["/api/plan"] = planoAntes;
+    delete rotas["/api/job/jc"]; delete rotas["/api/job/jc/cancel"]; hb.installed = true; }
+
   // "Install" installs at once when nothing has to be asked
   { const hb = api.S.apps.find((x) => x.id === "homebox"); hb.installed = false; hb.asks = { secrets: [], vars: [] }; hb.options = [];
     const planoAntes = rotas["/api/plan"]; rotas["/api/plan"] = { rc: 0, output: "x", nothing: false };

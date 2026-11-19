@@ -678,3 +678,4 @@ dialog.lightbox[open] { display: flex; align-items: center; justify-content: cen
 .split-menu button { text-align: left; background: none; border: 0; border-radius: 8px; padding: .55rem .7rem; color: var(--fg); min-height: 0; justify-content: flex-start; }
 .split-menu button:hover { background: var(--card-2); }
 #panel.store > #p-actions > .split { width: 100%; }
+.install-foot .danger-soft { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, transparent); } .install-foot [hidden] { display: none; }
