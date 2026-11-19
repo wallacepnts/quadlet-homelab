@@ -110,7 +110,7 @@ global.fetch = async (url, opts = {}) => {
 };
 
 const codigo = fs.readFileSync(path.join(__dirname, "..", "app.js"), "utf8");
-const api = new Function(codigo + "; return { S, openPanel, showEnv, current, renderGrid, pollStats, pollHost, openSettings, showLogs, showConsole, termNew, termFeed, termKey, openResources, hintClean, openHistory, setView, openFiles, renderFiles, uploadFiles, jobProgress, stepLabel, pollJobs, pollPerf, iconPlate, renderHome, touchRecent };")();
+const api = new Function(codigo + "; return { S, openPanel, showEnv, current, renderGrid, pollStats, pollHost, openSettings, showLogs, showConsole, termNew, termFeed, termKey, openResources, hintClean, openHistory, setView, openFiles, renderFiles, uploadFiles, jobProgress, stepLabel, instalar, pollJobs, pollPerf, iconPlate, renderHome, touchRecent };")();
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 let falhas = 0;
 const confere = (cond, msg) => { if (!cond) { falhas++; console.log("FALHOU:", msg); } else console.log("ok   ", msg); };
@@ -190,6 +190,16 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   confere(!$("p-section").hidden, "a aba Backups abre no próprio painel");
   porTexto($("p-tabs"), "Resumo")[0].listeners.click(); await esperar(20);
   confere($("p-section").hidden, "a aba Resumo volta ao resumo");
+
+  // "Install" installs at once when nothing has to be asked
+  { const hb = api.S.apps.find((x) => x.id === "homebox"); hb.installed = false; hb.asks = { secrets: [], vars: [] }; hb.options = [];
+    const planoAntes = rotas["/api/plan"]; rotas["/api/plan"] = { rc: 0, output: "x", nothing: false };
+    const antesI = posts.length;
+    await api.instalar("homebox"); await esperar(100);
+    const r = posts.slice(antesI).find((x) => x.rota === "/api/run");
+    confere(r && r.corpo.action === "install" && r.corpo.app === "homebox", `Instalar instala de uma vez, sem segunda confirmação (${posts.slice(antesI).map((x) => x.rota)} | form ${$("p-form").hidden} | ${$("p-form").kids.length})`);
+    if (planoAntes === undefined) delete rotas["/api/plan"]; else rotas["/api/plan"] = planoAntes;
+    hb.installed = true; }
 
   // gallery, project links, history
   const shots = $("p-shots");

@@ -974,7 +974,8 @@ function storeCard(a) {
     iconPlate(a, "sm"),
     h("div", { class: "tx" }, h("h3", {}, a.name, a.deprecated ? h("span", { class: "badge warn" }, a.installed ? `${t("deprecatedBadge")} · ${t("installedBadge")}` : t("deprecatedBadge")) : null),
       h("p", { class: "desc" }, plain(a.description[S.lang] || a.description.en))),
-    a.deprecated ? null : h("span", { class: a.installed ? "get got" : "get", "aria-hidden": "true" }, a.installed ? `✓ ${t("installedBadge")}` : t("getApp")));
+    a.deprecated ? null : h("span", { class: a.installed ? "get got" : "get", "aria-hidden": "true",
+      onclick: a.installed ? null : (ev) => { ev.stopPropagation(); instalar(a.id); } }, a.installed ? `✓ ${t("installedBadge")}` : t("getApp")));
 }
 
 // -- home: greeting, the server at a glance, what you used last --------------------------------------
@@ -1085,7 +1086,7 @@ async function loadUpdates(refresh) {
 
 // -- panel ------------------------------------------------------------------
 
-function openPanel(id) {
+function openPanel(id, mostrar = true) {
   closeLogs();
   S.current = id;
   S.info = { disk: null, arch: null };       // asked per app, when its panel opens
@@ -1102,7 +1103,7 @@ function openPanel(id) {
   $("p-tech").open = false;
   $("p-clean").hidden = true;
   $("p-section").hidden = true;
-  $("panel").showModal();
+  if (mostrar) $("panel").showModal();
 }
 
 const current = () => S.apps.find((a) => a.id === S.current);
@@ -1292,7 +1293,7 @@ function renderPanel() {
   if (!a.installed) {
     if (!a.deprecated) {
       const deps = needs(a);
-      acoes.push(h("button", { type: "button", onclick: () => plan("install") },
+      acoes.push(h("button", { type: "button", onclick: () => instalar(a.id) },
         deps.length ? t("installWith")(deps.map((x) => x.name).join(", ")) : t("install")));
       acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showCustom(a, null, true) },
         S.preCustom[a.id] || S.preUnit[a.id] ? `${t("customize")} ✓` : t("customize")));
@@ -1350,6 +1351,18 @@ function out(text, append = false) {
 
 function busy(on) {
   for (const b of $("panel").querySelectorAll("button:not(#p-close)")) b.disabled = on;
+}
+
+// "Install" installs: no second confirmation. Only what cannot be guessed (a secret to paste, a variable, a choice the
+// developer offers) or a reason not to (discontinued, Podman too old) brings the panel up first.
+async function instalar(id) {
+  const aberto = $("panel").open && S.current === id;
+  if (!aberto) openPanel(id, false);
+  const a = current();
+  if (!a.deprecated && !a.podman_too_old) await plan("install");
+  const falta = ["secret", "var", "option"].some((k) => $("p-form").querySelector(`[data-${k}]`));
+  if (!a.deprecated && !a.podman_too_old && !$("p-form").hidden && !falta) { await run("install"); return; }
+  if (!$("panel").open) $("panel").showModal();
 }
 
 async function plan(action, file = "") {
