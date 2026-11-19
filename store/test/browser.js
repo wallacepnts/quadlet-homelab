@@ -112,6 +112,8 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
     await ev("[...document.querySelectorAll('nav button, aside button, .side button')].find((b) => /^Loja/.test(b.textContent.trim())).click()"); await esperar(1500);
     console.log("cartões:", await ev("document.querySelectorAll('#grid .card, .card').length"));
     await ev("(() => { const c = [...document.querySelectorAll('.card')].find((x) => x.querySelector('.get:not(.got)') && /Copyparty/.test(x.textContent)); c.click(); })()"); await esperar(4000);
+    console.log("filhos:", await ev("[...document.getElementById('panel').children].map((e) => { const r = e.getBoundingClientRect(); return e.id + ':' + Math.round(r.top) + '-' + Math.round(r.bottom); }).filter((x) => !/:0-0$/.test(x)).join(' ')"));
+    console.log("grade:", await ev("(() => { const d = document.getElementById('panel'), c = getComputedStyle(d); const r = d.getBoundingClientRect(); return c.gridTemplateRows + ' | ' + Math.round(r.top) + '-' + Math.round(r.bottom) + ' | pad ' + c.paddingBottom + ' | minH ' + c.minHeight + ' | h ' + c.height + ' | over ' + d.scrollHeight; })()"));
     await foto("97-loja-app");
   }
 

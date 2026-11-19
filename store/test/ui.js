@@ -248,7 +248,7 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
 
   rotas["/api/arch"] = { host: "amd64", runs: ["amd64", "arm64"], download: 38617327, version: "1.20.26", units: [{ unit: "homebox", ok: true }] };
   api.openPanel("gitea"); await esperar(100);
-  confere(botoes($("p-actions")).map((b) => b.textContent).join("") === "InstalarPersonalizarNova instânciaHistórico" && /Categoria/.test($("p-actions").textContent), `app não instalado: Instalar, Personalizar, Nova instância e Histórico, e o cartão com a categoria (${$("p-actions").textContent})`);
+  confere(botoes($("p-actions")).map((b) => b.textContent).join("") === "InstalarPersonalizar" && $("p-tech").hidden && /Categoria/.test($("p-actions").textContent), `app não instalado: só Instalar e Personalizar (sem histórico, instância nem detalhes técnicos), e o cartão com a categoria (${$("p-actions").textContent})`);
   confere(!/null|undefined/.test($("p-info").textContent + $("p-actions").textContent) && /Arquitetura\s*amd64, arm64/.test($("p-actions").textContent) && /Download\s*37 MB/.test($("p-actions").textContent) && /Versão\s*1\.20\.26/.test($("p-actions").textContent) && !/Roda em/.test($("p-info").textContent), "app não instalado: tamanho e arquitetura vão no cartão, e nada de 'null'");
   $("panel").open = false;
 
@@ -263,7 +263,7 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   api.openPanel("gitea"); await esperar(50);
   confere(!$("p-notice").hidden && /Descontinuado: Arquivado no upstream\./.test($("p-notice").textContent) && /Não dá para instalar/.test($("p-notice").textContent),
     "painel: o motivo, em português, e o aviso de que não instala");
-  confere(botoes($("p-actions")).map((b) => b.textContent).join("") === "Histórico", `painel: sem botão de instalar (${$("p-actions").textContent})`);
+  confere(botoes($("p-actions")).length === 0, `painel: sem botão de instalar (${$("p-actions").textContent})`);
   $("panel").open = false;
   api.setView("apps");
   const azulejoMemos = $("grid").kids.find((k) => /Memos/.test(k.textContent));
@@ -816,18 +816,22 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   if (previaGuardada === undefined) delete rotas["/api/custom/preview"]; else rotas["/api/custom/preview"] = previaGuardada;
   $("panel").open = false;
 
-  // instances: a base app offers "New instance", and the install carries the name; an instance does not offer it
+  // instances: an installed base app offers "New instance" (Configure tab), and the install carries the name; an instance does not offer it
+  const gitea = api.S.apps.find((x) => x.id === "gitea"), giteaEra = gitea.installed;
+  gitea.installed = true;
   api.openPanel("gitea"); await esperar(30);
-  porTexto($("p-actions"), "Nova instância")[0].listeners.click(); await esperar(30);
+  (await cfgBtn("Nova instância")).listeners.click(); await esperar(30);
   const nomeInst = [...$("p-section").walk()].find((e) => e.tag === "input" && e.attrs.type === "text");
   nomeInst.value = "casa";
   const antesInst = posts.length;
   porTexto($("p-section"), "Criar instância")[0].listeners.click(); await esperar(1200);
   const inst = posts.slice(antesInst).find((x) => x.rota === "/api/run");
   confere(inst && inst.corpo.action === "install" && inst.corpo.instance === "casa" && inst.corpo.app === "gitea", `a instância é criada pelo install com o nome (${JSON.stringify(inst && inst.corpo)})`);
-  api.S.apps.find((x) => x.id === "gitea").instance_of = "outro";
+  gitea.instance_of = "outro";
   api.openPanel("gitea"); await esperar(30);
-  confere(porTexto($("p-actions"), "Nova instância").length === 0 && /instância de outro/.test($("p-desc").textContent), "uma instância não gera outra, e diz de quem é");
+  await cfgBtn("Personalizar");
+  confere(porTexto($("p-section"), "Nova instância").length === 0 && /instância de outro/.test($("p-desc").textContent), "uma instância não gera outra, e diz de quem é");
+  gitea.installed = giteaEra;
   delete api.S.apps.find((x) => x.id === "gitea").instance_of;
   $("panel").open = false;
 

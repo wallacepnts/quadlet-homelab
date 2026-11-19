@@ -1,4 +1,3 @@
-  // Not-installed apps have no history and no second copy to make: that is for the Configure and History tabs of an installed one.
 // The store's page. Every string the server sends goes in through textContent:
 // descriptions and command output come from files and processes, not from us.
 "use strict";
@@ -1256,6 +1255,7 @@ function renderPanel() {
 
   const linhas = a.units.filter((u) => u.installed);
   $("p-units").hidden = !linhas.length;
+  $("p-tech").hidden = !a.installed;          // the units table has nothing to say before the install
   fill($("p-units"), 
     h("tr", {}, ...["unit", "service", "container", "installedTag", "upstream", "repo", ""]
       .map((k) => h("th", {}, k ? t(k) : ""))),
@@ -1347,12 +1347,7 @@ function renderPanel() {
                      onchange: (ev) => { S.backupFirst = ev.target.checked; localStorage.setItem("qh-backup-first", S.backupFirst ? "1" : ""); } }),
         " " + t("backupFirst")));
   }
-  // The same app once more, under its own name: units, volumes, secrets and port of its own (an instance is not
-  // itself instanced). Installed apps have it in the Configure tab; the store offers it beside Install.
-  if (!a.installed && !a.instance_of && !a.deprecated && !a.units.some((u) => u.only_unit))
-    acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showInstance(a) }, t("newInstance")));
-  // After the others: an app that was removed, or never came up, still has a past worth reading.
-  if (!a.installed) acoes.push(h("button", { type: "button", class: "ghost", onclick: () => openHistory(a.id) }, t("history")));
+  // A not-installed app has no history and no second copy to make: those are in the tabs of an installed one.
   renderPanelTabs(a);
   fill($("p-actions"), ...acoes, a.installed && a.web.length ? accessPicker(a) : null,
     ...(a.installed ? [] : [(S.factsEl = h("div", { class: "facts" }))]));
