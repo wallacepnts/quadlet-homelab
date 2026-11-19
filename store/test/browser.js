@@ -111,7 +111,7 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
     await esperar(2500);
     await ev("[...document.querySelectorAll('nav button, aside button, .side button')].find((b) => /^Loja/.test(b.textContent.trim())).click()"); await esperar(1500);
     console.log("cartões:", await ev("document.querySelectorAll('#grid .card, .card').length"));
-    await ev("(() => { const c = [...document.querySelectorAll('.card')].find((x) => x.querySelector('.get:not(.got)')); c.click(); })()"); await esperar(1500);
+    await ev("(() => { const c = [...document.querySelectorAll('.card')].find((x) => x.querySelector('.get:not(.got)') && /Copyparty/.test(x.textContent)); c.click(); })()"); await esperar(4000);
     await foto("97-loja-app");
   }
 

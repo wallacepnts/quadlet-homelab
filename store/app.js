@@ -139,7 +139,7 @@ const T = {
     remove: "Remover", 
     linkName: "Nome", linkUrl: "https://…", linkBad: "Use um endereço http:// ou https://",
     updateAvailable: "Atualização disponível",
-    getApp: "Instalar", factCategory: "Categoria", factAuthor: "Desenvolvedor", installing: (n) => `Instalando ${n}`, inBackground: "Continuar em segundo plano", installNow: "Instalar agora", advanced: "Avançado", rolledBack: "voltou à versão anterior", techDetails: "Detalhes técnicos", logTitle: "O que foi feito", closeLabel: "Fechar",
+    getApp: "Instalar", factCategory: "Categoria", factAuthor: "Desenvolvedor", factSize: "Download", factArch: "Arquitetura", factVersion: "Versão", installing: (n) => `Instalando ${n}`, inBackground: "Continuar em segundo plano", installNow: "Instalar agora", advanced: "Avançado", rolledBack: "voltou à versão anterior", techDetails: "Detalhes técnicos", logTitle: "O que foi feito", closeLabel: "Fechar",
     httpsNeeded: "precisa de HTTPS",
     httpsWarn: "Este app precisa de HTTPS: pela rede local (HTTP) o cofre e o service worker falham sem avisar. Use o acesso pela tailnet.",
     podmanOld: (need, host) => `Este app precisa do Podman ${need}+; o host tem ${host}. Atualize o Podman antes de instalar.`,
@@ -360,7 +360,7 @@ const T = {
     remove: "Remove", 
     linkName: "Name", linkUrl: "https://…", linkBad: "Use an http:// or https:// address",
     updateAvailable: "Update available",
-    getApp: "Install", factCategory: "Category", factAuthor: "Developer", installing: (n) => `Installing ${n}`, inBackground: "Continue in the background", installNow: "Install now", advanced: "Advanced", rolledBack: "rolled back to the previous version", techDetails: "Technical details", logTitle: "What was done", closeLabel: "Close",
+    getApp: "Install", factCategory: "Category", factAuthor: "Developer", factSize: "Download", factArch: "Architecture", factVersion: "Version", installing: (n) => `Installing ${n}`, inBackground: "Continue in the background", installNow: "Install now", advanced: "Advanced", rolledBack: "rolled back to the previous version", techDetails: "Technical details", logTitle: "What was done", closeLabel: "Close",
     httpsNeeded: "needs HTTPS",
     httpsWarn: "This app needs HTTPS: over the local network (HTTP) the vault and the service worker fail without saying why. Use tailnet access.",
     podmanOld: (need, host) => `This app needs Podman ${need}+; the host has ${host}. Update Podman before installing.`,
@@ -1127,6 +1127,27 @@ async function loadInfo(id) {
   if (S.current === id && $("panel").open) renderInfo();
 }
 
+// The card beside an app in the store: what is known before installing it. The size and the architectures come from
+// the registry (asked when the panel opens), so this is painted again when they arrive. Memory is not here: nobody
+// publishes it, and a made-up number is worse than none.
+function renderFacts() {
+  const a = current(), caixa = S.factsEl;
+  if (!a || !caixa || a.installed) return;
+  const info = S.info || {}, arq = info.arch || {};
+  const ordem = ["amd64", "arm64", "arm", "386"];
+  const roda = (arq.runs || []).map((x) => x.replace(/^linux\//, ""));
+  const vistos = ordem.filter((x) => roda.includes(x)), resto = roda.length - vistos.length;
+  const principal = a.units.find((u) => u.unit === a.main_unit) || a.units[0];
+  const v = principal && tagOf(principal.image), versao = v && v !== "latest" ? v : null;   // no tag: the host pins the latest release, nothing to show yet
+  const fato = (k, v) => v ? h("div", { class: "kv" }, h("span", {}, t(k)), h("span", {}, v)) : null;
+  fill(caixa,
+    fato("factCategory", a.group && (a.group[S.lang] || a.group.en)),
+    fato("factAuthor", a.author),
+    fato("factSize", arq.download ? `${sizeOf(arq.download)}` : null),
+    fato("factArch", roda.length ? vistos.join(", ") + (resto > 0 ? ` +${resto}` : "") : null),
+    fato("factVersion", versao));
+}
+
 function renderInfo() {
   const a = current(), info = S.info || {};
   if (!a) return;
@@ -1136,7 +1157,8 @@ function renderInfo() {
   if (a.installed) partes.push(`${t("disk")} ${info.disk ? (info.disk.bytes === null ? "—" : mib(info.disk.bytes)) : t("counting")}`);
   if (a.units.some((u) => u.installed && u.override)) partes.push(t("customizedBadge"));
   const arq = info.arch;
-  if (arq && arq.runs && arq.runs.length) partes.push(`${t("runsOn")} ${arq.runs.join(", ")}`);
+  if (a.installed && arq && arq.runs && arq.runs.length) partes.push(`${t("runsOn")} ${arq.runs.join(", ")}`);
+  renderFacts();
   const sem = arq ? arq.units.filter((u) => u.ok === false).map((u) => u.unit) : [];
   const hist = S.rhist[a.id];
   const mini = (serie, teto) => {            // heights through the CSSOM: the CSP forbids a style attribute
@@ -1207,7 +1229,7 @@ function renderPanel() {
   $("p-icon").src = a.icon || "";
   decoratePlate($("p-plate"), a, $("p-icon"));
   $("p-name").textContent = a.name;
-  $("p-meta").textContent = [a.installed ? runDot(a)[1] : "", (a.group && a.group[S.lang]) || "", a.author].filter(Boolean).join(" · ");
+  $("p-meta").textContent = [a.installed ? runDot(a)[1] : "", (a.group && a.group[S.lang]) || "", a.installed ? a.author : ""].filter(Boolean).join(" · ");   // the store card has the developer
   // Two screens for one app. The store's (not installed) is about the app itself and about installing it: the long
   // description and the screenshots. The manager's (installed) is about running it: the short description, no screenshots.
   $("panel").classList.toggle("manage", !!a.installed);
@@ -1331,9 +1353,10 @@ function renderPanel() {
   // After the others: an app that was removed, or never came up, still has a past worth reading.
   if (!a.installed) acoes.push(h("button", { type: "button", class: "ghost", onclick: () => openHistory(a.id) }, t("history")));
   renderPanelTabs(a);
-  const fato = (k, v) => v ? h("div", { class: "kv" }, h("span", {}, t(k)), h("span", {}, v)) : null;
   fill($("p-actions"), ...acoes, a.installed && a.web.length ? accessPicker(a) : null,
-    ...(a.installed ? [] : [h("div", { class: "facts" }, fato("factCategory", a.group && (a.group[S.lang] || a.group.en)), fato("factAuthor", a.author))]));
+    ...(a.installed ? [] : [(S.factsEl = h("div", { class: "facts" }))]));
+  if (a.installed) S.factsEl = null;
+  renderFacts();
 }
 
 // One plain line says how it is going; the raw output is there for whoever wants it, one click away.

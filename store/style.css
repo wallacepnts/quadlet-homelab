@@ -635,3 +635,9 @@ dialog.install { width: min(640px, 94vw); }
 .facts .kv span:first-child { color: var(--muted); }
 #panel.store .shots img { height: 12rem; }
 @media (max-width: 720px) { #panel.store[open] { display: block; } #panel.store > #p-actions { position: static; margin: .8rem 0; } }
+
+/* The project's links on the store screen: one outlined pill each, not a run of underlined words. */
+#panel.store #p-project { display: flex; flex-wrap: wrap; gap: .5rem; margin: .8rem 0; }
+#panel.store #p-project a { display: inline-flex; align-items: center; gap: .25rem; padding: .35rem .85rem; border: 1px solid var(--line); border-radius: 999px;
+  color: var(--fg); text-decoration: none; font-size: .85rem; background: var(--card-2); }
+#panel.store #p-project a:hover { border-color: var(--accent); color: var(--accent); }

@@ -1992,18 +1992,21 @@ def arch(app):
         guardado = {}
     agora = time.time()
     faltam = sorted({i for _, i in units if i and not (
-        i in guardado and agora - guardado[i]["at"] < ARCH_TTL)})
+        i in guardado and "size" in guardado[i] and agora - guardado[i]["at"] < ARCH_TTL)})
     if faltam:
         with ThreadPoolExecutor(max_workers=8) as pool:
-            for imagem, plataformas in zip(faltam, pool.map(U.architectures, faltam)):
+            for imagem, plataformas, tamanho in zip(faltam, pool.map(U.architectures, faltam),
+                                                    pool.map(lambda i: U.image_size(i, host), faltam)):
                 if plataformas is not None:      # a failed lookup is asked again next time
-                    guardado[imagem] = {"at": agora, "platforms": sorted(plataformas)}
+                    guardado[imagem] = {"at": agora, "platforms": sorted(plataformas), "size": tamanho}
         arch_cache_file().parent.mkdir(parents=True, exist_ok=True)
         arch_cache_file().write_text(json.dumps(guardado))
     relatorio = arch_report(units, host, lambda i: set(guardado.get(i, {}).get("platforms", [])) or None)
     conjuntos = [set(x["platforms"]) for x in relatorio if x["platforms"]]
+    tamanhos = [guardado.get(i, {}).get("size") for _, i in units if i]
     return {"host": host, "units": relatorio,
-            "runs": sorted(set.intersection(*conjuntos)) if conjuntos else None}
+            "runs": sorted(set.intersection(*conjuntos)) if conjuntos else None,
+            "download": sum(x for x in tamanhos if x) or None}
 
 
 def em_dia(saida):

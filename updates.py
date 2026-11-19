@@ -223,6 +223,30 @@ def architectures(image):
     return {f"{c['os']}/{c['architecture']}"} if c.get("os") and c.get("architecture") else None
 
 
+def image_size(image, arch="amd64"):
+    """The download size of an image for `arch`, in bytes (layers + config), or None when the registry will not say.
+
+    An index is followed to the manifest of that platform; that is one request more, and the only way to know
+    what pulling it costs. This is the compressed size, so the disk it takes once pulled is somewhat larger.
+    """
+    host, repo = _repo_ref(image)
+    marca, digest = ref_parts(image)
+    corpo, tok = _registry_get(f"https://{host}/v2/{repo}/manifests/{digest or marca or 'latest'}", aceita=MANIFESTOS)
+    try:
+        manifesto = json.loads(corpo or "")
+        if "manifests" in manifesto:
+            alvo = next((m for m in manifesto["manifests"] if (m.get("platform") or {}).get("os") == "linux"
+                         and (m.get("platform") or {}).get("architecture") == arch), None)
+            if not alvo:
+                return None
+            corpo, _ = _registry_get(f"https://{host}/v2/{repo}/manifests/{alvo['digest']}", tok, aceita=MANIFESTOS)
+            manifesto = json.loads(corpo or "")
+        total = sum(int(x.get("size", 0)) for x in manifesto.get("layers", [])) + int((manifesto.get("config") or {}).get("size", 0))
+    except (ValueError, TypeError, AttributeError):
+        return None
+    return total or None
+
+
 def _registry_get_link(url, token=None):
     """_registry_get plus the `Link: rel="next"` of a paginated listing."""
     cab = {"User-Agent": UA}
