@@ -652,7 +652,7 @@ dialog.install { width: min(640px, 94vw); }
 .g-arrow:active:not(:disabled), .g-arrow:hover:not(:disabled) { transform: none; filter: none; }       /* no press animation: the global button rules would move or dim it */
 .g-arrow::after { content: ""; width: .55rem; height: .55rem; border: solid currentColor; border-width: 0 0 2px 2px; }
 /* a rotated corner's drawn part sits to one side of its box: shifted back by .354 of its size so the chevron is centered */
-.g-arrow.g-left::after { transform: translateX(.19rem) rotate(45deg); } .g-arrow.g-right::after { transform: translateX(-.19rem) rotate(225deg); }
+.g-arrow.g-left::after { transform: translateX(.12rem) rotate(45deg); } .g-arrow.g-right::after { transform: translateX(-.12rem) rotate(225deg); }
 .g-arrow:hover { background: rgb(0 0 0 / .82); } .g-arrow[hidden] { display: none; }
 .g-arrow.g-left { left: .5rem; } .g-arrow.g-right { right: .5rem; }
 .gallery .shots a { cursor: zoom-in; }
@@ -662,7 +662,7 @@ dialog.lightbox[open] { display: flex; align-items: center; justify-content: cen
 #lb-img { max-width: min(86vw, 1400px); max-height: 86vh; border-radius: 12px; display: block; background: #111; }
 .lb-btn { border: 0; border-radius: 50%; width: 2.8rem; height: 2.8rem; min-width: 0; min-height: 0; padding: 0; background: rgb(255 255 255 / .16); color: #fff; font-size: 0; cursor: pointer; flex: none; display: grid; place-items: center; }
 .lb-side::after { content: ""; width: .6rem; height: .6rem; border: solid currentColor; border-width: 0 0 2px 2px; }
-.lb-l::after { transform: translateX(.21rem) rotate(45deg); } .lb-r::after { transform: translateX(-.21rem) rotate(225deg); }
+.lb-l::after { transform: translateX(.14rem) rotate(45deg); } .lb-r::after { transform: translateX(-.14rem) rotate(225deg); }
 .lb-btn { transition: none; } .lb-btn:active:not(:disabled), .lb-btn:hover:not(:disabled) { transform: none; filter: none; }
 .lb-x::before, .lb-x::after { content: ""; position: absolute; top: calc(50% - 1px); left: calc(50% - .55rem); width: 1.1rem; height: 2px; background: currentColor; transform: rotate(45deg); } .lb-x::after { transform: rotate(-45deg); }
 .lb-btn:hover { background: rgb(255 255 255 / .3); } .lb-btn[hidden] { display: none; }
