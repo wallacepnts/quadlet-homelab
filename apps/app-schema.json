@@ -68,6 +68,14 @@
       "type": "string",
       "format": "uri"
     },
+    "demo": {
+      "type": "string",
+      "format": "uri"
+    },
+    "video": {
+      "type": "string",
+      "format": "uri"
+    },
     "architectures": {
       "type": "array",
       "items": {

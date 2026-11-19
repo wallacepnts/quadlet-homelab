@@ -139,7 +139,7 @@ const T = {
     remove: "Remover", 
     linkName: "Nome", linkUrl: "https://…", linkBad: "Use um endereço http:// ou https://",
     updateAvailable: "Atualização disponível",
-    getApp: "Instalar", factCategory: "Categoria", factAuthor: "Desenvolvedor", factSize: "Download", factArch: "Arquitetura", factVersion: "Versão", installing: (n) => `Instalando ${n}`, inBackground: "Continuar em segundo plano", installNow: "Instalar agora", advanced: "Avançado", rolledBack: "voltou à versão anterior", techDetails: "Detalhes técnicos", logTitle: "O que foi feito", closeLabel: "Fechar",
+    getApp: "Instalar", factCategory: "Categoria", factAuthor: "Desenvolvedor", lkSite: "Site", lkRepoGh: "Repositório no GitHub", lkRepo: "Repositório", lkDocs: "Documentação", lkDemo: "Demonstração", lkVideo: "Vídeo", factSize: "Download", factArch: "Arquitetura", factVersion: "Versão", installing: (n) => `Instalando ${n}`, inBackground: "Continuar em segundo plano", installNow: "Instalar agora", advanced: "Avançado", rolledBack: "voltou à versão anterior", techDetails: "Detalhes técnicos", logTitle: "O que foi feito", closeLabel: "Fechar",
     httpsNeeded: "precisa de HTTPS",
     httpsWarn: "Este app precisa de HTTPS: pela rede local (HTTP) o cofre e o service worker falham sem avisar. Use o acesso pela tailnet.",
     podmanOld: (need, host) => `Este app precisa do Podman ${need}+; o host tem ${host}. Atualize o Podman antes de instalar.`,
@@ -360,7 +360,7 @@ const T = {
     remove: "Remove", 
     linkName: "Name", linkUrl: "https://…", linkBad: "Use an http:// or https:// address",
     updateAvailable: "Update available",
-    getApp: "Install", factCategory: "Category", factAuthor: "Developer", factSize: "Download", factArch: "Architecture", factVersion: "Version", installing: (n) => `Installing ${n}`, inBackground: "Continue in the background", installNow: "Install now", advanced: "Advanced", rolledBack: "rolled back to the previous version", techDetails: "Technical details", logTitle: "What was done", closeLabel: "Close",
+    getApp: "Install", factCategory: "Category", factAuthor: "Developer", lkSite: "Website", lkRepoGh: "GitHub repository", lkRepo: "Repository", lkDocs: "Documentation", lkDemo: "Demo", lkVideo: "Video", factSize: "Download", factArch: "Architecture", factVersion: "Version", installing: (n) => `Installing ${n}`, inBackground: "Continue in the background", installNow: "Install now", advanced: "Advanced", rolledBack: "rolled back to the previous version", techDetails: "Technical details", logTitle: "What was done", closeLabel: "Close",
     httpsNeeded: "needs HTTPS",
     httpsWarn: "This app needs HTTPS: over the local network (HTTP) the vault and the service worker fail without saying why. Use tailnet access.",
     podmanOld: (need, host) => `This app needs Podman ${need}+; the host has ${host}. Update Podman before installing.`,
@@ -1110,18 +1110,31 @@ const current = () => S.apps.find((a) => a.id === S.current);
 
 // Disk and architecture are not in the catalog: they cost a walk of the volumes
 // and a registry lookup, so they are asked for when someone opens the panel.
+// The links at the end of an app's store page, each named by what it is: the project's site, its repository, the
+// documentation, a live demo, a video. They come from the manifest (website, source, docs, demo, video).
+function renderStoreLinks(a) {
+  const gh = a.source && /^https:\/\/github\.com\//.test(a.source);
+  const itens = [["lkSite", a.website], [gh ? "lkRepoGh" : "lkRepo", a.source], ["lkDocs", a.docs], ["lkDemo", a.demo], ["lkVideo", a.video]]
+    .filter(([, url]) => url);
+  $("p-project").hidden = !itens.length;
+  fill($("p-project"), ...(itens.length ? [h("div", { class: "linklist" },
+    ...itens.map(([k, url]) => h("div", { class: "kv" }, h("span", {}, t(k)),
+      h("a", { href: url, target: "_blank", rel: "noopener noreferrer" }, url.replace(/^https:\/\//, "").replace(/\/$/, "")))))] : []));
+}
+
 async function loadInfo(id) {
   const a = current();
   const pedidos = [];
   if (a.installed) pedidos.push(api(`/api/disk?app=${encodeURIComponent(id)}`).then((d) => { S.info.disk = d; }));
   pedidos.push(api(`/api/arch?app=${encodeURIComponent(id)}`).then((d) => { S.info.arch = d; }));
-  api(`/api/links?app=${encodeURIComponent(id)}`).then(({ links }) => {
+  if (!a.installed) renderStoreLinks(a);
+  else api(`/api/links?app=${encodeURIComponent(id)}`).then(({ links }) => {
     if (S.current !== id) return;
     const site = a.website && !links.some((l) => l.url === a.website) ? [{ kind: "project", url: a.website }] : [];
     fill($("p-project"), ...site.concat(links).map((l) =>
       h("a", { href: l.url, target: "_blank", rel: "noopener noreferrer" }, `${t("link")[l.kind]} ↗`)));
   }).catch(() => {});
-  fill($("p-project"));
+  if (a.installed) fill($("p-project"));
   renderInfo();
   await Promise.allSettled(pedidos);
   if (S.current === id && $("panel").open) renderInfo();

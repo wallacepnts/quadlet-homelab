@@ -98,7 +98,7 @@ def dump(data):
     return "{\n" + ",\n".join(linhas) + "\n}\n"
 
 
-KEY_ORDER = ["$schema", "title", "short_desc", "description", "author", "website", "source", "docs", "architectures", "category",
+KEY_ORDER = ["$schema", "title", "short_desc", "description", "author", "website", "source", "docs", "demo", "video", "architectures", "category",
              "min_podman", "requires_https", "no_gui", "deprecated", "secrets", "validate", "config", "vars", "ask",
              "login", "choices", "options", "widgets", "icon", "backup", "units", "instance"]
 
@@ -512,7 +512,8 @@ def schema(grupos):
         "$schema": {"type": "string"},
         "title": texto, "short_desc": par, "description": par, "author": texto,
         "website": {"type": "string", "format": "uri"}, "source": {"type": "string", "format": "uri"},
-        "docs": {"type": "string", "format": "uri"}, "architectures": {"type": "array", "items": texto},
+        "docs": {"type": "string", "format": "uri"}, "demo": {"type": "string", "format": "uri"},
+        "video": {"type": "string", "format": "uri"}, "architectures": {"type": "array", "items": texto},
         "category": {"enum": list(grupos)}, "min_podman": {"type": "string"},
         "requires_https": {"type": "boolean"}, "no_gui": {"const": True}, "deprecated": par,
         "secrets": mapa(texto), "validate": mapa(texto), "config": mapa(texto),
@@ -548,10 +549,10 @@ def problems(data, grupos, folder=None):
     for lang, tag in (data.get("short_desc") or {}).items() if isinstance(data.get("short_desc"), dict) else ():
         if isinstance(tag, str) and (len(tag) > TAGLINE_MAX or "\n" in tag or " — " in tag or "(" in tag):
             erros.append(f'"short_desc.{lang}" must be one short, plain sentence: up to {TAGLINE_MAX} characters, no dash or parenthesis')
-    for k in ("author", "website", "source", "docs"):
+    for k in ("author", "website", "source", "docs", "demo", "video"):
         if k in data and not isinstance(data[k], str):
             erros.append(f'"{k}" must be a string')
-        elif k in ("website", "source", "docs") and data.get(k) and not re.fullmatch(r"https://[A-Za-z0-9.-]+(/\S*)?", data[k]):
+        elif k in ("website", "source", "docs", "demo", "video") and data.get(k) and not re.fullmatch(r"https://[A-Za-z0-9.-]+(/\S*)?", data[k]):
             erros.append(f'"{k}" must be a plain https:// URL')
     arq = data.get("architectures")
     if arq is not None and (not isinstance(arq, list) or not arq or not set(arq) <= {"amd64", "arm64", "arm", "riscv64", "386", "ppc64le", "s390x"}):

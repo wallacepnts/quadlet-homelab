@@ -10,8 +10,11 @@
     "pt": "Servidor de arquivos com upload pelo navegador ou celular, retomada de transferência e WebDAV"
   },
   "author": "9001",
+  "website": "https://copyparty.eu/",
   "source": "https://github.com/9001/copyparty",
   "docs": "https://github.com/9001/copyparty#readme",
+  "demo": "https://a.ocv.me/pub/demo/",
+  "video": "https://www.youtube.com/watch?v=15_-hgsX2V0",
   "category": "Files",
   "config": { "copyparty.conf.example": "%h/.config/containers/volumes/copyparty/cfg/copyparty.conf" },
   "units": { "copyparty": { "upstream": "9001/copyparty" } }

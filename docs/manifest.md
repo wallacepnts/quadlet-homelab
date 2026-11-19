@@ -60,6 +60,8 @@ belongs in `docs/` (the measured hardening is in `docs/hardening.md`). The panel
 | `source` | no | The project's repository, an https URL. The panel links it, and the issues and releases come from it. |
 | `website` | no | The project's home page, an https URL. |
 | `docs` | no | The project's documentation, an https URL. |
+| `demo` | no | A live demo of the project, an https URL. Shown with the other links at the end of the app's store page. |
+| `video` | no | A video that shows the project (a talk, a tour), an https URL. Shown with the links. |
 | `architectures` | no | `["amd64", "arm64"]`: what the image runs on, when known (the panel asks the registry too). |
 | `category` | no | One of the groups in `qhui.GRUPOS` (the store's categories). Infrastructure with no place among them (homepage, postfix, toolbx) has none. |
 | `min_podman` | no | `"6.1"`: a floor above the 6.0 every app already needs, for a unit that uses a Quadlet key newer than that. Never below 6.0 (`check.py` refuses it). |

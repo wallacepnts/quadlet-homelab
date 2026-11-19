@@ -191,6 +191,15 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   porTexto($("p-tabs"), "Resumo")[0].listeners.click(); await esperar(20);
   confere($("p-section").hidden, "a aba Resumo volta ao resumo");
 
+  // the links at the end of the store page, each named
+  { const hb = api.S.apps.find((x) => x.id === "homebox"); const antes = { ...hb };
+    Object.assign(hb, { installed: false, website: "https://site.example/", source: "https://github.com/o/r", docs: "https://docs.example/d", demo: "https://demo.example/", video: "https://youtube.com/watch?v=x" });
+    api.openPanel("homebox"); await esperar(60);
+    const txt = $("p-project").textContent;
+    confere(/Site/.test(txt) && /Repositório no GitHub/.test(txt) && /Documentação/.test(txt) && /Demonstração/.test(txt) && /Vídeo/.test(txt) && /github\.com\/o\/r/.test(txt), `loja: links nomeados no fim (${txt})`);
+    for (const k of ["website", "source", "docs", "demo", "video"]) delete hb[k];
+    hb.installed = antes.installed; api.openPanel("homebox"); await esperar(30); }
+
   // "Install" installs at once when nothing has to be asked
   { const hb = api.S.apps.find((x) => x.id === "homebox"); hb.installed = false; hb.asks = { secrets: [], vars: [] }; hb.options = [];
     const planoAntes = rotas["/api/plan"]; rotas["/api/plan"] = { rc: 0, output: "x", nothing: false };
