@@ -663,9 +663,15 @@ dialog.lightbox[open] { display: flex; align-items: center; justify-content: cen
 @media (max-width: 720px) { .lb-side { position: fixed; bottom: 1rem; } .lb-l { left: 1rem; } .lb-r { right: 1rem; } }
 
 /* Install with a small arrow beside it: the arrow opens the ways of installing that need a say first. */
-.split { position: relative; display: flex; }
-.split-main { border-radius: 999px 0 0 999px; flex: 1; }
-.split-arrow { border-radius: 0 999px 999px 0; padding-inline: .8rem; margin-left: 2px; background: var(--accent); color: var(--accent-ink); border: 0; min-height: 44px; }
+.split { position: relative; display: flex; align-items: stretch; }
+.split-main { flex: 1; border-radius: 999px 0 0 999px; padding-left: 1.6rem; padding-right: 1.2rem; }
+.split-arrow { flex: none; width: 3.1rem; min-height: 44px; padding: 0; margin: 0; display: grid; place-items: center; border: 0; border-radius: 0 999px 999px 0;
+  background: var(--accent); color: var(--accent-ink); position: relative; cursor: pointer; }
+.split-arrow::before { content: ""; position: absolute; left: 0; top: 22%; bottom: 22%; width: 1px; background: currentColor; opacity: .28; }   /* the seam: a hairline, not a gap */
+.split-arrow::after { content: ""; width: .48rem; height: .48rem; margin-top: -.2rem; border: solid currentColor; border-width: 0 2px 2px 0; transform: rotate(45deg); transition: transform .15s; }
+.split-arrow[aria-expanded="true"]::after { transform: rotate(225deg); margin-top: .2rem; }
+.split-main:hover, .split-arrow:hover { filter: brightness(1.08); }
+.split-arrow:focus-visible, .split-main:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: -4px; }
 .split-menu { position: absolute; top: calc(100% + .35rem); right: 0; min-width: 100%; white-space: nowrap; z-index: 5; display: flex; flex-direction: column; padding: .3rem;
   background: var(--card); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 32px rgb(0 0 0 / .25); }
 .split-menu[hidden] { display: none; }

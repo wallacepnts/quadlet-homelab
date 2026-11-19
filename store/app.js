@@ -1376,7 +1376,7 @@ function renderPanel() {
           menu.hidden = !menu.hidden;
           seta.setAttribute("aria-expanded", String(!menu.hidden));
           if (!menu.hidden) document.addEventListener("click", () => { menu.hidden = true; seta.setAttribute("aria-expanded", "false"); }, { once: true });
-        } }, "▾");
+        } });
       acoes.push(h("div", { class: "split" },
         h("button", { type: "button", class: "split-main", onclick: () => instalar(a.id) },
           deps.length ? t("installWith")(deps.map((x) => x.name).join(", ")) : t("install")),

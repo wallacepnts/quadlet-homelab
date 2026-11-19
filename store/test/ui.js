@@ -287,7 +287,7 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
 
   rotas["/api/arch"] = { host: "amd64", runs: ["amd64", "arm64"], download: 38617327, version: "1.20.26", units: [{ unit: "homebox", ok: true }] };
   api.openPanel("gitea"); await esperar(100);
-  confere(botoes($("p-actions")).map((b) => b.textContent).join("") === "Instalar▾Instalação personalizada…Mais opções…" && $("p-tech").hidden && /Categoria/.test($("p-actions").textContent), `app não instalado: só Instalar e Personalizar (sem histórico, instância nem detalhes técnicos), e o cartão com a categoria (${$("p-actions").textContent})`);
+  confere(botoes($("p-actions")).map((b) => b.textContent).join("") === "InstalarInstalação personalizada…Mais opções…" && $("p-tech").hidden && /Categoria/.test($("p-actions").textContent), `app não instalado: só Instalar e Personalizar (sem histórico, instância nem detalhes técnicos), e o cartão com a categoria (${$("p-actions").textContent})`);
   confere(!/null|undefined/.test($("p-info").textContent + $("p-actions").textContent) && /Arquitetura\s*amd64, arm64/.test($("p-actions").textContent) && /Download\s*37 MB/.test($("p-actions").textContent) && /Versão\s*1\.20\.26/.test($("p-actions").textContent) && !/Roda em/.test($("p-info").textContent), "app não instalado: tamanho e arquitetura vão no cartão, e nada de 'null'");
   $("panel").open = false;
 
