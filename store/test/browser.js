@@ -181,6 +181,24 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
     await foto("97-instancia-nome");
   }
 
+  if (MODO === "fechar") {
+    // reads only: where the close button sits in each window
+    await esperar(2500);
+    const pos = async (dlg, btn) => ev(`(() => { const d = document.getElementById('${dlg}'), b = document.getElementById('${btn}'); const r = d.getBoundingClientRect(), x = b.getBoundingClientRect(); return '${dlg}: topo +' + Math.round(x.top - r.top) + ' direita -' + Math.round(r.right - x.right) + ' (' + Math.round(x.width) + 'x' + Math.round(x.height) + ')'; })()`);
+    await ev("[...document.querySelectorAll('nav button, aside button, .side button')].find((b) => /^Loja/.test(b.textContent.trim())).click()"); await esperar(1200);
+    await ev("(() => { const c = [...document.querySelectorAll('.card')].find((x) => x.querySelector('.get:not(.got)')); c.click(); })()"); await esperar(2500);
+    console.log(await pos("panel", "p-close")); await foto("95-fechar-loja");
+    await ev("document.getElementById('p-close').click()"); await esperar(300);
+    await ev("[...document.querySelectorAll('nav button, aside button, .side button')].find((b) => /^Meus/.test(b.textContent.trim())).click()"); await esperar(800);
+    await ev("(() => { const t = [...document.querySelectorAll('.tile')][0]; t.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 300, clientY: 300 })); })()"); await esperar(400);
+    await ev("[...document.querySelectorAll('#ctx button')].find((b) => /Gerenciar/.test(b.textContent)).click()"); await esperar(1500);
+    console.log(await pos("panel", "p-close")); await foto("95-fechar-gerenciar");
+    await ev("document.getElementById('p-close').click()"); await esperar(300);
+    await ev("document.getElementById('resources-btn').click()"); await esperar(1500);
+    console.log(await pos("resources", "r-close")); await foto("95-fechar-recursos");
+    await ev("document.getElementById('r-close').click()"); await esperar(300);
+  }
+
   if (MODO === "legado") {
     // reads only: the banner of an old media-stack install, and what the new apps look like in the store
     await ate("document.querySelectorAll('.tile').length > 0", 15000); await esperar(2000);

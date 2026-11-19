@@ -689,3 +689,10 @@ dialog.lightbox[open] { display: flex; align-items: center; justify-content: cen
 .split-menu button:hover { background: var(--card-2); }
 #panel.store > #p-actions > .split { width: 100%; }
 .install-foot .danger-soft { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, transparent); } .install-foot [hidden] { display: none; }
+
+/* The close button, the same in every window: the top right corner of the window (the code editor keeps it in its header band). */
+#p-close, #f-close, #r-close, #s-close, #i-close, #b-close, #h-close { position: absolute; top: .9rem; right: 1rem; z-index: 3; width: 2.4rem; height: 2.4rem; min-height: 0; padding: 0;
+  border-radius: 50%; font-size: 1.05rem; line-height: 1; display: grid; place-items: center; }
+dialog .panel-head { padding-right: 2.8rem; }
+#panel.store[open] { padding-top: 3.4rem; }
+#panel.store > .panel-head { padding-right: 0; }
