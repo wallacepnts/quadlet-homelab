@@ -99,7 +99,7 @@ const T = {
                   update: "Versão nova do projeto", disk: "Disco cheio" },
     alertSave: "Salvar alertas", alertTest: "Enviar teste", alertSaved: "Alertas salvos.", alertTested: "Teste enviado.",
     optionsTitle: "Opções de instalação", optionLocked: "escolhido na instalação; mudar move os dados (remova o app com os dados e instale de novo)",
-    newInstance: "Nova instância", instanceName: "Nome da instância (letras minúsculas, números e -)", instanceCreate: "Criar instância",
+    newInstance: "Nova instância", instanceName: "Nome da instância (letras minúsculas, números e -)", instanceCreate: "Criar instância", instanceCreateCustom: "Criar e personalizar", customizeInstance: "Personalizar a instância", instanceCustomHint: "Depois de criada, a instância abre na personalização (portas, volumes, .container).",
     instanceOf: (b) => `instância de ${b}`,
     readyToInstall: (n) => `Pronto para instalar ${n}. Leva cerca de um minuto.`,
     planTitle: "O que vai acontecer",
@@ -320,7 +320,7 @@ const T = {
                   update: "New upstream release", disk: "Disk almost full" },
     alertSave: "Save alerts", alertTest: "Send a test", alertSaved: "Alerts saved.", alertTested: "Test sent.",
     optionsTitle: "Install options", optionLocked: "chosen at the install; changing it moves the data (remove the app with its data and install again)",
-    newInstance: "New instance", instanceName: "Instance name (lowercase letters, digits and -)", instanceCreate: "Create instance",
+    newInstance: "New instance", instanceName: "Instance name (lowercase letters, digits and -)", instanceCreate: "Create instance", instanceCreateCustom: "Create and customize", customizeInstance: "Customize the instance", instanceCustomHint: "Once created, the instance opens in its customization (ports, volumes, .container).",
     instanceOf: (b) => `instance of ${b}`,
     readyToInstall: (n) => `Ready to install ${n}. It takes about a minute.`,
     planTitle: "What will happen",
@@ -1277,7 +1277,7 @@ function novaInstancia(a, abrir) {
   const abre = abrir ? h("a", { class: "btn split-main", href: abrir, target: "_blank", rel: "noopener noreferrer" }, t("open")) : null;
   if (!pode) return abre || h("span", {});
   if (!abre) return h("button", { type: "button", class: "split-main", onclick: () => showInstance(a) }, t("newInstance"));
-  return splitButton(abre, [[`${t("newInstance")}…`, () => showInstance(a)]], t("newInstance"));
+  return splitButton(abre, [[`${t("newInstance")}…`, () => showInstance(a)], [t("installCustom"), () => showInstance(a, true)]], t("newInstance"));
 }
 
 function renderPanel() {
@@ -2637,15 +2637,16 @@ async function unitVerb(unit, verb) {
   await follow(() => api("/api/unit", { unit, verb }));
 }
 
-function showInstance(a) {
+function showInstance(a, personalizar = false) {
   const nome = h("input", { type: "text", placeholder: t("instanceName"), autocomplete: "off", "aria-label": t("instanceName") });
   const criar = async () => {
     const v = nome.value.trim();
     if (!v) return;
-    await installFlow(a, () => api("/api/run", { app: a.id, action: "install", instance: v }));
+    await installFlow(a, () => api("/api/run", { app: a.id, action: "install", instance: v }), personalizar ? { personalizar: `${a.id}-${v}` } : {});
   };
-  section(h("h3", {}, t("newInstance")), h("div", { class: "row" }, nome,
-    h("button", { type: "button", onclick: criar }, t("instanceCreate"))));
+  section(h("h3", {}, t(personalizar ? "installCustom" : "newInstance")), h("div", { class: "row" }, nome,
+    h("button", { type: "button", onclick: criar }, t(personalizar ? "instanceCreateCustom" : "instanceCreate"))),
+    ...(personalizar ? [h("p", { class: "help" }, t("instanceCustomHint"))] : []));
 }
 
 // -- the progress of a job: the plan, which step is under way and for how long ---------------------------------
@@ -2769,12 +2770,14 @@ function jobProgress(host, opcoes = {}) {
 // Installing, in a window of its own: the whole bar with its percentage, every step, and the console under them.
 // Closing it ("Continue in the background") does not stop the job: it runs on the server, and the chip in the top bar
 // brings the progress back.
-async function installFlow(a, start) {
+async function installFlow(a, start, opcoes = {}) {
   const pronto = $("i-bg");
   $("i-title").textContent = t("installing")(a.name);
   $("i-out").textContent = "";
   $("i-result").textContent = "";
   $("i-open").hidden = true;
+  $("i-custom").hidden = true;
+  $("i-custom").textContent = t("customizeInstance");
   $("i-spin").hidden = false;
   pronto.textContent = t("inBackground");
   const prog = jobProgress($("i-progress"), { janela: true });
@@ -2817,6 +2820,12 @@ async function installFlow(a, start) {
     await load();
     const b = S.apps.find((x) => x.id === a.id), url = st.rc === 0 && b ? openUrl(b) : null;
     if (url) { $("i-open").href = url; $("i-open").hidden = false; }
+    // A new instance that was to be customized: the install is done, so its own Customize opens on the instance (the units now exist).
+    if (st.rc === 0 && opcoes.personalizar) {
+      const nova = S.apps.find((x) => x.id === opcoes.personalizar);
+      if (nova) $("i-custom").onclick = () => { $("install").close(); openPanel(nova.id); showCustom(nova); };
+      $("i-custom").hidden = !nova;
+    }
   } catch (e) {
     prog.finish(1);
     const msg = e.status === 409 ? t("busy") : String(e.message);

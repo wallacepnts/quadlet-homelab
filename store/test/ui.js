@@ -274,7 +274,7 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   { const hb = api.S.apps.find((x) => x.id === "homebox"); const webAntes = hb.web; hb.installed = true; hb.web = [{ unit: "homebox", local: "http://x:1", tailnet: null }];
     api.openPanel("homebox", false, "store"); await esperar(60);
     const nomes = botoes($("p-actions")).map((b) => b.textContent).join("|");
-    confere($("p-tabs").hidden && !/Gerenciar/.test(nomes) && nomes === "|Nova instância…" && /Categoria/.test($("p-actions").textContent) && $("p-danger").hidden && $("p-tech").hidden,
+    confere($("p-tabs").hidden && !/Gerenciar/.test(nomes) && nomes === "|Nova instância…|Instalação personalizada…" && /Categoria/.test($("p-actions").textContent) && $("p-danger").hidden && $("p-tech").hidden,
       `loja, app instalado: o mesmo cartão, sem abas, zona de perigo nem Gerenciar (${nomes})`);
     confere([...$("p-actions").walk()].some((e) => e.tag === "a" && e.textContent === "Abrir"), "loja, app instalado: o botão Abrir no lugar do Instalar");
     porTexto($("p-actions"), "Nova instância…")[0].listeners.click(); await esperar(40);
@@ -284,7 +284,17 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
     nomeI.value = "casa"; const antesN = posts.length;
     porTexto($("p-section"), "Criar instância")[0].listeners.click(); await esperar(1200);
     confere(posts.slice(antesN).some((x) => x.rota === "/api/run" && x.corpo.instance === "casa") && $("install").open, "criar a instância usa a janela de instalação");
-    $("install").open = false; if (runA === undefined) delete rotas["/api/run"]; else rotas["/api/run"] = runA; delete rotas["/api/job/jn"];
+    $("install").open = false;
+    // customized: the same, and when it is done the install window offers to customize the new instance
+    api.S.apps.push({ ...hb, id: "homebox-casa", name: "Homebox casa", instance_of: "homebox", installed: true });
+    api.openPanel("homebox", false, "store"); await esperar(30);
+    porTexto($("p-actions"), "Instalação personalizada…")[0].listeners.click(); await esperar(40);
+    const nomeC = [...$("p-section").walk()].find((e) => e.tag === "input" && e.attrs.type === "text");
+    nomeC.value = "casa";
+    porTexto($("p-section"), "Criar e personalizar")[0].listeners.click(); await esperar(1200);
+    confere(!$("i-custom").hidden && $("i-custom").textContent === "Personalizar a instância", "instância personalizada: ao terminar, a janela oferece Personalizar a instância");
+    api.S.apps.pop(); $("install").open = false;
+    if (runA === undefined) delete rotas["/api/run"]; else rotas["/api/run"] = runA; delete rotas["/api/job/jn"];
     hb.web = webAntes;
     api.openPanel("homebox"); await esperar(30); }
 
