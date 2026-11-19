@@ -44,14 +44,15 @@
 </div>
 </div>
 <div class="ctx" id="ctx" role="menu"></div>
-<dialog id="panel" aria-labelledby="p-name">
+<dialog id="panel" aria-labelledby="p-name" class="win">
+  <button id="p-close" type="button" class="icon text" aria-label="Fechar">✕</button>
+  <div class="dlg-body">
   <div class="panel-head">
     <span class="plate lg" id="p-plate"><img id="p-icon" alt="" referrerpolicy="no-referrer"></span>
     <div>
       <h2 id="p-name"></h2>
       <p id="p-meta"></p>
     </div>
-    <button id="p-close" type="button" class="icon text" aria-label="Fechar">✕</button>
   </div>
   <div id="p-actions"></div>
   <div id="p-tabs" class="tabs" role="tablist" hidden></div>
@@ -75,6 +76,7 @@
   <details id="p-log" class="tech" hidden><summary id="p-log-title"></summary><pre id="p-out" hidden></pre></details>
   <div id="p-danger" class="danger-zone" hidden></div>
   <p id="p-clean" class="note" hidden></p>
+  </div>
 </dialog>
 <dialog id="ql" class="ql" aria-label="Quick launch">
   <input id="ql-input" type="search" autocomplete="off" spellcheck="false" aria-controls="ql-list">
@@ -89,10 +91,11 @@
   <div id="c-body"></div>
   <div id="c-foot" class="sheet-foot"></div>
 </dialog>
-<dialog id="files">
+<dialog id="files" class="win">
+  <button id="f-close" type="button" class="icon text" aria-label="Fechar">✕</button>
+  <div class="dlg-body">
   <div class="panel-head">
     <h2 id="f-title"></h2>
-    <button id="f-close" type="button" class="icon text" aria-label="Fechar">✕</button>
   </div>
   <div id="f-layout">
     <aside id="f-side" aria-label="Locais"></aside>
@@ -104,22 +107,27 @@
       <pre id="f-view" hidden></pre>
     </div>
   </div>
+  </div>
 </dialog>
-<dialog id="resources">
+<dialog id="resources" class="win">
+  <button id="r-close" type="button" class="icon text" aria-label="Fechar">✕</button>
+  <div class="dlg-body">
   <div class="panel-head">
     <h2 id="r-title"></h2>
-    <button id="r-close" type="button" class="icon text" aria-label="Fechar">✕</button>
   </div>
   <div id="r-body"></div>
   <pre id="r-out" hidden></pre>
+  </div>
 </dialog>
-<dialog id="settings">
+<dialog id="settings" class="win">
+  <button id="s-close" type="button" class="icon text" aria-label="Fechar">✕</button>
+  <div class="dlg-body">
   <div class="panel-head">
     <h2 id="s-title"></h2>
-    <button id="s-close" type="button" class="icon text" aria-label="Fechar">✕</button>
   </div>
   <div id="s-body"></div>
   <pre id="s-out" hidden></pre>
+  </div>
 </dialog>
 <dialog id="lightbox" class="lightbox" aria-label="Captura de tela">
   <button id="lb-close" type="button" class="lb-btn lb-x" aria-label="Fechar"></button>
@@ -128,10 +136,11 @@
   <button id="lb-next" type="button" class="lb-btn lb-side lb-r" aria-label="Próxima"></button>
   <span id="lb-count"></span>
 </dialog>
-<dialog id="install" class="install" aria-labelledby="i-title">
+<dialog id="install" class="win install" aria-labelledby="i-title">
+  <button id="i-close" type="button" class="icon text" aria-label="Fechar">✕</button>
+  <div class="dlg-body">
   <div class="panel-head">
     <h2 id="i-title"></h2>
-    <button id="i-close" type="button" class="icon text" aria-label="Fechar">✕</button>
   </div>
   <div id="i-spin" class="dots" aria-hidden="true"><i></i><i></i><i></i></div>
   <div id="i-progress" class="progress" hidden></div>
@@ -143,22 +152,27 @@
     <button id="i-cancel" type="button" class="ghost danger-soft" hidden></button>
     <button id="i-bg" type="button" class="ghost"></button>
   </div>
+  </div>
 </dialog>
-<dialog id="bulk">
+<dialog id="bulk" class="win">
+  <button id="b-close" type="button" class="icon text" aria-label="Fechar">✕</button>
+  <div class="dlg-body">
   <div class="panel-head">
     <h2 id="b-title"></h2>
-    <button id="b-close" type="button" class="icon text" aria-label="Fechar">✕</button>
   </div>
   <div id="b-progress" class="progress" hidden></div>
   <pre id="b-out"></pre>
+  </div>
 </dialog>
-<dialog id="history">
+<dialog id="history" class="win">
+  <button id="h-close" type="button" class="icon text" aria-label="Fechar">✕</button>
+  <div class="dlg-body">
   <div class="panel-head">
     <h2 id="h-title"></h2>
-    <button id="h-close" type="button" class="icon text" aria-label="Fechar">✕</button>
   </div>
   <div id="h-list"></div>
   <pre id="h-out" hidden></pre>
+  </div>
 </dialog>
 </body>
 </html>

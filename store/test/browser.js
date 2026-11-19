@@ -197,6 +197,20 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
     await ev("document.getElementById('resources-btn').click()"); await esperar(1500);
     console.log(await pos("resources", "r-close")); await foto("95-fechar-recursos");
     await ev("document.getElementById('r-close').click()"); await esperar(300);
+    await ev("document.getElementById('settings-btn') && document.getElementById('settings-btn').click()"); await esperar(1200);
+    await ev("document.getElementById('s-close').click()"); await esperar(300);
+    await ev("[...document.querySelectorAll('nav button, aside button, .side button')].find((b) => /^Arquivos/.test(b.textContent.trim())).click()"); await esperar(2500);
+    console.log(await pos("files", "f-close")); await foto("95-fechar-arquivos");
+    await ev("document.getElementById('f-close').click()"); await esperar(300);
+    await ev("document.getElementById('settings-btn') && document.getElementById('settings-btn').click()"); await esperar(1200);
+    console.log("settings aberto:", await ev("document.getElementById('settings').open")); console.log(await pos("settings", "s-close")); await foto("95-fechar-config");
+  }
+
+  if (MODO === "estilo") {
+    await esperar(2000);
+    for (const id of ["panel", "files", "resources", "settings", "history", "bulk", "install"]) {
+      console.log(id, await ev(`(() => { const c = getComputedStyle(document.getElementById('${id}')); return [c.width, c.maxHeight, c.borderTopWidth, c.borderRadius, c.padding, c.overflowY, c.boxShadow.slice(0, 40)].join(' | '); })()`));
+    }
   }
 
   if (MODO === "legado") {
