@@ -585,3 +585,17 @@ button.force { color: var(--bad); } pre.mini { margin: 0; padding: .3rem .5rem; 
 #p-section h4 { margin: 1rem 0 .4rem; font-size: .85rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
 #resources { width: min(62rem, 96vw); } table.imgs td { vertical-align: top; } table.imgs td:last-child { white-space: nowrap; }
 .rsparks { display: flex; gap: 1.2rem; margin-top: .4rem; } .rsparks > div { flex: 1; max-width: 14rem; } .rsparks small { color: var(--muted); } .spark.mini { height: 26px; }
+
+/* ---- Progress of a job ------------------------------------------------------------------------------ */
+.progress { margin: .8rem 0; padding: .8rem 1rem; background: var(--card-2); border-radius: var(--radius-sm); }
+.pr-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: .5rem; }
+.progress .bar { height: 6px; background: var(--line); border-radius: 999px; overflow: hidden; margin-bottom: .6rem; } .progress .bar i { display: block; height: 100%; background: var(--accent); transition: width .4s; }
+.pr-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: .25rem; }
+.pr-step { display: flex; gap: .6rem; align-items: baseline; font-size: .9rem; } .pr-ico { width: 1.1rem; text-align: center; flex: none; }
+.pr-step.done { color: var(--muted); } .pr-step.done .pr-ico { color: var(--ok); } .pr-step.now { font-weight: 650; } .pr-step.now .pr-ico { color: var(--accent); }
+.pr-step.wait { color: var(--muted); opacity: .7; } .pr-step.bad { color: var(--bad); font-weight: 650; } .pr-time { font-variant-numeric: tabular-nums; font-weight: 400; }
+.pr-right { display: flex; align-items: center; gap: .8rem; } .seg { display: inline-flex; background: var(--line); border-radius: 999px; padding: 2px; }
+.seg-btn { min-height: 26px; padding: .05rem .7rem; font-size: .78rem; background: transparent; color: var(--muted); border-radius: 999px; box-shadow: none; }
+.seg-btn[aria-pressed=true] { background: var(--bg); color: var(--fg); font-weight: 650; }
+pre.live-term { margin: 0; padding: .7rem .9rem; max-height: 22rem; overflow: auto; background: #0e1116; color: #d6dde6; border: 0; border-radius: var(--radius-sm); font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .78rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+pre.live-term .step { color: #7fd1ae; font-weight: 700; } pre.live-term .fail { color: #ff8a8a; font-weight: 700; } pre.live-term .warn { color: #f0c674; } pre.live-term .dim { color: #7d8794; } pre.live-term .cursor { color: #7fd1ae; }

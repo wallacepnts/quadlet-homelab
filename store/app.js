@@ -54,6 +54,11 @@ const T = {
     legacyTitle: (velho, n) => `Uma instalação antiga do ${velho} foi encontrada (${n} apps)`,
     legacyBody: "Cada um deles agora é um app independente, com a própria pasta de dados e as próprias configurações. Migrar move os dados e as configurações para os apps novos (nada é copiado nem apagado, só renomeado), reescreve as units a partir do repositório e liga de novo o que estava rodando.",
     legacyButton: "Migrar", legacyRunning: "Migrando…", migrateAction: "Migração",
+    prStep: (n, total) => `Passo ${n} de ${total}`, prElapsed: "decorrido", prDone: "Concluído", prFailed: "Falhou neste passo", prWaiting: "esperando…",
+    stMkdir: "Criar as pastas", stMkdirData: "Criar a pasta dos dados", stMkdirUnits: "Criar a pasta das units", stCopyUnit: "Copiar a unit", stCopyEnv: "Copiar as configurações (.env)", stSecret: "Criar o secret", stChown: "Ajustar o dono dos dados", stReload: "Recarregar o systemd",
+    stRestart: (u) => `Reiniciar ${u}`, stHealthy: (n) => `Esperar ficar saudável (até ${n}s)`, stKeep: "Guardar a versão atual, para poder voltar", stPull: "Baixar a imagem", stStart: (u) => `Iniciar ${u}`,
+    stStop: (u) => `Parar ${u}`, stRemoveUnit: "Remover a unit", stBackup: "Empacotar os dados", stRestore: "Restaurar os dados",
+    prSteps: "Passos", prTerminal: "Terminal", prView: "Como mostrar o andamento",
     fGrid: "Grade", fList: "Lista", fColName: "Nome", fColSize: "Tamanho", fColDate: "Modificado", fPlaces: "Locais",
     fUpload: "Enviar", fNewFolder: "Nova pasta", fRename: "Renomear", fCopy: "Copiar", fCut: "Recortar", fPaste: "Colar", fDelete: "Apagar",
     fSure: (n) => `Confirmar: apagar ${n} ${n === 1 ? "item" : "itens"}`, fCancel: "Cancelar", fOk: "OK", fName: "Nome", fSel: (n) => `${n} selecionado${n === 1 ? "" : "s"}`,
@@ -268,6 +273,11 @@ const T = {
     legacyTitle: (velho, n) => `An old install of ${velho} was found (${n} apps)`,
     legacyBody: "Each of them is now an independent app, with its own data folder and its own settings. Migrating moves the data and the settings to the new apps (nothing is copied or deleted, only renamed), writes the units again from the repository and starts what was running again.",
     legacyButton: "Migrate", legacyRunning: "Migrating…", migrateAction: "Migration",
+    prStep: (n, total) => `Step ${n} of ${total}`, prElapsed: "elapsed", prDone: "Done", prFailed: "Failed at this step", prWaiting: "waiting…",
+    stMkdir: "Create the folders", stMkdirData: "Create the data folder", stMkdirUnits: "Create the units folder", stCopyUnit: "Copy the unit", stCopyEnv: "Copy the settings (.env)", stSecret: "Create the secret", stChown: "Set the owner of the data", stReload: "Reload systemd",
+    stRestart: (u) => `Restart ${u}`, stHealthy: (n) => `Wait until it is healthy (up to ${n}s)`, stKeep: "Keep the current version, to be able to go back", stPull: "Pull the image", stStart: (u) => `Start ${u}`,
+    stStop: (u) => `Stop ${u}`, stRemoveUnit: "Remove the unit", stBackup: "Pack the data", stRestore: "Restore the data",
+    prSteps: "Steps", prTerminal: "Terminal", prView: "How to show the progress",
     fGrid: "Grid", fList: "List", fColName: "Name", fColSize: "Size", fColDate: "Modified", fPlaces: "Places",
     fUpload: "Upload", fNewFolder: "New folder", fRename: "Rename", fCopy: "Copy", fCut: "Cut", fPaste: "Paste", fDelete: "Delete",
     fSure: (n) => `Confirm: delete ${n} ${n === 1 ? "item" : "items"}`, fCancel: "Cancel", fOk: "OK", fName: "Name", fSel: (n) => `${n} selected`,
@@ -2098,15 +2108,21 @@ async function watchJob(titulo, job) {
   $("b-title").textContent = titulo;
   $("b-out").textContent = "";
   if (!$("bulk").open) $("bulk").showModal();
+  const prog = jobProgress($("b-progress"), { onmode: () => escondeLog() });
+  // In the terminal view the progress already is the output; without a plan there is no progress, and the log stays.
+  const escondeLog = () => { $("b-out").hidden = prog.mode() === "terminal" && !$("b-progress").hidden; };
+  prog.reset();
+  escondeLog();
   try {
     let next = 0, st;
     do {
       st = await api(`/api/job/${job}?from=${next}`);
       next = st.next;
-      if (S.watch !== eu) return;
-      if (st.output) { $("b-out").textContent += st.output; $("b-out").scrollTop = $("b-out").scrollHeight; }
-      if (st.rc === null) await new Promise((r) => setTimeout(r, 900));
+      if (S.watch !== eu) { prog.reset(); return; }
+      if (st.output) { $("b-out").textContent += st.output; $("b-out").scrollTop = $("b-out").scrollHeight; prog.feed(st.output); escondeLog(); }
+      if (st.rc === null) await new Promise((r) => setTimeout(r, 700));
     } while (st.rc === null);
+    prog.finish(st.rc);
     $("b-out").textContent += `\n${st.rc === 0 ? t("done") : `${t("failed")} (${st.rc}).`}\n`;
     $("b-out").scrollTop = $("b-out").scrollHeight;
   } catch (e) { if (S.watch === eu) $("b-out").textContent += String(e.message); }
@@ -2479,24 +2495,146 @@ function showInstance(a) {
     h("button", { type: "button", onclick: criar }, t("instanceCreate"))));
 }
 
+// -- the progress of a job: the plan, which step is under way and for how long ---------------------------------
+// qh prints its plan (`  -> step`), then `[n/N] step` just before it runs each one. This reads that as it arrives and draws the
+// steps (done, under way with a clock, waiting, failed) and a bar, so an install or an update is not a spinner and a log.
+const STEP_RE = /^\[(\d+)\/(\d+)\] (.+)$/, PLAN_RE = /^ {2}-> (.+)$/;
+
+function stepLabel(desc) {
+  const casa = (x) => x.replace(/^.*\/\.config\/containers\//, "~/.config/containers/");
+  let m;
+  if (/^mkdir -p .*\/volumes\//.test(desc)) return t("stMkdirData");
+  if (/^mkdir -p .*\/containers\/systemd/.test(desc)) return t("stMkdirUnits");
+  if (/^mkdir -p /.test(desc)) return t("stMkdir");
+  if (/^cp .*\.container /.test(desc)) return t("stCopyUnit");
+  if (/^cp .*(\.env|\.example)/.test(desc)) return t("stCopyEnv");
+  if (/^podman secret create/.test(desc)) return t("stSecret");
+  if (/^podman unshare chown/.test(desc)) return t("stChown");
+  if (/^systemctl --user daemon-reload/.test(desc)) return t("stReload");
+  if ((m = /^systemctl --user restart (\S+)/.exec(desc))) return t("stRestart")(m[1]);
+  if ((m = /^systemctl --user start (\S+)/.exec(desc))) return t("stStart")(m[1]);
+  if ((m = /^systemctl --user (?:stop|mask --now) (\S+)/.exec(desc))) return t("stStop")(m[1]);
+  if ((m = /^wait until it is healthy \(up to (\d+)s\)/.exec(desc))) return t("stHealthy")(m[1]);
+  if (/^keep the current units/.test(desc)) return t("stKeep");
+  if (/^podman pull/.test(desc)) return t("stPull");
+  if (/^rm .*\.container/.test(desc)) return t("stRemoveUnit");
+  if (/^tar .*(czf|cf)/.test(desc)) return t("stBackup");
+  if (/^tar .*x/.test(desc)) return t("stRestore");
+  return casa(desc);
+}
+
+// Two ways to show it, kept in this browser: the steps with a bar (default), or the terminal, which is the output as it comes.
+function jobProgress(host, opcoes = {}) {
+  let plano = [], atual = 0, total = 0, falhou = false, fim = null, buf = "", rodando = false, relogio = null, bruto = "", termSujo = false, mostrando = null;
+  let modo = localStorage.getItem("qh-progress") === "terminal" ? "terminal" : "steps";
+  const inicio = Date.now();
+  let passoInicio = inicio, tFim = null;
+  const seg = (ms) => { const n = Math.max(0, Math.round(ms / 1000)); return n >= 60 ? `${Math.floor(n / 60)}min ${n % 60}s` : `${n}s`; };
+  const tempoEl = h("span", { class: "muted" }), termEl = h("pre", { class: "live-term", tabindex: "0", "aria-label": t("prTerminal") });
+  const botao = (m, rotulo) => h("button", { type: "button", class: "seg-btn", "aria-pressed": String(modo === m), onclick: () => muda(m) }, rotulo);
+  const corLinha = (l) => (STEP_RE.test(l) ? "step" : /^(FALHOU em:|FAILED at:|!! )/.test(l) ? "fail" : /^ {2}!  /.test(l) ? "warn" : /^ {2}-> |^ {7}[(…]/.test(l) ? "dim" : "");
+  const termDesenha = () => {
+    const linhas = bruto.replace(/\n$/, "").split("\n");
+    fill(termEl, ...linhas.map((l) => h("span", { class: corLinha(l) }, `${l}\n`)), fim === null ? h("span", { class: "cursor" }, "▌") : null);
+    termEl.scrollTop = termEl.scrollHeight;
+    termSujo = false;
+  };
+  const muda = (m) => {
+    modo = m;
+    localStorage.setItem("qh-progress", m);
+    if (opcoes.onmode) opcoes.onmode(m);
+    desenha(true);
+  };
+  const cabeca = (estado) => h("div", { class: "pr-head" }, h("b", {}, estado),
+    h("div", { class: "pr-right" }, tempoEl, h("div", { class: "seg", role: "group", "aria-label": t("prView") }, botao("steps", t("prSteps")), botao("terminal", t("prTerminal")))));
+  const desenha = (forcar = false) => {
+    host.hidden = !plano.length;
+    if (!plano.length) return;
+    const feitos = fim === 0 ? total : Math.max(0, atual - 1);
+    const pct = total ? Math.round((feitos / total) * 100) : 0;
+    const estado = fim === 0 ? t("prDone") : falhou || (fim !== null && fim !== 0) ? t("prFailed") : t("prStep")(Math.min(atual || 1, total), total);
+    tempoEl.textContent = `${t("prElapsed")} ${seg((tFim === null ? Date.now() : tFim) - inicio)}`;
+    if (modo === "terminal") {
+      if (forcar || termSujo || mostrando !== "terminal") {     // not every second: that would undo a scroll up
+        fill(host, cabeca(estado), termEl);
+        termDesenha();
+        mostrando = "terminal";
+      }
+      return;
+    }
+    mostrando = "steps";
+    const cheio = h("i", {});
+    const barra = h("div", { class: "bar" }, cheio);
+    cheio.style.width = `${pct}%`;                // through the CSSOM: the CSP forbids a style attribute
+    fill(host, cabeca(estado), barra,
+      h("ol", { class: "pr-steps" }, ...plano.map((d, i) => {
+        const n = i + 1;
+        const ruim = (falhou || (fim !== null && fim !== 0)) && n === atual;
+        const feito = fim === 0 || n < atual;
+        const agora = !feito && !ruim && n === atual && fim === null;
+        return h("li", { class: `pr-step ${ruim ? "bad" : feito ? "done" : agora ? "now" : "wait"}`, title: d },
+          h("span", { class: "pr-ico", "aria-hidden": "true" }, ruim ? "✗" : feito ? "✓" : agora ? "▶" : "○"),
+          h("span", { class: "pr-txt" }, stepLabel(d)), agora ? h("span", { class: "muted pr-time" }, ` ${seg(Date.now() - passoInicio)}`) : null);
+      })));
+  };
+  const linha = (l) => {
+    let m;
+    if ((m = PLAN_RE.exec(l))) {
+      if (rodando) { plano = []; atual = 0; total = 0; falhou = false; rodando = false; }   // a second plan: another app of the same job
+      plano.push(m[1]);
+    } else if ((m = STEP_RE.exec(l))) {
+      rodando = true;
+      atual = Number(m[1]); total = Number(m[2]); passoInicio = Date.now();
+      if (plano.length !== total) plano = Array.from({ length: total }, (_, i) => plano[i] || (i + 1 === atual ? m[3] : `#${i + 1}`));
+      else plano[atual - 1] = plano[atual - 1] || m[3];
+    } else if (/^(FALHOU em:|FAILED at:)/.test(l)) falhou = true;
+    total = Math.max(total, plano.length);
+  };
+  return {
+    feed(texto) {
+      bruto = (bruto + texto).slice(-200000); termSujo = true;
+      buf += texto;
+      const partes = buf.split(/\r?\n/);
+      buf = partes.pop();
+      partes.forEach(linha);
+      if (!relogio && plano.length && fim === null) relogio = setInterval(desenha, 1000);
+      desenha();
+    },
+    finish(rc) {
+      if (buf) { linha(buf); buf = ""; }
+      fim = rc; tFim = Date.now(); termSujo = true;
+      if (rc !== 0 && atual === 0) atual = 1;
+      if (relogio) { clearInterval(relogio); relogio = null; }
+      desenha(true);
+    },
+    reset() { plano = []; atual = 0; total = 0; falhou = false; fim = null; tFim = null; buf = ""; bruto = ""; termSujo = false; mostrando = null; rodando = false; if (relogio) { clearInterval(relogio); relogio = null; } host.hidden = true; fill(host); },
+    mode: () => modo,
+  };
+}
+
 async function follow(start) {
   busy(true);
   setStatus("busy", t("working"));
   $("p-log-title").textContent = t("logTitle");
   out(`${t("working")}\n`);
+  const prog = jobProgress($("p-progress"), { onmode: (m) => { $("p-log").open = m !== "terminal"; } });
+  prog.reset();
   try {
     const { job } = await start();
+    $("p-log").open = prog.mode() !== "terminal";   // the log is open while it runs, unless the terminal view already shows it
     let next = 0, st;
     do {
-      await new Promise((r) => setTimeout(r, 900));
+      await new Promise((r) => setTimeout(r, 700));
       st = await api(`/api/job/${job}?from=${next}`);
       next = st.next;
-      if (st.output) out(st.output, true);
+      if (st.output) { out(st.output, true); prog.feed(st.output); }
     } while (st.rc === null);
+    prog.finish(st.rc);
     out(`\n${st.rc === 0 ? t("done") : `${t("failed")} (${st.rc}).`}\n`, true);
     setStatus(st.rc === 0 ? "ok" : "bad", st.rc === 0 ? t("done") : `${t("failed")} (${st.rc})`);
     if (st.rc !== 0) $("p-log").open = true;
   } catch (e) {
+    prog.finish(1);
     out(e.status === 409 ? t("busy") : String(e.message), true);
     setStatus("bad", e.status === 409 ? t("busy") : String(e.message));
   } finally {

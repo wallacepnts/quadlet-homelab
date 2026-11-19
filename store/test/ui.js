@@ -110,7 +110,7 @@ global.fetch = async (url, opts = {}) => {
 };
 
 const codigo = fs.readFileSync(path.join(__dirname, "..", "app.js"), "utf8");
-const api = new Function(codigo + "; return { S, openPanel, showEnv, current, renderGrid, pollStats, pollHost, openSettings, showLogs, showConsole, termNew, termFeed, termKey, openResources, hintClean, openHistory, setView, openFiles, renderFiles, uploadFiles, pollJobs, pollPerf, iconPlate, renderHome, touchRecent };")();
+const api = new Function(codigo + "; return { S, openPanel, showEnv, current, renderGrid, pollStats, pollHost, openSettings, showLogs, showConsole, termNew, termFeed, termKey, openResources, hintClean, openHistory, setView, openFiles, renderFiles, uploadFiles, jobProgress, stepLabel, pollJobs, pollPerf, iconPlate, renderHome, touchRecent };")();
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 let falhas = 0;
 const confere = (cond, msg) => { if (!cond) { falhas++; console.log("FALHOU:", msg); } else console.log("ok   ", msg); };
@@ -476,6 +476,68 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   confere(estadoTile([unidade("homebox", { container: "paused" })]) === "paused", "tile: pausado marca data-run=paused");
   confere(/\.card\.tile:not\(\[data-run=running\]\) \.plate[^}]*grayscale\(1\)[^}]*opacity/.test(fs.readFileSync(path.join(__dirname, "..", "style.css"), "utf8")), "o CSS deixa o ícone preto e branco e com transparência");
   bdTile.units = [unidade("homebox")];
+
+  // progress of a job: the plan as steps, which one is under way, and what is done; a chunk may end in the middle of a line
+  const lis = (host) => [...host.walk()].filter((e) => e.tag === "li");
+  const classe = (li) => li.attrs.class.replace("pr-step ", "");
+  const pg = api.jobProgress($("p-progress"));
+  pg.reset();
+  pg.feed("  !  sem TAILNET: aviso\nhomebox: instalação, 4 passos\n  -> mkdir -p /h/.config/containers/volumes/homebox/data\n  -> cp apps/homebox/homebox.container -> /h/x/homebox.container\n  -> systemctl --user restart homebox  (acompanha o log enquanto sobe)\n");
+  pg.feed("  -> wait until it is healthy (up to 120s), or put the previous version back\n");
+  confere(!$("p-progress").hidden && lis($("p-progress")).map(classe).join(",") === "wait,wait,wait,wait", "progresso: o plano aparece como passos à espera");
+  pg.feed("[1/4] mkdir -p /h/x\n(sandbox, não executado: x)\n[2/4] cp apps/homebox/homebox.container -> /h/x\n");
+  confere(lis($("p-progress")).map(classe).join(",") === "done,now,wait,wait" && /Passo 2 de 4/.test($("p-progress").textContent) && /Copiar a unit/.test($("p-progress").textContent) && /Criar a pasta dos dados/.test($("p-progress").textContent), "progresso: o passo 1 feito, o 2 em andamento, com nomes legíveis");
+  pg.feed("[3/");
+  confere(lis($("p-progress")).map(classe).join(",") === "done,now,wait,wait", "uma linha cortada ao meio espera o resto");
+  pg.feed("4] systemctl --user restart homebox  (acompanha o log enquanto sobe)\n");
+  confere(lis($("p-progress")).map(classe).join(",") === "done,done,now,wait" && /Reiniciar homebox/.test($("p-progress").textContent), "progresso: o restart em andamento");
+  const barraP = [...$("p-progress").walk()].find((e) => e.tag === "i");
+  confere(barraP.style.width === "50%", `a barra vai a metade com 2 de 4 feitos (${barraP.style.width})`);
+  pg.feed("[4/4] wait until it is healthy (up to 120s), or put the previous version back\n       … homebox: esperando ficar saudável (10s / 120s)\n");
+  confere(/Esperar ficar saudável \(até 120s\)/.test($("p-progress").textContent) && classe(lis($("p-progress"))[3]) === "now", "o último passo, esperar a saúde, mostra o tempo e fica em andamento");
+  pg.finish(0);
+  confere(lis($("p-progress")).every((li) => classe(li) === "done") && /Concluído/.test($("p-progress").textContent) && [...$("p-progress").walk()].find((e) => e.tag === "i").style.width === "100%", "ao terminar com sucesso: tudo feito, 100%");
+  pg.reset(); pg.feed("homebox: atualização, 3 passos\n  -> mkdir -p x\n  -> systemctl --user daemon-reload\n  -> systemctl --user restart homebox\n[1/3] mkdir -p x\n[2/3] systemctl --user daemon-reload\n\nFALHOU em: systemctl --user daemon-reload\nboom\n");
+  pg.finish(1);
+  confere(lis($("p-progress")).map(classe).join(",") === "done,bad,wait" && /Falhou neste passo/.test($("p-progress").textContent), "ao falhar: o passo que falhou em vermelho e os seguintes à espera");
+  pg.reset(); pg.feed("a: atualização, 1 passos\n  -> mkdir -p a\n[1/1] mkdir -p a\n\nb: atualização, 2 passos\n  -> mkdir -p b\n  -> systemctl --user restart b\n[1/2] mkdir -p b\n");
+  confere(lis($("p-progress")).length === 2 && classe(lis($("p-progress"))[0]) === "now" && /Reiniciar b/.test($("p-progress").textContent), "um segundo plano no mesmo job (atualizar tudo) recomeça a lista");
+  pg.finish(0); pg.reset();
+  confere(api.stepLabel("mkdir -p /h/.config/containers/volumes/a/data") === "Criar a pasta dos dados" && api.stepLabel("mkdir -p /h/.config/containers/systemd") === "Criar a pasta das units" && api.stepLabel("podman pull docker.io/x/y:1") === "Baixar a imagem" && api.stepLabel("something unknown") === "something unknown", "nomes legíveis, e o que não se conhece fica como está");
+
+  // the same progress as a terminal: the output as it comes, the steps marked, kept as a preference
+  const pt2 = api.jobProgress($("p-progress"));
+  pt2.reset();
+  pt2.feed("homebox: instalação, 2 passos\n  -> mkdir -p /h/.config/containers/volumes/homebox/data\n  -> systemctl --user restart homebox\n[1/2] mkdir -p /h/x\n       (sandbox, não executado: x)\n  !  um aviso\n");
+  const botaoModo = (rot) => [...$("p-progress").walk()].find((e) => e.tag === "button" && e.textContent === rot);
+  confere(botaoModo("Passos").attrs["aria-pressed"] === "true" && botaoModo("Terminal").attrs["aria-pressed"] === "false" && lis($("p-progress")).length === 2, "o andamento começa nos passos, com a opção Terminal ao lado");
+  botaoModo("Terminal").listeners.click();
+  const term = [...$("p-progress").walk()].find((e) => e.tag === "pre" && e.attrs.class === "live-term");
+  const spans = term ? [...term.walk()].filter((e) => e.tag === "span") : [];
+  confere(!!term && lis($("p-progress")).length === 0 && /\[1\/2\] mkdir -p \/h\/x/.test(term.textContent) && /um aviso/.test(term.textContent), "terminal: a saída como ela vem, no lugar dos passos");
+  confere(spans.some((e) => e.attrs.class === "step" && /\[1\/2\]/.test(e.textContent)) && spans.some((e) => e.attrs.class === "warn") && spans.some((e) => e.attrs.class === "dim") && spans.some((e) => e.attrs.class === "cursor"), "terminal: o passo, o aviso e o que é só detalhe têm cor, e há um cursor enquanto roda");
+  confere(guardado.get("qh-progress") === "terminal", "a escolha fica guardada no navegador");
+  pt2.feed("[2/2] systemctl --user restart homebox\n");
+  confere(/\[2\/2\] systemctl --user restart homebox/.test([...$("p-progress").walk()].find((e) => e.tag === "pre" && e.attrs.class === "live-term").textContent), "terminal: acompanha a saída que chega");
+  pt2.finish(1);
+  const termFim = [...$("p-progress").walk()].find((e) => e.tag === "pre" && e.attrs.class === "live-term");
+  confere(![...termFim.walk()].some((e) => e.attrs && e.attrs.class === "cursor") && /Falhou neste passo/.test($("p-progress").textContent), "ao terminar o cursor some, e o estado fica no alto");
+  const pt3 = api.jobProgress($("p-progress"));              // a new job opens in the terminal, as chosen
+  pt3.reset(); pt3.feed("a: instalação, 1 passos\n  -> mkdir -p a\n[1/1] mkdir -p a\n");
+  confere([...$("p-progress").walk()].some((e) => e.tag === "pre" && e.attrs.class === "live-term"), "o próximo trabalho já abre no terminal");
+  botaoModo("Passos").listeners.click();
+  confere(lis($("p-progress")).length === 1 && guardado.get("qh-progress") === "steps", "voltar aos passos");
+  pt3.finish(0); pt3.reset();
+
+  // the window of a bigger job (a migration, update all) follows the same preference
+  guardado.set("qh-progress", "terminal");
+  api.S.legacy = [{ from: "media-stack", units: [{ old: "media-stack-sonarr", new: "sonarr" }] }];
+  api.setView("apps"); api.renderGrid();
+  rotas["/api/migrate"] = { job: "jm2", apps: ["sonarr"] };
+  rotas["/api/job/jm2"] = { output: "media-stack: migrar, 1 passos\n  -> mkdir -p /h/x\n[1/1] mkdir -p /h/x\n", next: 3, rc: 0 };
+  porTexto($("legacy"), "Migrar")[0].listeners.click(); await esperar(1400);
+  confere($("b-out").hidden === true && [...$("b-progress").walk()].some((e) => e.tag === "pre" && e.attrs.class === "live-term"), "a janela de um trabalho grande segue a preferência: terminal no lugar do log");
+  api.S.legacy = []; api.renderGrid(); $("bulk").open = false; guardado.delete("qh-progress");
 
   // per-app CPU and memory: a short history kept while the page is open, drawn as two sparklines in the app's panel
   const bs = api.S.apps.find((x) => x.id === "homebox");

@@ -280,6 +280,7 @@ PT = {
     'this service needs Podman': 'este serviço precisa do Podman',
     'the host has': 'o host tem',
     'update Podman before installing': 'atualize o Podman antes',
+    'waiting for it to be healthy': 'esperando ficar saudável',
     'nothing to migrate for': 'nada a migrar para',
     'no install of': 'nenhuma instalação de',
     'found: nothing to do': 'encontrada: nada a fazer',
@@ -1758,9 +1759,13 @@ def wait_healthy(units, wait, sleep=time.sleep, now=time.monotonic, health=unit_
     """(True, "") when every (unit, container) came up healthy within `wait` seconds, else (False, reason).
 
     A unit with no healthcheck is taken as good once it has stayed active for a few seconds."""
-    limite, quieto = now() + wait, now() + min(wait, 15)
-    pendentes = dict(units)
+    inicio = now()
+    limite, quieto = inicio + wait, inicio + min(wait, 15)
+    pendentes, ultimo = dict(units), inicio
     while pendentes:
+        if now() - ultimo >= 10:                    # a long wait is not a hung script: say what it is waiting for
+            ultimo = now()
+            say(f"       … {', '.join(pendentes)}: " + loc("waiting for it to be healthy") + f" ({int(now() - inicio)}s / {wait}s)")
         for unit, cname in list(pendentes.items()):
             h = health(unit, cname)
             if h in ("down", "unhealthy"):
@@ -3904,6 +3909,18 @@ def selftest():
     assert secret_ok(_ini("[secrets]\nk = manual x\n"), "k", "v") == (True, ""), \
         "no [validate] section means no opinion"
     assert secret_ok(_ini("[validate]\nk = shell true\n"), "k", "v") == (True, "")
+    # wait_healthy says what it waits for every 10 s, so a long start is not a hung script
+    import io, contextlib
+    _t0 = [0.0]
+    def _agora():
+        return _t0[0]
+    def _dorme(x):
+        _t0[0] += x * 5                         # a fast clock: 2 s of sleep is 10 s of waiting
+    _buf = io.StringIO()
+    with contextlib.redirect_stdout(_buf):
+        _ok, _m = wait_healthy({"u": "c"}, 40, sleep=_dorme, now=_agora, health=lambda u, c: "starting")
+    assert _ok is False and "not healthy after 40s" in _m
+    assert _buf.getvalue().count("…") >= 2 and "(10s / 40s)" in _buf.getvalue(), _buf.getvalue()
     # the Podman floor of a service: the repository's minimum, or the newest Quadlet key its units use, or what app.json asks
     with tempfile.TemporaryDirectory() as _tmp_d:
         _u = Path(_tmp_d, "x.container"); _u.write_text("[Container]\nImage=x\nNotify=healthy\nImageVolume=ignore\nUmask=0027\n")
@@ -5166,6 +5183,8 @@ def run_one(a, ap, app, access, href_local, feitos=None, verbos=None):
                 return 1
 
     for n, (desc, action) in enumerate(steps):
+        # Said before it runs, so a front end (and a person watching a long step) knows which one is under way.
+        say(f"[{n + 1}/{len(steps)}] {desc}")
         try:
             action()
             rotulo = classificar(desc, action)

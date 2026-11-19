@@ -570,6 +570,23 @@ server's clock), between a minute and a week ahead. It is a transient systemd us
 time: a new schedule replaces the old, and **Cancel schedule** stops it. The state is `~/.config/quadlet-homelab/power.json`.
 Unlike the immediate action, a scheduled one does not wait for a running job.
 
+## Following an install or an update
+
+An install, an update, a backup, a restore or a removal shows its **progress** in the app's panel while it runs (and in the
+window of *Update all* and of a migration): the plan as a list of steps with a bar, each one ✓ done, ▶ under way (with
+its own clock), ○ waiting or ✗ failed, the total time, and the log below, open and following the output. A long step says
+what it waits for: the health wait prints `… homebox: waiting for it to be healthy (30s / 120s)` every 10 s.
+
+It is what `qh` itself prints: the plan (`  -> step`), then `[n/N] step` **just before** each step runs, which the panel reads as
+it arrives. Two things made this invisible before: the panel started `qh` with its output on a pipe, which Python buffers in
+blocks (the whole progress arrived at the end), so the job now runs with `PYTHONUNBUFFERED=1`; and the steps were not announced.
+A job with several plans (*Update all*) starts a new list at each one.
+
+The progress can also be shown **as a terminal**: *Steps | Terminal* beside the clock switches to the output as it arrives, in a
+dark monospace view that follows it (the step lines in green, warnings in yellow, failures in red, the plan and the sandbox
+notes dimmed, and a cursor while it runs). The choice is kept in this browser and applies to every job after it, in the app's panel
+and in the window of *Update all* and of a migration (there the terminal replaces the plain log, since it already is the output).
+
 ## What Podman says: health, what runs, the images
 
 Ideas taken from cockpit-podman, kept read-only except where said. In an app's panel, each running unit has:

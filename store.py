@@ -187,7 +187,8 @@ def qh_env(lang):
 
     NO_COLOR: the output lands in a <pre>, where escape codes are noise.
     """
-    env = {**os.environ, "NO_COLOR": "1"}
+    # PYTHONUNBUFFERED: qh writes to a pipe here, and a pipe is block-buffered: the progress would arrive in one piece at the end.
+    env = {**os.environ, "NO_COLOR": "1", "PYTHONUNBUFFERED": "1"}
     if lang:
         env["QH_LANG"] = "pt_BR" if lang == "pt" else "en"
     return env

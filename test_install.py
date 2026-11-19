@@ -13,6 +13,7 @@ which touches files only. That is the same reason this fits in a bare CI runner.
 import importlib.util
 import shutil
 import os
+import re
 import subprocess
 import sys
 import tarfile
@@ -53,7 +54,11 @@ def path(home, *parts):
 
 
 def scenario_install(home):
-    run(APP, "--apply", "--prefix", home)
+    saida = run(APP, "--apply", "--prefix", home).stdout
+    marcas = re.findall(r"(?m)^\[(\d+)/(\d+)\] ", saida)
+    check(marcas and [int(a) for a, _ in marcas] == list(range(1, len(marcas) + 1)) and all(int(b) == len(marcas) for _, b in marcas),
+          f"each step is announced as [n/N] before it runs, in order ({len(marcas)} steps)")
+    check(re.search(r"(?m)^\[\d+/\d+\] systemctl --user restart homebox", saida) is not None, "and the restart is one of them")
     check(path(home, "systemd", f"{APP}.container").is_file(), "install copies the unit")
     check(path(home, "volumes", APP, "data").is_dir(), "install creates the volume")
     check(path(home, "env", f"{APP}.env").is_file(), "install writes the .env")
