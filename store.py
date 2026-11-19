@@ -1242,14 +1242,17 @@ def network_of(texto, drop_in=False):
     return (valores[-1] if drop_in else valores[0]) if valores else ''
 
 
-def network_choices(unit_texto):
-    """The networks a container can be put on: every `.network` unit, on the host and in the repository, as Quadlet names them
-    (`name.network`), plus the one the unit already joins."""
-    nomes = {p.name for p in systemd_dir().rglob("*.network")} | {p.name for p in I.APPS.glob("*/*.network")}
+def network_choices(unit_texto, app=None):
+    """The networks a container of `app` can be put on, as Quadlet names them (`name.network`): its own, the tailnet proxy's,
+    and the ones nobody in the repository owns (the person's own). Not another app's: those are the private networks of a stack,
+    where its database talks to its worker, and joining one would put this container beside someone else's data."""
+    donos = I.net_owners()
+    nomes = {p.name for p in systemd_dir().rglob("*.network")} | set(donos)
+    ok = {n for n in nomes if donos.get(n) in (None, app, "tsdproxy")}
     atual = network_of(unit_texto)
     if atual:
-        nomes.add(atual)
-    return sorted(nomes)
+        ok.add(atual)
+    return sorted(ok)
 
 
 def image_of(texto):
@@ -1278,7 +1281,7 @@ def custom_state(unit, pre=False):
             "installed_text": unit_texto if p is not None else None,
             "limits": cgroup_limits(), "limit_values": O.merged_limits(unit_texto, texto),
             "image_base": image_of(unit_texto), "image_override": image_of(texto),
-            "network_base": network_of(unit_texto), "network_override": network_of(texto, True), "networks": network_choices(unit_texto)}
+            "network_base": network_of(unit_texto), "network_override": network_of(texto, True), "networks": network_choices(unit_texto, unit_pasta(unit))}
 
 
 # -- the unit as text: see it, rewrite it, or install the person's own -------------------------------
@@ -1511,7 +1514,7 @@ def custom_plan(unit, config, pre=False):
     texto, erros, avisos = O.validate_and_render(base, desejado, restart, ctx, propria=unit,
                                                  base_limits=O.limits_in(O.parse_sections(unit_texto)),
                                                  base_image=image_of(unit_texto), base_network=network_of(unit_texto),
-                                                 redes=set(network_choices(unit_texto)))
+                                                 redes=set(network_choices(unit_texto, unit_pasta(unit))))
     gerado = ""
     if not erros:
         ok, mensagens, gerado = (O.quadlet_check(systemd_dir(), p, texto) if p is not None
@@ -4803,6 +4806,10 @@ esac
     assert icon_kind(b"\x89PNG\r\n\x1a\n....") == ".png" and icon_kind(b"<svg xmlns='x'></svg>") == ".svg"
     assert icon_kind(b"<svg onload=alert(1)></svg>") is None and icon_kind(b"<svg><script>x</script></svg>") is None and icon_kind(b"hello") is None
     assert fetch_icon("http://example.com/a.png")[1] and fetch_icon("https://127.0.0.1/a.png")[1]
+    # the networks offered: the app's own, the tailnet proxy's, and the person's own; never another stack's private one
+    escolha = network_choices("[Container]\nNetwork=tsdproxy-net.network\n", "copyparty")
+    assert "tsdproxy-net.network" in escolha and "authentik-net.network" not in escolha and "immich-net.network" not in escolha, escolha
+    assert "authentik-net.network" in network_choices("", "authentik"), "a stack sees its own network"
     # the version list: release-shaped tags, newest first, and none in a sandbox
     assert tag_key("1.20.26") > tag_key("1.9.0") and tag_key("v2.0") > tag_key("v1.99.1")
     antes_u = U.registry_tags

@@ -431,7 +431,7 @@ The **Docker image** and its **tag** are the first two fields, both editable: th
 the registry publishes (release-shaped tags only, `/api/tags`), and takes anything you type; the version it opens with is not a change. Left as it was they write nothing, so
 the version `qh` pins on the host stays what it is; changed, they write `Image=` in the same drop-in, which wins over the pin
 (`10-image.conf`). A tag or a digest is required, as in rule 9: `latest` is not accepted.
-The **Network** is a drop-down of the `.network` units that exist (the one the unit joins is chosen); changing it writes `Network=`
+The **Network** is a drop-down of the networks that make sense for the unit (the one it joins is chosen): its own, the tailnet proxy's (`tsdproxy-net`) and any the repository does not own (yours). The private networks of other stacks are not offered, since joining one would put the container beside another app's database; changing it writes `Network=`
 (after a reset of the list) in the same drop-in, with a warning that leaving the tsdproxy network ends the tailnet address.
 
 The first tab of the sheet is **Appearance**, about the app and not a unit, kept in `store-apps.json` and `icons/` beside the
