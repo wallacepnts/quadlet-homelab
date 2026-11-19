@@ -1273,7 +1273,7 @@ function renderPanel() {
              onclick: (ev) => { ev.preventDefault(); openLightbox(fotos, i); } },
       h("img", { src: u, alt: "", loading: "lazy", referrerpolicy: "no-referrer" }))));
   const seta = (dir, rotulo) => h("button", { type: "button", class: `g-arrow ${dir < 0 ? "g-left" : "g-right"}`, "aria-label": rotulo,
-    onclick: () => faixa.scrollBy({ left: dir * Math.max(200, faixa.clientWidth * 0.8), behavior: "smooth" }) }, dir < 0 ? "‹" : "›");
+    onclick: () => faixa.scrollBy({ left: dir * Math.max(200, faixa.clientWidth * 0.8), behavior: "smooth" }) });
   const esq = seta(-1, t("lbPrev")), dir = seta(1, t("lbNext"));
   const setas = () => {      // an arrow shows only where there is more to see
     const fim = faixa.scrollWidth - faixa.clientWidth - 2;

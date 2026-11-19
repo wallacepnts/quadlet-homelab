@@ -121,6 +121,9 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
     await ev("document.querySelector('#p-shots .g-right').click()"); await esperar(900); await foto("97-galeria-seta");
     console.log("seta:", await ev("(() => { const r = document.querySelector('#p-shots .g-arrow:not([hidden])').getBoundingClientRect(); return Math.round(r.width) + 'x' + Math.round(r.height); })()"));
     await foto("97-seta-circulo");
+    console.log("seta centro:", await ev("(() => { const b = document.querySelector('#p-shots .g-arrow:not([hidden])'); const r = b.getBoundingClientRect(); return Math.round(r.left + r.width / 2) + ',' + Math.round(r.top + r.height / 2); })()"));
+    { const r = await ev("(() => { const b = document.querySelector('#p-shots .g-arrow:not([hidden])').getBoundingClientRect(); return { x: b.left - 12, y: b.top - 12, width: b.width + 24, height: b.height + 24 }; })()");
+      const c = await send("Page.captureScreenshot", { format: "png", clip: { ...r, scale: 6 } }); fs.writeFileSync(`${OUT}/97-seta-zoom.png`, Buffer.from(c.result.data, "base64")); }
     await ev("document.querySelector('#p-shots .shots a').click()"); await esperar(800); await foto("97-lightbox");
     console.log("lightbox:", await ev("document.getElementById('lightbox').open + ' ' + document.getElementById('lb-count').textContent"));
     await ev("document.getElementById('lb-close').click()"); await esperar(300);
