@@ -92,6 +92,18 @@ const mascara = (s) => String(s).replace(/[a-z0-9-]+\.ts\.net/g, "<your-tailnet>
     await ev("document.querySelector('table.imgs').scrollIntoView()"); await esperar(300); await foto("97-imagens");
   }
 
+  if (MODO === "abas") {
+    // reads only: the manager of an installed app, tab by tab
+    await ate("document.querySelectorAll('.tile').length > 0", 15000); await esperar(2000);
+    await ev("(() => { const t = [...document.querySelectorAll('.tile')].find((x) => /Actual/.test(x.textContent)); t.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 300, clientY: 300 })); })()"); await esperar(400);
+    await ev("[...document.querySelectorAll('#ctx button')].find((b) => /Gerenciar/.test(b.textContent)).click()"); await esperar(1200);
+    console.log("topo:", await ev("[...document.querySelectorAll('#p-actions button, #p-actions a')].map((b) => b.textContent.trim()).join(' | ')"));
+    console.log("abas:", await ev("[...document.querySelectorAll('#p-tabs button')].map((b) => b.textContent.trim()).join(' | ')"));
+    await foto("98-aba-resumo");
+    await ev("[...document.querySelectorAll('#p-tabs button')].find((b) => b.textContent.trim() === 'Configurar').click()"); await esperar(600); await foto("99-aba-configurar");
+    await ev("[...document.querySelectorAll('#p-tabs button')].find((b) => b.textContent.trim() === 'Backups').click()"); await esperar(1500); await foto("99-aba-backups");
+  }
+
   if (MODO === "legado") {
     // reads only: the banner of an old media-stack install, and what the new apps look like in the store
     await ate("document.querySelectorAll('.tile').length > 0", 15000); await esperar(2000);

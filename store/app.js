@@ -151,6 +151,8 @@ const T = {
     trialEnds: (q, purge) => `Experimento: ${q}. Os dados ${purge ? "serão apagados" : "ficam"} no fim.`,
     trialIn: (s) => `termina em ${s}`, trialAtReboot: "termina no próximo reinício",
     trialUnits: { h: "h", d: "dias" },
+    tabSummary: "Resumo", tabConfig: "Configurar", removeHint: "Remover o app e, se você quiser, os dados dele",
+    cfgEnvHint: "Variáveis e opções do app", cfgLoginHint: "Usuário e senha de entrada", cfgCustomHint: "Portas, volumes e o .container", cfgInstanceHint: "Outra cópia do app, com dados próprios",
     customize: "Personalizar", customizedBadge: "personalizado", cPorts: "Portas", cVolumes: "Volumes",
     cEnv: "Variáveis de ambiente", cDevices: "Dispositivos", cCaps: "Permissões extras do container",
     cRestart: "Política de reinício", add: "Adicionar", fromUnit: "(vem da unit)", removeRow: "Remover",
@@ -370,6 +372,8 @@ const T = {
     trialEnds: (q, purge) => `Trial: ${q}. The data ${purge ? "will be deleted" : "stays"} at the end.`,
     trialIn: (s) => `ends in ${s}`, trialAtReboot: "ends at the next reboot",
     trialUnits: { h: "h", d: "days" },
+    tabSummary: "Summary", tabConfig: "Configure", removeHint: "Remove the app and, if you want, its data",
+    cfgEnvHint: "The app's variables and options", cfgLoginHint: "Username and password to sign in", cfgCustomHint: "Ports, volumes and the .container", cfgInstanceHint: "Another copy of the app, with its own data",
     customize: "Customize", customizedBadge: "customized", cPorts: "Ports", cVolumes: "Volumes",
     cEnv: "Environment variables", cDevices: "Devices", cCaps: "Extra container permissions",
     cRestart: "Restart policy", add: "Add", fromUnit: "(from the unit)", removeRow: "Remove",
@@ -1092,6 +1096,8 @@ function openPanel(id) {
   $("p-log").hidden = true;
   $("p-log").open = false;
   $("p-progress").hidden = true;             // the previous app's steps must not show on this one
+  S.tab = "resumo";
+  for (const n of TABS) $("panel").classList.toggle(`tab-${n}`, n === "resumo");
   setStatus(null);
   $("p-tech").open = false;
   $("p-clean").hidden = true;
@@ -1149,6 +1155,50 @@ function stateClass(v) {
   if (["failed", "unhealthy", "down", "inactive"].includes(v)) return "bad";
   if (v === "changed" || v === "duplicated") return "warn";
   return null;
+}
+
+// The manager of an installed app is split by what you are doing: Summary (what it is and how it runs), Configure,
+// Files, Backups, History. Files and History are screens of their own and open over the panel.
+const TABS = ["resumo", "config", "files", "backups", "history"];
+
+function renderPanelTabs(a) {
+  const barra = $("p-tabs");
+  barra.hidden = !a.installed;
+  $("p-danger").hidden = !a.installed;
+  if (!a.installed) { fill(barra); fill($("p-danger")); return; }
+  const rot = { resumo: t("tabSummary"), config: t("tabConfig"), files: `${t("files")} ↗`, backups: t("backups"), history: `${t("history")} ↗` };
+  fill(barra, ...TABS.filter((k) => k !== "files" || a.has_data).map((k) =>
+    h("button", { type: "button", role: "tab", class: "tab" + (S.tab === k ? " on" : ""), "aria-selected": String(S.tab === k),
+                  onclick: () => setTab(k) }, rot[k])));
+  fill($("p-danger"),
+    h("span", {}, t("removeHint")),
+    h("button", { type: "button", class: "danger", onclick: () => plan("remove") }, t("remove")));
+}
+
+function setTab(k) {
+  const a = current();
+  if (k === "files") { $("panel").close(); openFiles(a.id); return; }
+  if (k === "history") { openHistory(a.id); return; }
+  S.tab = k;
+  const p = $("panel");
+  for (const n of TABS) p.classList.toggle(`tab-${n}`, n === k);
+  $("p-form").hidden = true;
+  if (k === "resumo") $("p-section").hidden = true;
+  else if (k === "backups") showBackups(a);
+  else if (k === "config") showConfigTab(a);
+  renderPanelTabs(a);
+}
+
+// What can be changed on an installed app, one row each; picking one opens its own editor in this same place.
+function showConfigTab(a) {
+  const linha = (titulo, dica, acao) => h("div", { class: "cfg-row" },
+    h("button", { type: "button", class: "ghost", onclick: acao }, titulo), h("span", { class: "muted" }, dica));
+  section(
+    ...(a.has_env ? [linha(t("configure"), t("cfgEnvHint"), () => showEnv(a))] : []),
+    ...(a.has_login ? [linha(t("login"), t("cfgLoginHint"), () => showLogin(a))] : []),
+    linha(t("customize"), t("cfgCustomHint"), () => showCustom(a)),
+    ...(!a.instance_of && !a.deprecated && !a.units.some((u) => u.only_unit)
+      ? [linha(t("newInstance"), t("cfgInstanceHint"), () => showInstance(a))] : []));
 }
 
 function renderPanel() {
@@ -1271,22 +1321,14 @@ function renderPanel() {
         h("input", { id: "backup-first", type: "checkbox", checked: S.backupFirst,
                      onchange: (ev) => { S.backupFirst = ev.target.checked; localStorage.setItem("qh-backup-first", S.backupFirst ? "1" : ""); } }),
         " " + t("backupFirst")));
-    acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showCustom(a) }, t("customize")));
-    if (a.has_env)
-      acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showEnv(a) }, t("configure")));
-    if (a.has_login)
-      acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showLogin(a) }, t("login")));
-    if (a.has_data)
-      acoes.push(h("button", { type: "button", class: "ghost", onclick: () => { $("panel").close(); openFiles(a.id); } }, t("files")));
-    acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showBackups(a) }, t("backups")));
-    acoes.push(h("button", { type: "button", class: "danger", onclick: () => plan("remove") }, t("remove")));
   }
   // The same app once more, under its own name: units, volumes, secrets and port of its own (an instance is not
-  // itself instanced).
-  if (!a.instance_of && !a.deprecated && !a.units.some((u) => u.only_unit))
+  // itself instanced). Installed apps have it in the Configure tab; the store offers it beside Install.
+  if (!a.installed && !a.instance_of && !a.deprecated && !a.units.some((u) => u.only_unit))
     acoes.push(h("button", { type: "button", class: "ghost", onclick: () => showInstance(a) }, t("newInstance")));
   // After the others: an app that was removed, or never came up, still has a past worth reading.
-  acoes.push(h("button", { type: "button", class: "ghost", onclick: () => openHistory(a.id) }, t("history")));
+  if (!a.installed) acoes.push(h("button", { type: "button", class: "ghost", onclick: () => openHistory(a.id) }, t("history")));
+  renderPanelTabs(a);
   fill($("p-actions"), ...acoes, a.installed && a.web.length ? accessPicker(a) : null);
 }
 

@@ -117,6 +117,8 @@ const confere = (cond, msg) => { if (!cond) { falhas++; console.log("FALHOU:", m
 const $ = (id) => document.getElementById(id);
 const botoes = (raiz) => [...raiz.walk()].filter((e) => e.tag === "button");
 const porTexto = (raiz, texto) => botoes(raiz).filter((e) => e.textContent === texto);
+// An installed app's changes live in the Configure tab: open it, then find the row's button.
+const cfgBtn = async (texto) => { porTexto($("p-tabs"), "Configurar")[0].listeners.click(); await esperar(30); return porTexto($("p-section"), texto)[0]; };
 // The customize sheet: in the fake DOM the dialog does not contain its parts, so they are read as one.
 const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield* $(i).walk(); },
   get textContent() { return ["c-title", "c-tabs", "c-body", "c-foot"].map((i) => $(i).textContent).join(" "); } };
@@ -180,6 +182,14 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   confere(JSON.stringify(tipado.set) === '{"CORES":"4","GPU":"N"}', `o bool volta no estilo do arquivo (Y/N), só o que mudou (${JSON.stringify(tipado.set)})`);
   rotas["/api/env"] = envAntes;
   $("p-section").hidden = true;
+
+  // the manager's tabs: Summary is the default; Backups opens in place; the danger zone holds Remove
+  confere(!$("p-tabs").hidden && botoes($("p-tabs")).map((b) => b.textContent).join("|").startsWith("Resumo|Configurar"), "gerenciar: abas Resumo, Configurar…");
+  confere(botoes($("p-actions")).every((b) => !["Remover", "Personalizar", "Backups", "Configurar"].includes(b.textContent)), "gerenciar: o topo só tem o uso diário");
+  porTexto($("p-tabs"), "Backups")[0].listeners.click(); await esperar(50);
+  confere(!$("p-section").hidden, "a aba Backups abre no próprio painel");
+  porTexto($("p-tabs"), "Resumo")[0].listeners.click(); await esperar(20);
+  confere($("p-section").hidden, "a aba Resumo volta ao resumo");
 
   // gallery, project links, history
   const shots = $("p-shots");
@@ -251,7 +261,7 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   api.openPanel("memos"); await esperar(50);
   confere(/Descontinuado: Arquivado no upstream\./.test($("p-notice").textContent) && !/Não dá para instalar/.test($("p-notice").textContent),
     "instalado: mostra o motivo, sem dizer que não instala");
-  confere(botoes($("p-actions")).some((b) => b.textContent === "Remover"), "instalado: continua dando para gerenciar e remover");
+  confere(botoes($("p-danger")).some((b) => b.textContent === "Remover"), "instalado: continua dando para gerenciar e remover");
   $("panel").open = false;
   api.openPanel("homebox"); await esperar(50);
   confere($("p-notice").hidden === true, "um app sem marca não mostra aviso");
@@ -955,7 +965,7 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
 
   // delete the data: a tick, a typed name, and the purge rides on the remove
   api.openPanel("homebox"); await esperar(30);
-  porTexto($("p-actions"), "Remover")[0].listeners.click(); await esperar(100);
+  porTexto($("p-danger"), "Remover")[0].listeners.click(); await esperar(100);
   const tick = [...$("p-form").walk()].find((e) => e.tag === "input" && e.attrs.id === "purge");
   const blocoPurge = [...$("p-form").walk()].find((e) => e.attrs && e.attrs.class === "purge");
   confere(!!tick && blocoPurge.hidden === true, "remover: a opção de apagar dados começa desligada");
@@ -1024,7 +1034,7 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
 
   // Customize: the form shows what the unit carries, and sends the whole list back
   api.openPanel("homebox"); await esperar(100);
-  const personalizar = porTexto($("p-actions"), "Personalizar")[0];
+  const personalizar = await cfgBtn("Personalizar");
   confere(!!personalizar, "o painel de um app instalado tem o botão Personalizar");
   personalizar.listeners.click(); await esperar(100);
   const formulario = () => folhaC;
@@ -1070,14 +1080,14 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   const ap = posts.filter((x) => x.rota === "/api/custom/apply").pop();
   confere(ap && ap.corpo.config.ports.length === 3, "sem erro, aplica com a configuração do formulário");
   confere(!$("custom").open, "aplicado: a tela fecha");
-  porTexto($("p-actions"), "Personalizar")[0].listeners.click(); await esperar(100);
+  (await cfgBtn("Personalizar")).listeners.click(); await esperar(100);
   confere(porTexto(formulario(), "Reverter ao padrão").length === 1 && /50-store\.conf/.test(formulario().textContent), "reaberta: o arquivo e o botão de reverter");
   porTexto(formulario(), "Reverter ao padrão")[0].listeners.click(); await esperar(1500);
   confere(posts.some((x) => x.rota === "/api/custom/reset" && x.corpo.unit === "homebox"), "reverter chama o reset da unit");
   // the .container as text: shown, edited, checked, saved as the person's own after the warnings are acknowledged
   const REPO = "[Container]\nImage=x:1\n";
   rotas["/api/custom"] = { ...rotas["/api/custom"], unit_source: REPO, repo_text: REPO, custom_unit: false, installed_text: REPO, override: false, text: null };
-  porTexto($("p-actions"), "Personalizar")[0].listeners.click(); await esperar(100);
+  (await cfgBtn("Personalizar")).listeners.click(); await esperar(100);
   confere(areaRaw() && areaRaw().value === REPO && /O \.container \(código\)/.test(folhaC.textContent) && /pode executar comandos/.test(folhaC.textContent) && /Igual ao repositório/.test(folhaC.textContent),
     "Personalizar mostra o .container, com o aviso e dizendo que é igual ao repositório");
   areaRaw().value = REPO + "PodmanArgs=--privileged\n"; areaRaw().listeners.input();
@@ -1093,14 +1103,14 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   const us = posts.slice(antesU).find((x) => x.rota === "/api/custom/unit-save");
   confere(us && us.corpo.unit === "homebox" && us.corpo.text.includes("--privileged") && us.corpo.ack === true && !posts.slice(antesU).some((x) => x.rota === "/api/custom/apply"), "confirmado: salva o .container (e não aplica o formulário junto)");
   rotas["/api/custom/unit-check"] = { errors: ["quadlet: converting x"], warnings: [], changed: true };
-  porTexto($("p-actions"), "Personalizar")[0].listeners.click(); await esperar(100);
+  (await cfgBtn("Personalizar")).listeners.click(); await esperar(100);
   areaRaw().value = "lixo"; areaRaw().listeners.input();
   const antesU2 = posts.length;
   porTexto(folhaC, "Salvar e aplicar")[0].listeners.click(); await esperar(150);
   confere(!posts.slice(antesU2).some((x) => x.rota === "/api/custom/unit-save") && /quadlet: converting x/.test(folhaC.textContent), "com erro, não salva");
   rotas["/api/custom"] = { ...rotas["/api/custom"], unit_source: REPO + "Label=a=b\n", custom_unit: true };
   $("custom").open = false;
-  porTexto($("p-actions"), "Personalizar")[0].listeners.click(); await esperar(100);
+  (await cfgBtn("Personalizar")).listeners.click(); await esperar(100);
   confere(/É o seu \.container/.test(folhaC.textContent) && porTexto(folhaC, "Voltar ao do repositório").length >= 1, "um .container próprio: diz que é o seu e oferece voltar");
   const antesU3 = posts.length;
   botoes(folhaC).filter((b) => b.textContent === "Voltar ao do repositório" && b.attrs.class && /danger/.test(b.attrs.class))[0].listeners.click(); await esperar(1500);
@@ -1109,7 +1119,7 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   $("panel").open = false;
   // limits, when the host delegates the controllers: the fields are live and ride along in the form
   rotas["/api/custom"] = { ...rotas["/api/custom"], limits: { memory: true, cpu: true }, limit_values: { memory: "1g", cpus: "" } };
-  porTexto($("p-actions"), "Personalizar")[0].listeners.click(); await esperar(100);
+  (await cfgBtn("Personalizar")).listeners.click(); await esperar(100);
   const [cm, cc] = deslizantes();
   confere(cm.attrs.disabled === undefined && cc.attrs.disabled === undefined && cm.value === "2" && cc.value === "6" && /Valem na próxima partida/.test(formulario().textContent),
     `com os controladores delegados: deslizantes ligados, no valor atual (1 GB, sem limite de CPU), e a dica (${cm.value}/${cc.value})`);
