@@ -249,7 +249,7 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
 
   // gallery, project links, history
   const shots = $("p-shots");
-  // the arrow beside Install: opens the menu, and "More options" brings the form (where the trial lives)
+  // the arrow inside the Install pill: opens a menu with one entry, the custom install
   api.S.apps.find((x) => x.id === "homebox").installed = false;
   api.openPanel("homebox"); await esperar(30);
   const menuI = [...$("p-actions").walk()].find((e) => e.attrs.class === "split-menu");
@@ -257,10 +257,7 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
   confere(menuI.hidden === true, "o menu da setinha começa fechado");
   setaI.listeners.click({ stopPropagation() {} });
   confere(menuI.hidden === false && setaI.attrs["aria-expanded"] === "true", "a setinha abre o menu");
-  const planoI = rotas["/api/plan"]; rotas["/api/plan"] = { rc: 0, output: "x", nothing: false };
-  porTexto(menuI, "Mais opções…")[0].listeners.click(); await esperar(100);
-  confere(!$("p-form").hidden && /Avançado/.test($("p-form").textContent), "Mais opções mostra o formulário, com o Avançado (teste por um tempo)");
-  if (planoI === undefined) delete rotas["/api/plan"]; else rotas["/api/plan"] = planoI;
+  confere(botoes(menuI).map((b) => b.textContent).join("|") === "Instalação personalizada…", "o menu só tem a instalação personalizada (tudo está nela)");
   api.S.apps.find((x) => x.id === "homebox").installed = true;
   // the lightbox
   api.S.apps.find((x) => x.id === "homebox").installed = false;
@@ -324,7 +321,7 @@ const folhaC = { *walk() { for (const i of ["c-tabs", "c-body", "c-foot"]) yield
 
   rotas["/api/arch"] = { host: "amd64", runs: ["amd64", "arm64"], download: 38617327, version: "1.20.26", units: [{ unit: "homebox", ok: true }] };
   api.openPanel("gitea"); await esperar(100);
-  confere(botoes($("p-actions")).map((b) => b.textContent).join("") === "InstalarInstalação personalizada…Mais opções…" && $("p-tech").hidden && /Categoria/.test($("p-actions").textContent), `app não instalado: só Instalar e Personalizar (sem histórico, instância nem detalhes técnicos), e o cartão com a categoria (${$("p-actions").textContent})`);
+  confere(botoes($("p-actions")).map((b) => b.textContent).join("") === "InstalarInstalação personalizada…" && $("p-tech").hidden && /Categoria/.test($("p-actions").textContent), `app não instalado: só Instalar e Personalizar (sem histórico, instância nem detalhes técnicos), e o cartão com a categoria (${$("p-actions").textContent})`);
   confere(!/null|undefined/.test($("p-info").textContent + $("p-actions").textContent) && /Arquitetura\s*amd64, arm64/.test($("p-actions").textContent) && /Download\s*37 MB/.test($("p-actions").textContent) && /Versão\s*1\.20\.26/.test($("p-actions").textContent) && !/Roda em/.test($("p-info").textContent), "app não instalado: tamanho e arquitetura vão no cartão, e nada de 'null'");
   $("panel").open = false;
 
